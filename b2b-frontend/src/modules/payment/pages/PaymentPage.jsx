@@ -36,7 +36,7 @@ import {
   PaymentLogger,
   validateRazorpayConfig,
   ensureRazorpayLoaded
-} from '../utils/paymentSecurity';
+} from '../utils/paymentSecurity.js';
 
 const PaymentPage = () => {
   const { orderId } = useParams();

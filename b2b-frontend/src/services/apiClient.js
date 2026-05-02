@@ -1,6 +1,6 @@
 import axios from "axios";
-import { store } from "../app/store";
-import { updateToken, logout } from "../modules/auth/authSlice";
+import { store } from "../app/store.js";
+import { updateToken, logout } from "../modules/auth/authSlice.js";
 
 const getBaseURL = () => {
   const envUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";

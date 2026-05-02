@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useProduct } from "../hooks/useProduct";
-import { useOrder } from "../../order/hooks/useOrder";
-import { useAuth } from "../../auth/hooks/useAuth";
-import { productService } from "../services/productService";
-import { reviewService } from "../../review/services/reviewService";
-import Button from "../../../components/ui/Button";
-import Card from "../../../components/ui/Card";
-import Navbar from "../../../components/common/Navbar";
-import Input from "../../../components/ui/Input";
-import { routes } from "../../../routes/routeConfig";
+import { useProduct } from "../hooks/useProduct.js";
+import { useOrder } from "../../order/hooks/useOrder.js";
+import { useAuth } from "../../auth/hooks/useAuth.js";
+import { productService } from "../services/productService.js";
+import { reviewService } from "../../review/services/reviewService.js";
+import Button from "../../../components/ui/Button.jsx";
+import Card from "../../../components/ui/Card.jsx";
+import Navbar from "../../../components/common/Navbar.jsx";
+import Input from "../../../components/ui/Input.jsx";
+import { routes } from "../../../routes/routeConfig.js";
 import { Plus, Minus, ShieldCheck, Truck, Receipt, Star } from "lucide-react";
 
 const ProductDetails = () => {

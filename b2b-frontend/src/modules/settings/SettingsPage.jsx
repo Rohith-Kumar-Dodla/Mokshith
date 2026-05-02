@@ -1,5 +1,5 @@
-import { useSettings } from "./hooks/useSettings";
-import SettingsForm from "./components/SettingsForm";
+import { useSettings } from "./hooks/useSettings.js";
+import SettingsForm from "./components/SettingsForm.jsx";
 
 const SettingsPage = () => {
   const { settings, loading, error, updateSettings } = useSettings();

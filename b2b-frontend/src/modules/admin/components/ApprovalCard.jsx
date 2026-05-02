@@ -1,5 +1,5 @@
-import Card from "../../../components/ui/Card";
-import Button from "../../../components/ui/Button";
+import Card from "../../../components/ui/Card.jsx";
+import Button from "../../../components/ui/Button.jsx";
 
 const ApprovalCard = ({ approval, onApprove, onReject }) => {
   const isPending = approval.status === "pending";

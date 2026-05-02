@@ -1,5 +1,5 @@
-import { useWishlist } from "./hooks/useWishlist";
-import WishlistItem from "./components/WishlistItem";
+import { useWishlist } from "./hooks/useWishlist.js";
+import WishlistItem from "./components/WishlistItem.jsx";
 
 const Wishlist = () => {
   const { items, loading, removeItem } = useWishlist();

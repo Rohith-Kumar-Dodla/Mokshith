@@ -1,4 +1,4 @@
-import storage from "../services/storage";
+import storage from "../services/storage.js";
 
 export const isAuthenticated = () => {
   return !!storage.get("user");

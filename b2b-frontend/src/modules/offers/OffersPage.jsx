@@ -1,5 +1,5 @@
-import { useOffers } from "./hooks/useOffers";
-import OfferCard from "./components/OfferCard";
+import { useOffers } from "./hooks/useOffers.js";
+import OfferCard from "./components/OfferCard.jsx";
 
 const OffersPage = () => {
   const { offers, loading, error } = useOffers();

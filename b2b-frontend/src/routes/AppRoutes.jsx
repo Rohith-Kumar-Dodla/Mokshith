@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { routes } from "./routeConfig";
+import { routes } from "./routeConfig.js";
 
 // Components
 import ProtectedRoute from "../components/common/ProtectedRoute.jsx";

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { routes } from "../../../routes/routeConfig";
-import { authService } from "../services/authService";
-import { useAuth } from "../hooks/useAuth";
+import { routes } from "../../../routes/routeConfig.js";
+import { authService } from "../services/authService.js";
+import { useAuth } from "../hooks/useAuth.js";
 import { 
   User, 
   Building2, 

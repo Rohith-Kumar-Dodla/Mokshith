@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAdmin } from "../hooks/useAdmin";
-import { useAuth } from "../../auth/hooks/useAuth";
+import { useAdmin } from "../hooks/useAdmin.js";
+import { useAuth } from "../../auth/hooks/useAuth.js";
 import { routes } from "../../../routes/routeConfig";
 import AdminStats from "../components/AdminStats";
 import Button from "../../../components/ui/Button";

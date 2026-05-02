@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../hooks/useAuth.js";
 import { useSelector } from "react-redux";
-import { routes } from "../../../routes/routeConfig";
+import { routes } from "../../../routes/routeConfig.js";
 import { 
   Mail, 
   Lock, 
