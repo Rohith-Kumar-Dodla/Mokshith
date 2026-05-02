@@ -9,7 +9,6 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.11.2",
-    "@tailwindcss/postcss": "^4.2.4",
     "@vitejs/plugin-react": "^6.0.1",
     "axios": "^1.15.1",
     "lucide-react": "^1.8.0",
@@ -21,6 +20,7 @@
     "vite": "^8.0.8"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.4",
     "autoprefixer": "^10.5.0",
     "postcss": "^8.5.10"
   }
