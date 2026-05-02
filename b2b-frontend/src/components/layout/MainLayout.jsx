@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
-import Navbar from '../common/Navbar';
-import Footer from '../common/Footer';
-import { useSocket } from '../../context/SocketContext';
-import { useNotification } from '../../context/NotificationContext';
+import Navbar from '../common/Navbar.jsx';
+import Footer from '../common/Footer.jsx';
+import { useSocket } from '../../context/SocketContext.jsx';
+import { useNotification } from '../../context/NotificationContext.jsx';
 import { useNavigate } from 'react-router-dom';
-import { routes } from '../../routes/routeConfig';
+import { routes } from '../../routes/routeConfig.js';
 
 const MainLayout = ({ children }) => {
   const { on } = useSocket();

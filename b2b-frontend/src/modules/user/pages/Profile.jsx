@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../auth/hooks/useAuth';
-import { userService } from '../userService';
-import Card from '../../../components/ui/Card';
-import Input from '../../../components/ui/Input';
-import Button from '../../../components/ui/Button';
+import { useAuth } from '../../auth/hooks/useAuth.js';
+import { userService } from '../userService.js';
+import Card from '../../../components/ui/Card.jsx';
+import Input from '../../../components/ui/Input.jsx';
+import Button from '../../../components/ui/Button.jsx';
 import { User, Mail, Phone, Building2, MapPin, Edit2, X, Camera, Loader2 } from 'lucide-react';
 
 const Profile = () => {

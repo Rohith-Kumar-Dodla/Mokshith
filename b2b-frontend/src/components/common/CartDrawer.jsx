@@ -1,8 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { routes } from '../../routes/routeConfig';
-import Button from '../ui/Button';
-import Card from '../ui/Card';
+import { routes } from '../../routes/routeConfig.js';
+import Button from '../ui/Button.jsx';
+import Card from '../ui/Card.jsx';
 
 const CartDrawer = ({ isOpen, onClose, cart, onUpdateQuantity, onRemoveItem }) => {
   const navigate = useNavigate();

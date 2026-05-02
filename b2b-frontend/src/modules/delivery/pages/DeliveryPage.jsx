@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useDelivery } from '../hooks/useDelivery';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
+import { useDelivery } from '../hooks/useDelivery.js';
+import Card from '../../../components/ui/Card.jsx';
+import Button from '../../../components/ui/Button.jsx';
 import { 
   Truck, 
   MapPin, 

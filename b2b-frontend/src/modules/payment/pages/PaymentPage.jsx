@@ -16,17 +16,17 @@ import {
   Banknote,
   Lock
 } from 'lucide-react';
-import { paymentService } from '../services/paymentService';
-import { creditService } from '../../credit/services/creditService';
-import { orderService } from '../../order/services/orderService';
-import { invoiceService } from '../../invoice/services/invoiceService';
-import { useAuth } from '../../auth/hooks/useAuth';
-import { routes } from '../../../routes/routeConfig';
-import Button from '../../../components/ui/Button';
-import { useSocket } from '../../../context/SocketContext';
-import Loader from '../../../components/common/Loader';
+import { paymentService } from '../services/paymentService.js';
+import { creditService } from '../../credit/services/creditService.js';
+import { orderService } from '../../order/services/orderService.js';
+import { invoiceService } from '../../invoice/services/invoiceService.js';
+import { useAuth } from '../../auth/hooks/useAuth.js';
+import { routes } from '../../../routes/routeConfig.js';
+import Button from '../../../components/ui/Button.jsx';
+import { useSocket } from '../../../context/SocketContext.jsx';
+import Loader from '../../../components/common/Loader.jsx';
 import { useDispatch } from 'react-redux';
-import { clearCart } from '../../order/orderSlice';
+import { clearCart } from '../../order/orderSlice.js';
 import {
   validateRazorpayResponse,
   validatePaymentAmount,

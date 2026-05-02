@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { promotionService } from '../services/promotionService';
+import { promotionService } from '../services/promotionService.js';
 
 export const usePromotion = () => {
   const [promotions, setPromotions] = useState([]);

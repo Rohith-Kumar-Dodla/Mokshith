@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { useInventory } from '../hooks/useInventory';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Modal from '../../../components/ui/Modal';
-import Input from '../../../components/ui/Input';
-import Table, { TableRow, TableCell } from '../../../components/ui/Table';
+import { useInventory } from '../hooks/useInventory.js';
+import Card from '../../../components/ui/Card.jsx';
+import Button from '../../../components/ui/Button.jsx';
+import Modal from '../../../components/ui/Modal.jsx';
+import Input from '../../../components/ui/Input.jsx';
+import Table, { TableRow, TableCell } from '../../../components/ui/Table.jsx';
 import { 
   Package, 
   Warehouse, 

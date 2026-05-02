@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../modules/auth/hooks/useAuth';
-import Navbar from '../common/Navbar';
-import Sidebar from '../common/Sidebar';
-import Footer from '../common/Footer';
+import { useAuth } from '../../modules/auth/hooks/useAuth.js';
+import Navbar from '../common/Navbar.jsx';
+import Sidebar from '../common/Sidebar.jsx';
+import Footer from '../common/Footer.jsx';
 import styles from './UserLayout.module.css';
 
 const UserLayout = ({ children }) => {

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { useWishlist } from '../hooks/useWishlist';
-import { useOrder } from '../../order/hooks/useOrder';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
+import { useWishlist } from '../hooks/useWishlist.js';
+import { useOrder } from '../../order/hooks/useOrder.js';
+import Card from '../../../components/ui/Card.jsx';
+import Button from '../../../components/ui/Button.jsx';
 import { 
   Heart, 
   Trash2, 
@@ -15,7 +15,7 @@ import {
   Truck
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { routes } from '../../../routes/routeConfig';
+import { routes } from '../../../routes/routeConfig.js';
 
 const WishlistPage = () => {
   const { wishlist, loading, error, removeFromWishlist, clearWishlist } = useWishlist();

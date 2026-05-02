@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { analyticsService } from '../services/analyticsService';
+import { analyticsService } from '../services/analyticsService.js';
 
 export const useAnalytics = () => {
   const [dashboard, setDashboard] = useState(null);

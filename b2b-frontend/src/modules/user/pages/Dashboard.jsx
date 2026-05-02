@@ -1,9 +1,9 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../../auth/hooks/useAuth';
-import { useOrder } from '../../order/hooks/useOrder';
-import { useCredit } from '../../credit/hooks/useCredit';
-import { routes } from '../../../routes/routeConfig';
+import { useAuth } from '../../auth/hooks/useAuth.js';
+import { useOrder } from '../../order/hooks/useOrder.js';
+import { useCredit } from '../../credit/hooks/useCredit.js';
+import { routes } from '../../../routes/routeConfig.js';
 import { 
   Package, 
   CreditCard, 

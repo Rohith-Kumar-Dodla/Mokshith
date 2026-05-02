@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { warehouseService } from '../services/warehouseService';
+import { warehouseService } from '../services/warehouseService.js';
 
 export const useWarehouse = () => {
   const [warehouses, setWarehouses] = useState([]);

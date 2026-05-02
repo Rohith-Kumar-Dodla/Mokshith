@@ -1,6 +1,6 @@
 import React from 'react';
-import PublicNavbar from '../common/PublicNavbar';
-import Footer from '../common/Footer';
+import PublicNavbar from '../common/PublicNavbar.jsx';
+import Footer from '../common/Footer.jsx';
 
 const PublicLayout = ({ children }) => {
   return (

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { supportService } from '../../support/services/supportService';
-import Card from '../../../components/ui/Card';
-import Input from '../../../components/ui/Input';
-import Button from '../../../components/ui/Button';
+import { supportService } from '../../support/services/supportService.js';
+import Card from '../../../components/ui/Card.jsx';
+import Input from '../../../components/ui/Input.jsx';
+import Button from '../../../components/ui/Button.jsx';
 import { HelpCircle, Send, MessageSquare, Clock, CheckCircle2, AlertCircle, Search } from 'lucide-react';
 
 const Help = () => {

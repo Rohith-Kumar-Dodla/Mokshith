@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { shipmentService } from '../services/shipmentService';
-import { useSocket } from '../../../context/SocketContext';
+import { shipmentService } from '../services/shipmentService.js';
+import { useSocket } from '../../../context/SocketContext.jsx';
 
 export const useShipment = (shipmentId) => {
   const [shipment, setShipment] = useState(null);

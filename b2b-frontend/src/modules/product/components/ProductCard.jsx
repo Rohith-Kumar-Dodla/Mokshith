@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Eye, Star, Plus, Minus, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { routes } from '../../../routes/routeConfig';
-import { useWishlist } from '../../../modules/wishlist/hooks/useWishlist';
+import { routes } from '../../../routes/routeConfig.js';
+import { useWishlist } from '../../../modules/wishlist/hooks/useWishlist.js';
 
 const ProductCard = ({ product, onAddToCart, onBuyNow, user }) => {
   const navigate = useNavigate();

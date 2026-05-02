@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { routes } from '../../routes/routeConfig';
+import { routes } from '../../routes/routeConfig.js';
 import { 
   User, 
   Package, 

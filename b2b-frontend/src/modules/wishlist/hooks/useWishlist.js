@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { wishlistService } from '../services/wishlistService';
+import { wishlistService } from '../services/wishlistService.js';
 
 export const useWishlist = () => {
   const [wishlist, setWishlist] = useState({ items: [] });

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { useCompany } from '../hooks/useCompany';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Modal from '../../../components/ui/Modal';
+import { useCompany } from '../hooks/useCompany.js';
+import Card from '../../../components/ui/Card.jsx';
+import Button from '../../../components/ui/Button.jsx';
+import Modal from '../../../components/ui/Modal.jsx';
 import { Building2, MapPin, Phone, Mail, FileText, Save, Edit3 } from 'lucide-react';
 
 const CompanyPage = () => {

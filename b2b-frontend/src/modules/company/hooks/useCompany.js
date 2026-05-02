@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { companyService } from '../services/companyService';
+import { companyService } from '../services/companyService.js';
 
 export const useCompany = () => {
   const [company, setCompany] = useState(null);

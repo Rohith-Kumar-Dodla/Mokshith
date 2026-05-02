@@ -1,7 +1,7 @@
 import React from 'react';
-import { useAnalytics } from '../hooks/useAnalytics';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
+import { useAnalytics } from '../hooks/useAnalytics.js';
+import Card from '../../../components/ui/Card.jsx';
+import Button from '../../../components/ui/Button.jsx';
 import { 
   TrendingUp, 
   TrendingDown, 

@@ -1,7 +1,7 @@
 import { Provider } from 'react-redux';
-import { store } from './store';
-import { SocketProvider } from '../context/SocketContext';
-import { NotificationProvider } from '../context/NotificationContext';
+import { store } from './store.js';
+import { SocketProvider } from '../context/SocketContext.jsx';
+import { NotificationProvider } from '../context/NotificationContext.jsx';
 
 const AppProvider = ({ children }) => {
   return (

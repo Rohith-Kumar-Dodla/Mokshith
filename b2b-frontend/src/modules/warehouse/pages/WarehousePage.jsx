@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { useWarehouse } from '../hooks/useWarehouse';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
-import Modal from '../../../components/ui/Modal';
-import Input from '../../../components/ui/Input';
-import ConfirmDialog from '../../../components/feedback/ConfirmDialog';
+import { useWarehouse } from '../hooks/useWarehouse.js';
+import Card from '../../../components/ui/Card.jsx';
+import Button from '../../../components/ui/Button.jsx';
+import Modal from '../../../components/ui/Modal.jsx';
+import Input from '../../../components/ui/Input.jsx';
+import ConfirmDialog from '../../../components/feedback/ConfirmDialog.jsx';
 import { 
   Warehouse, 
   MapPin, 

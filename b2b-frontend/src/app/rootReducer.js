@@ -1,9 +1,9 @@
 import { combineReducers } from '@reduxjs/toolkit';
-import authReducer from '../modules/auth/authSlice';
-import adminReducer from '../modules/admin/adminSlice';
-import superAdminReducer from '../modules/superAdmin/superAdminSlice';
-import productReducer from '../modules/product/productSlice';
-import orderReducer from '../modules/order/orderSlice';
+import authReducer from '../modules/auth/authSlice.js';
+import adminReducer from '../modules/admin/adminSlice.js';
+import superAdminReducer from '../modules/superAdmin/superAdminSlice.js';
+import productReducer from '../modules/product/productSlice.js';
+import orderReducer from '../modules/order/orderSlice.js';
 
 const rootReducer = combineReducers({
   auth: authReducer,

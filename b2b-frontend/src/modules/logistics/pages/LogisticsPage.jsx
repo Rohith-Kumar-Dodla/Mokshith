@@ -1,7 +1,7 @@
 import React from 'react';
-import { useLogistics } from '../hooks/useLogistics';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
+import { useLogistics } from '../hooks/useLogistics.js';
+import Card from '../../../components/ui/Card.jsx';
+import Button from '../../../components/ui/Button.jsx';
 import { 
   Truck, 
   MapPin, 

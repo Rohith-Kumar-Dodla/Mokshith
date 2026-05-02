@@ -19,8 +19,8 @@ import {
   Cookie,
   Coffee
 } from 'lucide-react';
-import { routes } from '../../../routes/routeConfig';
-import { useAuth } from '../../auth/hooks/useAuth';
+import { routes } from '../../../routes/routeConfig.js';
+import { useAuth } from '../../auth/hooks/useAuth.js';
 
 const LandingPage = () => {
   const navigate = useNavigate();

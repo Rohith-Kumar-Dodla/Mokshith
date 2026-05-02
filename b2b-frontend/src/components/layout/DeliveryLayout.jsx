@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { useAuth } from '../../modules/auth/hooks/useAuth';
-import { routes } from '../../routes/routeConfig';
-import Button from '../ui/Button';
-import ConfirmDialog from '../feedback/ConfirmDialog';
+import { useAuth } from '../../modules/auth/hooks/useAuth.js';
+import { routes } from '../../routes/routeConfig.js';
+import Button from '../ui/Button.jsx';
+import ConfirmDialog from '../feedback/ConfirmDialog.jsx';
 import { 
   Truck, 
   LogOut, 

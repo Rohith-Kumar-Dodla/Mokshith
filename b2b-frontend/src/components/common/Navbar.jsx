@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../modules/auth/hooks/useAuth';
-import { useOrder } from '../../modules/order/hooks/useOrder';
+import { useAuth } from '../../modules/auth/hooks/useAuth.js';
+import { useOrder } from '../../modules/order/hooks/useOrder.js';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { routes } from '../../routes/routeConfig';
+import { routes } from '../../routes/routeConfig.js';
 import { ShoppingCart, User, Menu, X, LogOut, LayoutDashboard, Package, CreditCard } from 'lucide-react';
-import Sidebar from './Sidebar';
-import CartDrawer from './CartDrawer';
-import ConfirmDialog from '../feedback/ConfirmDialog';
+import Sidebar from './Sidebar.jsx';
+import CartDrawer from './CartDrawer.jsx';
+import ConfirmDialog from '../feedback/ConfirmDialog.jsx';
 
 const Navbar = () => {
   const { user, logout } = useAuth();

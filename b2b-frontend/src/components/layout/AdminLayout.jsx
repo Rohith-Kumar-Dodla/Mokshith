@@ -14,9 +14,9 @@ import {
   Tag
 } from 'lucide-react';
 
-import { routes } from '../../routes/routeConfig';
-import { useAuth } from '../../modules/auth/hooks/useAuth';
-import ConfirmDialog from '../feedback/ConfirmDialog';
+import { routes } from '../../routes/routeConfig.js';
+import { useAuth } from '../../modules/auth/hooks/useAuth.js';
+import ConfirmDialog from '../feedback/ConfirmDialog.jsx';
 
 const AdminLayout = ({ children, title = "Overview" }) => {
   const { user, logout } = useAuth();

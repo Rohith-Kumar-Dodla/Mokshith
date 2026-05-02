@@ -1,8 +1,8 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useShipment } from '../hooks/useShipment';
-import Card from '../../../components/ui/Card';
-import Button from '../../../components/ui/Button';
+import { useShipment } from '../hooks/useShipment.js';
+import Card from '../../../components/ui/Card.jsx';
+import Button from '../../../components/ui/Button.jsx';
 import { 
   Package, 
   MapPin, 

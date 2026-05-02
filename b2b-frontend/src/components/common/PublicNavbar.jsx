@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { routes } from '../../routes/routeConfig';
-import { useAuth } from '../../modules/auth/hooks/useAuth';
+import { routes } from '../../routes/routeConfig.js';
+import { useAuth } from '../../modules/auth/hooks/useAuth.js';
 
 const PublicNavbar = () => {
   const location = useLocation();

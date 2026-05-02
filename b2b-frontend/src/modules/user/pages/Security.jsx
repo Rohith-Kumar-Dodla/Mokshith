@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { userService } from '../userService';
-import Card from '../../../components/ui/Card';
-import Input from '../../../components/ui/Input';
-import Button from '../../../components/ui/Button';
+import { userService } from '../userService.js';
+import Card from '../../../components/ui/Card.jsx';
+import Input from '../../../components/ui/Input.jsx';
+import Button from '../../../components/ui/Button.jsx';
 import { Shield, Lock, LogOut, AlertTriangle, Key } from 'lucide-react';
 
 const Security = () => {

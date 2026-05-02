@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { logisticsService } from '../services/logisticsService';
-import { useSocket } from '../../../context/SocketContext';
+import { logisticsService } from '../services/logisticsService.js';
+import { useSocket } from '../../../context/SocketContext.jsx';
 
 export const useLogistics = () => {
   const [deliveryQueue, setDeliveryQueue] = useState([]);

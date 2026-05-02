@@ -1,6 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { routes } from '../../routes/routeConfig';
+import { routes } from '../../routes/routeConfig.js';
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, user, loading: authLoading } = useSelector((state) => state.auth);
