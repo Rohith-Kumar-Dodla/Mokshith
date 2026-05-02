@@ -21,36 +21,36 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 
-// 🔥 TRUST PROXY (important for cloud)
+// 🔥 Trust proxy (important for Render / cloud deployments)
 app.set('trust proxy', 1);
 
 
-// 🔥 CORS CONFIG (FIXED)
+// 🔥 CORS CONFIG (FINAL FIX)
 const allowedOrigins = [
   "http://localhost:5173",
   "https://mokshith-entreprises.vercel.app"
 ];
 
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // allow Postman / curl
+  origin: (origin, callback) => {
+    // Allow requests without origin (Postman, mobile apps)
+    if (!origin) return callback(null, true);
 
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
-    } else {
-      return callback(new Error("CORS not allowed"), false);
     }
+
+    // ❗ Do NOT throw error (prevents 500 issue)
+    return callback(null, false);
   },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  credentials: true
 }));
 
-// 🔥 HANDLE PREFLIGHT (CRITICAL FIX)
+// 🔥 Handle preflight requests (VERY IMPORTANT)
 app.options("*", cors());
 
 
-// 🔐 Security
+// 🔐 Security middleware
 securityMiddleware(app);
 
 
@@ -70,29 +70,32 @@ app.use(morgan('dev'));
 app.use(requestLogger);
 
 
-// 🔁 Idempotency
+// 🔁 Idempotency middleware
 app.use(idempotencyMiddleware);
 
 
-// 🔥 Static files
+// 🔥 Serve static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
-// 🚀 Health route
-app.get('/health', (req, res) =>
-  res.status(200).json({ status: 'ok', timestamp: new Date() })
-);
+// ❤️ Health check route
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date()
+  });
+});
 
 
-// 🚀 API Routes
+// 🚀 API routes
 app.use('/api', routes);
 
 
-// ❌ Not Found
+// ❌ Not Found handler
 app.use(notFound);
 
 
-// 💥 Error Handler (must be last)
+// 💥 Global error handler (must be last)
 app.use(errorHandler);
 
 
