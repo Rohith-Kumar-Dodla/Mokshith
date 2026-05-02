@@ -56,7 +56,7 @@ const Modal = ({
 
   return (
     <div 
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/20 backdrop-blur-[2px] animate-in fade-in duration-200"
       onClick={(e) => {
         if (closeOnOverlayClick && e.target === e.currentTarget) {
           handleClose(e);
@@ -64,34 +64,31 @@ const Modal = ({
       }}
     >
       <div 
-        className={`bg-white rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.2)] w-full ${sizeClasses[size] || sizeClasses.md} overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-8 duration-500 ease-out`}
+        className={`bg-white rounded-[2rem] shadow-2xl w-full ${sizeClasses[size] || sizeClasses.md} overflow-hidden animate-in zoom-in-95 duration-200`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-10 py-8 border-b border-gray-50 flex justify-between items-center bg-white/80 backdrop-blur-xl sticky top-0 z-10">
-          <div>
-            <h3 className="text-3xl font-black text-gray-900 tracking-tight leading-none">{title}</h3>
-            <div className="h-1.5 w-16 bg-blue-600 rounded-full mt-4 shadow-sm shadow-blue-200"></div>
-          </div>
+        <div className="px-10 py-8 border-b border-gray-50 flex justify-between items-center bg-white sticky top-0 z-10">
+          <h3 className="text-2xl font-black text-gray-900 tracking-tight">{title}</h3>
           {showCloseIcon && (
             <button 
               type="button"
               onClick={handleClose}
               disabled={preventClose}
-              className={`p-4 rounded-[1.25rem] transition-all duration-500 active:scale-90 ${
+              className={`p-3 rounded-2xl transition-all ${
                 preventClose 
                   ? 'text-gray-100 cursor-not-allowed opacity-50' 
-                  : 'hover:bg-gray-100 text-gray-400 hover:text-gray-900 hover:rotate-180 bg-gray-50/50'
+                  : 'hover:bg-gray-100 text-gray-400 hover:text-gray-900 bg-gray-50/50'
               }`}
               aria-label="Close modal"
             >
-              <X size={24} strokeWidth={3} />
+              <X size={20} />
             </button>
           )}
         </div>
 
         {/* Body */}
-        <div className="px-10 py-10 max-h-[70vh] overflow-y-auto custom-scrollbar">
+        <div className="px-10 py-10 max-h-[70vh] overflow-y-auto custom-scrollbar text-gray-600 font-medium">
           {children}
         </div>
 

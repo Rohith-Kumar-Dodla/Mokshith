@@ -14,15 +14,15 @@ const ConfirmDialog = ({
   loading = false
 }) => {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title}>
+    <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
       <div className="space-y-6">
-        <p className="text-gray-600">{message}</p>
-        <div className="flex justify-end gap-3 pt-2">
+        <p className="text-sm font-medium text-gray-500">{message}</p>
+        <div className="flex justify-end gap-2">
           <Button 
             type="button" 
             variant="secondary" 
             onClick={onClose} 
-            className="flex-1 sm:flex-none"
+            className="h-9 px-4 text-xs font-bold uppercase tracking-widest"
             disabled={loading}
           >
             {cancelText}
@@ -32,7 +32,7 @@ const ConfirmDialog = ({
             variant={variant} 
             onClick={() => { onConfirm(); }} 
             loading={loading}
-            className="flex-1 sm:flex-none"
+            className="h-9 px-4 text-xs font-bold uppercase tracking-widest bg-blue-600 hover:bg-blue-700 text-white"
           >
             {confirmText}
           </Button>
