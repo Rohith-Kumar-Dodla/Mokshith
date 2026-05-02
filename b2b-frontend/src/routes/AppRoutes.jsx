@@ -24,7 +24,7 @@ import AdminProductsPage from "../modules/admin/pages/Products.jsx";
 import AdminOrdersPage from "../modules/admin/pages/Orders.jsx";
 import AdminVendorsPage from "../modules/admin/pages/Vendors.jsx";
 import AdminApprovalsPage from "../modules/admin/pages/Approvals.jsx";
-import SuperAdminPage from "../modules/superadmin/pages/SuperAdminPage.jsx";
+import SuperAdminPage from "../modules/superAdmin/pages/SuperAdminPage.jsx";
 import DeliveryPage from "../modules/delivery/pages/DeliveryPage.jsx";
 import CreditPage from "../modules/credit/pages/CreditPage.jsx";
 import CheckoutPage from "../modules/order/pages/Checkout.jsx";
