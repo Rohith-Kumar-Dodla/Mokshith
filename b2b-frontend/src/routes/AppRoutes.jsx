@@ -2,52 +2,52 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { routes } from "./routeConfig";
 
 // Components
-import ProtectedRoute from "../components/common/ProtectedRoute";
-import RoleGuard from "../components/common/RoleGuard";
-import RoleBasedRoute from "../components/common/RoleBasedRoute";
+import ProtectedRoute from "../components/common/ProtectedRoute.jsx";
+import RoleGuard from "../components/common/RoleGuard.jsx";
+import RoleBasedRoute from "../components/common/RoleBasedRoute.jsx";
 
 // Layouts
-import MainLayout from "../components/layout/MainLayout";
-import PublicLayout from "../components/layout/PublicLayout";
-import AdminLayout from "../components/layout/AdminLayout";
-import SuperAdminLayout from "../components/layout/SuperAdminLayout";
-import DeliveryLayout from "../components/layout/DeliveryLayout";
+import MainLayout from "../components/layout/MainLayout.jsx";
+import PublicLayout from "../components/layout/PublicLayout.jsx";
+import AdminLayout from "../components/layout/AdminLayout.jsx";
+import SuperAdminLayout from "../components/layout/SuperAdminLayout.jsx";
+import DeliveryLayout from "../components/layout/DeliveryLayout.jsx";
 
 // Pages
-import LandingPage from "../modules/product/pages/LandingPage";
-import LoginPage from "../modules/auth/pages/LoginPage";
-import RegisterPage from "../modules/auth/pages/Register";
-import ProductPage from "../modules/product/pages/ProductPage";
-import AdminPage from "../modules/admin/pages/AdminPage";
-import AdminUsersPage from "../modules/admin/pages/Users";
-import AdminProductsPage from "../modules/admin/pages/Products";
-import AdminOrdersPage from "../modules/admin/pages/Orders";
-import AdminVendorsPage from "../modules/admin/pages/Vendors";
-import AdminApprovalsPage from "../modules/admin/pages/Approvals";
-import SuperAdminPage from "../modules/superadmin/pages/SuperAdminPage";
-import DeliveryPage from "../modules/delivery/pages/DeliveryPage";
-import CreditPage from "../modules/credit/pages/CreditPage";
-import CheckoutPage from "../modules/order/pages/Checkout";
-import OrdersPage from "../modules/order/pages/OrdersPage";
-import OrderDetails from "../modules/order/pages/OrderDetails";
-import CartPage from "../modules/order/pages/Cart";
-import PaymentPage from "../modules/payment/pages/PaymentPage";
-import ProfilePage from "../modules/user/pages/Profile";
-import SecurityPage from "../modules/user/pages/Security";
-import HelpPage from "../modules/user/pages/Help";
-import ProductDetails from "../modules/product/pages/ProductDetails";
-import Dashboard from "../modules/user/pages/Dashboard";
+import LandingPage from "../modules/product/pages/LandingPage.jsx";
+import LoginPage from "../modules/auth/pages/LoginPage.jsx";
+import RegisterPage from "../modules/auth/pages/Register.jsx";
+import ProductPage from "../modules/product/pages/ProductPage.jsx";
+import AdminPage from "../modules/admin/pages/AdminPage.jsx";
+import AdminUsersPage from "../modules/admin/pages/Users.jsx";
+import AdminProductsPage from "../modules/admin/pages/Products.jsx";
+import AdminOrdersPage from "../modules/admin/pages/Orders.jsx";
+import AdminVendorsPage from "../modules/admin/pages/Vendors.jsx";
+import AdminApprovalsPage from "../modules/admin/pages/Approvals.jsx";
+import SuperAdminPage from "../modules/superadmin/pages/SuperAdminPage.jsx";
+import DeliveryPage from "../modules/delivery/pages/DeliveryPage.jsx";
+import CreditPage from "../modules/credit/pages/CreditPage.jsx";
+import CheckoutPage from "../modules/order/pages/Checkout.jsx";
+import OrdersPage from "../modules/order/pages/OrdersPage.jsx";
+import OrderDetails from "../modules/order/pages/OrderDetails.jsx";
+import CartPage from "../modules/order/pages/Cart.jsx";
+import PaymentPage from "../modules/payment/pages/PaymentPage.jsx";
+import ProfilePage from "../modules/user/pages/Profile.jsx";
+import SecurityPage from "../modules/user/pages/Security.jsx";
+import HelpPage from "../modules/user/pages/Help.jsx";
+import ProductDetails from "../modules/product/pages/ProductDetails.jsx";
+import Dashboard from "../modules/user/pages/Dashboard.jsx";
 
 // New Module Pages
-import AnalyticsPage from "../modules/analytics/pages/AnalyticsPage";
-import CompanyPage from "../modules/company/pages/CompanyPage";
-import InventoryPage from "../modules/inventory/pages/InventoryPage";
-import LogisticsPage from "../modules/logistics/pages/LogisticsPage";
-import ShipmentTrackingPage from "../modules/shipment/pages/ShipmentTrackingPage";
-import WarehousePage from "../modules/warehouse/pages/WarehousePage";
-import PromotionPage from "../modules/promotion/pages/PromotionPage";
-import WishlistPage from "../modules/wishlist/pages/WishlistPage";
-import SettingsPage from "../modules/settings/SettingsPage";
+import AnalyticsPage from "../modules/analytics/pages/AnalyticsPage.jsx";
+import CompanyPage from "../modules/company/pages/CompanyPage.jsx";
+import InventoryPage from "../modules/inventory/pages/InventoryPage.jsx";
+import LogisticsPage from "../modules/logistics/pages/LogisticsPage.jsx";
+import ShipmentTrackingPage from "../modules/shipment/pages/ShipmentTrackingPage.jsx";
+import WarehousePage from "../modules/warehouse/pages/WarehousePage.jsx";
+import PromotionPage from "../modules/promotion/pages/PromotionPage.jsx";
+import WishlistPage from "../modules/wishlist/pages/WishlistPage.jsx";
+import SettingsPage from "../modules/settings/SettingsPage.jsx";
 
 const AppRoutes = () => {
   return (
