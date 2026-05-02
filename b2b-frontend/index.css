@@ -1,15 +1,21 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* GLOBAL BASE */
 body {
-  @apply bg-gray-50;
+  background-color: var(--background);
   color: var(--text-main);
   font-family: 'Inter', system-ui, sans-serif;
 }
 
 /* FORM ELEMENTS */
 input, textarea, select {
-  @apply w-full rounded-md px-3 py-2 outline-none transition-all;
+  width: 100%;
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  outline: none;
+  transition: all 150ms;
   border: 1.5px solid var(--border);
 }
 
@@ -20,7 +26,10 @@ input:focus, textarea:focus, select:focus {
 
 /* BUTTONS */
 button {
-  @apply rounded-md px-4 py-2 font-medium transition-all;
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  transition: all 150ms;
 }
 
 .btn-primary {
@@ -46,7 +55,12 @@ button {
 
 /* UTILITIES */
 .badge {
-  @apply px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wider;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .badge-success {
@@ -76,22 +90,29 @@ button {
 
 /* TABLE STYLES */
 .table-container {
-  @apply overflow-x-auto;
+  overflow-x: auto;
 }
 
 .premium-table {
-  @apply w-full border-collapse text-left text-sm;
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
 }
 
 .premium-table th {
-  @apply px-4 py-3 font-bold text-gray-600 uppercase tracking-wider border-b-2;
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+  color: #4b5563;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid var(--border);
   background-color: var(--primary-light);
-  border-color: var(--border);
 }
 
 .premium-table td {
-  @apply px-4 py-4 border-b;
-  border-color: var(--border);
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
 }
 
 .premium-table tr:hover {
@@ -100,7 +121,12 @@ button {
 
 /* MODAL */
 .modal {
-  @apply bg-white rounded-lg shadow-lg p-6 w-full max-w-lg;
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 32rem;
 }
 
 /* CUSTOM SCROLLBAR */
