@@ -1,10 +1,10 @@
 import { useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { authService } from "../services/authService";
-import { loginStart, loginSuccess, loginFailure, updateUser as updateUserAction, logout as logoutAction } from "../authSlice";
-import { fetchConfigSuccess } from "../../superadmin/superAdminSlice";
-import { routes } from "../../../routes/routeConfig";
+import { authService } from "../services/authService.js";
+import { loginStart, loginSuccess, loginFailure, updateUser as updateUserAction, logout as logoutAction } from "../authSlice.js";
+import { fetchConfigSuccess } from "../../superadmin/superAdminSlice.js";
+import { routes } from "../../../routes/routeConfig.js";
 
 export const useAuth = () => {
   const dispatch = useDispatch();
