@@ -66,51 +66,60 @@ const Navbar = () => {
             )}
           </nav>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 md:gap-6">
             <button 
               onClick={() => setIsCartOpen(true)}
-              className="p-3 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-2xl transition-all relative group"
+              className="p-2 md:p-3 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-2xl transition-all relative group"
             >
-              <ShoppingCart size={24} />
+              <ShoppingCart size={22} className="md:w-6 md:h-6" />
               {cartCount > 0 && (
-                <span className="absolute top-2 right-2 bg-blue-600 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-lg group-hover:scale-110 transition-transform">
+                <span className="absolute top-1 right-1 md:top-2 md:right-2 bg-blue-600 text-white text-[9px] md:text-[10px] font-black w-4 h-4 md:w-5 md:h-5 rounded-full flex items-center justify-center border-2 border-white shadow-lg group-hover:scale-110 transition-transform">
                   {cartCount}
                 </span>
               )}
             </button>
             
             {user ? (
-              <div className="flex items-center gap-4 pl-6 border-l border-gray-100">
+              <div className="flex items-center gap-3 md:gap-4 pl-3 md:pl-6 border-l border-gray-100">
                 <button 
                   onClick={() => setIsSidebarOpen(true)}
-                  className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white font-black shadow-lg shadow-blue-900/20 border-2 border-white transition-all hover:scale-105 active:scale-95"
+                  className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-blue-600 flex items-center justify-center text-white font-black shadow-lg shadow-blue-900/20 border-2 border-white transition-all hover:scale-105 active:scale-95"
                 >
                   {user.name?.[0]?.toUpperCase() || 'U'}
                 </button>
+                <button 
+                  onClick={() => setIsSidebarOpen(true)}
+                  className="md:hidden p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                >
+                  <Menu size={24} />
+                </button>
               </div>
             ) : (
-              <div className="flex items-center gap-6">
-                <Link to={routes.LOGIN} className="text-sm font-bold text-slate-500 hover:text-slate-900 transition-colors">
+              <div className="flex items-center gap-4 md:gap-6">
+                <Link to={routes.LOGIN} className="hidden sm:block text-sm font-bold text-slate-500 hover:text-slate-900 transition-colors">
                   Login
                 </Link>
-                <Link to={routes.REGISTER} className="px-8 py-4 bg-blue-600 text-white text-[11px] font-black uppercase tracking-widest rounded-2xl shadow-lg shadow-blue-900/20 hover:bg-blue-700 transition-all active:scale-95">
-                  Register
+                <Link to={routes.REGISTER} className="px-4 py-2 md:px-8 md:py-4 bg-blue-600 text-white text-[10px] md:text-[11px] font-black uppercase tracking-widest rounded-xl md:rounded-2xl shadow-lg shadow-blue-900/20 hover:bg-blue-700 transition-all active:scale-95">
+                  Join
                 </Link>
+                <button 
+                  onClick={() => setIsSidebarOpen(true)}
+                  className="md:hidden p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                >
+                  <Menu size={24} />
+                </button>
               </div>
             )}
           </div>
         </div>
       </header>
 
+      {/* PORTALS */}
       <Sidebar 
         isOpen={isSidebarOpen} 
         onClose={() => setIsSidebarOpen(false)} 
         user={user} 
-        onLogout={() => {
-          console.log('Navbar: onLogout triggered');
-          setIsSidebarOpen(false);
-          setShowLogoutConfirm(true);
-        }} 
+        onLogout={handleLogout}
       />
 
       {showLogoutConfirm && (

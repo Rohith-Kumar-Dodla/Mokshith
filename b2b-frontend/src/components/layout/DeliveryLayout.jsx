@@ -13,7 +13,9 @@ import {
   LayoutDashboard,
   User,
   Bell,
-  MapPin
+  MapPin,
+  Menu,
+  X
 } from 'lucide-react';
 
 const DeliveryLayout = ({ title = "Delivery Portal" }) => {
@@ -22,12 +24,12 @@ const DeliveryLayout = ({ title = "Delivery Portal" }) => {
   const location = useLocation();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [isProfileSidebarOpen, setIsProfileSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     setShowLogoutConfirm(false);
     setIsLoggingOut(false);
-    setIsProfileSidebarOpen(false);
+    setIsSidebarOpen(false);
   }, [location.pathname]);
 
   const handleLogout = async () => {
@@ -48,17 +50,37 @@ const DeliveryLayout = ({ title = "Delivery Portal" }) => {
   ];
 
   return (
-    <div className="flex min-h-screen bg-[#f8f9fa]">
+    <div className="flex min-h-screen bg-[#f8f9fa] overflow-x-hidden">
+      {/* ================= MOBILE OVERLAY ================= */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden transition-all duration-300"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* ================= SIDEBAR ================= */}
-      <aside className="w-[280px] h-screen fixed left-0 top-0 z-40 bg-[#0B1120] text-white flex flex-col">
-        <div className="p-8 flex items-center gap-4 border-b border-white/5">
-          <div className="bg-emerald-600 p-2.5 rounded-2xl shadow-lg shadow-emerald-500/20">
-            <Truck size={24} className="text-white" />
+      <aside className={`
+        w-[280px] h-screen fixed left-0 top-0 z-50 bg-[#0B1120] text-white flex flex-col
+        transition-transform duration-300 lg:translate-x-0
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}>
+        <div className="p-8 flex items-center justify-between border-b border-white/5">
+          <div className="flex items-center gap-4">
+            <div className="bg-emerald-600 p-2.5 rounded-2xl shadow-lg shadow-emerald-500/20">
+              <Truck size={24} className="text-white" />
+            </div>
+            <div>
+              <h1 className="font-black text-xl tracking-tight leading-none uppercase">Mokshith</h1>
+              <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mt-1.5">Delivery Portal</p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-black text-xl tracking-tight leading-none uppercase">Mokshith</h1>
-            <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mt-1.5">Delivery Portal</p>
-          </div>
+          <button 
+            onClick={() => setIsSidebarOpen(false)}
+            className="lg:hidden p-2 hover:bg-white/10 rounded-xl transition-colors"
+          >
+            <X size={20} />
+          </button>
         </div>
 
         <nav className="flex-1 py-6 px-3 space-y-3 overflow-y-auto custom-scrollbar mt-6">
@@ -95,9 +117,18 @@ const DeliveryLayout = ({ title = "Delivery Portal" }) => {
       </aside>
 
       {/* ================= MAIN CONTENT WRAPPER ================= */}
-      <div className="ml-[280px] flex-1 flex flex-col min-h-screen">
-        <header className="h-16 flex items-center px-10 bg-white border-b sticky top-0 z-30">
+      <div className="flex-1 flex flex-col min-h-screen lg:ml-[280px]">
+        <header className="h-16 flex items-center px-4 md:px-10 bg-white/80 backdrop-blur-md border-b sticky top-0 z-30">
           <div className="flex-1 flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => setIsSidebarOpen(true)}
+                className="lg:hidden p-2 hover:bg-gray-100 rounded-xl transition-colors"
+              >
+                <Menu size={24} className="text-gray-600" />
+              </button>
+              <h2 className="text-lg font-black text-gray-800 hidden sm:block">{title}</h2>
+            </div>
             <h2 className="text-xl font-bold text-gray-900 tracking-tight">{title}</h2>
             
             <div className="flex items-center gap-6">

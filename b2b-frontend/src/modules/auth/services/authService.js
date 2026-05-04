@@ -4,21 +4,21 @@ export const authService = {
   async login(payload) {
     try {
       const res = await apiClient.post("/auth/login", payload);
-      // Extract tokens from response and store them
-      const { data } = res;
-      if (data?.accessToken) {
-        localStorage.setItem("token", data.accessToken);
+      // Since apiClient returns response.data, res is already the body
+      const responseData = res.data || res;
+      
+      if (responseData?.accessToken) {
+        localStorage.setItem("token", responseData.accessToken);
       }
-      if (data?.refreshToken) {
-        localStorage.setItem("refreshToken", data.refreshToken);
+      if (responseData?.refreshToken) {
+        localStorage.setItem("refreshToken", responseData.refreshToken);
       }
-      // Store user info
-      if (data?.user) {
-        localStorage.setItem("user", JSON.stringify(data.user));
+      if (responseData?.user) {
+        localStorage.setItem("user", JSON.stringify(responseData.user));
       }
-      return res.data || res; 
+      return responseData;
     } catch (error) {
-      throw new Error(error || "Login failed");
+      throw error;
     }
   },
 

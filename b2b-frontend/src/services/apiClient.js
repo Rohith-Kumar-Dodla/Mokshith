@@ -23,6 +23,7 @@ const API_BASE_URL = getBaseURL();
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 30000, // 30 second timeout for B2B stability
   headers: {
     "Content-Type": "application/json",
   },
@@ -131,7 +132,8 @@ apiClient.interceptors.response.use(
       window.location.href = "/unauthorized";
     }
 
-    return Promise.reject(error.response?.data?.message || error.message || "Something went wrong");
+    const message = error.response?.data?.message || error.message || "Something went wrong";
+    return Promise.reject(message);
   }
 );
 

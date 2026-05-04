@@ -64,7 +64,7 @@ const AdminLayout = ({ title = "Admin Panel" }) => {
       {/* ================= MOBILE SIDEBAR OVERLAY ================= */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/40 z-40 md:hidden"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden transition-all duration-300"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
@@ -83,19 +83,24 @@ const AdminLayout = ({ title = "Admin Panel" }) => {
       `}>
 
         {/* Logo Section */}
-        <div className="px-6 py-5 flex items-center gap-3 border-b border-white/10 flex-shrink-0">
-          <div className="bg-blue-600 p-2.5 rounded-2xl shadow-lg shadow-blue-500/20 flex-shrink-0">
-            <ShieldCheck size={20} className="text-white" />
+        <div className="px-6 py-5 flex items-center justify-between border-b border-white/10 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="bg-blue-600 p-2.5 rounded-2xl shadow-lg shadow-blue-500/20 flex-shrink-0">
+              <ShieldCheck size={20} className="text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="font-black text-base tracking-tight leading-tight uppercase">Mokshith</h1>
+              <p className="text-[9px] font-bold text-blue-300 uppercase tracking-widest mt-0.5">Enterprise</p>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="font-black text-base tracking-tight leading-tight uppercase">Mokshith</h1>
-            <p className="text-[9px] font-bold text-blue-300 uppercase tracking-widest mt-0.5">Enterprise</p>
-          </div>
+          <button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-2 text-white/50 hover:text-white transition-colors">
+            <X size={20} />
+          </button>
         </div>
 
         {/* Navigation */}
         <nav className="flex-1 flex flex-col py-6 px-3 gap-0.5 overflow-y-auto custom-scrollbar">
-          <p className="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Menu</p>
+          <p className="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Command Center</p>
           <div className="flex flex-col gap-1 flex-1">
             {menuItems.map((item, index) => {
               const isActive = location.pathname === item.path;
@@ -105,17 +110,19 @@ const AdminLayout = ({ title = "Admin Panel" }) => {
                   key={index}
                   to={item.path}
                   onClick={() => setIsSidebarOpen(false)}
-                  className={`flex items-center justify-start gap-3 px-4 py-3 rounded-lg transition-all duration-300 group flex-shrink-0 w-full ${
+                  className={`flex items-center justify-start gap-3 px-4 py-3 rounded-xl transition-all duration-300 group flex-shrink-0 w-full ${
                     isActive 
-                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30' 
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' 
                       : 'text-slate-400 hover:text-white hover:bg-white/8'
                   }`}
                 >
                   <div className={`flex-shrink-0 ${isActive ? 'text-white' : 'group-hover:text-blue-400'} transition-colors`}>
                     {React.cloneElement(item.icon, { size: 18 })}
                   </div>
-                  <span className="text-sm font-medium tracking-wide flex-1 text-left whitespace-nowrap overflow-hidden text-ellipsis">{item.label}</span>
-                  {isActive && <div className="w-1.5 h-1.5 rounded-full bg-white flex-shrink-0"></div>}
+                  <span className="text-sm font-bold tracking-wide flex-1 text-left whitespace-nowrap overflow-hidden text-ellipsis">{item.label}</span>
+                  {isActive && (
+                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white]"></div>
+                  )}
                 </Link>
               );
             })}
@@ -126,7 +133,7 @@ const AdminLayout = ({ title = "Admin Panel" }) => {
         <div className="px-3 py-4 border-t border-white/10 flex-shrink-0">
           <button
             onClick={() => setShowLogoutConfirm(true)}
-            className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg text-rose-400 hover:bg-rose-500/15 transition-all duration-300 group hover:text-rose-300"
+            className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl text-rose-400 hover:bg-rose-500/15 transition-all duration-300 group hover:text-rose-300"
           >
             <LogOut size={18} className="group-hover:rotate-12 transition-transform flex-shrink-0" />
             <span className="font-bold uppercase tracking-widest text-xs whitespace-nowrap">Sign Out</span>

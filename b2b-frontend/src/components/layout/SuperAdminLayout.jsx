@@ -34,44 +34,44 @@ const SuperAdminLayout = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#f8f9fa]">
+    <div className="flex min-h-screen bg-[#f8f9fa] overflow-x-hidden">
       {/* ================= MAIN CONTENT WRAPPER ================= */}
       <div className="flex-1 flex flex-col min-h-screen">
         {/* Header */}
-        <header className="h-16 flex items-center px-10 bg-white border-b sticky top-0 z-40 shadow-sm">
+        <header className="h-16 flex items-center px-4 md:px-10 bg-white border-b sticky top-0 z-40 shadow-sm">
           <div className="flex-1 flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <span className="w-2 h-8 bg-rose-600 rounded-full"></span>
-              <h2 className="text-xl font-bold text-gray-900 tracking-tight">Root Control</h2>
-              <span className="px-3 py-1 bg-rose-500/10 text-rose-500 text-[10px] font-bold rounded-lg border border-rose-500/20 uppercase tracking-widest ml-2">
+            <div className="flex items-center gap-2 md:gap-4">
+              <span className="w-1.5 md:w-2 h-6 md:h-8 bg-rose-600 rounded-full"></span>
+              <h2 className="text-base md:text-xl font-bold text-gray-900 tracking-tight">Root Control</h2>
+              <span className="hidden sm:inline-block px-3 py-1 bg-rose-500/10 text-rose-500 text-[10px] font-bold rounded-lg border border-rose-500/20 uppercase tracking-widest ml-2">
                 Omega Access
               </span>
             </div>
 
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3 md:gap-6">
               <button 
                 onClick={() => setShowDbShell(true)}
-                className="px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border border-slate-200 hover:bg-slate-50 transition-all active:scale-95 text-slate-600 shadow-sm"
+                className="hidden lg:block px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border border-slate-200 hover:bg-slate-50 transition-all active:scale-95 text-slate-600 shadow-sm"
               >
                 Database Shell
               </button>
 
               <button
                 onClick={() => setShowLogoutConfirm(true)}
-                className="flex items-center gap-2 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] text-rose-600 border border-rose-200 hover:bg-rose-50 transition-all active:scale-95 shadow-sm"
+                className="flex items-center gap-2 px-3 md:px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] text-rose-600 border border-rose-200 hover:bg-rose-50 transition-all active:scale-95 shadow-sm"
               >
                 <LogOut size={14} />
-                Logout
+                <span className="hidden sm:inline">Logout</span>
               </button>
 
-              <div className="h-8 w-px bg-gray-100"></div>
+              <div className="hidden md:block h-8 w-px bg-gray-100"></div>
 
-              <div className="flex items-center gap-4">
-                <div className="flex flex-col items-end">
-                  <span className="text-sm font-bold text-gray-900">{user?.name}</span>
+              <div className="flex items-center gap-3 md:gap-4">
+                <div className="hidden sm:flex flex-col items-end">
+                  <span className="text-sm font-bold text-gray-900 truncate max-w-[100px]">{user?.name}</span>
                   <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest">Root</span>
                 </div>
-                <div className="w-10 h-10 bg-rose-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-rose-500/20">
+                <div className="w-10 h-10 bg-rose-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-rose-500/20 flex-shrink-0">
                   {user?.name?.[0]}
                 </div>
               </div>
@@ -80,7 +80,7 @@ const SuperAdminLayout = () => {
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 p-10 max-w-[1600px] mx-auto w-full">
+        <main className="flex-1 p-4 md:p-10 max-w-[1600px] mx-auto w-full">
           <Outlet context={{ showDbShell, setShowDbShell }} />
         </main>
       </div>

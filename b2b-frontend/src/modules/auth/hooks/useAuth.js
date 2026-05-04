@@ -32,11 +32,10 @@ export const useAuth = () => {
     dispatch(loginStart());
 
     try {
-      const res = await authService.login(data);
-      // Extract user and tokens from response
-      const responseData = res.data || res;
-      const user = responseData.user || res.user;
-      const accessToken = responseData.accessToken || res.accessToken;
+      const responseData = await authService.login(data);
+      
+      const user = responseData.user;
+      const accessToken = responseData.accessToken;
 
       if (!accessToken || !user) {
         throw new Error("Invalid response format: missing token or user data");
@@ -52,35 +51,30 @@ export const useAuth = () => {
         }
       }
 
-      dispatch(loginSuccess({ user, token: accessToken }));
-      
-      // Update global config in store if available
-      if (responseData.config || res.config) {
-        dispatch(fetchConfigSuccess(responseData.config || res.config));
-      }
-      
-      // Redirect based on role
-      switch (user.role) {
-        case "SUPER_ADMIN":
-          navigate(routes.SUPER_ADMIN, { replace: true });
-          break;
-        case "ADMIN":
-          navigate(routes.ADMIN, { replace: true });
-          break;
-        case "DELIVERY_PARTNER":
-          navigate(routes.DELIVERY_DASHBOARD, { replace: true });
-          break;
-        case "B2B_CUSTOMER":
-        case "B2C_CUSTOMER":
-          navigate(routes.HOME, { replace: true });
-          break;
-        default:
-          navigate(routes.PRODUCTS, { replace: true });
+      // 1. Update global config if present (fast)
+      if (responseData.config) {
+        dispatch(fetchConfigSuccess(responseData.config));
       }
 
-      return res;
+      // 2. Dispatch success (updates Redux + localStorage)
+      dispatch(loginSuccess({ user, token: accessToken }));
+      
+      // 3. Immediate redirect to minimize perceived delay
+      const redirectPath = (() => {
+        switch (user.role) {
+          case "SUPER_ADMIN": return routes.SUPER_ADMIN;
+          case "ADMIN": return routes.ADMIN;
+          case "DELIVERY_PARTNER": return routes.DELIVERY_DASHBOARD;
+          case "B2B_CUSTOMER":
+          case "B2C_CUSTOMER": return routes.HOME;
+          default: return routes.PRODUCTS;
+        }
+      })();
+
+      navigate(redirectPath, { replace: true });
+      return responseData;
     } catch (err) {
-      const errorMsg = err.message || err.response?.data?.message || "Login failed";
+      const errorMsg = typeof err === 'string' ? err : (err.message || "Login failed");
       dispatch(loginFailure(errorMsg));
       throw err;
     }
