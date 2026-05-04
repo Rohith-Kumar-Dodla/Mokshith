@@ -1,10 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useLocation, Link, Outlet } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../modules/auth/hooks/useAuth.js';
+import { useNavigate, Link, useLocation, Outlet } from 'react-router-dom';
 import { routes } from '../../routes/routeConfig.js';
-import Button from '../ui/Button.jsx';
-import ConfirmDialog from '../feedback/ConfirmDialog.jsx';
-import Sidebar from '../common/Sidebar.jsx';
 import { 
   Truck, 
   LogOut, 
@@ -15,22 +12,28 @@ import {
   Bell,
   MapPin,
   Menu,
-  X
+  X,
+  Activity,
+  ShieldCheck,
+  Settings,
+  ChevronDown,
+  RefreshCcw
 } from 'lucide-react';
+import ConfirmDialog from '../feedback/ConfirmDialog.jsx';
 
-const DeliveryLayout = ({ title = "Delivery Portal" }) => {
+const DeliveryLayout = ({ title = "Logistics Command" }) => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
-    setShowLogoutConfirm(false);
-    setIsLoggingOut(false);
-    setIsSidebarOpen(false);
-  }, [location.pathname]);
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -43,138 +46,129 @@ const DeliveryLayout = ({ title = "Delivery Portal" }) => {
     }
   };
 
-  const menuItems = [
-    { icon: <LayoutDashboard size={20} />, label: "Logistics", path: routes.DELIVERY_DASHBOARD },
-    { icon: <Package size={20} />, label: "Shipments", path: routes.DELIVERY_SHIPMENTS },
-    { icon: <History size={20} />, label: "History", path: routes.DELIVERY_HISTORY },
+  const navItems = [
+    { icon: <LayoutDashboard size={18} />, label: "Command", path: routes.DELIVERY_DASHBOARD },
+    { icon: <Package size={18} />, label: "Manifests", path: routes.DELIVERY_SHIPMENTS },
+    { icon: <History size={18} />, label: "History", path: routes.DELIVERY_HISTORY },
   ];
 
   return (
-    <div className="flex min-h-screen bg-[#f8f9fa] overflow-x-hidden">
-      {/* ================= MOBILE OVERLAY ================= */}
-      {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden transition-all duration-300"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-
-      {/* ================= SIDEBAR ================= */}
-      <aside className={`
-        w-[280px] h-screen fixed left-0 top-0 z-50 bg-[#0B1120] text-white flex flex-col
-        transition-transform duration-300 lg:translate-x-0
-        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
-        <div className="p-8 flex items-center justify-between border-b border-white/5">
-          <div className="flex items-center gap-4">
-            <div className="bg-emerald-600 p-2.5 rounded-2xl shadow-lg shadow-emerald-500/20">
-              <Truck size={24} className="text-white" />
+    <div className="min-h-screen bg-[#0F172A] flex flex-col">
+      {/* High-End Sticky Top Navigation */}
+      <header className={`sticky top-0 z-[100] transition-all duration-500 h-20 ${
+        isScrolled ? 'bg-[#0F172A]/90 backdrop-blur-2xl border-b border-white/5 shadow-2xl' : 'bg-[#0F172A] border-b border-white/5'
+      }`}>
+        <div className="max-w-[1800px] h-full mx-auto px-4 md:px-12 flex items-center justify-between">
+          {/* Brand Area */}
+          <Link to={routes.DELIVERY_DASHBOARD} className="flex items-center gap-3 group shrink-0">
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20 group-hover:scale-110 transition-transform duration-500">
+              <Truck size={20} className="text-white" />
             </div>
-            <div>
-              <h1 className="font-black text-xl tracking-tight leading-none uppercase">Mokshith</h1>
-              <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mt-1.5">Delivery Portal</p>
-            </div>
-          </div>
-          <button 
-            onClick={() => setIsSidebarOpen(false)}
-            className="lg:hidden p-2 hover:bg-white/10 rounded-xl transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        <nav className="flex-1 py-6 px-3 space-y-3 overflow-y-auto custom-scrollbar mt-6">
-          {menuItems.map((item, index) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <Link 
-                key={index} 
-                to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group ${
-                  isActive 
-                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' 
-                    : 'text-slate-400 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                <div className={`${isActive ? 'text-white' : 'group-hover:text-emerald-400'} transition-colors`}>
-                  {React.cloneElement(item.icon, { size: 20 })}
-                </div>
-                <span className="text-sm font-medium tracking-wide">{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="p-4 border-t border-white/5">
-          <button 
-            onClick={() => setShowLogoutConfirm(true)}
-            className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-rose-500 hover:bg-rose-500/10 transition-all duration-300 group"
-          >
-            <LogOut size={20} className="group-hover:rotate-12 transition-transform" />
-            <span className="font-black uppercase tracking-widest text-xs">Sign Out</span>
-          </button>
-        </div>
-      </aside>
-
-      {/* ================= MAIN CONTENT WRAPPER ================= */}
-      <div className="flex-1 flex flex-col min-h-screen lg:ml-[280px]">
-        <header className="h-16 flex items-center px-4 md:px-10 bg-white/80 backdrop-blur-md border-b sticky top-0 z-30">
-          <div className="flex-1 flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={() => setIsSidebarOpen(true)}
-                className="lg:hidden p-2 hover:bg-gray-100 rounded-xl transition-colors"
-              >
-                <Menu size={24} className="text-gray-600" />
-              </button>
-              <h2 className="text-lg font-black text-gray-800 hidden sm:block">{title}</h2>
-            </div>
-            <h2 className="text-xl font-bold text-gray-900 tracking-tight">{title}</h2>
-            
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-4">
-                <button className="p-2 hover:bg-gray-50 rounded-lg transition-all text-slate-400">
-                  <Bell size={20} />
-                </button>
-                <div className="h-6 w-px bg-gray-100"></div>
-                <div className="flex items-center gap-3">
-                  <div className="text-right hidden sm:block">
-                    <p className="text-sm font-bold text-gray-900 leading-none">{user?.name}</p>
-                    <p className="text-[10px] font-bold text-emerald-600 uppercase mt-1">Delivery Agent</p>
-                  </div>
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-900 font-bold">
-                    {user?.name?.[0]?.toUpperCase() || 'D'}
-                  </div>
-                </div>
+            <div className="hidden xs:block">
+              <h1 className="text-lg font-black text-white tracking-tighter leading-none uppercase">Mokshith <span className="text-blue-500 text-[10px] ml-1 tracking-widest font-black uppercase">Logistics</span></h1>
+              <div className="flex items-center gap-1 mt-1">
+                <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></div>
+                <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Active</span>
               </div>
             </div>
+          </Link>
+
+          {/* Center Navigation - Desktop */}
+          <nav className="hidden lg:flex items-center gap-1 p-1 bg-white/5 rounded-xl border border-white/5 mx-4">
+            {navItems.map((item, index) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <Link 
+                  key={index} 
+                  to={item.path}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 font-black text-[10px] uppercase tracking-widest whitespace-nowrap ${
+                    isActive 
+                      ? 'bg-blue-600 text-white shadow-xl shadow-blue-600/20' 
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  {item.icon}
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* User Actions */}
+          <div className="flex items-center gap-3 md:gap-6 shrink-0">
+            <div className="hidden md:flex items-center gap-3 px-3 py-1.5 bg-white/5 rounded-xl border border-white/5">
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] font-black text-white uppercase tracking-widest truncate max-w-[100px]">{user?.name || 'Partner'}</span>
+                <span className="text-[8px] font-bold text-blue-400 uppercase tracking-widest">ID: {user?._id?.slice(-4).toUpperCase()}</span>
+              </div>
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white text-xs font-black shadow-lg">
+                {user?.name?.[0]?.toUpperCase()}
+              </div>
+            </div>
+
+            <button 
+              onClick={() => setShowLogoutConfirm(true)}
+              className="p-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-xl border border-rose-500/10 transition-all group"
+            >
+              <LogOut size={18} className="group-hover:rotate-12 transition-transform" />
+            </button>
           </div>
-        </header>
+        </div>
+      </header>
 
-        <main className="flex-1 p-6">
-          <Outlet />
-        </main>
-      </div>
+      {/* Main Content Area */}
+      <main className="flex-1 w-full overflow-x-hidden">
+        <Outlet />
+      </main>
 
-      <Sidebar 
-        isOpen={isProfileSidebarOpen} 
-        onClose={() => setIsProfileSidebarOpen(false)} 
-        user={user} 
-        onLogout={() => setShowLogoutConfirm(true)} 
-      />
-
+      {/* Logout Confirmation */}
       {showLogoutConfirm && (
-        <ConfirmDialog
-          isOpen={showLogoutConfirm}
-          onClose={() => !isLoggingOut && setShowLogoutConfirm(false)}
-          onConfirm={handleLogout}
-          loading={isLoggingOut}
-          title="Sign Out"
-          message="Are you sure you want to exit the delivery portal?"
-          confirmText="Sign Out"
-          variant="danger"
-        />
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md" onClick={() => setShowLogoutConfirm(false)}></div>
+          <div className="relative w-full max-w-md bg-[#1E293B] rounded-[3rem] border border-white/10 p-10 shadow-2xl text-center">
+            <div className="w-20 h-20 bg-rose-500/20 rounded-full flex items-center justify-center mx-auto mb-8 text-rose-500 border border-rose-500/20">
+              <LogOut size={32} />
+            </div>
+            <h3 className="text-2xl font-black text-white mb-4 tracking-tight">End Session?</h3>
+            <p className="text-slate-400 font-bold text-sm leading-relaxed mb-10 uppercase tracking-wide">
+              Confirming will synchronize your final telemetry and sign you out of the logistics network.
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <button 
+                onClick={() => setShowLogoutConfirm(false)}
+                className="h-14 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-black text-xs uppercase tracking-widest transition-all"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="h-14 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-rose-600/20 flex items-center justify-center gap-2"
+              >
+                {isLoggingOut ? <RefreshCcw size={16} className="animate-spin" /> : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
+
+      {/* Bottom Mobile Navigation */}
+      <nav className="lg:hidden fixed bottom-6 inset-x-6 h-16 bg-[#1E293B]/80 backdrop-blur-2xl border border-white/10 rounded-[2rem] z-[100] flex items-center justify-around px-6 shadow-2xl">
+        {navItems.map((item, index) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <Link 
+              key={index} 
+              to={item.path}
+              className={`p-3 rounded-xl transition-all ${
+                isActive ? 'text-blue-500 bg-blue-500/10' : 'text-slate-500'
+              }`}
+            >
+              {item.icon}
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 };

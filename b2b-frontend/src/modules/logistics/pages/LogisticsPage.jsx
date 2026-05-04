@@ -1,5 +1,7 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLogistics } from '../hooks/useLogistics.js';
+import { routes } from '../../../routes/routeConfig.js';
 import Card from '../../../components/ui/Card.jsx';
 import Button from '../../../components/ui/Button.jsx';
 import { 
@@ -11,7 +13,9 @@ import {
   Navigation, 
   Package,
   ArrowRight,
-  History
+  History,
+  AlertCircle,
+  CheckCircle2
 } from 'lucide-react';
 
 const StatusBadge = ({ status }) => {
@@ -31,6 +35,7 @@ const StatusBadge = ({ status }) => {
 };
 
 const LogisticsPage = () => {
+  const navigate = useNavigate();
   const { 
     deliveryQueue, 
     history, 
@@ -62,63 +67,78 @@ const LogisticsPage = () => {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="p-4 md:p-8 max-w-[1600px] mx-auto">
+      <div className="mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Logistics Dashboard</h1>
-          <p className="text-gray-500 mt-1">Manage your deliveries and track shipments</p>
+          <h1 className="text-3xl font-black text-white tracking-tight">Logistics <span className="text-blue-500">Dashboard</span></h1>
+          <p className="text-slate-400 font-medium mt-1">Real-time delivery management system</p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="secondary" className="flex items-center gap-2">
-            <History size={16} />
+        <div className="flex items-center gap-3">
+          <Button variant="secondary" onClick={() => navigate(routes.DELIVERY_HISTORY)} className="bg-white/5 border-white/10 text-white hover:bg-white/10 h-12 px-6 rounded-xl font-bold flex items-center gap-2">
+            <History size={18} />
             History
           </Button>
-          <Button className="flex items-center gap-2">
-            <Truck size={16} />
-            Available Tasks
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white h-12 px-6 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-blue-600/20">
+            <Truck size={18} />
+            Tasks
           </Button>
         </div>
       </div>
 
       {error && (
-        <Card className="mb-6 bg-red-50 border-red-200">
-          <p className="text-red-600">{error}</p>
-        </Card>
+        <div className="mb-8 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center gap-4 text-rose-400">
+          <AlertCircle size={20} />
+          <p className="font-bold text-sm">{error}</p>
+        </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Clock size={20} className="text-blue-600" />
-            Active Delivery Queue
-          </h2>
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+        {/* Main Column */}
+        <div className="xl:col-span-8 space-y-8">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-black text-white flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-600/20 rounded-xl flex items-center justify-center text-blue-500">
+                <Clock size={20} />
+              </div>
+              Active Delivery Queue
+            </h2>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Live Updates</span>
+            </div>
+          </div>
           
           <div className="space-y-4">
             {safeQueue.length === 0 ? (
-              <Card className="text-center py-12">
-                <Truck size={48} className="mx-auto text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No active deliveries</h3>
-                <p className="text-gray-500">Your delivery queue is currently empty.</p>
-              </Card>
+              <div className="bg-white/5 border border-white/10 border-dashed rounded-[2.5rem] py-20 px-10 text-center">
+                <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-600">
+                  <Truck size={40} />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2 tracking-tight">No active deliveries</h3>
+                <p className="text-slate-400 text-sm font-medium">Your delivery queue is currently empty.</p>
+              </div>
             ) : (
               safeQueue.map((delivery) => (
-                <Card key={delivery._id} className="hover:shadow-lg transition-shadow">
-                  <div className="flex flex-col md:flex-row gap-6">
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <Package size={18} className="text-gray-400" />
-                          <span className="font-bold text-gray-900">Order #{delivery.orderId?.slice(-6).toUpperCase()}</span>
+                <div key={delivery._id} className="bg-white/5 border border-white/10 rounded-[2rem] overflow-hidden hover:bg-white/[0.07] transition-all group">
+                  <div className="p-6 md:p-8 flex flex-col md:flex-row gap-8">
+                    <div className="flex-1 space-y-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="px-3 py-1 bg-white/10 rounded-lg text-[10px] font-black text-blue-400 uppercase tracking-widest border border-white/5">
+                            #{delivery.orderId?.slice(-6).toUpperCase()}
+                          </div>
+                          <StatusBadge status={delivery.status} />
                         </div>
-                        <StatusBadge status={delivery.status} />
                       </div>
                       
-                      <div className="space-y-3">
-                        <div className="flex items-start gap-3">
-                          <MapPin size={18} className="text-red-500 mt-1 shrink-0" />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="flex items-start gap-4">
+                          <div className="w-10 h-10 bg-rose-500/10 rounded-xl flex items-center justify-center text-rose-500 shrink-0">
+                            <MapPin size={18} />
+                          </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-900">Delivery Address</p>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Destination</p>
+                            <p className="text-sm font-bold text-slate-300 leading-relaxed">
                               {typeof delivery.shippingAddress === 'object' 
                                 ? `${delivery.shippingAddress.street || ''} ${delivery.shippingAddress.city || ''}, ${delivery.shippingAddress.state || ''}`.trim() || 'N/A'
                                 : delivery.shippingAddress || 'N/A'}
@@ -126,99 +146,121 @@ const LogisticsPage = () => {
                           </div>
                         </div>
                         
-                        <div className="flex items-center gap-3">
-                          <Phone size={18} className="text-green-500 shrink-0" />
-                          <p className="text-sm text-gray-600">{delivery.customerPhone || 'N/A'}</p>
+                        <div className="flex items-start gap-4">
+                          <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-500 shrink-0">
+                            <Phone size={18} />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Customer Phone</p>
+                            <p className="text-sm font-bold text-slate-300">{delivery.customerPhone || 'N/A'}</p>
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-2 justify-center border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:pt-0 md:pl-6 min-w-[200px]">
+                    <div className="flex flex-col gap-3 justify-center md:min-w-[200px]">
                       <Button 
                         variant="secondary" 
-                        className="w-full flex items-center justify-center gap-2"
+                        className="w-full h-12 bg-white/5 border-white/10 text-white hover:bg-white/10 rounded-xl font-bold flex items-center justify-center gap-2"
                         onClick={() => handleOpenMap(delivery.shippingAddress)}
                       >
-                        <Navigation size={16} />
-                        Open in Maps
+                        <Navigation size={18} />
+                        Navigation
                       </Button>
                       
                       {delivery.status === 'PENDING' && (
                         <Button 
-                          className="w-full"
+                          className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-600/20"
                           onClick={() => acceptDelivery(delivery._id)}
                         >
-                          Accept Delivery
+                          Accept
                         </Button>
                       )}
                       
                       {delivery.status === 'ACCEPTED' && (
                         <Button 
-                          className="w-full bg-blue-600 hover:bg-blue-700"
+                          className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-600/20"
                           onClick={() => startDelivery(delivery._id)}
                         >
-                          Start Delivery
+                          Start Trip
                         </Button>
                       )}
                       
                       {delivery.status === 'OUT_FOR_DELIVERY' && (
                         <Button 
-                          className="w-full bg-green-600 hover:bg-green-700"
+                          className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-600/20"
                           onClick={() => markDelivered(delivery._id)}
                         >
-                          Mark Delivered
+                          Complete
                         </Button>
                       )}
                     </div>
                   </div>
-                </Card>
+                </div>
               ))
             )}
           </div>
         </div>
 
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <CheckCircle size={20} className="text-green-600" />
+        {/* Sidebar Column */}
+        <div className="xl:col-span-4 space-y-8">
+          <h2 className="text-xl font-black text-white flex items-center gap-3">
+            <div className="w-10 h-10 bg-emerald-600/20 rounded-xl flex items-center justify-center text-emerald-500">
+              <CheckCircle size={20} />
+            </div>
             Recent History
           </h2>
-          <Card>
+          
+          <div className="bg-white/5 border border-white/10 rounded-[2rem] p-6 space-y-6">
             <div className="space-y-4">
               {(() => {
                 const safeHistory = Array.isArray(history) ? history : [];
                 if (safeHistory.length === 0) {
-                  return <p className="text-center text-gray-500 py-4">No recent history</p>;
+                  return (
+                    <div className="py-10 text-center">
+                      <p className="text-slate-500 font-bold text-sm uppercase tracking-widest">No history found</p>
+                    </div>
+                  );
                 }
                 return (
                   <>
                     {safeHistory.slice(0, 5).map((item) => (
-                      <div key={item._id} className="flex items-center gap-3 pb-4 border-b border-gray-100 last:border-0 last:pb-0">
-                        <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center shrink-0">
-                          <CheckCircle size={20} className="text-green-600" />
+                      <div key={item._id} className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all cursor-default">
+                        <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-500 shrink-0">
+                          <CheckCircle2 size={20} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">Order #{item.orderId?.slice(-6).toUpperCase()}</p>
-                          <p className="text-xs text-gray-500">{new Date(item.deliveredAt).toLocaleDateString()}</p>
+                          <p className="text-sm font-bold text-white truncate">Order #{item.orderId?.slice(-6).toUpperCase()}</p>
+                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-0.5">{new Date(item.deliveredAt).toLocaleDateString()}</p>
                         </div>
-                        <ArrowRight size={16} className="text-gray-300" />
+                        <ArrowRight size={16} className="text-slate-600" />
                       </div>
                     ))}
                     {safeHistory.length > 5 && (
-                      <Button variant="secondary" className="w-full text-sm">View All History</Button>
+                      <Button variant="secondary" className="w-full h-12 bg-white/5 border-white/10 text-white hover:bg-white/10 rounded-xl font-bold text-xs uppercase tracking-widest mt-2">
+                        View Full History
+                      </Button>
                     )}
                   </>
                 );
               })()}
             </div>
-          </Card>
+          </div>
 
-          <Card className="mt-6 bg-blue-600 text-white border-0">
-            <h3 className="font-bold text-lg mb-2">Need Help?</h3>
-            <p className="text-blue-100 text-sm mb-4">Contact dispatch if you encounter any issues during delivery.</p>
-            <Button className="w-full bg-white text-blue-600 hover:bg-blue-50 border-0">
-              Call Support
-            </Button>
-          </Card>
+          <div className="bg-blue-600 rounded-[2.5rem] p-8 relative overflow-hidden group">
+            <div className="absolute -right-4 -bottom-4 opacity-20 group-hover:scale-110 transition-transform duration-700">
+              <Phone size={120} />
+            </div>
+            <div className="relative z-10">
+              <h3 className="text-xl font-black text-white tracking-tight mb-2">Dispatcher Support</h3>
+              <p className="text-blue-100 text-sm font-bold opacity-80 mb-6 leading-relaxed">
+                Need assistance with a delivery? Our support team is active 24/7.
+              </p>
+              <Button className="w-full h-12 bg-white text-blue-600 hover:bg-blue-50 border-0 rounded-xl font-black text-xs uppercase tracking-widest shadow-xl">
+                Call Support
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -13,13 +13,13 @@ const SuperAdminLayout = () => {
   const location = useLocation();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [isProfileSidebarOpen, setIsProfileSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showDbShell, setShowDbShell] = useState(false);
 
   useEffect(() => {
     setShowLogoutConfirm(false);
     setIsLoggingOut(false);
-    setIsProfileSidebarOpen(false);
+    setIsSidebarOpen(false);
   }, [location.pathname]);
 
   const handleLogout = async () => {
@@ -71,9 +71,12 @@ const SuperAdminLayout = () => {
                   <span className="text-sm font-bold text-gray-900 truncate max-w-[100px]">{user?.name}</span>
                   <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest">Root</span>
                 </div>
-                <div className="w-10 h-10 bg-rose-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-rose-500/20 flex-shrink-0">
+                <button 
+                  onClick={() => setIsSidebarOpen(true)}
+                  className="w-10 h-10 bg-rose-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-rose-500/20 flex-shrink-0 transition-all hover:scale-105 active:scale-95"
+                >
                   {user?.name?.[0]}
-                </div>
+                </button>
               </div>
             </div>
           </div>
@@ -84,6 +87,13 @@ const SuperAdminLayout = () => {
           <Outlet context={{ showDbShell, setShowDbShell }} />
         </main>
       </div>
+
+      <Sidebar 
+        isOpen={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)} 
+        user={user} 
+        onLogout={() => setShowLogoutConfirm(true)} 
+      />
 
       {/* Logout Confirmation */}
       {showLogoutConfirm && (
