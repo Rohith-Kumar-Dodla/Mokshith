@@ -14,6 +14,7 @@ router.use(protect, authorize('SUPER_ADMIN'));
 router.get('/users', controller.getUsers);
 router.get('/admins', controller.getAdmins);
 router.post('/admins', controller.createAdmin);
+router.patch('/admins/:id', controller.updateAdmin);
 router.delete('/admins/:id', controller.deleteAdmin);
 
 // 🔄 Change role
@@ -35,6 +36,7 @@ router.post('/config', controller.updateConfig);
 // 🛍️ Catalog
 router.get('/categories', controller.getCategories);
 router.post('/categories', controller.createCategory);
+router.patch('/categories/:id', controller.updateCategory);
 router.delete('/categories/:id', controller.deleteCategory);
 
 export default router;

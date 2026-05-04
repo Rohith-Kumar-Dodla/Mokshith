@@ -198,12 +198,9 @@ const AdminProductsPage = () => {
     return matchesSearch && matchesCategory;
   });
 
-  if (loading && products.length === 0) return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-gray-500 font-medium">Loading products...</p>
-      </div>
+  if (loading) return (
+    <div className="flex items-center justify-center py-20">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
     </div>
   );
 
@@ -218,8 +215,8 @@ const AdminProductsPage = () => {
   ];
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black text-gray-900 tracking-tight">Product Inventory</h1>
           <p className="text-gray-500 mt-1 font-medium">Monitor stock levels and manage your product catalog</p>

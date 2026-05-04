@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 const Modal = ({ 
-  isOpen = false, 
+  isOpen = true, // Default to true since usually conditionally rendered by parent
   title, 
   children, 
   onClose, 
@@ -55,17 +55,14 @@ const Modal = ({
     }
   };
 
-  const modalRoot = document.getElementById('root');
-  if (!modalRoot) return null;
-
   return createPortal(
     <div 
-      className={`fixed inset-0 z-[20000] flex items-center justify-center p-6 transition-all duration-500 ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
+      className={`fixed inset-0 z-[9999] flex items-center justify-center p-6 transition-all duration-300 ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
       style={{ isolation: 'isolate' }}
     >
       {/* Backdrop */}
       <div 
-        className={`absolute inset-0 bg-[#0B0F1A]/80 backdrop-blur-md transition-opacity duration-500 ${isOpen ? 'opacity-100' : 'opacity-0'}`}
+        className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}
         onClick={(e) => {
           if (closeOnOverlayClick) handleClose(e);
         }}
@@ -73,7 +70,7 @@ const Modal = ({
 
       {/* Modal Container */}
       <div 
-        className={`relative bg-white rounded-2xl shadow-xl w-full ${sizeClasses[size] || sizeClasses.md} overflow-hidden transition-all duration-300 transform ${isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'}`}
+        className={`relative bg-white rounded-2xl shadow-2xl w-full ${sizeClasses[size] || sizeClasses.md} overflow-hidden transition-all duration-300 transform ${isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 translate-y-4'}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

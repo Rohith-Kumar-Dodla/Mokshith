@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link, Outlet } from 'react-router-dom';
 import { useAuth } from '../../modules/auth/hooks/useAuth.js';
 import { routes } from '../../routes/routeConfig.js';
 import Button from '../ui/Button.jsx';
@@ -16,7 +16,7 @@ import {
   MapPin
 } from 'lucide-react';
 
-const DeliveryLayout = ({ children, title = "Delivery Portal" }) => {
+const DeliveryLayout = ({ title = "Delivery Portal" }) => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -34,6 +34,7 @@ const DeliveryLayout = ({ children, title = "Delivery Portal" }) => {
     setIsLoggingOut(true);
     try {
       await logout();
+      navigate(routes.LOGIN, { replace: true });
     } catch (error) {
       console.error("Logout error:", error);
       setIsLoggingOut(false);
@@ -47,20 +48,20 @@ const DeliveryLayout = ({ children, title = "Delivery Portal" }) => {
   ];
 
   return (
-    <div className="delivery-layout min-h-screen bg-gray-50/50">
-      {/* Sidebar - Mobile friendly approach can be added later, for now consistent with Admin */}
-      <aside className="fixed left-0 top-0 h-full w-72 bg-slate-900 text-white flex flex-col z-40">
+    <div className="flex min-h-screen bg-[#f8f9fa]">
+      {/* ================= SIDEBAR ================= */}
+      <aside className="w-[280px] h-screen fixed left-0 top-0 z-40 bg-[#0B1120] text-white flex flex-col">
         <div className="p-8 flex items-center gap-4 border-b border-white/5">
           <div className="bg-emerald-600 p-2.5 rounded-2xl shadow-lg shadow-emerald-500/20">
             <Truck size={24} className="text-white" />
           </div>
           <div>
-            <h1 className="font-black text-xl tracking-tight leading-none">Logistics</h1>
+            <h1 className="font-black text-xl tracking-tight leading-none uppercase">Mokshith</h1>
             <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mt-1.5">Delivery Portal</p>
           </div>
         </div>
 
-        <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto custom-scrollbar">
+        <nav className="flex-1 py-6 px-3 space-y-3 overflow-y-auto custom-scrollbar mt-6">
           {menuItems.map((item, index) => {
             const isActive = location.pathname === item.path;
             return (
@@ -70,13 +71,13 @@ const DeliveryLayout = ({ children, title = "Delivery Portal" }) => {
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group ${
                   isActive 
                     ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' 
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    : 'text-slate-400 hover:text-white hover:bg-white/10'
                 }`}
               >
                 <div className={`${isActive ? 'text-white' : 'group-hover:text-emerald-400'} transition-colors`}>
-                  {item.icon}
+                  {React.cloneElement(item.icon, { size: 20 })}
                 </div>
-                <span className="font-bold tracking-wide text-sm">{item.label}</span>
+                <span className="text-sm font-medium tracking-wide">{item.label}</span>
               </Link>
             );
           })}
@@ -85,43 +86,42 @@ const DeliveryLayout = ({ children, title = "Delivery Portal" }) => {
         <div className="p-4 border-t border-white/5">
           <button 
             onClick={() => setShowLogoutConfirm(true)}
-            className="flex items-center gap-3 w-full px-4 py-3 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all duration-300 group"
+            className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-rose-500 hover:bg-rose-500/10 transition-all duration-300 group"
           >
             <LogOut size={20} className="group-hover:rotate-12 transition-transform" />
-            <span className="font-black uppercase tracking-widest text-xs">Logout</span>
+            <span className="font-black uppercase tracking-widest text-xs">Sign Out</span>
           </button>
         </div>
       </aside>
 
-      <div className="ml-72 flex flex-col min-h-screen">
-        <header className="h-[90px] bg-white/80 backdrop-blur-xl border-b border-gray-100 flex items-center justify-between px-10 sticky top-0 z-30">
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">{title}</h2>
-          
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-3">
-              <button className="p-3 hover:bg-gray-100 rounded-2xl transition-all text-slate-400 hover:text-slate-900 relative">
-                <Bell size={20} />
-                <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-emerald-500 rounded-full border-2 border-white"></span>
-              </button>
-              <div className="h-6 w-px bg-gray-100 mx-2"></div>
+      {/* ================= MAIN CONTENT WRAPPER ================= */}
+      <div className="ml-[280px] flex-1 flex flex-col min-h-screen">
+        <header className="h-16 flex items-center px-10 bg-white border-b sticky top-0 z-30">
+          <div className="flex-1 flex justify-between items-center">
+            <h2 className="text-xl font-bold text-gray-900 tracking-tight">{title}</h2>
+            
+            <div className="flex items-center gap-6">
               <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <p className="text-sm font-black text-slate-900 leading-none">{user?.name}</p>
-                  <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mt-1">Delivery Agent</p>
-                </div>
-                <button 
-                  onClick={() => setIsProfileSidebarOpen(true)}
-                  className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-900 font-black text-lg shadow-inner hover:bg-slate-200 transition-all active:scale-95 border-2 border-white"
-                >
-                  {user?.name?.[0] || 'D'}
+                <button className="p-2 hover:bg-gray-50 rounded-lg transition-all text-slate-400">
+                  <Bell size={20} />
                 </button>
+                <div className="h-6 w-px bg-gray-100"></div>
+                <div className="flex items-center gap-3">
+                  <div className="text-right hidden sm:block">
+                    <p className="text-sm font-bold text-gray-900 leading-none">{user?.name}</p>
+                    <p className="text-[10px] font-bold text-emerald-600 uppercase mt-1">Delivery Agent</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-900 font-bold">
+                    {user?.name?.[0]?.toUpperCase() || 'D'}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </header>
 
-        <main className="p-6 flex-1">
-          {children}
+        <main className="flex-1 p-6">
+          <Outlet />
         </main>
       </div>
 

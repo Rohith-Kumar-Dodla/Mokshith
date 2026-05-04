@@ -78,25 +78,15 @@ const AdminOrdersPage = () => {
     }
   };
 
-  if (loading && orders.length === 0) {
-    return (
-      <div className="p-8 bg-gray-50/50 min-h-screen space-y-8">
-        <div className="animate-pulse">
-          <div className="h-10 w-64 bg-gray-200 rounded-2xl mb-4"></div>
-          <div className="h-6 w-96 bg-gray-200 rounded-xl"></div>
-        </div>
-        <div className="space-y-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-48 bg-white rounded-[2rem] shadow-sm animate-pulse"></div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="flex items-center justify-center py-20">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+  );
 
   return (
-    <div className="p-8 bg-gray-50/50 min-h-screen">
-      <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-4xl font-black text-gray-900 tracking-tight flex items-center gap-3">
             <ClipboardList size={40} className="text-blue-600" />
@@ -242,7 +232,7 @@ const AdminOrdersPage = () => {
             </Card>
           ))
         ) : (
-          <div className="max-w-2xl mx-auto mt-20">
+          <div className="mt-20">
             <Card className="text-center py-24 border-2 border-dashed border-gray-200 bg-white/50 rounded-[3rem]">
               <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
                 <ClipboardList size={64} className="text-gray-300" />

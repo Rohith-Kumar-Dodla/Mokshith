@@ -4,24 +4,57 @@ import Button from "../../../components/ui/Button";
 import Modal from "../../../components/ui/Modal";
 import Input from "../../../components/ui/Input";
 
-const AdminManagement = ({ admins, onCreateAdmin, onDeleteAdmin }) => {
+const AdminManagement = ({ admins, onCreateAdmin, onDeleteAdmin, onUpdateAdmin }) => {
   const [showModal, setShowModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [selectedAdminId, setSelectedAdminId] = useState(null);
   const [form, setForm] = useState({ name: '', email: '', password: '', mobile: '' });
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const handleOpenCreate = () => {
+    setIsEditing(false);
+    setSelectedAdminId(null);
+    setForm({ name: '', email: '', password: '', mobile: '' });
+    setShowModal(true);
+  };
+
+  const handleOpenEdit = (admin) => {
+    setIsEditing(true);
+    setSelectedAdminId(admin.id || admin._id);
+    setForm({ 
+      name: admin.name, 
+      email: admin.email, 
+      password: '', // Usually don't pre-fill password
+      mobile: admin.mobile || '' 
+    });
+    setShowModal(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const success = await onCreateAdmin(form);
-      if (success) {
-        setShowModal(false);
-        setForm({ name: '', email: '', password: '', mobile: '' });
-        alert("Admin created successfully!");
+      if (isEditing) {
+        // Remove empty password if not changing
+        const payload = { ...form };
+        if (!payload.password) delete payload.password;
+        
+        const success = await onUpdateAdmin(selectedAdminId, payload);
+        if (success) {
+          setShowModal(false);
+          alert("Admin updated successfully!");
+        }
       } else {
-        alert("Failed to create admin. Please check the details.");
+        const success = await onCreateAdmin(form);
+        if (success) {
+          setShowModal(false);
+          setForm({ name: '', email: '', password: '', mobile: '' });
+          alert("Admin created successfully!");
+        } else {
+          alert("Failed to create admin. Please check the details.");
+        }
       }
     } catch (error) {
       alert(error.message);
@@ -32,7 +65,7 @@ const AdminManagement = ({ admins, onCreateAdmin, onDeleteAdmin }) => {
     <Card style={{ marginBottom: '2.5rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <h3 style={{ fontSize: '1.25rem', fontWeight: '700' }}>Admin Management</h3>
-        <Button size="small" onClick={() => setShowModal(true)}>Create Admin</Button>
+        <Button size="small" onClick={handleOpenCreate}>Create Admin</Button>
       </div>
 
       <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -63,7 +96,7 @@ const AdminManagement = ({ admins, onCreateAdmin, onDeleteAdmin }) => {
                   </span>
                 </td>
                 <td style={{ padding: '0.75rem', textAlign: 'right' }}>
-                  <Button size="small" variant="secondary" style={{ marginRight: '0.5rem' }}>Edit</Button>
+                  <Button size="small" variant="secondary" style={{ marginRight: '0.5rem' }} onClick={() => handleOpenEdit(admin)}>Edit</Button>
                   <Button 
                     size="small" 
                     variant="secondary" 
@@ -99,15 +132,22 @@ const AdminManagement = ({ admins, onCreateAdmin, onDeleteAdmin }) => {
       </table>
 
       {showModal && (
-        <Modal title="Create New Admin" onClose={() => setShowModal(false)}>
+        <Modal title={isEditing ? "Edit Admin" : "Create New Admin"} onClose={() => setShowModal(false)}>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <Input label="Full Name" name="name" value={form.name} onChange={handleChange} required />
             <Input label="Email Address" name="email" type="email" value={form.email} onChange={handleChange} required />
             <Input label="Mobile Number" name="mobile" value={form.mobile} onChange={handleChange} required />
-            <Input label="Password" name="password" type="password" value={form.password} onChange={handleChange} required />
+            <Input 
+              label={isEditing ? "New Password (leave blank to keep current)" : "Password"} 
+              name="password" 
+              type="password" 
+              value={form.password} 
+              onChange={handleChange} 
+              required={!isEditing} 
+            />
             <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
               <Button type="button" variant="secondary" onClick={() => setShowModal(false)} style={{ flex: 1 }}>Cancel</Button>
-              <Button type="submit" style={{ flex: 1 }}>Create Admin</Button>
+              <Button type="submit" style={{ flex: 1 }}>{isEditing ? "Update Admin" : "Create Admin"}</Button>
             </div>
           </form>
         </Modal>

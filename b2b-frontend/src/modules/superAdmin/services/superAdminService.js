@@ -41,6 +41,14 @@ export const superAdminService = {
     }
   },
 
+  async updateAdmin(id, payload) {
+    try {
+      return await apiClient.patch(`/superadmin/admins/${id}`, payload);
+    } catch (error) {
+      throw new Error(error);
+    }
+  },
+
   async getCategories() {
     try {
       return await apiClient.get("/superadmin/categories");
@@ -60,6 +68,14 @@ export const superAdminService = {
   async deleteCategory(id) {
     try {
       return await apiClient.delete(`/superadmin/categories/${id}`);
+    } catch (error) {
+      throw new Error(error);
+    }
+  },
+
+  async updateCategory(id, payload) {
+    try {
+      return await apiClient.patch(`/superadmin/categories/${id}`, payload);
     } catch (error) {
       throw new Error(error);
     }

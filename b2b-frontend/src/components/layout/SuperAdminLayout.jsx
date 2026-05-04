@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link, Outlet } from 'react-router-dom';
 import { useAuth } from '../../modules/auth/hooks/useAuth.js';
 import { routes } from '../../routes/routeConfig.js';
 import Button from '../ui/Button.jsx';
@@ -7,13 +7,14 @@ import ConfirmDialog from '../feedback/ConfirmDialog.jsx';
 import { ShieldCheck, LogOut } from 'lucide-react';
 import Sidebar from '../common/Sidebar.jsx';
 
-const SuperAdminLayout = ({ children, onDbShellOpen }) => {
+const SuperAdminLayout = () => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isProfileSidebarOpen, setIsProfileSidebarOpen] = useState(false);
+  const [showDbShell, setShowDbShell] = useState(false);
 
   useEffect(() => {
     setShowLogoutConfirm(false);
@@ -25,6 +26,7 @@ const SuperAdminLayout = ({ children, onDbShellOpen }) => {
     setIsLoggingOut(true);
     try {
       await logout();
+      navigate(routes.LOGIN, { replace: true });
     } catch (error) {
       console.error("Logout error:", error);
       setIsLoggingOut(false);
@@ -32,122 +34,66 @@ const SuperAdminLayout = ({ children, onDbShellOpen }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
-      {/* ================= SIDEBAR ================= */}
-      <aside className="fixed left-0 top-0 h-full w-72 bg-slate-900 text-white flex flex-col z-40">
-        {/* Logo Section */}
-        <div className="p-8 flex items-center gap-4 border-b border-white/5">
-          <div className="bg-rose-600 p-2.5 rounded-2xl shadow-lg shadow-rose-500/20">
-            <ShieldCheck size={24} className="text-white" />
-          </div>
-          <div>
-            <h1 className="font-black text-xl tracking-tight leading-none uppercase">Mokshith</h1>
-            <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest mt-1.5">Root Control</p>
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto custom-scrollbar">
-          <Link
-            to={routes.ADMIN}
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group ${
-              location.pathname === routes.ADMIN 
-                ? 'bg-rose-600 text-white shadow-lg shadow-rose-900/20' 
-                : 'text-slate-400 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <ShieldCheck size={18} />
-            <span className="font-bold tracking-wide text-sm">System Dashboard</span>
-          </Link>
-          {/* Add more SuperAdmin specific links here if needed */}
-        </nav>
-
-        {/* Logout Button */}
-        <div className="p-4 border-t border-white/5">
-          <button
-            onClick={() => setShowLogoutConfirm(true)}
-            className="flex items-center gap-3 w-full px-4 py-3 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all duration-300 group"
-          >
-            <LogOut size={20} className="group-hover:rotate-12 transition-transform" />
-            <span className="font-black uppercase tracking-widest text-xs">Terminate Session</span>
-          </button>
-        </div>
-      </aside>
-
-      {/* ================= MAIN CONTENT ================= */}
-      <div className="ml-72 flex flex-col min-h-screen">
+    <div className="flex min-h-screen bg-[#f8f9fa]">
+      {/* ================= MAIN CONTENT WRAPPER ================= */}
+      <div className="flex-1 flex flex-col min-h-screen">
         {/* Header */}
-        <header className="h-[90px] bg-white/80 backdrop-blur-xl border-b border-gray-100 flex items-center justify-between px-10 sticky top-0 z-30">
-          <div className="flex items-center gap-4">
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Root Control</h2>
-            <span className="px-3 py-1 bg-rose-500/10 text-rose-500 text-[10px] font-black rounded-lg border border-rose-500/20 uppercase tracking-widest">
-              Omega Access
-            </span>
-          </div>
+        <header className="h-16 flex items-center px-10 bg-white border-b sticky top-0 z-40 shadow-sm">
+          <div className="flex-1 flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <span className="w-2 h-8 bg-rose-600 rounded-full"></span>
+              <h2 className="text-xl font-bold text-gray-900 tracking-tight">Root Control</h2>
+              <span className="px-3 py-1 bg-rose-500/10 text-rose-500 text-[10px] font-bold rounded-lg border border-rose-500/20 uppercase tracking-widest ml-2">
+                Omega Access
+              </span>
+            </div>
 
-          <div className="flex items-center gap-6">
-            {onDbShellOpen && (
+            <div className="flex items-center gap-6">
               <button 
-                onClick={onDbShellOpen}
-                className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border border-slate-200 hover:bg-slate-50 transition-all active:scale-95 text-slate-600"
+                onClick={() => setShowDbShell(true)}
+                className="px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border border-slate-200 hover:bg-slate-50 transition-all active:scale-95 text-slate-600 shadow-sm"
               >
                 Database Shell
               </button>
-            )}
 
-            <div className="h-6 w-px bg-gray-100 mx-2"></div>
-
-            {/* User Section */}
-            <div className="flex items-center gap-4">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-black text-slate-900 leading-none">{user?.name}</p>
-                <p className="text-[10px] font-bold text-rose-600 uppercase tracking-widest mt-1.5">
-                  System Administrator
-                </p>
-              </div>
-
-              <button 
-                onClick={() => setIsProfileSidebarOpen(true)}
-                className="w-12 h-12 rounded-2xl bg-rose-600 flex items-center justify-center text-white font-black shadow-lg shadow-rose-900/20 border-2 border-white overflow-hidden transition-all hover:scale-105 active:scale-95"
+              <button
+                onClick={() => setShowLogoutConfirm(true)}
+                className="flex items-center gap-2 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] text-rose-600 border border-rose-200 hover:bg-rose-50 transition-all active:scale-95 shadow-sm"
               >
-                {user?.name?.[0]?.toUpperCase() || 'S'}
+                <LogOut size={14} />
+                Logout
               </button>
+
+              <div className="h-8 w-px bg-gray-100"></div>
+
+              <div className="flex items-center gap-4">
+                <div className="flex flex-col items-end">
+                  <span className="text-sm font-bold text-gray-900">{user?.name}</span>
+                  <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest">Root</span>
+                </div>
+                <div className="w-10 h-10 bg-rose-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-rose-500/20">
+                  {user?.name?.[0]}
+                </div>
+              </div>
             </div>
           </div>
         </header>
 
-        {/* Main Content Area */}
-        <main className="p-6 flex-1">
-          <div className="relative">
-            {/* Subtle background glow */}
-            <div className="absolute -top-20 -left-20 w-96 h-96 bg-rose-600/5 rounded-full blur-[100px] pointer-events-none" />
-            <div className="absolute -bottom-20 -right-20 w-96 h-96 bg-blue-600/5 rounded-full blur-[100px] pointer-events-none" />
-            
-            <div className="relative z-10">
-              {children}
-            </div>
-          </div>
+        {/* Content Area */}
+        <main className="flex-1 p-10 max-w-[1600px] mx-auto w-full">
+          <Outlet context={{ showDbShell, setShowDbShell }} />
         </main>
       </div>
 
-      {/* ================= PROFILE SIDEBAR ================= */}
-      <Sidebar 
-        isOpen={isProfileSidebarOpen} 
-        onClose={() => setIsProfileSidebarOpen(false)} 
-        user={user} 
-        onLogout={() => setShowLogoutConfirm(true)} 
-      />
-
-      {/* ================= LOGOUT MODAL ================= */}
+      {/* Logout Confirmation */}
       {showLogoutConfirm && (
         <ConfirmDialog
           isOpen={showLogoutConfirm}
-          onClose={() => !isLoggingOut && setShowLogoutConfirm(false)}
+          title="Terminate Session"
+          message="Are you sure you want to log out of the root control console?"
+          confirmText={isLoggingOut ? "Processing..." : "Logout"}
           onConfirm={handleLogout}
-          loading={isLoggingOut}
-          title="Logout"
-          message="Are you sure you want to terminate the root session?"
-          confirmText="Terminate"
+          onClose={() => setShowLogoutConfirm(false)}
           variant="danger"
         />
       )}

@@ -36,7 +36,7 @@ const AdminPage = () => {
   ];
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="flex items-center justify-center py-20">
       <div className="flex flex-col items-center gap-6">
         <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-xl shadow-blue-200"></div>
         <p className="font-black text-gray-900 uppercase tracking-widest text-xs">Initializing Admin Console</p>
@@ -45,8 +45,8 @@ const AdminPage = () => {
   );
 
   return (
-    <div className="p-8 bg-[#f8f9fa] min-h-screen">
-      <header className="mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+    <div className="space-y-6">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
             Dashboard Overview
@@ -56,10 +56,10 @@ const AdminPage = () => {
           </p>
         </div>
         <div className="flex gap-3">
-          <button className="p-3 bg-white border border-gray-200 rounded-xl text-gray-400 hover:text-blue-600 transition-all">
+          <button className="p-3 bg-white border border-gray-200 rounded-xl text-gray-400 hover:text-blue-600 transition-all shadow-sm">
             <Bell size={20} />
           </button>
-          <Button onClick={() => navigate(routes.ADMIN_PRODUCTS)} className="h-12 px-6 rounded-xl flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold">
+          <Button onClick={() => navigate(routes.ADMIN_PRODUCTS)} className="h-12 px-6 rounded-xl flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-lg shadow-blue-500/20">
             <Plus size={20} />
             Add Product
           </Button>
@@ -69,7 +69,7 @@ const AdminPage = () => {
       {/* Stats Section */}
       <AdminStats stats={stats} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-10">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Quick Actions - 7 cols */}
         <div className="lg:col-span-7">
           <div className="flex items-center justify-between mb-6">

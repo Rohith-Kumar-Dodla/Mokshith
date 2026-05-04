@@ -13,7 +13,7 @@ const router = express.Router();
 const hybridPaymentSchema = Joi.object({
   body: Joi.object({
     orderId: Joi.string().required(),
-    totalAmount: Joi.number().required(),
+    totalAmount: Joi.number().optional(),
     useCredit: Joi.boolean().optional(),
   }),
 }).unknown(true);
@@ -45,7 +45,7 @@ router.post('/webhook', paymentLimiter, controller.razorpayWebhook);
 // 5. /fail
 router.post('/fail', paymentLimiter, protect, controller.failPayment);
 
-// 6. /:orderId (MUST BE LAST)
-router.post('/:orderId', paymentLimiter, protect, controller.initiatePayment);
+// 6. /initiate/:orderId (CHANGED FROM /:orderId TO AVOID CONFLICTS)
+router.post('/initiate/:orderId', paymentLimiter, protect, controller.initiatePayment);
 
 export default router;

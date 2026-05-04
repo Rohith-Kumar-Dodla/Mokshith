@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import { useSuperAdmin } from "../hooks/useSuperAdmin";
 import { useAuth } from "../../auth/hooks/useAuth";
 import AuditTable from "../components/AuditTable";
@@ -9,8 +10,7 @@ import CategoryControl from "../components/CategoryControl";
 import FeatureAndSecurityPanel from "../components/FeatureAndSecurityPanel";
 import DbShell from "../components/DbShell";
 import Button from "../../../components/ui/Button";
-import SuperAdminLayout from "../../../components/layout/SuperAdminLayout";
-import { LogOut, LayoutDashboard, Database, Activity, ShieldAlert } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 
 const SuperAdminPage = () => {
   const { 
@@ -24,12 +24,14 @@ const SuperAdminPage = () => {
     updateConfig, 
     createAdmin,
     deleteAdmin,
+    updateAdmin,
     createCategory,
     deleteCategory,
+    updateCategory,
     fetchDbCollection 
   } = useSuperAdmin();
   const { logout } = useAuth();
-  const [showDbShell, setShowDbShell] = useState(false);
+  const { showDbShell, setShowDbShell } = useOutletContext();
 
   const handleExportLogs = () => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(auditLogs));
@@ -43,8 +45,11 @@ const SuperAdminPage = () => {
   };
 
   if (loading) return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-      <p style={{ fontSize: '1.25rem', color: 'var(--text-muted)' }}>Loading root console...</p>
+    <div className="flex items-center justify-center py-20">
+      <div className="flex flex-col items-center gap-6">
+        <div className="w-16 h-16 border-4 border-rose-600 border-t-transparent rounded-full animate-spin shadow-xl shadow-rose-200"></div>
+        <p className="font-black text-gray-900 uppercase tracking-widest text-xs">Initializing Root Console</p>
+      </div>
     </div>
   );
 
@@ -56,52 +61,28 @@ const SuperAdminPage = () => {
   );
 
   return (
-    <SuperAdminLayout onDbShellOpen={() => setShowDbShell(true)}>
-      <main style={{ padding: '2.5rem', maxWidth: '1400px', margin: '0 auto' }}>
-        <div style={{ 
-          marginBottom: '2.5rem', 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          backgroundColor: 'white',
-          padding: '2rem',
-          borderRadius: 'var(--radius-lg)',
-          boxShadow: 'var(--shadow-sm)',
-          border: '1px solid var(--border)'
-        }}>
-          <div>
-            <h2 style={{ fontSize: '1.875rem', fontWeight: '700', marginBottom: '0.5rem' }}>Global Management</h2>
-            <p style={{ color: 'var(--text-muted)' }}>Enterprise control center for Mokshith B2B platform</p>
-          </div>
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <Button 
-              variant="secondary" 
-              onClick={logout}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--error)', borderColor: 'var(--error)' }}
-            >
-              <LogOut size={18} />
-              Logout from System
-            </Button>
-          </div>
-        </div>
+    <div className="space-y-8">
+      <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+        <h2 className="text-2xl font-bold text-gray-900">Global Management</h2>
+        <p className="text-gray-500 mt-1">Enterprise control center for Mokshith B2B platform</p>
+      </div>
 
-        <MetricsCards metrics={metrics} />
+      <MetricsCards metrics={metrics} />
 
-        <SystemConfigForm config={config} onSave={updateConfig} />
+      <SystemConfigForm config={config} onSave={updateConfig} />
 
-        <FeatureAndSecurityPanel config={config} onSave={updateConfig} />
+      <FeatureAndSecurityPanel config={config} onSave={updateConfig} />
 
-        <AdminManagement admins={admins} onCreateAdmin={createAdmin} onDeleteAdmin={deleteAdmin} />
+      <AdminManagement admins={admins} onCreateAdmin={createAdmin} onDeleteAdmin={deleteAdmin} onUpdateAdmin={updateAdmin} />
 
-        <CategoryControl categories={categories} onCreateCategory={createCategory} onDeleteCategory={deleteCategory} />
+      <CategoryControl categories={categories} onCreateCategory={createCategory} onDeleteCategory={deleteCategory} onUpdateCategory={updateCategory} />
 
-        <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: '700' }}>System Audit Trail</h3>
-          <Button variant="secondary" size="small" onClick={handleExportLogs}>Export Logs</Button>
-        </div>
-        
-        <AuditTable logs={auditLogs} />
-      </main>
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-bold text-gray-900">System Audit Trail</h3>
+        <Button variant="secondary" size="small" onClick={handleExportLogs}>Export Logs</Button>
+      </div>
+      
+      <AuditTable logs={auditLogs} />
 
       {showDbShell && (
         <DbShell 
@@ -109,7 +90,7 @@ const SuperAdminPage = () => {
           onClose={() => setShowDbShell(false)} 
         />
       )}
-    </SuperAdminLayout>
+    </div>
   );
 };
 

@@ -51,22 +51,23 @@ const AdminUsersPage = () => {
   };
 
   if (loading) return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-      <p style={{ fontSize: '1.25rem', color: 'var(--text-muted)' }}>Loading users...</p>
+    <div className="flex items-center justify-center py-20">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
     </div>
   );
 
   return (
-    <div style={{ padding: '1rem' }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
         <div style={{ marginBottom: '2.5rem' }}>
           <h2 style={{ fontSize: '1.875rem', fontWeight: '700', marginBottom: '0.5rem' }}>User Management</h2>
           <p style={{ color: 'var(--text-muted)' }}>Manage platform users and credit limits</p>
         </div>
+      </div>
 
-        <Card>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+      <Card>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
                   <th style={{ padding: '1rem', fontSize: '0.875rem' }}>USER</th>
@@ -143,8 +144,7 @@ const AdminUsersPage = () => {
           </Modal>
         )}
       </div>
-    </div>
-  );
+    );
 };
 
 export default AdminUsersPage;

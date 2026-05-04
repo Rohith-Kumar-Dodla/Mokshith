@@ -4,12 +4,32 @@ import Button from "../../../components/ui/Button";
 import Modal from "../../../components/ui/Modal";
 import Input from "../../../components/ui/Input";
 
-const CategoryControl = ({ categories, onCreateCategory, onDeleteCategory }) => {
+const CategoryControl = ({ categories, onCreateCategory, onDeleteCategory, onUpdateCategory }) => {
   const [showModal, setShowModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const [form, setForm] = useState({ name: '', description: '', subcategories: '' });
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleOpenCreate = () => {
+    setIsEditing(false);
+    setSelectedCategoryId(null);
+    setForm({ name: '', description: '', subcategories: '' });
+    setShowModal(true);
+  };
+
+  const handleOpenEdit = (category) => {
+    setIsEditing(true);
+    setSelectedCategoryId(category.id || category._id);
+    setForm({ 
+      name: category.name, 
+      description: category.description || '', 
+      subcategories: Array.isArray(category.subcategories) ? category.subcategories.join(', ') : '' 
+    });
+    setShowModal(true);
   };
 
   const handleSubmit = async (e) => {
@@ -19,11 +39,19 @@ const CategoryControl = ({ categories, onCreateCategory, onDeleteCategory }) => 
       subcategories: form.subcategories.split(',').map(s => s.trim()).filter(s => s !== '')
     };
     try {
-      const success = await onCreateCategory(payload);
-      if (success) {
-        setShowModal(false);
-        setForm({ name: '', description: '', subcategories: '' });
-        alert("Category created successfully!");
+      if (isEditing) {
+        const success = await onUpdateCategory(selectedCategoryId, payload);
+        if (success) {
+          setShowModal(false);
+          alert("Category updated successfully!");
+        }
+      } else {
+        const success = await onCreateCategory(payload);
+        if (success) {
+          setShowModal(false);
+          setForm({ name: '', description: '', subcategories: '' });
+          alert("Category created successfully!");
+        }
       }
     } catch (error) {
       alert(error.message);
@@ -34,7 +62,7 @@ const CategoryControl = ({ categories, onCreateCategory, onDeleteCategory }) => 
     <Card style={{ marginBottom: '2.5rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <h3 style={{ fontSize: '1.25rem', fontWeight: '700' }}>Category Control</h3>
-        <Button size="small" onClick={() => setShowModal(true)}>Create Category</Button>
+        <Button size="small" onClick={handleOpenCreate}>Create Category</Button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
@@ -60,7 +88,7 @@ const CategoryControl = ({ categories, onCreateCategory, onDeleteCategory }) => 
                 ))}
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <Button size="small" variant="secondary" style={{ flex: 1 }}>Edit</Button>
+                <Button size="small" variant="secondary" style={{ flex: 1 }} onClick={() => handleOpenEdit(category)}>Edit</Button>
                 <Button 
                   size="small" 
                   variant="secondary" 
@@ -89,14 +117,14 @@ const CategoryControl = ({ categories, onCreateCategory, onDeleteCategory }) => 
       </div>
 
       {showModal && (
-        <Modal title="Create New Category" onClose={() => setShowModal(false)}>
+        <Modal title={isEditing ? "Edit Category" : "Create New Category"} onClose={() => setShowModal(false)}>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <Input label="Category Name" name="name" value={form.name} onChange={handleChange} required />
             <Input label="Description" name="description" value={form.description} onChange={handleChange} />
             <Input label="Subcategories (comma separated)" name="subcategories" value={form.subcategories} onChange={handleChange} placeholder="Electronics, Mobile, Laptop" />
             <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
               <Button type="button" variant="secondary" onClick={() => setShowModal(false)} style={{ flex: 1 }}>Cancel</Button>
-              <Button type="submit" style={{ flex: 1 }}>Create Category</Button>
+              <Button type="submit" style={{ flex: 1 }}>{isEditing ? "Update Category" : "Create Category"}</Button>
             </div>
           </form>
         </Modal>

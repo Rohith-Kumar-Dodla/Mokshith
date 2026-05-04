@@ -1,11 +1,14 @@
 import { useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import { authService } from "../services/authService";
 import { loginStart, loginSuccess, loginFailure, updateUser as updateUserAction, logout as logoutAction } from "../authSlice";
-import { fetchConfigSuccess } from "../../superAdmin/superAdminSlice";
+import { fetchConfigSuccess } from "../../superadmin/superAdminSlice";
+import { routes } from "../../../routes/routeConfig";
 
 export const useAuth = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { user: reduxUser, loading, error, isAuthenticated } = useSelector((state) => state.auth);
 
   const getUser = () => {
@@ -59,20 +62,20 @@ export const useAuth = () => {
       // Redirect based on role
       switch (user.role) {
         case "SUPER_ADMIN":
-          window.location.href = "/super-admin/dashboard";
+          navigate(routes.SUPER_ADMIN, { replace: true });
           break;
         case "ADMIN":
-          window.location.href = "/admin/dashboard";
+          navigate(routes.ADMIN, { replace: true });
           break;
         case "DELIVERY_PARTNER":
-          window.location.href = "/delivery/dashboard";
+          navigate(routes.DELIVERY_DASHBOARD, { replace: true });
           break;
         case "B2B_CUSTOMER":
         case "B2C_CUSTOMER":
-          window.location.href = "/home";
+          navigate(routes.HOME, { replace: true });
           break;
         default:
-          window.location.href = "/products";
+          navigate(routes.PRODUCTS, { replace: true });
       }
 
       return res;
@@ -81,7 +84,7 @@ export const useAuth = () => {
       dispatch(loginFailure(errorMsg));
       throw err;
     }
-  }, [dispatch]);
+  }, [dispatch, navigate]);
 
   const logout = useCallback(async () => {
     try {
@@ -90,9 +93,9 @@ export const useAuth = () => {
       console.error("Logout failed", err);
     } finally {
       dispatch(logoutAction());
-      window.location.href = "/login";
+      navigate(routes.LOGIN, { replace: true });
     }
-  }, [dispatch]);
+  }, [dispatch, navigate]);
 
   return { 
     login, 

@@ -36,6 +36,11 @@ export const deleteAdmin = asyncHandler(async (req, res) => {
   successResponse(res, result);
 });
 
+export const updateAdmin = asyncHandler(async (req, res) => {
+  const admin = await service.updateAdmin(req.params.id, req.body);
+  successResponse(res, admin, 'Admin updated successfully');
+});
+
 export const getMetrics = asyncHandler(async (req, res) => {
   const metrics = await service.getMetrics();
   successResponse(res, metrics);
@@ -69,4 +74,9 @@ export const createCategory = asyncHandler(async (req, res) => {
 export const deleteCategory = asyncHandler(async (req, res) => {
   const result = await service.deleteCategory(req.params.id);
   successResponse(res, result);
+});
+
+export const updateCategory = asyncHandler(async (req, res) => {
+  const category = await service.updateCategory(req.params.id, req.body);
+  successResponse(res, category, 'Category updated successfully');
 });

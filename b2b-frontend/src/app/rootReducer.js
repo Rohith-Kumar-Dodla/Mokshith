@@ -1,7 +1,7 @@
 import { combineReducers } from '@reduxjs/toolkit';
 import authReducer from '../modules/auth/authSlice.js';
 import adminReducer from '../modules/admin/adminSlice.js';
-import superAdminReducer from '../modules/superAdmin/superAdminSlice.js';
+import superAdminReducer from '../modules/superadmin/superAdminSlice.js';
 import productReducer from '../modules/product/productSlice.js';
 import orderReducer from '../modules/order/orderSlice.js';
 

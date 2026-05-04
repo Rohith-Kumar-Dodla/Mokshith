@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { routes } from "./routeConfig.js";
 
 // Components
@@ -24,7 +24,7 @@ import AdminProductsPage from "../modules/admin/pages/Products.jsx";
 import AdminOrdersPage from "../modules/admin/pages/Orders.jsx";
 import AdminVendorsPage from "../modules/admin/pages/Vendors.jsx";
 import AdminApprovalsPage from "../modules/admin/pages/Approvals.jsx";
-import SuperAdminPage from "../modules/superAdmin/pages/SuperAdminPage.jsx";
+import SuperAdminPage from "../modules/superadmin/pages/SuperAdminPage";
 import DeliveryPage from "../modules/delivery/pages/DeliveryPage.jsx";
 import CreditPage from "../modules/credit/pages/CreditPage.jsx";
 import CheckoutPage from "../modules/order/pages/Checkout.jsx";
@@ -43,17 +43,14 @@ import AnalyticsPage from "../modules/analytics/pages/AnalyticsPage.jsx";
 import CompanyPage from "../modules/company/pages/CompanyPage.jsx";
 import InventoryPage from "../modules/inventory/pages/InventoryPage.jsx";
 import LogisticsPage from "../modules/logistics/pages/LogisticsPage.jsx";
-import ShipmentTrackingPage from "../modules/shipment/pages/ShipmentTrackingPage.jsx";
 import WarehousePage from "../modules/warehouse/pages/WarehousePage.jsx";
 import PromotionPage from "../modules/promotion/pages/PromotionPage.jsx";
-import WishlistPage from "../modules/wishlist/pages/WishlistPage.jsx";
 import SettingsPage from "../modules/settings/SettingsPage.jsx";
 
 const AppRoutes = () => {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* PUBLIC ROUTES */}
+    <Routes>
+      {/* PUBLIC ROUTES */}
         <Route path={routes.LANDING} element={<PublicLayout><LandingPage /></PublicLayout>} />
         <Route path={routes.LOGIN} element={<LoginPage />} />
         <Route path={routes.REGISTER} element={<RegisterPage />} />
@@ -87,143 +84,51 @@ const AppRoutes = () => {
         } />
 
         {/* ADMIN ROUTES */}
-        <Route path={routes.ADMIN} element={
+        <Route element={
           <ProtectedRoute>
             <RoleGuard allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
-              <AdminLayout title="Overview"><AdminPage /></AdminLayout>
+              <AdminLayout />
             </RoleGuard>
           </ProtectedRoute>
-        } />
-        <Route path={routes.ADMIN_USERS} element={
-          <ProtectedRoute>
-            <RoleGuard allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
-              <AdminLayout title="User Management"><AdminUsersPage /></AdminLayout>
-            </RoleGuard>
-          </ProtectedRoute>
-        } />
-        <Route path={routes.ADMIN_PRODUCTS} element={
-          <ProtectedRoute>
-            <RoleGuard allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
-              <AdminLayout title="Product Inventory"><AdminProductsPage /></AdminLayout>
-            </RoleGuard>
-          </ProtectedRoute>
-        } />
-        <Route path={routes.ADMIN_ORDERS} element={
-          <ProtectedRoute>
-            <RoleGuard allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
-              <AdminLayout title="Order Fulfillment"><AdminOrdersPage /></AdminLayout>
-            </RoleGuard>
-          </ProtectedRoute>
-        } />
-        <Route path={routes.ADMIN_VENDORS} element={
-          <ProtectedRoute>
-            <RoleGuard allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
-              <AdminLayout title="Vendor Control"><AdminVendorsPage /></AdminLayout>
-            </RoleGuard>
-          </ProtectedRoute>
-        } />
-        <Route path={routes.ADMIN_APPROVALS} element={
-          <ProtectedRoute>
-            <RoleGuard allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
-              <AdminLayout title="New Approvals"><AdminApprovalsPage /></AdminLayout>
-            </RoleGuard>
-          </ProtectedRoute>
-        } />
-
-        {/* NEW MODULE ROUTES */}
-        <Route path={routes.ADMIN_ANALYTICS} element={
-          <ProtectedRoute>
-            <RoleGuard allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
-              <AdminLayout title="Analytics"><AnalyticsPage /></AdminLayout>
-            </RoleGuard>
-          </ProtectedRoute>
-        } />
-        <Route path={routes.ADMIN_INVENTORY} element={
-          <ProtectedRoute>
-            <RoleGuard allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
-              <AdminLayout title="Inventory Management"><InventoryPage /></AdminLayout>
-            </RoleGuard>
-          </ProtectedRoute>
-        } />
-        <Route path={routes.ADMIN_WAREHOUSE} element={
-          <ProtectedRoute>
-            <RoleGuard allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
-              <AdminLayout title="Warehouse Management"><WarehousePage /></AdminLayout>
-            </RoleGuard>
-          </ProtectedRoute>
-        } />
-        <Route path={routes.ADMIN_PROMOTIONS} element={
-          <ProtectedRoute>
-            <RoleGuard allowedRoles={["ADMIN", "SUPER_ADMIN"]}>
-              <AdminLayout title="Promotions"><PromotionPage /></AdminLayout>
-            </RoleGuard>
-          </ProtectedRoute>
-        } />
-        <Route path={routes.ADMIN_SETTINGS} element={
-          <ProtectedRoute>
-            <RoleGuard allowedRoles={["ADMIN", "SUPER_ADMIN", "VENDOR"]}>
-              <AdminLayout title="Settings"><SettingsPage /></AdminLayout>
-            </RoleGuard>
-          </ProtectedRoute>
-        } />
-        <Route path={routes.VENDOR_INVENTORY} element={
-          <ProtectedRoute>
-            <RoleGuard allowedRoles={["VENDOR", "SUPER_ADMIN", "ADMIN"]}>
-              <AdminLayout title="My Inventory"><InventoryPage /></AdminLayout>
-            </RoleGuard>
-          </ProtectedRoute>
-        } />
-        <Route path={routes.VENDOR_COMPANY} element={
-          <ProtectedRoute>
-            <RoleGuard allowedRoles={["VENDOR", "SUPER_ADMIN", "ADMIN"]}>
-              <AdminLayout title="Company Profile"><CompanyPage /></AdminLayout>
-            </RoleGuard>
-          </ProtectedRoute>
-        } />
-        <Route path={routes.DELIVERY_DASHBOARD} element={
-          <ProtectedRoute>
-            <RoleGuard allowedRoles={["DELIVERY_PARTNER", "SUPER_ADMIN", "ADMIN"]}>
-              <DeliveryLayout title="Logistics"><LogisticsPage /></DeliveryLayout>
-            </RoleGuard>
-          </ProtectedRoute>
-        } />
-        <Route path={routes.DELIVERY_SHIPMENTS} element={
-          <ProtectedRoute>
-            <RoleGuard allowedRoles={["DELIVERY_PARTNER", "SUPER_ADMIN", "ADMIN"]}>
-              <DeliveryLayout title="My Deliveries"><LogisticsPage /></DeliveryLayout>
-            </RoleGuard>
-          </ProtectedRoute>
-        } />
-        <Route path={routes.SHIPMENT_TRACKING} element={
-          <ProtectedRoute>
-            <MainLayout><ShipmentTrackingPage /></MainLayout>
-          </ProtectedRoute>
-        } />
-        <Route path={routes.WISHLIST} element={
-          <ProtectedRoute>
-            <RoleGuard allowedRoles={["B2B_CUSTOMER", "B2C_CUSTOMER", "SUPER_ADMIN", "ADMIN"]}>
-              <MainLayout><WishlistPage /></MainLayout>
-            </RoleGuard>
-          </ProtectedRoute>
-        } />
+        }>
+          <Route path={routes.ADMIN} element={<AdminPage />} />
+          <Route path={routes.ADMIN_USERS} element={<AdminUsersPage />} />
+          <Route path={routes.ADMIN_PRODUCTS} element={<AdminProductsPage />} />
+          <Route path={routes.ADMIN_ORDERS} element={<AdminOrdersPage />} />
+          <Route path={routes.ADMIN_VENDORS} element={<AdminVendorsPage />} />
+          <Route path={routes.ADMIN_APPROVALS} element={<AdminApprovalsPage />} />
+          <Route path={routes.ADMIN_ANALYTICS} element={<AnalyticsPage />} />
+          <Route path={routes.ADMIN_INVENTORY} element={<InventoryPage />} />
+          <Route path={routes.ADMIN_WAREHOUSE} element={<WarehousePage />} />
+          <Route path={routes.ADMIN_PROMOTIONS} element={<PromotionPage />} />
+          <Route path={routes.ADMIN_SETTINGS} element={<SettingsPage />} />
+          <Route path={routes.VENDOR_INVENTORY} element={<InventoryPage />} />
+          <Route path={routes.VENDOR_COMPANY} element={<CompanyPage />} />
+        </Route>
 
         {/* SUPER ADMIN ROUTES */}
-        <Route path={routes.SUPER_ADMIN} element={
+        <Route element={
           <ProtectedRoute>
             <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
-              <SuperAdminPage />
+              <SuperAdminLayout />
             </RoleGuard>
           </ProtectedRoute>
-        } />
+        }>
+          <Route path={routes.SUPER_ADMIN} element={<SuperAdminPage />} />
+        </Route>
 
         {/* DELIVERY ROUTES */}
-        <Route path={routes.DELIVERY_HISTORY} element={
+        <Route element={
           <ProtectedRoute>
             <RoleGuard allowedRoles={["DELIVERY_PARTNER", "SUPER_ADMIN", "ADMIN"]}>
-              <DeliveryLayout><DeliveryPage /></DeliveryLayout>
+              <DeliveryLayout />
             </RoleGuard>
           </ProtectedRoute>
-        } />
+        }>
+          <Route path={routes.DELIVERY_DASHBOARD} element={<LogisticsPage />} />
+          <Route path={routes.DELIVERY_SHIPMENTS} element={<LogisticsPage />} />
+          <Route path={routes.DELIVERY_HISTORY} element={<DeliveryPage />} />
+        </Route>
 
         {/* COMMON PRIVATE ROUTES (Mainly for Customers) */}
         <Route path={routes.ORDERS} element={
@@ -272,7 +177,6 @@ const AppRoutes = () => {
         {/* FALLBACK */}
         <Route path="*" element={<MainLayout><h2>404 Not Found</h2></MainLayout>} />
       </Routes>
-    </BrowserRouter>
   );
 };
 

@@ -9,9 +9,8 @@ import {
   fetchAdminsSuccess,
   fetchCategoriesSuccess,
   fetchAuditLogsSuccess,
-  fetchFailure,
-  toggleMaintenance
-} from "../superAdminSlice";
+  fetchFailure
+} from "../superAdminSlice.js";
 
 export const useSuperAdmin = () => {
   const dispatch = useDispatch();
@@ -72,6 +71,21 @@ export const useSuperAdmin = () => {
     }
   };
 
+  const updateAdmin = async (id, payload) => {
+    try {
+      const response = await superAdminService.updateAdmin(id, payload);
+      const updatedAdmin = response.data || response;
+      const updatedAdmins = admins.map(admin => 
+        (admin.id || admin._id) === id ? updatedAdmin : admin
+      );
+      dispatch(fetchAdminsSuccess(updatedAdmins));
+      return true;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  };
+
   const createCategory = async (payload) => {
     try {
       const response = await superAdminService.createCategory(payload);
@@ -90,6 +104,21 @@ export const useSuperAdmin = () => {
       await superAdminService.deleteCategory(id);
       const updatedCategories = categories.filter(cat => (cat.id || cat._id) !== id);
       dispatch(fetchCategoriesSuccess(updatedCategories));
+      return true;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  };
+
+  const updateCategory = async (id, payload) => {
+    try {
+      const response = await superAdminService.updateCategory(id, payload);
+      const updatedCategory = response.data || response;
+      const updatedCats = categories.map(cat => 
+        (cat.id || cat._id) === id ? updatedCategory : cat
+      );
+      dispatch(fetchCategoriesSuccess(updatedCats));
       return true;
     } catch (err) {
       console.error(err);
@@ -121,8 +150,10 @@ export const useSuperAdmin = () => {
     updateConfig, 
     createAdmin,
     deleteAdmin,
+    updateAdmin,
     createCategory,
     deleteCategory,
+    updateCategory,
     fetchDbCollection 
   };
 };

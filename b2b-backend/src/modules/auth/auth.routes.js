@@ -16,5 +16,6 @@ router.post('/login', validate(loginSchema), controller.login);
 router.post('/send-otp', validate(otpSchema), controller.sendOTP);
 router.post('/verify-otp', validate(verifyOtpSchema), controller.verifyOTP);
 router.post('/refresh-token', controller.refreshToken);
+router.post('/logout', (req, res) => res.json({ success: true, message: 'Logged out' }));
 
 export default router;

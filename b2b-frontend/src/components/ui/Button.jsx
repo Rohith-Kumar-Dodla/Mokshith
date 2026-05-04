@@ -6,6 +6,8 @@ const Button = ({
   className = '', 
   loading = false, 
   fullWidth = false, 
+  onClick,
+  type = "button",
   ...props 
 }) => {
   const variantClass = variant === 'primary' ? 'premium-button-primary' : 'premium-button-secondary';
@@ -24,6 +26,11 @@ const Button = ({
 
   return (
     <button 
+      type={type}
+      onClick={(e) => {
+        console.log("Button clicked:", children);
+        if (onClick) onClick(e);
+      }}
       className={`premium-button ${variantClass} ${widthClass} ${className} ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
       disabled={loading || validProps.disabled}
       {...validProps}

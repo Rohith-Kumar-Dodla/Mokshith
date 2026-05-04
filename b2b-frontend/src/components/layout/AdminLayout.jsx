@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { useNavigate, Link, useLocation, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
@@ -11,24 +11,28 @@ import {
   TrendingUp,
   Boxes,
   Warehouse,
-  Tag
+  Tag,
+  Menu,
+  X
 } from 'lucide-react';
 
 import { routes } from '../../routes/routeConfig.js';
 import { useAuth } from '../../modules/auth/hooks/useAuth.js';
 import ConfirmDialog from '../feedback/ConfirmDialog.jsx';
 
-const AdminLayout = ({ children, title = "Overview" }) => {
+const AdminLayout = ({ title = "Admin Panel" }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     setShowLogoutConfirm(false);
     setIsLoggingOut(false);
+    setIsSidebarOpen(false);
   }, [location.pathname]);
 
   const menuItems = [
@@ -47,6 +51,7 @@ const AdminLayout = ({ children, title = "Overview" }) => {
     setIsLoggingOut(true);
     try {
       await logout();
+      navigate(routes.LOGIN, { replace: true });
     } catch (error) {
       console.error("Logout error:", error);
       setIsLoggingOut(false);
@@ -54,114 +59,130 @@ const AdminLayout = ({ children, title = "Overview" }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
+    <div className="flex min-h-screen bg-[#f8f9fa] overflow-x-hidden">
+
+      {/* ================= MOBILE SIDEBAR OVERLAY ================= */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/40 z-40 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
 
       {/* ================= SIDEBAR ================= */}
-      <aside className="fixed left-0 top-0 h-full w-72 bg-slate-900 text-white flex flex-col z-40">
+      <aside className={`
+        fixed md:static
+        left-0 top-0
+        w-[280px] h-screen
+        bg-[#0B1120] text-white
+        flex flex-col
+        shadow-2xl border-r border-white/5
+        z-50 md:z-0
+        transform md:translate-x-0 transition-transform duration-300
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
 
         {/* Logo Section */}
-        <div className="p-8 flex items-center gap-4 border-b border-white/5">
-          <div className="bg-blue-600 p-2.5 rounded-2xl shadow-lg shadow-blue-500/20">
-            <ShieldCheck size={24} className="text-white" />
+        <div className="px-6 py-5 flex items-center gap-3 border-b border-white/10 flex-shrink-0">
+          <div className="bg-blue-600 p-2.5 rounded-2xl shadow-lg shadow-blue-500/20 flex-shrink-0">
+            <ShieldCheck size={20} className="text-white" />
           </div>
-          <div>
-            <h1 className="font-black text-xl tracking-tight leading-none uppercase">Mokshith</h1>
-            <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mt-1.5">Enterprise</p>
+          <div className="flex-1 min-w-0">
+            <h1 className="font-black text-base tracking-tight leading-tight uppercase">Mokshith</h1>
+            <p className="text-[9px] font-bold text-blue-300 uppercase tracking-widest mt-0.5">Enterprise</p>
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto custom-scrollbar">
-          {menuItems.map((item, index) => {
-            const isActive = location.pathname === item.path;
+        <nav className="flex-1 flex flex-col py-6 px-3 gap-0.5 overflow-y-auto custom-scrollbar">
+          <p className="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Menu</p>
+          <div className="flex flex-col gap-1 flex-1">
+            {menuItems.map((item, index) => {
+              const isActive = location.pathname === item.path;
 
-            return (
-              <Link
-                key={index}
-                to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group ${
-                  isActive 
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' 
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <div className={`${isActive ? 'text-white' : 'group-hover:text-blue-400'} transition-colors`}>
-                  {item.icon}
-                </div>
-                <span className="font-bold tracking-wide text-sm">{item.label}</span>
-              </Link>
-            );
-          })}
+              return (
+                <Link
+                  key={index}
+                  to={item.path}
+                  onClick={() => setIsSidebarOpen(false)}
+                  className={`flex items-center justify-start gap-3 px-4 py-3 rounded-lg transition-all duration-300 group flex-shrink-0 w-full ${
+                    isActive 
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30' 
+                      : 'text-slate-400 hover:text-white hover:bg-white/8'
+                  }`}
+                >
+                  <div className={`flex-shrink-0 ${isActive ? 'text-white' : 'group-hover:text-blue-400'} transition-colors`}>
+                    {React.cloneElement(item.icon, { size: 18 })}
+                  </div>
+                  <span className="text-sm font-medium tracking-wide flex-1 text-left whitespace-nowrap overflow-hidden text-ellipsis">{item.label}</span>
+                  {isActive && <div className="w-1.5 h-1.5 rounded-full bg-white flex-shrink-0"></div>}
+                </Link>
+              );
+            })}
+          </div>
         </nav>
 
         {/* Logout Button */}
-        <div className="p-4 border-t border-white/5">
+        <div className="px-3 py-4 border-t border-white/10 flex-shrink-0">
           <button
             onClick={() => setShowLogoutConfirm(true)}
-            className="flex items-center gap-3 w-full px-4 py-3 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all duration-300 group"
+            className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg text-rose-400 hover:bg-rose-500/15 transition-all duration-300 group hover:text-rose-300"
           >
-            <LogOut size={20} className="group-hover:rotate-12 transition-transform" />
-            <span className="font-black uppercase tracking-widest text-xs">Logout</span>
+            <LogOut size={18} className="group-hover:rotate-12 transition-transform flex-shrink-0" />
+            <span className="font-bold uppercase tracking-widest text-xs whitespace-nowrap">Sign Out</span>
           </button>
         </div>
       </aside>
 
-      {/* ================= MAIN CONTENT ================= */}
-      <div className="ml-72 flex flex-col min-h-screen">
+      {/* ================= MAIN CONTENT WRAPPER ================= */}
+      <div className="flex-1 flex flex-col min-h-screen min-w-0">
 
         {/* Header */}
-        <header className="h-[90px] bg-white/80 backdrop-blur-xl border-b border-gray-100 flex items-center justify-between px-10 sticky top-0 z-30">
+        <header className="h-16 flex items-center px-4 md:px-8 bg-white/80 backdrop-blur-xl border-b border-white/20 sticky top-0 z-30 shadow-sm flex-shrink-0">
+          <button 
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="md:hidden p-2 hover:bg-gray-100 rounded-lg transition-all text-slate-400 hover:text-slate-600 mr-4 flex-shrink-0"
+          >
+            {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
 
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+          <h2 className="text-lg md:text-xl font-bold text-gray-900 tracking-tight flex-1 min-w-0">
             {title}
           </h2>
 
-          <div className="flex items-center gap-8">
-
-            {/* Search */}
-            <div className="relative hidden lg:block">
-              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+          <div className="flex items-center gap-2 md:gap-4 ml-auto flex-shrink-0">
+            <div className="relative hidden lg:flex">
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 flex-shrink-0" />
               <input
                 type="text"
                 placeholder="Search resources..."
-                className="pl-12 pr-6 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all w-[320px]"
+                className="pl-10 pr-4 py-2 bg-white/50 backdrop-blur-md border border-white/20 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-[280px] hover:bg-white/60 transition-colors"
               />
             </div>
 
-            <div className="flex items-center gap-4">
-              {/* Notification Bell */}
-              <button className="p-3 hover:bg-gray-100 rounded-2xl transition-all text-slate-400 hover:text-slate-900 relative">
-                <Bell size={20} />
-                <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
-              </button>
-
-              <div className="h-6 w-px bg-gray-100 mx-2"></div>
-
-              {/* User Section */}
-              <div className="flex items-center gap-4">
-                <div className="text-right hidden sm:block">
-                  <p className="text-sm font-black text-slate-900 leading-none">{user?.name}</p>
-                  <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-1.5">
-                    {user?.role?.replace('_', ' ')}
-                  </p>
-                </div>
-
-                <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white font-black shadow-lg shadow-blue-900/20 border-2 border-white overflow-hidden">
-                  {user?.profileImage ? (
-                    <img src={user.profileImage} alt="Profile" className="w-full h-full object-cover" />
-                  ) : (
-                    user?.name?.[0]?.toUpperCase() || 'A'
-                  )}
-                </div>
+            <button className="p-2.5 hover:bg-white/60 rounded-lg transition-all text-slate-400 hover:text-blue-600 flex-shrink-0 backdrop-blur-sm" title="Notifications">
+              <Bell size={20} />
+            </button>
+            
+            <div className="h-6 w-px bg-gray-200 flex-shrink-0 hidden md:block"></div>
+            
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <div className="text-right hidden sm:block pr-2">
+                <p className="text-sm font-semibold text-gray-900 leading-tight">{user?.name}</p>
+                <p className="text-[10px] font-medium text-blue-600 uppercase mt-0.5">{user?.role}</p>
+              </div>
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-lg hover:shadow-blue-500/30 transition-shadow">
+                {user?.name?.[0]?.toUpperCase()}
               </div>
             </div>
-
           </div>
         </header>
 
         {/* Main Content Area */}
-        <main className="p-6 flex-1">
-          {children}
+        <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-8 w-full">
+          <div className="max-w-[1600px] mx-auto">
+            <Outlet />
+          </div>
         </main>
       </div>
 

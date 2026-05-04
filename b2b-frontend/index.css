@@ -3,12 +3,17 @@
 @config "./tailwind.config.js";
 
 /* GLOBAL BASE */
+html {
+  overflow-x: hidden;
+}
+
 body {
   background-color: var(--background);
   color: var(--text-main);
   font-family: 'Inter', system-ui, sans-serif;
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
 }
 
 /* FORM ELEMENTS */

@@ -65,6 +65,22 @@ export const deleteAdmin = async (id) => {
   return { message: 'Admin deleted successfully' };
 };
 
+export const updateAdmin = async (id, data) => {
+  const user = await User.findById(id);
+  if (!user || user.role !== ROLES.ADMIN) {
+    throw new AppError('Admin not found', 404);
+  }
+
+  if (data.password) {
+    data.password = await hashPassword(data.password);
+  } else {
+    delete data.password;
+  }
+
+  const updatedAdmin = await User.findByIdAndUpdate(id, data, { new: true });
+  return updatedAdmin;
+};
+
 export const changeUserRole = async (userId, role) => {
   if (!userId || !role) {
     throw new AppError('UserId and role required', 400);
@@ -151,4 +167,10 @@ export const deleteCategory = async (id) => {
   }
   await Category.findByIdAndDelete(id);
   return { message: 'Category deleted successfully' };
+};
+
+export const updateCategory = async (id, data) => {
+  const category = await Category.findByIdAndUpdate(id, data, { new: true });
+  if (!category) throw new AppError('Category not found', 404);
+  return category;
 };
