@@ -1,4 +1,8 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
+
+console.log('Sidebar.jsx module loaded');
+
 import { useNavigate, Link } from 'react-router-dom';
 import { routes } from '../../routes/routeConfig.js';
 import { 
@@ -28,7 +32,12 @@ import {
 const Sidebar = ({ isOpen, onClose, user, onLogout }) => {
   const navigate = useNavigate();
 
-  if (!isOpen) return null;
+  // Debugging log
+  React.useEffect(() => {
+    if (isOpen) {
+      console.log('Sidebar is now OPEN', { userRole: user?.role });
+    }
+  }, [isOpen, user]);
 
   const adminLinks = [
     { icon: <LayoutDashboard size={18} />, label: "Dashboard", path: routes.ADMIN },
@@ -58,10 +67,8 @@ const Sidebar = ({ isOpen, onClose, user, onLogout }) => {
   ];
 
   const b2bCustomerLinks = [
-    { icon: <LayoutDashboard size={18} />, label: "Dashboard", path: routes.DASHBOARD },
     { icon: <User size={18} />, label: "My Profile", path: routes.PROFILE },
     { icon: <PackageIcon size={18} />, label: "My Orders", path: routes.ORDERS },
-    { icon: <Heart size={18} />, label: "Wishlist", path: routes.WISHLIST },
     { icon: <CreditCard size={18} />, label: "Credit Balance", path: routes.CREDIT },
     { icon: <Shield size={18} />, label: "Security", path: routes.SECURITY },
     { icon: <HelpCircle size={18} />, label: "Help & Support", path: routes.HELP },
@@ -96,84 +103,107 @@ const Sidebar = ({ isOpen, onClose, user, onLogout }) => {
 
   const links = getLinksByRole();
 
-  return (
+  console.log('Sidebar component rendered', { isOpen, userRole: user?.role });
+
+  if (!isOpen) return null;
+
+  const target = document.body;
+  if (!target) {
+    console.error('Sidebar: document.body not found!');
+    return null;
+  }
+  console.log('Sidebar: Portaling to', target.tagName);
+
+  return createPortal(
     <div 
-      className={`fixed inset-0 z-[1000] flex justify-end transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-      onClick={onClose}
+      className="fixed inset-0 z-[10000] flex justify-end"
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
+      <div 
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
 
       {/* Drawer */}
       <div 
-        className={`relative w-[320px] h-full bg-white shadow-2xl flex flex-col transition-transform duration-500 ease-out transform ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className="absolute right-0 top-0 w-full max-w-[400px] h-full bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-8 py-6 flex justify-between items-center border-b border-gray-100">
+        <div className="px-6 py-6 flex justify-between items-center border-b border-gray-100">
           <div className="flex items-center gap-2">
-            <span className="text-xl font-black text-gray-900 tracking-tight">Mokshith</span>
-            <span className="px-2 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded-md tracking-widest uppercase">B2B</span>
+            <span className="text-2xl font-black text-gray-900 tracking-tight">Mokshith</span>
+            <span className="px-2 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded">B2B</span>
           </div>
           <button 
-            className="p-2 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-gray-900 transition-all" 
+            className="p-2 hover:bg-gray-100 rounded-full text-gray-400 transition-colors" 
             onClick={onClose}
           >
-            <X size={20} />
+            <X size={24} />
           </button>
         </div>
 
-        {/* User Profile Section */}
-        <div className="p-8 flex items-center gap-5 bg-gray-50/50">
-          <div className="w-16 h-16 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-2xl font-black shadow-lg shadow-blue-200 overflow-hidden shrink-0">
-            {user?.profileImage ? (
-              <img 
-                src={user.profileImage.startsWith('http') ? user.profileImage : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${user.profileImage}`} 
-                alt="Profile" 
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              user?.name?.[0]?.toUpperCase() || 'U'
-            )}
-          </div>
-          <div className="min-w-0">
-            <h3 className="font-black text-gray-900 truncate leading-tight">{user?.name}</h3>
-            <p className="text-xs text-gray-500 truncate mb-2">{user?.email}</p>
-            <span className="px-2.5 py-1 bg-white border border-gray-200 text-[10px] font-black text-gray-400 uppercase tracking-widest rounded-lg">
-              {user?.role?.replace('_', ' ')}
-            </span>
+        {/* User Identity Card */}
+        <div className="p-6">
+          <div className="p-6 bg-blue-50/50 rounded-3xl border border-blue-100">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center text-blue-600 font-bold text-xl border border-blue-100 shadow-sm">
+                {user?.profileImage ? (
+                  <img 
+                    src={user.profileImage.startsWith('http') ? user.profileImage : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${user.profileImage}`} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                ) : (
+                  user?.name?.[0]?.toUpperCase() || 'U'
+                )}
+              </div>
+              <div className="min-w-0">
+                <h3 className="font-bold text-gray-900 text-lg leading-tight truncate">{user?.name || 'T Nagaraju'}</h3>
+                <p className="text-xs text-gray-500 truncate mt-0.5">{user?.email || 'tnrventions@gmail.com'}</p>
+                <div className="mt-3">
+                  <span className="px-3 py-1 bg-blue-500 text-[10px] font-bold text-white uppercase tracking-wider rounded-full">
+                    {user?.role?.replace('_', ' ') || 'B2B CUSTOMER'}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-8 px-4 custom-scrollbar">
-          <div className="space-y-1">
-            <p className="px-4 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Navigation</p>
+        <nav className="flex-1 overflow-y-auto py-4 px-3">
+          <div className="space-y-2">
+            <p className="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Navigation</p>
             {links.map((link, index) => (
               <button 
                 key={index}
-                className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-all group"
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all group"
                 onClick={() => { navigate(link.path); onClose(); }}
               >
-                <span className="group-hover:scale-110 transition-transform">{link.icon}</span>
-                <span className="font-bold tracking-tight text-sm">{link.label}</span>
+                <span className="text-gray-400 group-hover:text-blue-600 transition-colors">{link.icon}</span>
+                <span className="font-semibold text-sm">{link.label}</span>
               </button>
             ))}
           </div>
         </nav>
 
         {/* Footer */}
-        <div className="p-6 border-t border-gray-100">
+        <div className="p-4 border-t border-gray-100">
           <button 
-            className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-red-50 text-red-600 font-black text-sm uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all group" 
-            onClick={onLogout}
+            className="w-full flex items-center justify-center gap-3 py-3 rounded-lg bg-rose-50 text-rose-600 font-bold text-sm hover:bg-rose-100 transition-all" 
+            onClick={() => {
+              onClose();
+              onLogout();
+            }}
           >
-            <LogOut size={18} className="group-hover:-translate-x-1 transition-transform" />
+            <LogOut size={18} />
             <span>Sign Out</span>
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    target
   );
 };
 

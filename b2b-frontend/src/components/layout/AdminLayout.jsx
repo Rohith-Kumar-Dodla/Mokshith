@@ -24,9 +24,11 @@ const AdminLayout = ({ children, title = "Overview" }) => {
   const location = useLocation();
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     setShowLogoutConfirm(false);
+    setIsLoggingOut(false);
   }, [location.pathname]);
 
   const menuItems = [
@@ -41,54 +43,35 @@ const AdminLayout = ({ children, title = "Overview" }) => {
     { icon: <Tag size={18} />, label: "Promotions", path: routes.ADMIN_PROMOTIONS },
   ];
 
-  const handleLogout = () => {
-    logout();
-    navigate(routes.LOGIN);
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Logout error:", error);
+      setIsLoggingOut(false);
+    }
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC' }}>
+    <div className="min-h-screen bg-gray-50/50">
 
       {/* ================= SIDEBAR ================= */}
-      <aside style={{
-        width: '240px',
-        backgroundColor: '#0B0F1A',
-        color: 'white',
-        display: 'flex',
-        flexDirection: 'column',
-        flexShrink: 0
-      }}>
+      <aside className="fixed left-0 top-0 h-full w-72 bg-slate-900 text-white flex flex-col z-40">
 
         {/* Logo Section */}
-        <div style={{
-          padding: '20px 24px',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{
-              backgroundColor: '#2563eb',
-              padding: '8px',
-              borderRadius: '6px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}>
-              <ShieldCheck size={20} color="white" />
-            </div>
-            <div>
-              <p style={{ fontWeight: 'bold', fontSize: '14px', margin: '0', color: 'white' }}>Mokshith</p>
-              <p style={{ fontSize: '11px', margin: '2px 0 0 0', color: '#9CA3AF', textTransform: 'uppercase', fontWeight: '600', letterSpacing: '0.5px' }}>Enterprise</p>
-            </div>
+        <div className="p-8 flex items-center gap-4 border-b border-white/5">
+          <div className="bg-blue-600 p-2.5 rounded-2xl shadow-lg shadow-blue-500/20">
+            <ShieldCheck size={24} className="text-white" />
+          </div>
+          <div>
+            <h1 className="font-black text-xl tracking-tight leading-none uppercase">Mokshith</h1>
+            <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mt-1.5">Enterprise</p>
           </div>
         </div>
 
         {/* Navigation */}
-        <nav style={{
-          flex: 1,
-          padding: '24px 12px',
-          overflow: 'auto',
-        }}>
+        <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto custom-scrollbar">
           {menuItems.map((item, index) => {
             const isActive = location.pathname === item.path;
 
@@ -96,205 +79,88 @@ const AdminLayout = ({ children, title = "Overview" }) => {
               <Link
                 key={index}
                 to={item.path}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '12px 16px',
-                  margin: '4px 0',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  color: isActive ? 'white' : '#D1D5DB',
-                  backgroundColor: isActive ? '#2563eb' : 'transparent',
-                  textDecoration: 'none',
-                  transition: 'all 0.2s ease',
-                  cursor: 'pointer'
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                    e.currentTarget.style.color = 'white';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                    e.currentTarget.style.color = '#D1D5DB';
-                  }
-                }}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group ${
+                  isActive 
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' 
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`}
               >
-                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div className={`${isActive ? 'text-white' : 'group-hover:text-blue-400'} transition-colors`}>
                   {item.icon}
-                </span>
-                <span>{item.label}</span>
+                </div>
+                <span className="font-bold tracking-wide text-sm">{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
         {/* Logout Button */}
-        <div style={{
-          padding: '16px 12px',
-          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-        }}>
+        <div className="p-4 border-t border-white/5">
           <button
             onClick={() => setShowLogoutConfirm(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              width: '100%',
-              padding: '12px 16px',
-              borderRadius: '6px',
-              fontSize: '14px',
-              fontWeight: '500',
-              color: '#ef4444',
-              backgroundColor: 'rgba(239, 68, 68, 0.1)',
-              border: 'none',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#ef4444';
-              e.currentTarget.style.color = 'white';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
-              e.currentTarget.style.color = '#ef4444';
-            }}
+            className="flex items-center gap-3 w-full px-4 py-3 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all duration-300 group"
           >
-            <LogOut size={18} />
-            <span>Logout</span>
+            <LogOut size={20} className="group-hover:rotate-12 transition-transform" />
+            <span className="font-black uppercase tracking-widest text-xs">Logout</span>
           </button>
         </div>
       </aside>
 
       {/* ================= MAIN CONTENT ================= */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div className="ml-72 flex flex-col min-h-screen">
 
         {/* Header */}
-        <header style={{
-          height: '56px',
-          backgroundColor: 'white',
-          borderBottom: '1px solid #E5E7EB',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 32px',
-          position: 'sticky',
-          top: 0,
-          zIndex: 40
-        }}>
+        <header className="h-[90px] bg-white/80 backdrop-blur-xl border-b border-gray-100 flex items-center justify-between px-10 sticky top-0 z-30">
 
-          <h2 style={{
-            fontSize: '14px',
-            fontWeight: '600',
-            color: '#1F2937',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px',
-            margin: 0
-          }}>
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight">
             {title}
           </h2>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+          <div className="flex items-center gap-8">
 
             {/* Search */}
-            <div style={{ position: 'relative' }}>
-              <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF' }} />
+            <div className="relative hidden lg:block">
+              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search resources..."
-                style={{
-                  paddingLeft: '36px',
-                  paddingRight: '12px',
-                  paddingTop: '8px',
-                  paddingBottom: '8px',
-                  border: '1px solid #E5E7EB',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  outline: 'none',
-                  transition: 'all 0.2s ease',
-                  width: '280px'
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = '#2563eb';
-                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = '#E5E7EB';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
+                className="pl-12 pr-6 py-3 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all w-[320px]"
               />
             </div>
 
-            {/* Notification Bell */}
-            <button style={{
-              position: 'relative',
-              padding: '8px',
-              backgroundColor: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              color: '#6B7280',
-              transition: 'all 0.2s ease'
-            }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F3F4F6'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-            >
-              <Bell size={18} />
-              <span style={{
-                position: 'absolute',
-                top: '4px',
-                right: '4px',
-                width: '8px',
-                height: '8px',
-                backgroundColor: '#ef4444',
-                borderRadius: '50%'
-              }}></span>
-            </button>
+            <div className="flex items-center gap-4">
+              {/* Notification Bell */}
+              <button className="p-3 hover:bg-gray-100 rounded-2xl transition-all text-slate-400 hover:text-slate-900 relative">
+                <Bell size={20} />
+                <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
+              </button>
 
-            {/* User Section */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              paddingLeft: '24px',
-              borderLeft: '1px solid #E5E7EB'
-            }}>
-              <div style={{ textAlign: 'right' }}>
-                <p style={{ fontSize: '14px', fontWeight: '600', color: '#1F2937', margin: '0' }}>{user?.name}</p>
-                <p style={{ fontSize: '11px', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '2px 0 0 0', fontWeight: '600' }}>
-                  {user?.role?.replace('_', ' ')}
-                </p>
-              </div>
+              <div className="h-6 w-px bg-gray-100 mx-2"></div>
 
-              <div style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '6px',
-                backgroundColor: '#2563eb',
-                color: 'white',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 'bold',
-                fontSize: '14px',
-                boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.15)'
-              }}>
-                {user?.name?.[0]?.toUpperCase() || 'A'}
+              {/* User Section */}
+              <div className="flex items-center gap-4">
+                <div className="text-right hidden sm:block">
+                  <p className="text-sm font-black text-slate-900 leading-none">{user?.name}</p>
+                  <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-1.5">
+                    {user?.role?.replace('_', ' ')}
+                  </p>
+                </div>
+
+                <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white font-black shadow-lg shadow-blue-900/20 border-2 border-white overflow-hidden">
+                  {user?.profileImage ? (
+                    <img src={user.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    user?.name?.[0]?.toUpperCase() || 'A'
+                  )}
+                </div>
               </div>
             </div>
 
           </div>
         </header>
 
-        {/* Main Content */}
-        <main style={{
-          flex: 1,
-          overflow: 'auto',
-          padding: '32px'
-        }}>
+        {/* Main Content Area */}
+        <main className="p-6 flex-1">
           {children}
         </main>
       </div>
@@ -303,8 +169,9 @@ const AdminLayout = ({ children, title = "Overview" }) => {
       {showLogoutConfirm && (
         <ConfirmDialog
           isOpen={showLogoutConfirm}
-          onClose={() => setShowLogoutConfirm(false)}
+          onClose={() => !isLoggingOut && setShowLogoutConfirm(false)}
           onConfirm={handleLogout}
+          loading={isLoggingOut}
           title="Logout"
           message="Are you sure you want to logout?"
           confirmText="Logout"

@@ -67,68 +67,90 @@ const B2BDashboard = () => {
   ];
 
   return (
-    <div className="dashboard-container">
-      <main className="dashboard-main">
-        <header className="dashboard-header">
-          <div className="header-left">
-            <h1>Business Dashboard</h1>
-            <p>Welcome back, {user?.name}</p>
+    <div className="min-h-screen bg-gray-50/50">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-10">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Business Dashboard</h1>
+            <p className="text-gray-500 mt-2">Welcome back, {user?.name}</p>
           </div>
-          <div className="header-right">
+          <div>
             <button 
-              className="premium-button premium-button-primary"
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-900/20 transition-all active:scale-95 flex items-center gap-2"
               onClick={() => navigate(routes.PRODUCTS)}
             >
-              <ShoppingBag size={18} /> <span>New Order</span>
+              <ShoppingBag size={18} />
+              <span>New Order</span>
             </button>
           </div>
         </header>
 
         {/* Stats Grid */}
-        <section className="stats-grid">
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {stats.map((stat, index) => (
-            <div key={index} className="stat-card premium-card" onClick={() => navigate(stat.link)}>
-              <div className={`stat-icon-wrapper color-${stat.color}`}>
-                {stat.icon}
+            <div 
+              key={index} 
+              className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all cursor-pointer group flex items-center justify-between"
+              onClick={() => navigate(stat.link)}
+            >
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
+                  stat.color === 'blue' ? 'bg-blue-50 text-blue-600' :
+                  stat.color === 'green' ? 'bg-emerald-50 text-emerald-600' :
+                  stat.color === 'orange' ? 'bg-orange-50 text-orange-600' :
+                  'bg-purple-50 text-purple-600'
+                }`}>
+                  {stat.icon}
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">{stat.label}</p>
+                  <p className="text-xl font-bold text-gray-900">{stat.value}</p>
+                </div>
               </div>
-              <div className="stat-info">
-                <span className="stat-label">{stat.label}</span>
-                <span className="stat-value">{stat.value}</span>
-              </div>
-              <ChevronRight className="stat-arrow" size={16} />
+              <ChevronRight className="text-gray-300 group-hover:text-gray-600 transition-colors" size={20} />
             </div>
           ))}
         </section>
 
-        <div className="dashboard-content-grid">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Recent Orders */}
-          <section className="recent-orders-section premium-card">
-            <div className="section-header">
-              <h2 className="section-title">Recent Orders</h2>
-              <Link to={routes.ORDERS} className="view-all">View All <ArrowUpRight size={16} /></Link>
+          <section className="lg:col-span-8 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-8 py-6 border-b border-gray-50 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">Recent Orders</h2>
+              <Link to={routes.ORDERS} className="text-sm font-bold text-blue-600 hover:underline flex items-center gap-1">
+                View All <ArrowUpRight size={16} />
+              </Link>
             </div>
             
-            <div className="orders-table-wrapper">
-              {(ordersLoading) ? (
-                <div className="empty-state"><p>Loading orders...</p></div>
+            <div className="overflow-x-auto">
+              {ordersLoading ? (
+                <div className="p-12 text-center text-gray-400">Loading orders...</div>
               ) : recentOrders.length > 0 ? (
-                <table className="orders-table">
+                <table className="w-full text-left">
                   <thead>
-                    <tr>
-                      <th>Order ID</th>
-                      <th>Date</th>
-                      <th>Amount</th>
-                      <th>Status</th>
+                    <tr className="bg-gray-50/50">
+                      <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Order ID</th>
+                      <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Date</th>
+                      <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Amount</th>
+                      <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-wider">Status</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-gray-50">
                     {recentOrders.map((order) => (
-                      <tr key={order._id} onClick={() => navigate(`${routes.ORDERS}/${order._id}`)}>
-                        <td className="order-id">#{order._id.substring(0, 8)}</td>
-                        <td>{new Date(order.createdAt).toLocaleDateString()}</td>
-                        <td className="order-amount">₹{order.totalAmount?.toLocaleString()}</td>
-                        <td>
-                          <span className={`status-badge status-${order.status?.toLowerCase()}`}>
+                      <tr 
+                        key={order._id} 
+                        className="hover:bg-gray-50/50 cursor-pointer transition-colors"
+                        onClick={() => navigate(`${routes.ORDERS}/${order._id}`)}
+                      >
+                        <td className="px-8 py-5 font-bold text-gray-900">#{order._id.substring(0, 8)}</td>
+                        <td className="px-8 py-5 text-gray-500">{new Date(order.createdAt).toLocaleDateString()}</td>
+                        <td className="px-8 py-5 font-bold text-gray-900">₹{order.totalAmount?.toLocaleString()}</td>
+                        <td className="px-8 py-5">
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                            order.status === 'DELIVERED' ? 'bg-emerald-50 text-emerald-600' :
+                            order.status === 'PENDING' ? 'bg-amber-50 text-amber-600' :
+                            'bg-gray-100 text-gray-600'
+                          }`}>
                             {order.status}
                           </span>
                         </td>
@@ -137,47 +159,58 @@ const B2BDashboard = () => {
                   </tbody>
                 </table>
               ) : (
-                <div className="empty-state">
-                  <Package size={40} />
-                  <p>No orders yet. Start shopping!</p>
+                <div className="p-16 text-center">
+                  <Package size={48} className="mx-auto text-gray-200 mb-4" />
+                  <p className="text-gray-500 font-medium">No orders yet. Start shopping!</p>
                 </div>
               )}
             </div>
           </section>
 
-          {/* Quick Links & Credit Info */}
-          <div className="side-content">
-            <section className="credit-preview premium-card">
-              <h2 className="section-title">Credit Utilization</h2>
+          {/* Side Content */}
+          <div className="lg:col-span-4 space-y-8">
+            <section className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+              <h2 className="text-xl font-bold text-gray-900 mb-6">Credit Utilization</h2>
               {creditLoading ? (
-                <p>Loading credit info...</p>
+                <p className="text-gray-400">Loading credit info...</p>
               ) : (
-                <div className="credit-progress-wrapper">
-                  <div className="credit-labels">
-                    <span>Used: ₹{usedCredit.toLocaleString()}</span>
-                    <span>Total: ₹{creditLimit.toLocaleString()}</span>
+                <div className="space-y-6">
+                  <div className="flex justify-between text-sm font-bold">
+                    <span className="text-gray-500">Used: ₹{usedCredit.toLocaleString()}</span>
+                    <span className="text-gray-900">Total: ₹{creditLimit.toLocaleString()}</span>
                   </div>
-                  <div className="progress-bar">
+                  <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
                     <div 
-                      className="progress-fill" 
-                      style={{ width: `${creditLimit > 0 ? (usedCredit / creditLimit) * 100 : 0}%` }}
+                      className="h-full bg-blue-600 rounded-full transition-all duration-1000" 
+                      style={{ width: `${creditLimit > 0 ? Math.min((usedCredit / creditLimit) * 100, 100) : 0}%` }}
                     ></div>
                   </div>
-                  <p className="credit-help">Maintain a healthy utilization for better credit limits.</p>
+                  <p className="text-xs text-gray-400 font-medium leading-relaxed">
+                    Maintain a healthy utilization for better credit limits and financial standing.
+                  </p>
+                  <button 
+                    className="w-full py-4 bg-gray-900 hover:bg-black text-white font-bold rounded-xl transition-all active:scale-95"
+                    onClick={() => navigate(routes.CREDIT)}
+                  >
+                    Manage Credit
+                  </button>
                 </div>
               )}
-              <button className="premium-button premium-button-secondary full-width" onClick={() => navigate(routes.CREDIT)}>
-                Manage Credit
-              </button>
             </section>
 
-            <section className="quick-links-section">
-              <h2 className="section-title">Quick Links</h2>
-              <div className="quick-links-grid">
+            <section>
+              <h2 className="text-xl font-bold text-gray-900 mb-6">Quick Links</h2>
+              <div className="grid grid-cols-1 gap-4">
                 {quickLinks.map((link, index) => (
-                  <Link key={index} to={link.path} className="quick-link-card">
-                    {link.icon}
-                    <span>{link.label}</span>
+                  <Link 
+                    key={index} 
+                    to={link.path} 
+                    className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-all group"
+                  >
+                    <div className="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                      {link.icon}
+                    </div>
+                    <span className="font-bold text-gray-700">{link.label}</span>
                   </Link>
                 ))}
               </div>
@@ -185,282 +218,6 @@ const B2BDashboard = () => {
           </div>
         </div>
       </main>
-
-      <style>{`
-        .dashboard-container {
-          background-color: var(--background);
-          min-height: 100vh;
-          display: flex;
-          flex-direction: column;
-        }
-
-        .dashboard-main {
-          max-width: 1200px;
-          width: 100%;
-          margin: 0 auto;
-          padding: 3rem 2rem;
-          flex: 1;
-        }
-
-        .dashboard-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-end;
-          margin-bottom: 3rem;
-        }
-
-        .header-left h1 {
-          font-size: 2.25rem;
-          font-weight: 800;
-          color: var(--text-main);
-          letter-spacing: -0.02em;
-          margin-bottom: 0.5rem;
-        }
-
-        .header-left p {
-          color: var(--text-muted);
-          font-size: 1.125rem;
-        }
-
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-          gap: 1.5rem;
-          margin-bottom: 3rem;
-        }
-
-        .stat-card {
-          padding: 1.5rem;
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          cursor: pointer;
-          position: relative;
-        }
-
-        .stat-icon-wrapper {
-          width: 3rem;
-          height: 3rem;
-          border-radius: var(--radius-md);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .color-blue { background: #eff6ff; color: #2563eb; }
-        .color-green { background: #f0fdf4; color: #16a34a; }
-        .color-orange { background: #fff7ed; color: #ea580c; }
-        .color-purple { background: #faf5ff; color: #9333ea; }
-
-        .stat-info {
-          display: flex;
-          flex-direction: column;
-          gap: 0.25rem;
-        }
-
-        .stat-label {
-          font-size: 0.875rem;
-          font-weight: 600;
-          color: var(--text-muted);
-        }
-
-        .stat-value {
-          font-size: 1.25rem;
-          font-weight: 800;
-          color: var(--text-main);
-        }
-
-        .stat-arrow {
-          margin-left: auto;
-          color: var(--border);
-          transition: transform 0.2s ease;
-        }
-
-        .stat-card:hover .stat-arrow {
-          transform: translateX(4px);
-          color: var(--primary);
-        }
-
-        .dashboard-content-grid {
-          display: grid;
-          grid-template-columns: 2fr 1fr;
-          gap: 2rem;
-        }
-
-        .recent-orders-section {
-          padding: 2rem;
-        }
-
-        .section-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 2rem;
-        }
-
-        .section-title {
-          font-size: 1.125rem;
-          font-weight: 700;
-          color: var(--text-main);
-          margin: 0;
-        }
-
-        .view-all {
-          display: flex;
-          align-items: center;
-          gap: 0.25rem;
-          font-size: 0.875rem;
-          font-weight: 600;
-          color: var(--primary);
-          text-decoration: none;
-        }
-
-        .orders-table-wrapper {
-          overflow-x: auto;
-        }
-
-        .orders-table {
-          width: 100%;
-          border-collapse: collapse;
-          text-align: left;
-        }
-
-        .orders-table th {
-          font-size: 0.75rem;
-          font-weight: 700;
-          color: #94a3b8;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          padding-bottom: 1rem;
-          border-bottom: 1px solid var(--border);
-        }
-
-        .orders-table td {
-          padding: 1.25rem 0;
-          font-size: 0.9375rem;
-          border-bottom: 1px solid #f1f5f9;
-        }
-
-        .orders-table tr {
-          cursor: pointer;
-          transition: background 0.2s;
-        }
-
-        .orders-table tr:hover {
-          background-color: #f8fafc;
-        }
-
-        .order-id {
-          font-weight: 700;
-          color: var(--primary);
-        }
-
-        .order-amount {
-          font-weight: 600;
-          color: var(--text-main);
-        }
-
-        .status-badge {
-          padding: 0.25rem 0.75rem;
-          border-radius: 9999px;
-          font-size: 0.75rem;
-          font-weight: 700;
-          text-transform: capitalize;
-        }
-
-        .status-pending { background: #fffbeb; color: #92400e; }
-        .status-completed { background: #f0fdf4; color: #16a34a; }
-        .status-shipped { background: #eff6ff; color: #2563eb; }
-
-        .side-content {
-          display: flex;
-          flex-direction: column;
-          gap: 2rem;
-        }
-
-        .credit-preview {
-          padding: 2rem;
-        }
-
-        .credit-progress-wrapper {
-          margin: 1.5rem 0 2rem;
-        }
-
-        .credit-labels {
-          display: flex;
-          justify-content: space-between;
-          font-size: 0.8125rem;
-          font-weight: 600;
-          color: var(--text-muted);
-          margin-bottom: 0.75rem;
-        }
-
-        .progress-bar {
-          height: 0.5rem;
-          background-color: #f1f5f9;
-          border-radius: 9999px;
-          overflow: hidden;
-        }
-
-        .progress-fill {
-          height: 100%;
-          background: var(--primary);
-          border-radius: 9999px;
-        }
-
-        .credit-help {
-          font-size: 0.75rem;
-          color: var(--text-muted);
-          margin-top: 1rem;
-        }
-
-        .full-width {
-          width: 100%;
-        }
-
-        .quick-links-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 1rem;
-        }
-
-        .quick-link-card {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 0.75rem;
-          padding: 1.25rem;
-          background: white;
-          border: 1.5px solid var(--border);
-          border-radius: var(--radius-md);
-          text-decoration: none;
-          color: var(--text-main);
-          transition: all 0.2s;
-        }
-
-        .quick-link-card:hover {
-          border-color: var(--primary);
-          color: var(--primary);
-          transform: translateY(-2px);
-        }
-
-        .quick-link-card span {
-          font-size: 0.75rem;
-          font-weight: 700;
-        }
-
-        .empty-state {
-          padding: 3rem;
-          text-align: center;
-          color: var(--text-muted);
-        }
-
-        @media (max-width: 992px) {
-          .dashboard-content-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
     </div>
   );
 };

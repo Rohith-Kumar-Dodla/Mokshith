@@ -7,24 +7,9 @@ const RoleGuard = ({ children, allowedRoles, roles }) => {
   const effectiveRoles = roles || allowedRoles || [];
 
   if (loading) return (
-    <div style={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      alignItems: 'center', 
-      minHeight: '100vh',
-      flexDirection: 'column',
-      gap: '1rem'
-    }}>
-      <div className="loader" style={{
-        width: '40px',
-        height: '40px',
-        border: '3px solid #f3f3f3',
-        borderTop: '3px solid #1e40af',
-        borderRadius: '50%',
-        animation: 'spin 1s linear infinite'
-      }}></div>
-      <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Checking permissions...</p>
-      <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+    <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-gray-50/50">
+      <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-xl shadow-blue-200"></div>
+      <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Checking permissions</p>
     </div>
   );
 

@@ -17,16 +17,15 @@ const ProtectedRoute = ({ children }) => {
 
   if (config?.maintenanceMode && user?.role !== "SUPER_ADMIN") {
     return (
-      <div style={{
-        height: '100vh', display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '2rem'
-      }}>
-        <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }}>🚧</h1>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '0.5rem' }}>System Under Maintenance</h2>
-        <p style={{ color: 'var(--text-muted)' }}>We are performing scheduled maintenance. Please try again later.</p>
+      <div className="h-screen flex flex-col items-center justify-center text-center p-8 bg-gray-50">
+        <div className="w-24 h-24 bg-amber-100 rounded-3xl flex items-center justify-center text-4xl mb-8">🚧</div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">System Under Maintenance</h2>
+        <p className="text-gray-500 max-w-md mx-auto">
+          We are performing scheduled maintenance to improve our services. Please check back shortly.
+        </p>
         <button
           onClick={() => window.location.href = "/login"}
-          style={{ marginTop: '2rem', padding: '0.5rem 1rem', borderRadius: '4px', border: 'none', backgroundColor: 'var(--primary)', color: 'white', fontWeight: '700' }}
+          className="mt-8 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-900/20 transition-all active:scale-95"
         >
           Back to Login
         </button>

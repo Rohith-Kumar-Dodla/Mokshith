@@ -4,6 +4,7 @@ import { useAuth } from '../../modules/auth/hooks/useAuth.js';
 import { routes } from '../../routes/routeConfig.js';
 import Button from '../ui/Button.jsx';
 import ConfirmDialog from '../feedback/ConfirmDialog.jsx';
+import Sidebar from '../common/Sidebar.jsx';
 import { 
   Truck, 
   LogOut, 
@@ -20,14 +21,23 @@ const DeliveryLayout = ({ children, title = "Delivery Portal" }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isProfileSidebarOpen, setIsProfileSidebarOpen] = useState(false);
 
   useEffect(() => {
     setShowLogoutConfirm(false);
+    setIsLoggingOut(false);
+    setIsProfileSidebarOpen(false);
   }, [location.pathname]);
 
-  const handleLogout = () => {
-    logout();
-    navigate(routes.LOGIN);
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Logout error:", error);
+      setIsLoggingOut(false);
+    }
   };
 
   const menuItems = [
@@ -37,9 +47,9 @@ const DeliveryLayout = ({ children, title = "Delivery Portal" }) => {
   ];
 
   return (
-    <div className="delivery-layout flex min-h-screen bg-gray-50/50">
+    <div className="delivery-layout min-h-screen bg-gray-50/50">
       {/* Sidebar - Mobile friendly approach can be added later, for now consistent with Admin */}
-      <aside className="w-[280px] bg-slate-900 text-white flex flex-col fixed h-full z-50 transition-all duration-300">
+      <aside className="fixed left-0 top-0 h-full w-72 bg-slate-900 text-white flex flex-col z-40">
         <div className="p-8 flex items-center gap-4 border-b border-white/5">
           <div className="bg-emerald-600 p-2.5 rounded-2xl shadow-lg shadow-emerald-500/20">
             <Truck size={24} className="text-white" />
@@ -50,14 +60,14 @@ const DeliveryLayout = ({ children, title = "Delivery Portal" }) => {
           </div>
         </div>
 
-        <nav className="flex-1 py-10 px-4 space-y-2">
+        <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto custom-scrollbar">
           {menuItems.map((item, index) => {
             const isActive = location.pathname === item.path;
             return (
               <Link 
                 key={index} 
                 to={item.path}
-                className={`flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-300 group ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group ${
                   isActive 
                     ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/20' 
                     : 'text-slate-400 hover:text-white hover:bg-white/5'
@@ -66,16 +76,16 @@ const DeliveryLayout = ({ children, title = "Delivery Portal" }) => {
                 <div className={`${isActive ? 'text-white' : 'group-hover:text-emerald-400'} transition-colors`}>
                   {item.icon}
                 </div>
-                <span className="font-bold tracking-wide">{item.label}</span>
+                <span className="font-bold tracking-wide text-sm">{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
-        <div className="p-6 border-t border-white/5">
+        <div className="p-4 border-t border-white/5">
           <button 
             onClick={() => setShowLogoutConfirm(true)}
-            className="flex items-center gap-4 w-full p-4 rounded-2xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all duration-300 group"
+            className="flex items-center gap-3 w-full px-4 py-3 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all duration-300 group"
           >
             <LogOut size={20} className="group-hover:rotate-12 transition-transform" />
             <span className="font-black uppercase tracking-widest text-xs">Logout</span>
@@ -83,8 +93,8 @@ const DeliveryLayout = ({ children, title = "Delivery Portal" }) => {
         </div>
       </aside>
 
-      <div className="flex-1 ml-[280px] flex flex-col min-h-screen">
-        <header className="h-[90px] bg-white/80 backdrop-blur-xl border-b border-gray-100 flex items-center justify-between px-10 sticky top-0 z-40">
+      <div className="ml-72 flex flex-col min-h-screen">
+        <header className="h-[90px] bg-white/80 backdrop-blur-xl border-b border-gray-100 flex items-center justify-between px-10 sticky top-0 z-30">
           <h2 className="text-2xl font-black text-slate-900 tracking-tight">{title}</h2>
           
           <div className="flex items-center gap-8">
@@ -99,24 +109,35 @@ const DeliveryLayout = ({ children, title = "Delivery Portal" }) => {
                   <p className="text-sm font-black text-slate-900 leading-none">{user?.name}</p>
                   <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mt-1">Delivery Agent</p>
                 </div>
-                <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-900 font-black text-lg shadow-inner">
+                <button 
+                  onClick={() => setIsProfileSidebarOpen(true)}
+                  className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-900 font-black text-lg shadow-inner hover:bg-slate-200 transition-all active:scale-95 border-2 border-white"
+                >
                   {user?.name?.[0] || 'D'}
-                </div>
+                </button>
               </div>
             </div>
           </div>
         </header>
 
-        <main className="p-10 flex-1">
+        <main className="p-6 flex-1">
           {children}
         </main>
       </div>
 
+      <Sidebar 
+        isOpen={isProfileSidebarOpen} 
+        onClose={() => setIsProfileSidebarOpen(false)} 
+        user={user} 
+        onLogout={() => setShowLogoutConfirm(true)} 
+      />
+
       {showLogoutConfirm && (
         <ConfirmDialog
           isOpen={showLogoutConfirm}
-          onClose={() => setShowLogoutConfirm(false)}
+          onClose={() => !isLoggingOut && setShowLogoutConfirm(false)}
           onConfirm={handleLogout}
+          loading={isLoggingOut}
           title="Sign Out"
           message="Are you sure you want to exit the delivery portal?"
           confirmText="Sign Out"

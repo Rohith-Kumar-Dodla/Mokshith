@@ -1,12 +1,14 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@source "./src";
+@config "./tailwind.config.js";
 
 /* GLOBAL BASE */
 body {
   background-color: var(--background);
   color: var(--text-main);
   font-family: 'Inter', system-ui, sans-serif;
+  margin: 0;
+  padding: 0;
 }
 
 /* FORM ELEMENTS */

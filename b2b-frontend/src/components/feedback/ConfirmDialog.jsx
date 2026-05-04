@@ -13,28 +13,35 @@ const ConfirmDialog = ({
   variant = 'primary',
   loading = false
 }) => {
+  const handleConfirm = () => {
+    onConfirm();
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
       <div className="space-y-6">
-        <p className="text-sm font-medium text-gray-500">{message}</p>
-        <div className="flex justify-end gap-2">
+        <div className="p-6 bg-gray-50 rounded-xl border border-gray-100">
+          <p className="text-lg font-semibold text-gray-700 leading-relaxed text-center">{message}</p>
+        </div>
+        <div className="flex flex-col gap-2">
           <Button 
             type="button" 
-            variant="secondary" 
-            onClick={onClose} 
-            className="h-9 px-4 text-xs font-bold uppercase tracking-widest"
+            variant={variant === 'danger' ? 'danger' : 'primary'} 
+            onClick={handleConfirm}
+            loading={loading}
             disabled={loading}
+            className="w-full h-12 rounded-xl text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {cancelText}
+            {confirmText}
           </Button>
           <Button 
             type="button" 
-            variant={variant} 
-            onClick={() => { onConfirm(); }} 
-            loading={loading}
-            className="h-9 px-4 text-xs font-bold uppercase tracking-widest bg-blue-600 hover:bg-blue-700 text-white"
+            variant="secondary" 
+            onClick={onClose}
+            disabled={loading}
+            className="w-full h-12 rounded-xl text-sm font-bold border border-gray-200 text-gray-500 hover:bg-gray-50 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {confirmText}
+            {cancelText}
           </Button>
         </div>
       </div>
