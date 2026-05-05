@@ -88,16 +88,16 @@ const AdminOrdersPage = () => {
     <div className="space-y-10 py-6">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-4">
         <div>
-          <h1 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tighter leading-none flex items-center gap-4">
+          <div className="text-4xl md:text-5xl font-black text-gray-900 tracking-tighter leading-none flex items-center gap-4">
             <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-600/20">
               <ClipboardList size={32} />
             </div>
             Order <span className="text-blue-600">Management</span>
-          </h1>
-          <p className="text-gray-500 font-bold mt-4 text-lg flex items-center gap-2">
+          </div>
+          <div className="text-gray-500 font-bold mt-4 text-lg flex items-center gap-2">
             <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
             Monitor and fulfill business transactions across the platform
-          </p>
+          </div>
         </div>
         <div className="flex gap-4">
           <Button 
@@ -127,133 +127,159 @@ const AdminOrdersPage = () => {
           orders.map((order) => (
             <Card 
               key={order._id} 
-              className="p-10 rounded-[3rem] border-none shadow-sm bg-white border border-gray-50 hover:shadow-2xl hover:shadow-blue-500/5 transition-all duration-500 group relative overflow-hidden"
+              className="p-8 rounded-[2.5rem] border-none shadow-sm bg-white border border-gray-100 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 group relative overflow-hidden"
             >
               {/* Status Ribbon (Top Right) */}
-              <div className="absolute top-0 right-0 p-8 flex items-center gap-3">
+              <div className="absolute top-0 right-0 p-6 flex items-center gap-3">
                 <div className="flex flex-col items-end">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Created At</span>
-                  <div className="flex items-center gap-2 text-xs font-black text-gray-600 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100">
+                  <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Received On</span>
+                  <div className="flex items-center gap-2 text-xs font-black text-gray-700 bg-gray-50/80 px-4 py-2 rounded-xl border border-gray-100 backdrop-blur-sm">
                     <Calendar size={14} className="text-blue-500" />
                     {new Date(order.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 xl:grid-cols-12 gap-12">
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
                 {/* Section 1: Business Identity (3 cols) */}
                 <div className="xl:col-span-3 space-y-6">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="text-xs font-black text-blue-600 bg-blue-50 px-4 py-1.5 rounded-xl border border-blue-100 whitespace-nowrap">
-                      #{order._id?.slice(-8).toUpperCase()}
-                    </span>
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div className="px-4 py-1.5 rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-200 border border-blue-500">
+                      <span className="text-[10px] font-black uppercase tracking-widest">
+                        ID: {order._id?.slice(-8).toUpperCase()}
+                      </span>
+                    </div>
                     <OrderStatusBadge status={order.status} />
                   </div>
                   
-                  <div className="p-6 bg-gray-50/50 rounded-[2rem] border border-gray-100 group-hover:bg-white group-hover:border-blue-100 transition-all duration-500">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center text-blue-600 border border-gray-50">
-                        <UserIcon size={24} />
+                  <div className="p-6 bg-gradient-to-br from-gray-50 to-white rounded-[2rem] border border-gray-100 group-hover:border-blue-100 transition-all duration-500 shadow-sm">
+                    <div className="flex items-center gap-4 mb-5">
+                      <div className="w-14 h-14 rounded-2xl bg-white shadow-md flex items-center justify-center text-blue-600 border border-gray-100 group-hover:scale-105 transition-transform">
+                        <UserIcon size={28} />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-lg font-black text-gray-900 leading-none truncate">{order.userId?.name || 'Anonymous Business'}</p>
-                        <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mt-1">B2B Partner</p>
+                        <p className="text-xl font-black text-gray-900 leading-tight truncate">{order.userId?.name || 'Anonymous Business'}</p>
+                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mt-1">Certified Partner</p>
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <p className="text-xs font-bold text-gray-500 flex items-center gap-2 truncate">
-                        <div className="w-1.5 h-1.5 bg-gray-300 rounded-full"></div>
-                        {order.userId?.email}
-                      </p>
-                      <p className="text-xs font-bold text-gray-500 flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-gray-300 rounded-full"></div>
-                        {order.userId?.phone || 'No Contact Info'}
-                      </p>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3 text-gray-500">
+                        <div className="w-8 h-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center flex-shrink-0">
+                          <Search size={14} className="text-gray-400" />
+                        </div>
+                        <p className="text-xs font-bold truncate">{order.userId?.email}</p>
+                      </div>
+                      <div className="flex items-center gap-3 text-gray-500">
+                        <div className="w-8 h-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center flex-shrink-0">
+                          <RefreshCcw size={14} className="text-gray-400" />
+                        </div>
+                        <p className="text-xs font-bold">{order.userId?.phone || 'No Contact Info'}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Section 2: Order Contents (4 cols) */}
-                <div className="xl:col-span-4 bg-gray-50/30 p-8 rounded-[2.5rem] border border-gray-100/50 relative group-hover:bg-white group-hover:border-blue-100 transition-all duration-500">
-                  <div className="flex items-center justify-between mb-6">
-                    <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-3">
-                      <Package size={16} className="text-blue-500" />
-                      Manifest Items
-                    </p>
-                    <span className="text-[10px] font-black bg-white text-gray-900 px-3 py-1 rounded-full border border-gray-100 shadow-sm">
-                      {order.items?.length || 0} SKU
-                    </span>
+                {/* Section 2: Order Contents (4 cols) - Improved manifest items UI */}
+                <div className="xl:col-span-4 bg-gray-50/40 p-8 rounded-[2.5rem] border border-gray-100 group-hover:bg-white group-hover:border-blue-100 transition-all duration-500">
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
+                        <Package size={20} />
+                      </div>
+                      <div>
+                        <div className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Manifest Items</div>
+                        <div className="text-xs font-black text-gray-900">{order.items?.length || 0} Products Included</div>
+                      </div>
+                    </div>
                   </div>
                   
                   <div className="space-y-4">
                     {Array.isArray(order.items) && order.items.slice(0, 3).map((item, idx) => (
-                      <div key={idx} className="flex justify-between items-center p-3 rounded-2xl bg-white border border-gray-50 group-hover:border-blue-50 shadow-sm transition-all">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 text-[10px] font-black">
+                      <div key={idx} className="flex justify-between items-center p-4 rounded-2xl bg-white border border-gray-100 group-hover:border-blue-50 shadow-sm hover:shadow-md transition-all">
+                        <div className="flex items-center gap-4 min-w-0">
+                          <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 text-xs font-black border border-blue-100">
                             {idx + 1}
                           </div>
-                          <span className="text-sm font-black text-gray-700 truncate">{item.name}</span>
+                          <div className="min-w-0">
+                            <span className="text-sm font-black text-gray-800 block truncate">{item.name}</span>
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">SKU-{item._id?.slice(-4).toUpperCase() || 'PROD'}</span>
+                          </div>
                         </div>
-                        <span className="text-xs font-black text-blue-600 bg-blue-50 px-3 py-1 rounded-xl whitespace-nowrap border border-blue-100">
-                          × {item.quantity}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Qty</span>
+                          <span className="text-sm font-black text-blue-600 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100 whitespace-nowrap">
+                            × {item.quantity}
+                          </span>
+                        </div>
                       </div>
                     ))}
                     {order.items?.length > 3 && (
-                      <div className="flex items-center justify-center gap-2 py-3 bg-white/50 rounded-2xl border border-dashed border-gray-200">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
-                          + {order.items.length - 3} additional inventory items
+                      <button 
+                        onClick={() => navigate(`${routes.ORDERS}/${order._id}`)}
+                        className="w-full flex items-center justify-center gap-3 py-4 bg-white/50 hover:bg-white rounded-2xl border border-dashed border-gray-200 hover:border-blue-300 transition-all group/more"
+                      >
+                        <p className="text-[10px] font-black text-gray-400 group-hover:text-blue-600 uppercase tracking-[0.2em]">
+                          + {order.items.length - 3} more inventory items
                         </p>
-                      </div>
+                        <ChevronRight size={14} className="text-gray-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
+                      </button>
                     )}
                   </div>
                 </div>
 
                 {/* Section 3: Financials (2 cols) */}
-                <div className="xl:col-span-2 space-y-6">
-                  <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-3">
-                    <CreditCard size={16} className="text-blue-500" />
-                    Financial Info
-                  </p>
-                  
-                  <div className="space-y-6">
-                    <div>
-                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Grand Total</span>
-                      <p className="text-3xl font-black text-gray-900 tracking-tighter">₹{order.totalAmount?.toLocaleString()}</p>
+                <div className="xl:col-span-2 space-y-8">
+                  <div>
+                    <div className="text-[11px] font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-3 mb-4">
+                      <CreditCard size={16} className="text-blue-500" />
+                      Financial Info
                     </div>
                     
-                    <div className="grid gap-2">
-                      <div className="flex items-center justify-between p-3 rounded-2xl bg-gray-50 border border-gray-100 group-hover:bg-white transition-all">
-                        <span className="text-[10px] font-black text-gray-400 uppercase">Method</span>
-                        <span className="text-[10px] font-black text-gray-900 uppercase tracking-widest">{order.paymentMethod}</span>
+                    <div className="space-y-6">
+                      <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Grand Total</span>
+                        <div className="text-4xl font-black text-gray-900 tracking-tighter flex items-baseline gap-1">
+                          <span className="text-xl">₹</span>
+                          {order.totalAmount?.toLocaleString()}
+                        </div>
                       </div>
-                      <div className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${
-                        order.paymentStatus === 'PAID' 
-                          ? 'bg-emerald-50 border-emerald-100 text-emerald-600' 
-                          : 'bg-rose-50 border-rose-100 text-rose-600'
-                      }`}>
-                        <span className="text-[10px] font-black uppercase">Status</span>
-                        <span className="text-[10px] font-black uppercase tracking-widest">{order.paymentStatus}</span>
+                      
+                      <div className="grid gap-3">
+                        <div className="flex items-center justify-between p-4 rounded-2xl bg-white border border-gray-100 shadow-sm">
+                          <span className="text-[10px] font-black text-gray-400 uppercase">Method</span>
+                          <span className="text-[10px] font-black text-gray-900 uppercase tracking-widest bg-gray-50 px-3 py-1 rounded-lg">{order.paymentMethod}</span>
+                        </div>
+                        <div className={`flex items-center justify-between p-4 rounded-2xl border shadow-sm ${
+                          order.paymentStatus === 'PAID' 
+                            ? 'bg-emerald-50 border-emerald-100 text-emerald-600' 
+                            : 'bg-rose-50 border-rose-100 text-rose-600'
+                        }`}>
+                          <span className="text-[10px] font-black uppercase">Status</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest">{order.paymentStatus}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Section 4: Lifecycle Controls (3 cols) */}
-                <div className="xl:col-span-3 flex flex-col justify-end gap-4">
-                  <div className="space-y-3">
-                    <p className="text-[11px] font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-3 mb-2">
-                      <RefreshCcw size={14} className="text-blue-500" />
-                      Status Lifecycle
-                    </p>
+                <div className="xl:col-span-3 flex flex-col justify-end">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                        <RefreshCcw size={14} className="text-blue-500" />
+                        Status Lifecycle
+                      </div>
+                    </div>
                     
                     <div className="relative group/select">
-                      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-600 z-10 bg-white p-1 rounded-lg shadow-sm border border-blue-50">
+                      <div className="absolute left-5 top-1/2 -translate-y-1/2 text-blue-600 z-10 bg-white p-1.5 rounded-xl shadow-sm border border-blue-50 pointer-events-none">
                         {getStatusIcon(order.status)}
                       </div>
                       <select 
                         disabled={isUpdating[order._id]}
-                        className="w-full h-14 pl-14 pr-10 rounded-2xl border-2 border-gray-100 bg-white text-xs font-black text-gray-700 appearance-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/5 transition-all cursor-pointer disabled:opacity-50 shadow-sm uppercase tracking-widest"
+                        className="w-full h-16 pl-16 pr-10 rounded-[1.25rem] border-2 border-gray-100 bg-white text-xs font-black text-gray-700 appearance-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/5 transition-all cursor-pointer disabled:opacity-50 shadow-sm uppercase tracking-widest text-center"
+                        style={{ textAlignLast: 'center' }}
                         value={order.status}
                         onChange={(e) => handleUpdateStatus(order._id, e.target.value)}
                       >
@@ -265,14 +291,14 @@ const AdminOrdersPage = () => {
                         <option value="DELIVERED">Mark Delivered</option>
                         <option value="CANCELLED">Cancel Order</option>
                       </select>
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-hover/select:text-blue-500 transition-colors">
+                      <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-hover/select:text-blue-500 transition-colors">
                         <ChevronRight size={20} className="rotate-90" />
                       </div>
                     </div>
 
                     <Button 
                       onClick={() => navigate(`${routes.ORDERS}/${order._id}`)}
-                      className="w-full h-14 rounded-2xl bg-white border-2 border-gray-100 text-gray-900 hover:bg-blue-600 hover:text-white hover:border-blue-600 font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all active:scale-95 shadow-sm group/btn"
+                      className="w-full h-16 rounded-[1.25rem] bg-blue-600 text-white hover:bg-blue-700 font-black text-[11px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all active:scale-95 shadow-lg shadow-blue-200 border-none group/btn"
                     >
                       Inspect Details
                       <ArrowRight size={18} className="group-hover/btn:translate-x-1 transition-transform" />

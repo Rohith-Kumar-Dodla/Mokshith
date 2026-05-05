@@ -74,7 +74,7 @@ const AdminLayout = ({ title = "Admin Panel" }) => {
       </div>
 
       {/* ================= DESKTOP SIDEBAR ================= */}
-      <aside className="hidden md:flex w-[280px] h-screen bg-[#000000] text-white flex-col shadow-2xl flex-shrink-0 sticky top-0 z-50">
+      <aside className="hidden md:flex w-[280px] h-full bg-[#000000] text-white flex-col shadow-2xl flex-shrink-0 z-50">
         <SidebarContent 
           location={location} 
           menuItems={menuItems} 
@@ -83,9 +83,9 @@ const AdminLayout = ({ title = "Admin Panel" }) => {
       </aside>
 
       {/* ================= MAIN CONTENT ================= */}
-      <div className="flex-1 flex flex-col h-screen relative overflow-hidden bg-white">
+      <div className="flex-1 flex flex-col h-full relative overflow-hidden bg-white">
         {/* Top Header */}
-        <header className="h-24 bg-white border-b border-gray-100 flex items-center px-6 md:px-12 sticky top-0 z-40">
+        <header className="h-24 bg-white border-b border-gray-100 flex items-center px-6 md:px-12 flex-shrink-0 z-40">
           <div className="flex-1 flex justify-between items-center gap-8 md:gap-16">
             <div className="flex items-center gap-4 md:gap-10">
               <button 
@@ -163,41 +163,41 @@ const AdminLayout = ({ title = "Admin Panel" }) => {
 const SidebarContent = ({ location, menuItems, setShowLogoutConfirm }) => (
   <div className="flex flex-col h-full overflow-hidden">
     {/* Logo Section */}
-    <div className="px-10 py-12 flex flex-col items-center text-center flex-shrink-0 border-b border-white/5 bg-gradient-to-b from-white/[0.02] to-transparent">
-      <div className="bg-[#2563EB] p-4 rounded-[1.5rem] shadow-[0_0_30px_rgba(37,99,235,0.4)] flex-shrink-0 mb-4 group-hover:scale-110 transition-transform duration-500 border border-blue-400/20">
-        <ShieldCheck size={40} className="text-white" />
+    <div className="px-10 py-16 flex flex-col items-center text-center flex-shrink-0 border-b border-white/5 bg-gradient-to-b from-white/[0.02] to-transparent">
+      <div className="bg-[#2563EB] p-5 rounded-[2rem] shadow-[0_0_50px_rgba(37,99,235,0.3)] flex-shrink-0 mb-6 group-hover:scale-110 transition-transform duration-500 border border-blue-400/20">
+        <ShieldCheck size={48} className="text-white" />
       </div>
       <div>
-        <h1 className="font-black text-4xl tracking-tighter leading-none text-white uppercase mb-2">Mokshith</h1>
-        <p className="text-[11px] font-black text-[#2563EB] uppercase tracking-[0.5em] leading-none">Enterprise</p>
+        <h1 className="font-black text-5xl tracking-tighter leading-none text-white uppercase mb-3">Mokshith</h1>
+        <p className="text-[12px] font-black text-[#2563EB] uppercase tracking-[0.6em] leading-none">Enterprise</p>
       </div>
     </div>
 
     {/* Navigation */}
-    <nav className="flex-1 flex flex-col justify-between py-8 px-4 overflow-y-auto custom-scrollbar no-scrollbar">
-      <div className="space-y-6">
-        <p className="px-8 text-[11px] font-black text-slate-600 uppercase tracking-[0.4em] mb-10">Main Menu</p>
-        <div className="space-y-6">
+    <nav className="flex-1 flex flex-col py-12 px-6 overflow-y-auto custom-scrollbar no-scrollbar">
+      <div className="flex-1">
+        <p className="px-10 text-[12px] font-black text-slate-600 uppercase tracking-[0.5em] mb-12 text-center">Main Menu</p>
+        <div className="space-y-8 flex flex-col items-center">
           {menuItems.map((item, index) => {
             const isActive = location.pathname === item.path;
             return (
               <Link
                 key={index}
                 to={item.path}
-                className={`flex items-center gap-6 px-8 py-6 rounded-[2rem] transition-all duration-500 group relative overflow-hidden ${
+                className={`flex items-center gap-8 px-12 py-7 rounded-[2.5rem] transition-all duration-500 group relative overflow-hidden w-full max-w-[240px] ${
                   isActive 
-                    ? 'bg-blue-600 text-white shadow-2xl shadow-blue-600/50 scale-[1.02]' 
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    ? 'bg-blue-600 text-white shadow-2xl shadow-blue-600/50 scale-[1.05]' 
+                    : 'text-slate-400 hover:text-white hover:bg-white/5 hover:scale-[1.02]'
                 }`}
               >
                 <div className={`flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-blue-500'} transition-colors duration-300`}>
-                  {React.cloneElement(item.icon, { size: 28 })}
+                  {React.cloneElement(item.icon, { size: 32 })}
                 </div>
-                <span className={`text-[16px] tracking-[0.1em] uppercase ${isActive ? 'font-black' : 'font-bold'}`}>{item.label}</span>
+                <span className={`text-[18px] tracking-[0.15em] uppercase ${isActive ? 'font-black' : 'font-bold'}`}>{item.label}</span>
                 
                 {/* Active Highlight Effect */}
                 {isActive && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent pointer-events-none"></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent pointer-events-none"></div>
                 )}
               </Link>
             );
@@ -205,13 +205,13 @@ const SidebarContent = ({ location, menuItems, setShowLogoutConfirm }) => (
         </div>
       </div>
 
-      {/* Logout Button (moved inside nav with flex-col spread if desired, or kept at bottom) */}
-      <div className="mt-12 pt-8 border-t border-white/5">
+      {/* Logout Button */}
+      <div className="mt-16 pt-12 border-t border-white/5 flex justify-center px-4">
         <button
           onClick={() => setShowLogoutConfirm(true)}
-          className="flex items-center justify-center gap-4 w-full px-8 py-6 rounded-[2rem] bg-[#1A0B0B] text-rose-600 hover:bg-rose-600 hover:text-white transition-all duration-500 group font-black uppercase tracking-[0.3em] text-[12px] border border-rose-600/20 hover:border-rose-600 shadow-xl"
+          className="flex items-center justify-center gap-6 w-full max-w-[240px] px-10 py-7 rounded-[2.5rem] bg-[#1A0B0B] text-rose-600 hover:bg-rose-600 hover:text-white transition-all duration-500 group font-black uppercase tracking-[0.4em] text-[13px] border border-rose-600/20 hover:border-rose-600 shadow-2xl shadow-rose-900/20"
         >
-          <LogOut size={22} className="group-hover:-translate-x-1 transition-transform" />
+          <LogOut size={26} className="group-hover:-translate-x-1 transition-transform" />
           <span>Logout</span>
         </button>
       </div>
