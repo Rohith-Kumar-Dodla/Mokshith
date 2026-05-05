@@ -105,11 +105,13 @@ const AdminLayout = ({ title = "Admin Panel" }) => {
             {/* Search Bar */}
             <div className="flex-1 max-w-2xl hidden lg:block">
               <div className="relative group">
-                <Search size={22} className="absolute left-8 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors z-10" />
+                <div className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors z-10">
+                  <Search size={22} />
+                </div>
                 <input 
                   type="text" 
                   placeholder="Search resources..." 
-                  className="w-full h-16 bg-gray-50 border-2 border-transparent focus:border-blue-500/10 focus:bg-white rounded-[2rem] px-16 text-lg font-medium transition-all outline-none shadow-inner text-center"
+                  className="w-full h-16 bg-gray-50 border-2 border-transparent focus:border-blue-500/10 focus:bg-white rounded-[2rem] pl-16 pr-8 text-lg font-medium transition-all outline-none shadow-inner text-center"
                 />
               </div>
             </div>
@@ -139,7 +141,7 @@ const AdminLayout = ({ title = "Admin Panel" }) => {
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-12 lg:p-20 max-w-[1800px] mx-auto w-full bg-[#fbfcfd] custom-scrollbar">
+        <main className="flex-1 overflow-y-auto p-8 md:p-16 lg:p-24 max-w-[1900px] mx-auto w-full bg-[#fbfcfd] custom-scrollbar">
           <Outlet />
         </main>
       </div>

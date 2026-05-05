@@ -15,7 +15,8 @@ import {
   TrendingUp,
   AlertCircle,
   CheckCircle2,
-  XCircle
+  XCircle,
+  ChevronRight
 } from 'lucide-react';
 
 const AdminProductsPage = () => {
@@ -227,43 +228,57 @@ const AdminProductsPage = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <Card className="md:col-span-3">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 mb-10">
+        <Card className="xl:col-span-3">
+          <div className="flex flex-col sm:flex-row gap-6">
+            <div className="flex-1 relative group">
+              <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors z-10">
+                <Search size={20} />
+              </div>
               <input 
                 type="text" 
                 placeholder="Search products by name or description..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
+                className="w-full pl-14 pr-14 py-3 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all outline-none bg-gray-50/50 focus:bg-white text-center font-medium"
               />
             </div>
-            <div className="sm:w-64 relative">
-              <Filter size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <div className="sm:w-64 relative group">
+              <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors pointer-events-none z-10">
+                <Filter size={20} />
+              </div>
               <select 
                 value={filterCategory}
                 onChange={(e) => setFilterCategory(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none appearance-none bg-white cursor-pointer"
+                className="w-full pl-14 pr-10 py-3 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all outline-none appearance-none bg-gray-50/50 focus:bg-white cursor-pointer font-bold text-gray-700 text-sm text-center"
+                style={{ textAlignLast: 'center' }}
               >
                 <option value="">All Categories</option>
                 {categories.map(cat => (
                   <option key={cat._id} value={cat._id}>{cat.name}</option>
                 ))}
               </select>
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                <ChevronRight size={16} className="rotate-90" />
+              </div>
             </div>
           </div>
         </Card>
-        <Card className="flex items-center justify-between p-6 bg-blue-600 text-white border-none">
-          <div>
-            <p className="text-blue-100 text-sm font-bold uppercase tracking-wider">Total Products</p>
-            <p className="text-3xl font-black mt-1">{products.length}</p>
+        
+        <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-[2rem] p-6 text-white shadow-xl shadow-blue-500/20 flex items-center justify-between group hover:scale-[1.02] transition-all relative overflow-hidden h-full min-h-[80px]">
+          <div className="relative z-10">
+            <p className="text-blue-100/80 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Total Catalog</p>
+            <div className="flex items-baseline gap-2">
+              <h3 className="text-3xl font-black">{products.length}</h3>
+              <span className="text-[10px] font-bold text-blue-200 uppercase">Items</span>
+            </div>
           </div>
-          <div className="p-3 bg-white/20 rounded-2xl">
-            <TrendingUp size={28} />
+          <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/10 relative z-10">
+            <Package size={24} className="text-white" />
           </div>
-        </Card>
+          {/* Subtle background decoration */}
+          <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-white/5 rounded-full group-hover:scale-150 transition-transform duration-700"></div>
+        </div>
       </div>
 
       <Table headers={headers}>
