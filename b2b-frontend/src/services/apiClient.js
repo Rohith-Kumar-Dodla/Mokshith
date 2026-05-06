@@ -4,15 +4,23 @@ import { updateToken, logout } from "../modules/auth/authSlice.js";
 
 const getBaseURL = () => {
   const envUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
-  return envUrl.replace(/\/$/, '');
+  // Remove trailing slash
+  const cleanUrl = envUrl.replace(/\/$/, '');
+  
+  // 🔥 Fix: If the URL already contains /api/v1, don't append it again
+  if (cleanUrl.endsWith('/api/v1')) {
+    return cleanUrl;
+  }
+  
+  return `${cleanUrl}/api/v1`;
 };
 
-const API_BASE_URL = getBaseURL();
-const API_V1_URL = `${API_BASE_URL}/api/v1`;
+const API_V1_URL = getBaseURL();
+const API_BASE_URL = API_V1_URL.replace(/\/api\/v1$/, '');
 
 const apiClient = axios.create({
   baseURL: API_V1_URL,
-  timeout: 30000, // 30 second timeout for B2B stability
+  timeout: 30000,
   headers: {
     "Content-Type": "application/json",
   },
