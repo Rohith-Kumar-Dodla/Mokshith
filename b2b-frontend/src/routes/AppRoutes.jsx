@@ -37,6 +37,7 @@ import SecurityPage from "../modules/user/pages/Security.jsx";
 import HelpPage from "../modules/user/pages/Help.jsx";
 import ProductDetails from "../modules/product/pages/ProductDetails.jsx";
 import Dashboard from "../modules/user/pages/Dashboard.jsx";
+import WishlistPage from "../modules/wishlist/pages/WishlistPage.jsx";
 
 // New Module Pages
 import AnalyticsPage from "../modules/analytics/pages/AnalyticsPage.jsx";
@@ -164,6 +165,11 @@ const AppRoutes = () => {
         <Route path={routes.HELP} element={
           <ProtectedRoute>
             <MainLayout><HelpPage /></MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path={routes.WISHLIST} element={
+          <ProtectedRoute>
+            <MainLayout><WishlistPage /></MainLayout>
           </ProtectedRoute>
         } />
         <Route path={routes.CHECKOUT} element={

@@ -69,6 +69,7 @@ const Sidebar = ({ isOpen, onClose, user, onLogout }) => {
   const b2bCustomerLinks = [
     { icon: <User size={18} />, label: "My Profile", path: routes.PROFILE },
     { icon: <PackageIcon size={18} />, label: "My Orders", path: routes.ORDERS },
+    { icon: <Heart size={18} />, label: "Wishlist", path: routes.WISHLIST },
     { icon: <CreditCard size={18} />, label: "Credit Balance", path: routes.CREDIT },
     { icon: <Shield size={18} />, label: "Security", path: routes.SECURITY },
     { icon: <HelpCircle size={18} />, label: "Help & Support", path: routes.HELP },
