@@ -57,7 +57,7 @@ const Modal = ({
 
   return createPortal(
     <div 
-      className={`fixed inset-0 z-[9999] flex items-center justify-center p-6 transition-all duration-300 ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
+      className={`fixed inset-0 z-[20000] flex items-center justify-center p-6 transition-all duration-300 ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
       style={{ isolation: 'isolate' }}
     >
       {/* Backdrop */}

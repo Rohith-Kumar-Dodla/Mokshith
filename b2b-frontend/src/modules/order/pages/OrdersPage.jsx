@@ -30,6 +30,7 @@ const OrdersPage = () => {
   const { on } = useSocket();
   const { showToast } = useNotification();
   const [actionLoading, setActionLoading] = useState({});
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     // 📡 Real-time Updates: Payment Success
@@ -49,6 +50,19 @@ const OrdersPage = () => {
       if (offDelivery) offDelivery();
     };
   }, [on, showToast, fetchOrders]);
+
+  useEffect(() => {
+    let timer;
+    if (loading) {
+      timer = setTimeout(() => {
+        if (loading && retryCount < 2) {
+          fetchOrders();
+          setRetryCount(prev => prev + 1);
+        }
+      }, 5000);
+    }
+    return () => clearTimeout(timer);
+  }, [loading, retryCount, fetchOrders]);
 
   const handleDownloadInvoice = async (orderId) => {
     setActionLoading(prev => ({ ...prev, [orderId + '_invoice']: true }));
@@ -76,22 +90,23 @@ const OrdersPage = () => {
     navigate(routes.CART || '/cart');
   };
 
-  if (loading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50/50">
-      <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-      <p className="text-gray-500 font-medium">Loading your business orders...</p>
+  if (loading && retryCount < 2) return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50/50 gap-8">
+      <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      <p className="text-xl text-gray-500 font-semibold">Fetching your orders...</p>
     </div>
   );
   
-  if (error) return (
+  if (error || (loading && retryCount >= 2)) return (
     <div className="min-h-screen flex items-center justify-center p-6">
       <Card className="max-w-md w-full text-center p-8">
-        <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-          <History size={32} />
+        <div className="text-6xl mb-8">⚠️</div>
+        <h2 className="text-3xl font-extrabold text-gray-900 mb-4">Oops! Something went wrong</h2>
+        <p className="text-gray-500 mb-10">{error || "We're having trouble loading your orders. Please try again."}</p>
+        <div className="flex gap-4">
+          <Button onClick={() => { setRetryCount(0); fetchOrders(); }} className="flex-1">Try Again</Button>
+          <Button variant="secondary" onClick={() => navigate(routes.DASHBOARD || '/')} className="flex-1">Go to Dashboard</Button>
         </div>
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Couldn't load orders</h3>
-        <p className="text-gray-500 mb-6">{error}</p>
-        <Button onClick={() => fetchOrders()} className="w-full">Try Again</Button>
       </Card>
     </div>
   );
@@ -118,20 +133,17 @@ const OrdersPage = () => {
         {filteredOrders.length === 0 ? (
           <Card className="text-center py-20 bg-white border-2 border-dashed border-gray-200 rounded-[2.5rem]">
             <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Package size={48} className="text-gray-300" />
+              <Package size={40} className="text-gray-300" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">No orders found</h2>
-            <p className="text-gray-500 mb-8 max-w-xs mx-auto">You haven't placed any business orders yet. Start building your inventory.</p>
-            <Button onClick={() => navigate(routes.PRODUCTS)} variant="primary" className="px-8">
-              Explore Products
-            </Button>
+            <p className="text-gray-400 font-bold uppercase tracking-widest mb-6">You haven't placed any orders yet.</p>
+            <Button onClick={() => navigate(routes.PRODUCTS)}>Start Shopping</Button>
           </Card>
         ) : (
           <div className="space-y-6">
             {filteredOrders.map((order) => (
               <Card 
                 key={order._id || order.id} 
-                className="overflow-hidden border-none shadow-sm hover:shadow-md transition-all duration-300 rounded-[2rem] bg-white"
+                className="bg-white border-gray-100 hover:shadow-2xl hover:shadow-blue-500/5 transition-all duration-500 rounded-[2.5rem] overflow-hidden"
               >
                 {/* Order Header */}
                 <div className="p-6 md:p-8 border-b border-gray-50 bg-gray-50/30">

@@ -174,9 +174,9 @@ const AppRoutes = () => {
         } />
         <Route path={routes.CHECKOUT} element={
           <ProtectedRoute>
-            <RoleBasedRoute allowedRoles={["B2B_CUSTOMER", "B2C_CUSTOMER"]}>
+            <RoleGuard allowedRoles={["B2B_CUSTOMER", "B2C_CUSTOMER"]}>
               <MainLayout><CheckoutPage /></MainLayout>
-            </RoleBasedRoute>
+            </RoleGuard>
           </ProtectedRoute>
         } />
 

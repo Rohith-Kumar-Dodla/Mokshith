@@ -15,26 +15,9 @@ const Navbar = () => {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-  useEffect(() => {
-    setShowLogoutConfirm(false);
-    setIsLoggingOut(false);
-  }, [location.pathname]);
 
   const cartCount = cart?.reduce((acc, item) => acc + item.quantity, 0) || 0;
   const isLandingPage = location.pathname === routes.LANDING;
-
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-    try {
-      await logout();
-    } catch (error) {
-      console.error("Logout error:", error);
-      setIsLoggingOut(false);
-    }
-  };
 
   return (
     <>
@@ -119,20 +102,8 @@ const Navbar = () => {
         isOpen={isSidebarOpen} 
         onClose={() => setIsSidebarOpen(false)} 
         user={user} 
-        onLogout={handleLogout}
+        onLogout={logout}
       />
-
-      {showLogoutConfirm && (
-        <ConfirmDialog
-          isOpen={showLogoutConfirm}
-          onClose={() => !isLoggingOut && setShowLogoutConfirm(false)}
-          onConfirm={handleLogout}
-          loading={isLoggingOut}
-          title="Logout"
-          message="Are you sure you want to logout?"
-          confirmText="Logout"
-        />
-      )}
 
       <CartDrawer 
         isOpen={isCartOpen} 

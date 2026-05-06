@@ -127,31 +127,31 @@ const InventoryPage = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
-        <Card className="flex items-center gap-5 border-none bg-white hover:shadow-xl transition-all duration-300">
-          <div className="p-5 bg-blue-50 rounded-[1.5rem]">
+        <Card className="flex flex-col items-center justify-center gap-4 border-none bg-white hover:shadow-xl transition-all duration-300 py-8 min-h-[180px]">
+          <div className="p-5 bg-blue-50 rounded-[2rem] shadow-sm">
             <Package size={32} className="text-blue-600" />
           </div>
-          <div>
-            <p className="text-xs font-black uppercase tracking-wider text-gray-400 mb-1">Total SKUs</p>
-            <p className="text-3xl font-black text-gray-900">{stats?.totalProducts || inventory.length}</p>
+          <div className="text-center">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">Total SKUs</p>
+            <p className="text-4xl font-black text-gray-900 tracking-tighter">{stats?.productCount || stats?.totalProducts || inventory.length}</p>
           </div>
         </Card>
-        <Card className="flex items-center gap-5 border-none bg-white hover:shadow-xl transition-all duration-300">
-          <div className="p-5 bg-yellow-50 rounded-[1.5rem]">
+        <Card className="flex flex-col items-center justify-center gap-4 border-none bg-white hover:shadow-xl transition-all duration-300 py-8 min-h-[180px]">
+          <div className="p-5 bg-yellow-50 rounded-[2rem] shadow-sm">
             <AlertTriangle size={32} className="text-yellow-600" />
           </div>
-          <div>
-            <p className="text-xs font-black uppercase tracking-wider text-yellow-500 mb-1">Low Stock</p>
-            <p className="text-3xl font-black text-gray-900">{stats?.lowStockCount || lowStockItems.length}</p>
+          <div className="text-center">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-yellow-600 mb-2">Low Stock</p>
+            <p className="text-4xl font-black text-gray-900 tracking-tighter">{stats?.lowStockCount || lowStockItems.length}</p>
           </div>
         </Card>
-        <Card className="flex items-center gap-5 border-none bg-white hover:shadow-xl transition-all duration-300">
-          <div className="p-5 bg-green-50 rounded-[1.5rem]">
+        <Card className="flex flex-col items-center justify-center gap-4 border-none bg-white hover:shadow-xl transition-all duration-300 py-8 min-h-[180px]">
+          <div className="p-5 bg-green-50 rounded-[2rem] shadow-sm">
             <CheckCircle size={32} className="text-green-600" />
           </div>
-          <div>
-            <p className="text-xs font-black uppercase tracking-wider text-green-500 mb-1">Healthy Stock</p>
-            <p className="text-3xl font-black text-gray-900">{stats?.inStockCount || inventory.filter(i => getStockStatus(i) === 'in-stock').length}</p>
+          <div className="text-center">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-green-600 mb-2">Healthy Stock</p>
+            <p className="text-4xl font-black text-gray-900 tracking-tighter">{stats?.inStockCount || inventory.filter(i => getStockStatus(i) === 'in-stock').length}</p>
           </div>
         </Card>
       </div>
@@ -165,10 +165,10 @@ const InventoryPage = () => {
             <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">Critical Stock Alerts</h3>
           </div>
           <div className="flex flex-wrap gap-3">
-            {lowStockItems.slice(0, 8).map((item) => (
+            {lowStockItems.filter(item => item.productId).slice(0, 8).map((item) => (
               <span key={item._id} className="px-4 py-2 bg-white border border-yellow-100 text-yellow-700 rounded-xl text-sm font-bold shadow-sm flex items-center gap-2">
                 <span className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></span>
-                {item.product?.name || 'Unknown'}: <span className="text-yellow-900">{item.available} units</span>
+                {item.productId?.name || 'Unknown'}: <span className="text-yellow-900">{item.stock} units</span>
               </span>
             ))}
           </div>
@@ -188,66 +188,67 @@ const InventoryPage = () => {
               </TableCell>
             </TableRow>
           ) : (
-            inventory.map((item) => {
+            inventory.filter(item => item.productId).map((item) => {
+              const available = item.stock - (item.reserved || 0);
+              const status = available <= 0 ? 'out-of-stock' : available < 10 ? 'low' : 'in-stock';
+              const badge = getStatusBadge(status);
+              
               return (
                 <TableRow key={item._id} className="group transition-colors hover:bg-gray-50/50">
                   <TableCell>
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center">
-                        <Package size={20} className="text-gray-400" />
+                      <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center text-2xl shadow-inner group-hover:scale-110 transition-transform">
+                        {item.productId?.image || '📦'}
                       </div>
                       <div>
-                        <p className="font-black text-gray-900 leading-tight">
+                        <p className="text-base font-black text-gray-900 leading-tight">
                           {item.productId?.name || 'Unknown Product'}
                         </p>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mt-1.5 flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 bg-gray-300 rounded-full"></span>
                           SKU: {item.productId?.sku || 'N/A'}
                         </p>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="font-black text-gray-900 text-lg">
-                      {item.stock}
+                    <div className="flex flex-col">
+                      <span className="text-xl font-black text-gray-900">{item.stock}</span>
+                      <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-1">Units Total</span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="font-bold text-amber-600">
-                      {item.reserved || 0}
+                    <div className="flex flex-col">
+                      <span className="text-lg font-bold text-amber-600">{item.reserved || 0}</span>
+                      <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-1">On Hold</span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="font-black text-blue-600 text-lg">
-                      {item.stock - (item.reserved || 0)}
+                    <div className="flex flex-col">
+                      <span className="text-xl font-black text-blue-600">{available}</span>
+                      <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest mt-1">Ready to Sell</span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Warehouse size={14} className="text-gray-400" />
-                      <span className="text-xs font-bold text-gray-600 uppercase">
+                    <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 rounded-xl w-fit border border-gray-100">
+                      <Warehouse size={16} className="text-gray-400" />
+                      <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">
                         {item.warehouseId?.name || 'Main Warehouse'}
                       </span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    {(() => {
-                      const available = item.stock - (item.reserved || 0);
-                      const status = available <= 0 ? 'out-of-stock' : available < 10 ? 'low' : 'in-stock';
-                      const badge = getStatusBadge(status);
-                      return (
-                        <span className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border ${badge.bg} ${badge.text} ${badge.border}`}>
-                          {badge.label}
-                        </span>
-                      );
-                    })()}
+                    <span className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] border-2 ${badge.bg} ${badge.text} ${badge.border} shadow-sm`}>
+                      {badge.label}
+                    </span>
                   </TableCell>
                   <TableCell className="text-right">
                     <Button 
                       variant="secondary" 
                       onClick={() => handleEditStock(item)}
-                      className="h-10 px-4 rounded-xl flex items-center gap-2 ml-auto group/btn bg-white hover:bg-blue-600 hover:text-white transition-all border-gray-200"
+                      className="h-12 px-6 rounded-2xl flex items-center gap-3 ml-auto group/btn bg-white hover:bg-gray-900 hover:text-white transition-all border-gray-200 shadow-sm font-black text-[10px] tracking-widest uppercase"
                     >
-                      <Edit3 size={14} className="group-hover/btn:scale-110 transition-transform" />
+                      <Edit3 size={16} className="group-hover/btn:rotate-12 transition-transform" />
                       Update
                     </Button>
                   </TableCell>
@@ -271,8 +272,8 @@ const InventoryPage = () => {
                 <Package size={32} className="text-blue-500" />
               </div>
               <div>
-                <p className="text-xl font-black text-gray-900 leading-tight">{selectedItem.product?.name}</p>
-                <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-1">SKU: {selectedItem.product?.sku || 'N/A'}</p>
+                <p className="text-xl font-black text-gray-900 leading-tight">{selectedItem.productId?.name}</p>
+                <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-1">SKU: {selectedItem.productId?.sku || 'N/A'}</p>
               </div>
             </div>
 

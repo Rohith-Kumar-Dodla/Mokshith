@@ -29,82 +29,86 @@ const WarehouseCard = ({ warehouse, onEdit, onDelete }) => {
   const isModerate = loadPercentage >= 60 && loadPercentage < 90;
 
   return (
-    <Card className="hover:shadow-xl transition-all duration-300 border-none bg-white group overflow-hidden">
-      <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-        <div className="flex gap-2">
+    <Card className="hover:shadow-2xl transition-all duration-500 border border-gray-100 bg-white group overflow-hidden rounded-[2.5rem] p-10 flex flex-col items-center text-center relative">
+      <div className="absolute top-8 right-8 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0">
+        <div className="flex flex-col gap-3">
           <button 
             onClick={() => onEdit(warehouse)} 
-            className="p-2 bg-white/90 backdrop-blur shadow-sm hover:bg-blue-50 rounded-xl text-blue-600 transition-all border border-blue-100"
-            title="Edit Warehouse"
+            className="p-3 bg-white shadow-xl hover:bg-blue-600 hover:text-white rounded-2xl text-blue-600 transition-all border border-gray-50"
           >
-            <Edit3 size={16} />
+            <Edit3 size={18} />
           </button>
           <button 
             onClick={() => onDelete(warehouse._id)} 
-            className="p-2 bg-white/90 backdrop-blur shadow-sm hover:bg-red-50 rounded-xl text-red-500 transition-all border border-red-100"
-            title="Delete Warehouse"
+            className="p-3 bg-white shadow-xl hover:bg-rose-600 hover:text-white rounded-2xl text-rose-500 transition-all border border-gray-50"
           >
-            <Trash2 size={16} />
+            <Trash2 size={18} />
           </button>
         </div>
       </div>
 
-      <div className="flex items-center gap-4 mb-6">
-        <div className="p-4 bg-blue-50 rounded-2xl group-hover:bg-blue-100 transition-colors">
-          <Warehouse size={32} className="text-blue-600" />
-        </div>
-        <div className="min-w-0">
-          <h3 className="text-xl font-black text-gray-900 truncate leading-tight">
-            {warehouse.name}
-          </h3>
-          <div className="flex items-center gap-1.5 text-sm font-bold text-gray-500 mt-0.5">
-            <MapPin size={14} className="text-blue-400" />
-            <span className="truncate">
-              {warehouse.city}, {warehouse.state} - {warehouse.pincode}
-            </span>
-          </div>
+      <div className="w-24 h-24 bg-blue-50 rounded-[2.5rem] flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500 shadow-inner">
+        <Warehouse size={48} className="text-blue-600" />
+      </div>
+
+      <div className="space-y-2 mb-10">
+        <h3 className="text-3xl font-black text-gray-900 tracking-tight leading-tight uppercase italic">
+          {warehouse.name}
+        </h3>
+        <div className="flex items-center justify-center gap-2 text-sm font-black text-gray-400 uppercase tracking-widest">
+          <MapPin size={16} className="text-blue-500" />
+          <span>
+            {warehouse.city}, {warehouse.state}
+          </span>
         </div>
       </div>
 
-      <div className="space-y-6">
-        <div>
-          <div className="flex items-end justify-between mb-2">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-wider text-gray-400 mb-0.5">Occupancy</p>
-              <p className={`text-2xl font-black ${isFull ? 'text-red-600' : isModerate ? 'text-yellow-600' : 'text-green-600'}`}>
+      <div className="w-full space-y-10">
+        <div className="w-full">
+          <div className="flex items-center justify-between mb-4 px-2">
+            <div className="text-left">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-1">Utilization</p>
+              <p className={`text-4xl font-black tracking-tighter ${isFull ? 'text-rose-600' : isModerate ? 'text-amber-500' : 'text-emerald-500'}`}>
                 {Math.round(loadPercentage)}%
               </p>
             </div>
-            <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">
-              {currentLoad} / {capacity}
-            </span>
+            <div className="text-right">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Current Load</span>
+              <span className="px-4 py-1.5 bg-gray-900 text-white text-xs font-black rounded-xl tracking-widest">
+                {currentLoad.toLocaleString()} / {capacity.toLocaleString()}
+              </span>
+            </div>
           </div>
-          <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden p-0.5">
+          <div className="w-full h-5 bg-gray-50 rounded-full overflow-hidden p-1.5 border border-gray-100 shadow-inner">
             <div 
-              className={`h-full rounded-full transition-all duration-700 ease-out ${
-                isFull ? 'bg-gradient-to-r from-red-500 to-orange-500' : 
-                isModerate ? 'bg-gradient-to-r from-yellow-500 to-orange-400' : 
-                'bg-gradient-to-r from-green-500 to-emerald-400'
+              className={`h-full rounded-full transition-all duration-1000 ease-out shadow-lg ${
+                isFull ? 'bg-gradient-to-r from-rose-500 to-rose-400' : 
+                isModerate ? 'bg-gradient-to-r from-amber-500 to-amber-400' : 
+                'bg-gradient-to-r from-emerald-500 to-emerald-400'
               }`}
               style={{ width: `${Math.min(loadPercentage, 100)}%` }}
-            ></div>
+            >
+              <div className="w-full h-full bg-white/20 animate-pulse"></div>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="p-3 bg-gray-50 rounded-2xl border border-gray-100">
-            <p className="text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1 flex items-center gap-1">
-              <Layers size={10} /> Total Capacity
+        <div className="grid grid-cols-2 gap-6 w-full">
+          <div className="p-6 bg-gray-50 rounded-[2rem] border border-gray-100 group-hover:bg-white group-hover:shadow-xl transition-all duration-500">
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 mb-3 flex items-center justify-center gap-2">
+              <Layers size={12} className="text-blue-500" /> Capacity
             </p>
-            <p className="font-black text-gray-900 text-lg">{capacity.toLocaleString()}</p>
-            <p className="text-[10px] font-bold text-gray-500">Units Total</p>
+            <p className="font-black text-gray-900 text-2xl tracking-tighter">{capacity.toLocaleString()}</p>
+            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-1">Units Total</p>
           </div>
-          <div className="p-3 bg-blue-50/50 rounded-2xl border border-blue-50">
-            <p className="text-[10px] font-black uppercase tracking-wider text-blue-400 mb-1 flex items-center gap-1">
-              <Box size={10} /> Available
+          <div className="p-6 bg-blue-50/50 rounded-[2rem] border border-blue-100 group-hover:bg-white group-hover:shadow-xl transition-all duration-500">
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-400 mb-3 flex items-center justify-center gap-2">
+              <Box size={12} /> Available
             </p>
-            <p className="font-black text-blue-700 text-lg">{(capacity - currentLoad).toLocaleString()}</p>
-            <p className="text-[10px] font-bold text-blue-500">Free Slots</p>
+            <p className="font-black text-blue-700 text-2xl tracking-tighter">
+              {Math.max(0, capacity - currentLoad).toLocaleString()}
+            </p>
+            <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest mt-1">Free Slots</p>
           </div>
         </div>
       </div>
@@ -198,19 +202,23 @@ const WarehousePage = () => {
   }
 
   return (
-    <div className="p-8 bg-gray-50/50 min-h-screen">
-      <div className="mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-4xl font-black text-gray-900 tracking-tight">
+    <div className="space-y-12 pb-12 pl-24 pr-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8 pl-8">
+        <div className="space-y-2">
+          <h1 className="text-5xl font-black text-gray-900 tracking-tighter uppercase italic">
             Warehouse <span className="text-blue-600">Network</span>
           </h1>
-          <p className="text-gray-500 font-bold mt-2 flex items-center gap-2">
-            <Truck size={18} className="text-blue-400" />
+          <p className="text-lg text-gray-500 font-medium tracking-tight flex items-center gap-3">
+            <Truck size={22} className="text-blue-500" />
             Manage storage locations and global inventory distribution
           </p>
         </div>
-        <Button onClick={() => handleOpenModal()} className="shadow-xl shadow-blue-200 h-14 px-8 text-lg rounded-2xl flex items-center gap-3">
-          <Plus size={24} strokeWidth={3} />
+        <Button 
+          onClick={() => handleOpenModal()} 
+          className="shadow-2xl shadow-blue-500/20 h-16 px-10 text-xs font-black tracking-widest uppercase rounded-[1.5rem] flex items-center gap-4 bg-blue-600 hover:bg-blue-700 text-white transition-all group"
+        >
+          <Plus size={24} strokeWidth={3} className="group-hover:rotate-90 transition-transform duration-500" />
           Add Warehouse
         </Button>
       </div>
@@ -229,7 +237,7 @@ const WarehousePage = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10 max-w-[1600px] mx-auto w-full">
         {warehouses.length === 0 ? (
           <div className="md:col-span-2 lg:col-span-3">
             <Card className="text-center py-24 border-2 border-dashed border-gray-200 bg-white/50">

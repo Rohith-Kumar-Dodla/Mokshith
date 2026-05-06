@@ -23,14 +23,18 @@ const ConfirmDialog = ({
         <div className="p-6 bg-gray-50 rounded-xl border border-gray-100">
           <p className="text-lg font-semibold text-gray-700 leading-relaxed text-center">{message}</p>
         </div>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           <Button 
             type="button" 
             variant={variant === 'danger' ? 'danger' : 'primary'} 
             onClick={handleConfirm}
             loading={loading}
             disabled={loading}
-            className="w-full h-12 rounded-xl text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`w-full h-14 rounded-2xl text-sm font-black uppercase tracking-widest transition-all active:scale-[0.95] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg ${
+              variant === 'danger' 
+                ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-200' 
+                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200'
+            }`}
           >
             {confirmText}
           </Button>
@@ -39,7 +43,7 @@ const ConfirmDialog = ({
             variant="secondary" 
             onClick={onClose}
             disabled={loading}
-            className="w-full h-12 rounded-xl text-sm font-bold border border-gray-200 text-gray-500 hover:bg-gray-50 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full h-14 rounded-2xl text-sm font-black uppercase tracking-widest border-2 border-gray-100 text-gray-400 hover:bg-gray-50 hover:text-gray-900 hover:border-gray-200 transition-all active:scale-[0.95] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {cancelText}
           </Button>

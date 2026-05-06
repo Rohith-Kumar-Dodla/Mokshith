@@ -5,6 +5,7 @@ console.log('Sidebar.jsx module loaded');
 
 import { useNavigate, Link } from 'react-router-dom';
 import { routes } from '../../routes/routeConfig.js';
+import ConfirmDialog from '../feedback/ConfirmDialog.jsx';
 import { 
   User, 
   Package, 
@@ -31,6 +32,8 @@ import {
 
 const Sidebar = ({ isOpen, onClose, user, onLogout }) => {
   const navigate = useNavigate();
+  const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
+  const [isLoggingOut, setIsLoggingOut] = React.useState(false);
 
   // Debugging log
   React.useEffect(() => {
@@ -103,6 +106,18 @@ const Sidebar = ({ isOpen, onClose, user, onLogout }) => {
   };
 
   const links = getLinksByRole();
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await onLogout();
+      setShowLogoutConfirm(false);
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   console.log('Sidebar component rendered', { isOpen, userRole: user?.role });
 
@@ -193,15 +208,24 @@ const Sidebar = ({ isOpen, onClose, user, onLogout }) => {
         <div className="p-4 border-t border-gray-100">
           <button 
             className="w-full flex items-center justify-center gap-3 py-3 rounded-lg bg-rose-50 text-rose-600 font-bold text-sm hover:bg-rose-100 transition-all" 
-            onClick={() => {
-              onClose();
-              onLogout();
-            }}
+            onClick={() => setShowLogoutConfirm(true)}
           >
             <LogOut size={18} />
             <span>Sign Out</span>
           </button>
         </div>
+
+        {/* Logout Confirmation Dialog */}
+        <ConfirmDialog
+          isOpen={showLogoutConfirm}
+          onClose={() => !isLoggingOut && setShowLogoutConfirm(false)}
+          onConfirm={handleLogout}
+          loading={isLoggingOut}
+          title="Sign Out"
+          message="Are you sure you want to sign out of your account?"
+          confirmText="Sign Out"
+          variant="danger"
+        />
       </div>
     </div>,
     target

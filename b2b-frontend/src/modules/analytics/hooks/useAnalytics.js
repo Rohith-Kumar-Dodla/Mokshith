@@ -17,13 +17,22 @@ export const useAnalytics = () => {
       const response = await analyticsService.getDashboard();
       const data = response?.data?.data || response?.data || response;
       
-      if (data) {
-        setDashboard(data.dashboard || data);
-        if (data.salesData) setSalesData(data.salesData);
-        if (data.orderTrends) setOrderTrends(data.orderTrends);
-        if (data.categoryData) setCategoryData(data.categoryData);
-        if (data.topProducts) setTopProducts(data.topProducts);
-      }
+      // Ensure numeric values and correct property mapping (backend uses 'dashboard')
+      const dashboardData = data.dashboard || data.stats || {};
+      
+      const sanitizedStats = {
+        revenue: Number(dashboardData.revenue || 0),
+        totalOrders: Number(dashboardData.totalOrders || 0),
+        activeUsers: Number(dashboardData.activeCustomers || dashboardData.activeUsers || 0),
+        pendingDeliveries: Number(dashboardData.pendingDeliveries || 0),
+        revenueGrowth: Number(dashboardData.revenueGrowth || 0),
+        ordersGrowth: Number(dashboardData.ordersGrowth || 0)
+      };
+      
+      setDashboard(sanitizedStats);
+      setSalesData(data.salesData || data.salesTrends || []);
+      setOrderTrends(data.orderTrends || data.categoryMix || []);
+      setTopProducts(data.topProducts || []);
     } catch (err) {
       setError(err.message);
     } finally {

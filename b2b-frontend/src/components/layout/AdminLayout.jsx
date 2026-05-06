@@ -74,7 +74,7 @@ const AdminLayout = ({ title = "Admin Panel" }) => {
       </div>
 
       {/* ================= DESKTOP SIDEBAR ================= */}
-      <aside className="hidden md:flex w-[280px] h-full bg-[#000000] text-white flex-col shadow-2xl flex-shrink-0 z-50">
+      <aside className="hidden md:flex w-[300px] h-full bg-[#000000] text-white flex-col shadow-2xl flex-shrink-0 z-50 border-r border-white/5">
         <SidebarContent 
           location={location} 
           menuItems={menuItems} 
@@ -83,10 +83,10 @@ const AdminLayout = ({ title = "Admin Panel" }) => {
       </aside>
 
       {/* ================= MAIN CONTENT ================= */}
-      <div className="flex-1 flex flex-col h-full relative overflow-hidden bg-white">
+      <div className="flex-1 flex flex-col h-full relative overflow-hidden bg-white ml-0 md:ml-20">
         {/* Top Header */}
-        <header className="h-24 bg-white border-b border-gray-100 flex items-center px-6 md:px-12 flex-shrink-0 z-40">
-          <div className="flex-1 flex justify-between items-center gap-8 md:gap-16">
+        <header className="h-24 bg-white border-b border-gray-100 flex items-center px-20 md:px-32 flex-shrink-0 z-40 rounded-tl-[5rem]">
+          <div className="flex-1 flex justify-between items-center gap-16 md:gap-40">
             <div className="flex items-center gap-4 md:gap-10">
               <button 
                 onClick={() => setIsSidebarOpen(true)}
@@ -141,8 +141,10 @@ const AdminLayout = ({ title = "Admin Panel" }) => {
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 overflow-y-auto p-8 md:p-16 lg:p-24 max-w-[1900px] mx-auto w-full bg-[#fbfcfd] custom-scrollbar">
-          <Outlet />
+        <main className="flex-1 overflow-y-auto p-24 md:p-48 lg:p-56 bg-[#fbfcfd] custom-scrollbar rounded-bl-[5rem]">
+          <div className="max-w-[2200px] mx-auto w-full px-24 md:px-40">
+            <Outlet />
+          </div>
         </main>
       </div>
 
