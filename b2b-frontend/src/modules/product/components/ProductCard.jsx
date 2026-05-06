@@ -3,6 +3,8 @@ import { ShoppingCart, Eye, Star, Plus, Minus, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { routes } from '../../../routes/routeConfig.js';
 import { useWishlist } from '../../../modules/wishlist/hooks/useWishlist.js';
+import { API_BASE_URL } from '../../../services/apiClient.js';
+import { getProductImage } from '../../../utils/imageHelper.js';
 
 const ProductCard = ({ product, onAddToCart, onBuyNow, user }) => {
   const navigate = useNavigate();
@@ -15,25 +17,6 @@ const ProductCard = ({ product, onAddToCart, onBuyNow, user }) => {
   useEffect(() => {
     setQty(product.minOrderQty || product.moq || 1);
   }, [product]);
-
-  const getProductImage = (product) => {
-    if (product.images && product.images.length > 0) return product.images[0];
-    if (product.image && !product.image.includes('📦')) return product.image;
-    
-    const category = (product.category || product.categoryId?.name || "").toLowerCase();
-    const name = (product.name || "").toLowerCase();
-    
-    if (category.includes('rice') || name.includes('rice'))
-      return "https://images.unsplash.com/photo-1586201327693-86750f72332e?auto=format&fit=crop&w=500&q=80";
-    if (category.includes('dal') || name.includes('dal') || category.includes('pulse'))
-      return "https://images.unsplash.com/photo-1547825407-2d060104b7f8?auto=format&fit=crop&w=500&q=80";
-    if (category.includes('oil') || name.includes('oil'))
-      return "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=500&q=80";
-    if (category.includes('sugar') || name.includes('sugar') || category.includes('salt'))
-      return "https://images.unsplash.com/photo-1581441363689-1f3c3c414635?auto=format&fit=crop&w=500&q=80";
-    
-    return "https://images.unsplash.com/photo-1586769852044-692d6e3703f0?auto=format&fit=crop&w=500&q=80";
-  };
 
   const handleAction = (e, action) => {
     e.stopPropagation();
@@ -87,7 +70,7 @@ const ProductCard = ({ product, onAddToCart, onBuyNow, user }) => {
           src={getProductImage(product)} 
           alt={product.name} 
           className="product-image"
-          onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1586769852044-692d6e3703f0?auto=format&fit=crop&w=500&q=80"; }}
+          onError={(e) => { e.target.src = "https://placehold.co/500x500/f8fafc/64748b?text=No+Preview"; }}
         />
         <div className="product-overlay">
           <button 

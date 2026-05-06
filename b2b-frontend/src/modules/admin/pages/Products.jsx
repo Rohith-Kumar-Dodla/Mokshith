@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { productService } from "../../product/services/productService";
+import { productService, updateProduct } from "../../product/services/productService";
+import { getProductImage } from "../../../utils/imageHelper";
 import Card from "../../../components/ui/Card";
 import Button from "../../../components/ui/Button";
 import Modal from "../../../components/ui/Modal";
@@ -16,7 +17,10 @@ import {
   AlertCircle,
   CheckCircle2,
   XCircle,
-  ChevronRight
+  ChevronRight,
+  Image as ImageIcon,
+  Upload,
+  X
 } from 'lucide-react';
 
 const AdminProductsPage = () => {
@@ -31,6 +35,7 @@ const AdminProductsPage = () => {
   const [stockValue, setStockValue] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
+  const [imagePreview, setImagePreview] = useState(null);
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -38,17 +43,36 @@ const AdminProductsPage = () => {
     stock: 0,
     categoryId: '',
     moq: 1,
-    isActive: true
+    isActive: true,
+    image: null
   });
 
   const resetForm = () => {
-    setForm({ name: '', description: '', price: '', stock: 0, categoryId: '', moq: 1, isActive: true });
+    setForm({ name: '', description: '', price: '', stock: 0, categoryId: '', moq: 1, isActive: true, image: null });
+    setImagePreview(null);
   };
 
   const closeModal = () => {
     setShowModal(false);
     setSelectedProduct(null);
     resetForm();
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setForm({ ...form, image: file });
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setForm({ ...form, image: null });
+    setImagePreview(null);
   };
 
   const closeStockModal = () => {
@@ -92,21 +116,41 @@ const AdminProductsPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("🚀 Create process started");
+    console.log("Current form state:", form);
+    
     try {
       setSubmitting(true);
-      const payload = {
-        ...form,
-        price: Number(form.price),
-        stock: Number(form.stock),
-        moq: Number(form.moq),
-        categoryId: form.categoryId
-      };
       
-      await productService.createProduct(payload);
+      const formData = new FormData();
+      formData.append('name', form.name);
+      formData.append('description', form.description);
+      formData.append('price', Number(form.price));
+      formData.append('stock', Number(form.stock));
+      formData.append('moq', Number(form.moq));
+      formData.append('isActive', form.isActive);
+      
+      if (form.categoryId) {
+        formData.append('categoryId', form.categoryId);
+      } else {
+        console.warn("⚠️ No categoryId provided in form");
+      }
+      
+      if (form.image instanceof File) {
+        console.log('📎 Image file found:', form.image.name);
+        formData.append('image', form.image);
+      }
+      
+      console.log('📦 Create FormData prepared, calling service...');
+      const response = await productService.createProduct(formData);
+      console.log('✅ Create successful', response);
       closeModal();
       fetchProducts();
     } catch (err) {
-      alert(err.message);
+      console.error('❌ Create process failed:', err);
+      // 🔥 Show detailed error if available
+      const errorMsg = err.response?.data?.message || err.message || "Failed to create product";
+      alert(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
     } finally {
       setSubmitting(false);
     }
@@ -121,33 +165,52 @@ const AdminProductsPage = () => {
       stock: product.stock,
       categoryId: product.categoryId?._id || product.categoryId || '',
       moq: product.moq || 1,
-      isActive: product.isActive
+      isActive: product.isActive,
+      image: null
     });
+    setImagePreview(product.image || product.imageUrl || null);
     setShowModal(true);
   };
 
   const handleUpdate = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    console.log("🚀 HANDLE UPDATE START");
+    
     try {
-      setSubmitting(true);
-      const payload = {
-        name: form.name,
-        description: form.description,
-        price: Number(form.price),
-        stock: Number(form.stock),
-        categoryId: form.categoryId,
-        moq: Number(form.moq),
-        isActive: form.isActive
-      };
+      if (!selectedProduct?._id) {
+        console.error("❌ Missing product ID");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("name", form.name || "");
+      formData.append("description", form.description || "");
+      formData.append("price", Number(form.price) || 0);
+      formData.append("stock", Number(form.stock) || 0);
+      formData.append("moq", Number(form.moq) || 1);
+      formData.append("categoryId", form.categoryId || "");
+      formData.append("isActive", form.isActive);
+
+      if (form.image instanceof File) {
+        formData.append("image", form.image);
+      }
+
+      console.log("📦 FormData created");
+
+      // 🔥 CRITICAL LINE
+      const response = await updateProduct(selectedProduct._id, formData);
+
+      console.log("✅ UPDATE SUCCESS:", response);
       
-      await productService.updateProduct(selectedProduct._id, payload);
       closeModal();
       fetchProducts();
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setSubmitting(false);
+    } catch (error) {
+      console.error("❌ UPDATE ERROR:", error);
+      const errorMsg = error.response?.data?.message || error.message || "Failed to update product";
+      alert(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
     }
+
+    console.log("🔥 HANDLE UPDATE END");
   };
 
   const handleDelete = async (id) => {
@@ -291,12 +354,20 @@ const AdminProductsPage = () => {
               <TableRow key={product._id}>
                 <TableCell>
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center shrink-0">
-                      <Package size={24} className="text-gray-400" />
+                    <div className="w-14 h-14 bg-gray-50 rounded-xl flex items-center justify-center shrink-0 overflow-hidden border border-gray-100">
+                      <img 
+                        src={getProductImage(product)} 
+                        alt={product.name} 
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "https://placehold.co/500x500/f8fafc/64748b?text=No+Preview";
+                        }}
+                      />
                     </div>
                     <div>
                       <p className="font-bold text-gray-900 leading-tight mb-1">{product.name}</p>
-                      <p className="text-xs text-gray-500 line-clamp-1 max-w-[250px]">
+                      <p className="text-xs text-gray-500 line-clamp-1 max-w-[200px]">
                         {product.description || 'No description available'}
                       </p>
                     </div>
@@ -402,6 +473,38 @@ const AdminProductsPage = () => {
         size="lg"
       >
         <form onSubmit={selectedProduct ? handleUpdate : handleSubmit} className="space-y-6">
+          {/* Image Upload Section */}
+          <div className="flex flex-col items-center gap-4 p-6 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200 hover:border-blue-400 transition-all group relative overflow-hidden">
+            {imagePreview ? (
+              <div className="relative w-full aspect-video sm:aspect-[2/1] rounded-2xl overflow-hidden shadow-lg border-4 border-white">
+                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                <button 
+                  type="button"
+                  onClick={removeImage}
+                  className="absolute top-3 right-3 p-2 bg-rose-500 text-white rounded-full hover:bg-rose-600 transition-colors shadow-lg"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center py-10">
+                <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-gray-400 group-hover:text-blue-500 group-hover:scale-110 transition-all duration-500 mb-4 border border-gray-100">
+                  <Upload size={32} />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-black text-gray-700 uppercase tracking-widest mb-1">Product Media</p>
+                  <p className="text-xs text-gray-400 font-bold">Click to upload or drag & drop</p>
+                </div>
+              </div>
+            )}
+            <input 
+              type="file" 
+              accept="image/*" 
+              onChange={handleFileChange}
+              className="absolute inset-0 opacity-0 cursor-pointer"
+            />
+          </div>
+
           <Input
             label="Product Name"
             name="name"
@@ -488,9 +591,15 @@ const AdminProductsPage = () => {
             <Button type="button" variant="secondary" onClick={closeModal} className="flex-1">
               Cancel
             </Button>
-            <Button type="submit" loading={submitting} className="flex-1">
-              {selectedProduct ? 'Save Changes' : 'Create Product'}
-            </Button>
+            {selectedProduct ? (
+              <Button type="button" onClick={handleUpdate} loading={submitting} className="flex-1">
+                Save Changes
+              </Button>
+            ) : (
+              <Button type="submit" loading={submitting} className="flex-1">
+                Create Product
+              </Button>
+            )}
           </div>
         </form>
       </Modal>

@@ -4,24 +4,26 @@ import { env } from './env.js';
 const redis = new Redis({
   host: env.REDIS_HOST,
   port: env.REDIS_PORT,
-  maxRetriesPerRequest: 1, // ⚡ Reduce retries if it fails
+  maxRetriesPerRequest: 1, 
   enableReadyCheck: false,
   lazyConnect: true,
+  showFriendlyErrorStack: false, // ⚡ Hide stack trace for connection errors
   retryStrategy(times) {
-    if (times > 3) {
-      return null; // Stop retrying after 3 attempts to prevent log spam
+    if (times > 1) { // ⚡ Only retry once to fail fast in development
+      return null; 
     }
-    return Math.min(times * 50, 2000);
+    return 1000;
   },
 });
 
-redis.on('connect', () => console.log('Redis connected'));
+redis.on('connect', () => console.log('✅ Redis connected'));
 redis.on('error', (err) => {
   if (err.code === 'ECONNREFUSED') {
-    // Silently handle connection refusal if Redis is optional
+    // 🔥 Silently handle connection refusal for local development
+    // This prevents the server from crashing or spamming errors
     return;
   }
-  console.error('Redis error', err);
+  console.error('❌ Redis error:', err.message);
 });
 
 export default redis;

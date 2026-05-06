@@ -1,7 +1,30 @@
 import apiClient from "../../../services/apiClient";
 
+export const updateProduct = async (id, formData) => {
+  console.log("📡 PUT REQUEST START");
+  try {
+    const res = await apiClient.put(
+      `/products/${id}`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    console.log("📡 PUT REQUEST DONE");
+    return res.data || res;
+  } catch (error) {
+    const serverError = error.response?.data;
+    console.error("❌ PUT REQUEST FAILED:", serverError || error.message);
+    
+    const message = serverError?.message || error.message || "Failed to update product";
+    throw new Error(message);
+  }
+};
+
 export const productService = {
-  async getProducts(params = {}) {
+  getProducts: async (params = {}) => {
     try {
       const query = new URLSearchParams(params).toString();
       return await apiClient.get(`/products${query ? `?${query}` : ''}`);
@@ -10,7 +33,7 @@ export const productService = {
     }
   },
 
-  async getProductById(id) {
+  getProductById: async (id) => {
     try {
       return await apiClient.get(`/products/${id}`);
     } catch (error) {
@@ -20,21 +43,42 @@ export const productService = {
 
   async createProduct(payload) {
     try {
-      return await apiClient.post("/products", payload);
+      console.log("📡 Calling POST /products");
+      // 🔥 Fix: Do NOT manually set Content-Type for FormData. 
+      // Axios will set it automatically with the correct boundary.
+      const response = await apiClient.post("/products", payload);
+      console.log("📡 POST completed", response);
+      return response;
     } catch (error) {
-      throw new Error(error.response?.data?.message || "Failed to create product");
+      const serverError = error.response?.data;
+      console.error("❌ POST failed details:", {
+        status: error.response?.status,
+        data: serverError,
+        message: error.message
+      });
+      
+      const message = serverError?.message || error.message || "Failed to create product";
+      throw new Error(message);
     }
   },
 
-  async updateProduct(id, payload) {
+  updateProduct: async (id, formData) => {
+    console.log("📡 PUT REQUEST START");
     try {
-      return await apiClient.put(`/products/${id}`, payload);
+      // 🔥 Fix: Do NOT manually set Content-Type for FormData.
+      const res = await apiClient.put(`/products/${id}`, formData);
+      console.log("📡 PUT REQUEST DONE");
+      return res.data || res;
     } catch (error) {
-      throw new Error(error.response?.data?.message || "Failed to update product");
+      const serverError = error.response?.data;
+      console.error("❌ PUT REQUEST FAILED:", serverError || error.message);
+      
+      const message = serverError?.message || error.message || "Failed to update product";
+      throw new Error(message);
     }
   },
 
-  async deleteProduct(id) {
+  deleteProduct: async (id) => {
     try {
       return await apiClient.delete(`/products/${id}`);
     } catch (error) {
@@ -42,7 +86,7 @@ export const productService = {
     }
   },
 
-  async updateStock(id, stock) {
+  updateStock: async (id, stock) => {
     try {
       return await apiClient.patch(`/products/${id}/stock`, { stock });
     } catch (error) {
@@ -50,7 +94,7 @@ export const productService = {
     }
   },
 
-  async updateStatus(id, isActive) {
+  updateStatus: async (id, isActive) => {
     try {
       return await apiClient.patch(`/products/${id}/status`, { isActive });
     } catch (error) {
@@ -58,7 +102,7 @@ export const productService = {
     }
   },
 
-  async getCategories() {
+  getCategories: async () => {
     try {
       return await apiClient.get("/categories");
     } catch (error) {
@@ -66,7 +110,7 @@ export const productService = {
     }
   },
 
-  async getVendors() {
+  getVendors: async () => {
     try {
       return await apiClient.get("/vendors");
     } catch (error) {

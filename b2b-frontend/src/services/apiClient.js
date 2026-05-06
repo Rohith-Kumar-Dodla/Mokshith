@@ -4,30 +4,21 @@ import { updateToken, logout } from "../modules/auth/authSlice.js";
 
 const getBaseURL = () => {
   const envUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
-  
-  // If the URL already ends with /api/v1, use it as is
-  if (envUrl.endsWith('/api/v1')) {
-    return envUrl;
-  }
-  
-  // If it ends with /api, just append /v1
-  if (envUrl.endsWith('/api')) {
-    return `${envUrl}/v1`;
-  }
-  
-  // Otherwise append /api/v1
-  return `${envUrl.replace(/\/$/, '')}/api/v1`;
+  return envUrl.replace(/\/$/, '');
 };
 
 const API_BASE_URL = getBaseURL();
+const API_V1_URL = `${API_BASE_URL}/api/v1`;
 
 const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: API_V1_URL,
   timeout: 30000, // 30 second timeout for B2B stability
   headers: {
     "Content-Type": "application/json",
   },
 });
+
+export { API_BASE_URL };
 
 // Track if a refresh is already in progress to avoid multiple refresh calls
 let isRefreshing = false;
@@ -51,6 +42,24 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // 🔥 Fix: For FormData, we must ensure Content-Type is NOT set manually
+    // This allows the browser to set it correctly with the boundary
+    if (config.data instanceof FormData) {
+      console.log('📡 Interceptor: FormData detected, removing Content-Type header');
+      
+      // Handle both uppercase and lowercase versions
+      if (config.headers) {
+        if (typeof config.headers.delete === 'function') {
+          config.headers.delete("Content-Type");
+          config.headers.delete("content-type");
+        } else {
+          delete config.headers["Content-Type"];
+          delete config.headers["content-type"];
+        }
+      }
+    }
+    
     return config;
   },
   (error) => {
@@ -132,8 +141,8 @@ apiClient.interceptors.response.use(
       window.location.href = "/unauthorized";
     }
 
-    const message = error.response?.data?.message || error.message || "Something went wrong";
-    return Promise.reject(message);
+    // 🔥 Fix: Reject with the full error object so services can access status/data
+    return Promise.reject(error);
   }
 );
 

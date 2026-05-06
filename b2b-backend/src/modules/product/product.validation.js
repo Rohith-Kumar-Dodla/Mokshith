@@ -10,7 +10,9 @@ export const createProductSchema = Joi.object({
     vendorId: Joi.string().optional(),
     companyId: Joi.string().optional(),
     moq: Joi.number().min(1).optional(),
-    isActive: Joi.boolean().optional(),
+    isActive: Joi.any().optional(),
+    image: Joi.any().optional(),
+    imageUrl: Joi.string().optional(),
     bulkPricing: Joi.array().items(
       Joi.object({
         minQuantity: Joi.number().required(),
@@ -29,14 +31,19 @@ export const createProductSchema = Joi.object({
 });
 
 export const updateProductSchema = Joi.object({
+  params: Joi.object({
+    id: Joi.string().required(),
+  }),
   body: Joi.object({
     name: Joi.string().trim().optional(),
-    description: Joi.string().optional(),
-    price: Joi.number().min(1).optional(),
+    description: Joi.string().allow('').optional(),
+    price: Joi.number().min(0).optional(),
     stock: Joi.number().min(0).optional(),
     categoryId: Joi.string().optional(),
     moq: Joi.number().min(1).optional(),
-    isActive: Joi.boolean().optional(),
+    isActive: Joi.any().optional(),
+    image: Joi.any().optional(),
+    imageUrl: Joi.string().allow('').optional(),
     bulkPricing: Joi.array().items(
       Joi.object({
         minQuantity: Joi.number().required(),

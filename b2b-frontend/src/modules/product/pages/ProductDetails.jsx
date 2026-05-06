@@ -10,6 +10,8 @@ import Card from "../../../components/ui/Card.jsx";
 import Navbar from "../../../components/common/Navbar.jsx";
 import Input from "../../../components/ui/Input.jsx";
 import { routes } from "../../../routes/routeConfig.js";
+import { API_BASE_URL } from "../../../services/apiClient.js";
+import { getProductImage } from "../../../utils/imageHelper.js";
 import { Plus, Minus, ShieldCheck, Truck, Receipt, Star } from "lucide-react";
 
 const ProductDetails = () => {
@@ -102,25 +104,6 @@ const ProductDetails = () => {
     } finally {
       setSubmittingReview(false);
     }
-  };
-
-  const getProductImage = (product) => {
-    if (product.images && product.images.length > 0) return product.images[0];
-    if (product.image && !product.image.includes('📦')) return product.image;
-    
-    const category = (product.category || product.categoryId?.name || "").toLowerCase();
-    const name = (product.name || "").toLowerCase();
-    
-    if (category.includes('rice') || name.includes('rice'))
-      return "https://images.unsplash.com/photo-1586201327693-86750f72332e?auto=format&fit=crop&w=800&q=80";
-    if (category.includes('dal') || name.includes('dal') || category.includes('pulse'))
-      return "https://images.unsplash.com/photo-1547825407-2d060104b7f8?auto=format&fit=crop&w=800&q=80";
-    if (category.includes('oil') || name.includes('oil'))
-      return "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=800&q=80";
-    if (category.includes('sugar') || name.includes('sugar') || category.includes('salt'))
-      return "https://images.unsplash.com/photo-1581441363689-1f3c3c414635?auto=format&fit=crop&w=800&q=80";
-    
-    return "https://images.unsplash.com/photo-1586769852044-692d6e3703f0?auto=format&fit=crop&w=800&q=80";
   };
 
   if (loading) return (

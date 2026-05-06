@@ -6,7 +6,7 @@ export const findProducts = (filter, options) => {
   const { skip, limit } = options;
 
   return Product.find(filter)
-    .select('name price stock description categoryId images unit minOrderQty moq gst') // 🔥 Field Optimization
+    .select('name price stock description categoryId image imageUrl unit minOrderQty moq gst') // 🔥 Field Optimization
     .skip(skip)
     .limit(limit)
     .sort({ createdAt: -1 })
