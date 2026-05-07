@@ -74,7 +74,7 @@ const AdminLayout = ({ title = "Admin Panel" }) => {
       </div>
 
       {/* ================= DESKTOP SIDEBAR ================= */}
-      <aside className="hidden md:flex w-[300px] h-full bg-[#000000] text-white flex-col shadow-2xl flex-shrink-0 z-50 border-r border-white/5">
+      <aside className="hidden md:flex w-[100px] h-full bg-[#000000] text-white flex-col shadow-2xl flex-shrink-0 z-50 border-r border-white/5">
         <SidebarContent 
           location={location} 
           menuItems={menuItems} 
@@ -83,11 +83,11 @@ const AdminLayout = ({ title = "Admin Panel" }) => {
       </aside>
 
       {/* ================= MAIN CONTENT ================= */}
-      <div className="flex-1 flex flex-col h-full relative overflow-hidden bg-white ml-0 md:ml-20">
+      <div className="flex-1 flex flex-col h-full relative overflow-hidden bg-white ml-0 md:ml-10">
         {/* Top Header */}
-        <header className="h-24 bg-white border-b border-gray-100 flex items-center px-20 md:px-32 flex-shrink-0 z-40 rounded-tl-[5rem]">
-          <div className="flex-1 flex justify-between items-center gap-16 md:gap-40">
-            <div className="flex items-center gap-4 md:gap-10">
+        <header className="h-24 bg-white border-b border-gray-100 flex items-center px-10 md:px-16 flex-shrink-0 z-40 rounded-tl-[5rem]">
+          <div className="flex-1 flex justify-between items-center gap-10 md:gap-20">
+            <div className="flex items-center gap-4 md:gap-6">
               <button 
                 onClick={() => setIsSidebarOpen(true)}
                 className="md:hidden p-3 bg-gray-50 text-gray-600 rounded-2xl hover:bg-gray-100 transition-colors"
@@ -141,8 +141,8 @@ const AdminLayout = ({ title = "Admin Panel" }) => {
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 overflow-y-auto p-24 md:p-48 lg:p-56 bg-[#fbfcfd] custom-scrollbar rounded-bl-[5rem]">
-          <div className="max-w-[2200px] mx-auto w-full px-24 md:px-40">
+        <main className="flex-1 overflow-y-auto p-12 md:p-16 lg:p-20 bg-[#fbfcfd] custom-scrollbar rounded-bl-[5rem]">
+          <div className="max-w-[2200px] mx-auto w-full px-6 md:px-12">
             <Outlet />
           </div>
         </main>
@@ -167,42 +167,38 @@ const AdminLayout = ({ title = "Admin Panel" }) => {
 const SidebarContent = ({ location, menuItems, setShowLogoutConfirm }) => (
   <div className="flex flex-col h-full overflow-hidden">
     {/* Logo Section */}
-    <div className="px-10 py-16 flex flex-col items-center text-center flex-shrink-0 border-b border-white/5 bg-gradient-to-b from-white/[0.02] to-transparent">
-      <div className="bg-[#2563EB] p-5 rounded-[2rem] shadow-[0_0_50px_rgba(37,99,235,0.3)] flex-shrink-0 mb-6 group-hover:scale-110 transition-transform duration-500 border border-blue-400/20">
-        <ShieldCheck size={48} className="text-white" />
+    <div className="px-4 py-8 flex flex-col items-center text-center flex-shrink-0 border-b border-white/5 bg-gradient-to-b from-white/[0.02] to-transparent">
+      <div className="bg-[#2563EB] p-2 rounded-xl shadow-[0_0_20px_rgba(37,99,235,0.3)] flex-shrink-0 mb-4 transition-transform duration-500 border border-blue-400/20">
+        <ShieldCheck size={24} className="text-white" />
       </div>
-      <div>
-        <h1 className="font-black text-5xl tracking-tighter leading-none text-white uppercase mb-3">Mokshith</h1>
-        <p className="text-[12px] font-black text-[#2563EB] uppercase tracking-[0.6em] leading-none">Enterprise</p>
+      <div className="overflow-hidden">
+        <h1 className="font-black text-xs tracking-tighter leading-none text-white uppercase mb-1 truncate w-full">Mokshith</h1>
+        <p className="text-[8px] font-black text-[#2563EB] uppercase tracking-widest leading-none">Enterprise</p>
       </div>
     </div>
 
     {/* Navigation */}
-    <nav className="flex-1 flex flex-col py-12 px-6 overflow-y-auto custom-scrollbar no-scrollbar">
+    <nav className="flex-1 flex flex-col py-6 px-2 overflow-y-auto custom-scrollbar no-scrollbar">
       <div className="flex-1">
-        <p className="px-10 text-[12px] font-black text-slate-600 uppercase tracking-[0.5em] mb-12 text-center">Main Menu</p>
-        <div className="space-y-8 flex flex-col items-center">
+        <p className="px-2 text-[8px] font-black text-slate-600 uppercase tracking-widest mb-6 text-center">Menu</p>
+        <div className="space-y-4 flex flex-col items-center">
           {menuItems.map((item, index) => {
             const isActive = location.pathname === item.path;
             return (
               <Link
                 key={index}
                 to={item.path}
-                className={`flex items-center gap-8 px-12 py-7 rounded-[2.5rem] transition-all duration-500 group relative overflow-hidden w-full max-w-[240px] ${
+                className={`flex flex-col items-center justify-center gap-1 p-2 rounded-xl transition-all duration-500 group relative overflow-hidden w-full ${
                   isActive 
-                    ? 'bg-blue-600 text-white shadow-2xl shadow-blue-600/50 scale-[1.05]' 
-                    : 'text-slate-400 hover:text-white hover:bg-white/5 hover:scale-[1.02]'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50' 
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
+                title={item.label}
               >
-                <div className={`flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-blue-500'} transition-colors duration-300`}>
-                  {React.cloneElement(item.icon, { size: 32 })}
+                <div className={`${isActive ? 'text-white' : 'text-slate-500 group-hover:text-blue-500'} transition-colors duration-300`}>
+                  {React.cloneElement(item.icon, { size: 20 })}
                 </div>
-                <span className={`text-[18px] tracking-[0.15em] uppercase ${isActive ? 'font-black' : 'font-bold'}`}>{item.label}</span>
-                
-                {/* Active Highlight Effect */}
-                {isActive && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent pointer-events-none"></div>
-                )}
+                <span className={`text-[8px] tracking-wider uppercase truncate w-full text-center ${isActive ? 'font-black' : 'font-bold'}`}>{item.label}</span>
               </Link>
             );
           })}
@@ -210,12 +206,12 @@ const SidebarContent = ({ location, menuItems, setShowLogoutConfirm }) => (
       </div>
 
       {/* Logout Button */}
-      <div className="mt-16 pt-12 border-t border-white/5 flex justify-center px-4">
+      <div className="mt-8 pt-6 border-t border-white/5 flex justify-center px-1">
         <button
           onClick={() => setShowLogoutConfirm(true)}
-          className="flex items-center justify-center gap-6 w-full max-w-[240px] px-10 py-7 rounded-[2.5rem] bg-[#1A0B0B] text-rose-600 hover:bg-rose-600 hover:text-white transition-all duration-500 group font-black uppercase tracking-[0.4em] text-[13px] border border-rose-600/20 hover:border-rose-600 shadow-2xl shadow-rose-900/20"
+          className="flex flex-col items-center justify-center gap-1 w-full p-2 rounded-xl bg-[#1A0B0B] text-rose-600 hover:bg-rose-600 hover:text-white transition-all duration-500 group font-black uppercase tracking-widest text-[8px] border border-rose-600/20 hover:border-rose-600 shadow-lg shadow-rose-900/20"
         >
-          <LogOut size={26} className="group-hover:-translate-x-1 transition-transform" />
+          <LogOut size={18} className="group-hover:scale-110 transition-transform" />
           <span>Logout</span>
         </button>
       </div>

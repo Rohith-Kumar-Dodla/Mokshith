@@ -32,7 +32,7 @@ export const SocketProvider = ({ children }) => {
         token: token,
         userId: user._id || user.id
       },
-      transports: ['websocket'],
+      transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 10,
       reconnectionDelay: 1000,

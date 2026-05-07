@@ -18,9 +18,14 @@ export const getPendingUsers = async () => {
     id: user._id,
     type: 'REGISTRATION',
     status: 'pending',
-    title: `${user.name} (${user.role})`,
-    email: user.email,
-    createdAt: user.createdAt
+    title: `${user.name || 'Unknown'} (${user.role || 'User'})`,
+    email: user.email || 'N/A',
+    mobile: user.mobile || 'N/A',
+    role: user.role || 'N/A',
+    addresses: user.addresses || [],
+    creditLimit: user.creditLimit || 0,
+    availableCredit: user.availableCredit || 0,
+    createdAt: user.createdAt || new Date()
   }));
 };
 

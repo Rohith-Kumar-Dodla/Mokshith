@@ -64,9 +64,6 @@ const AdminPage = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          <button className="w-14 h-14 bg-white border border-gray-100 rounded-2xl text-gray-400 hover:text-blue-600 transition-all shadow-sm flex items-center justify-center group">
-            <Bell size={24} className="group-hover:rotate-12 transition-transform" />
-          </button>
           <Button 
             onClick={() => navigate(routes.ADMIN_PRODUCTS)} 
             className="h-14 px-8 rounded-2xl flex items-center gap-3 bg-blue-600 hover:bg-blue-700 text-white font-black text-sm uppercase tracking-widest shadow-2xl shadow-blue-500/40 group active:scale-95 transition-all"
