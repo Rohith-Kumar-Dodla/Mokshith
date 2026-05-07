@@ -207,7 +207,7 @@ const SidebarContent = ({ location, menuItems, setShowLogoutConfirm }) => (
         </div>
 
         {/* Logout Button */}
-        <div className="pt-8 border-t border-white/5 flex justify-center px-1 flex-shrink-0">
+        <div className="mt-12 pt-8 border-t border-white/5 flex justify-center px-1 flex-shrink-0">
           <button
             onClick={() => setShowLogoutConfirm(true)}
             className="flex flex-col items-center justify-center gap-1 w-full p-2 rounded-xl bg-[#1A0B0B] text-rose-600 hover:bg-rose-600 hover:text-white transition-all duration-500 group font-black uppercase tracking-widest text-[8px] border border-rose-600/20 hover:border-rose-600 shadow-lg shadow-rose-900/20"
