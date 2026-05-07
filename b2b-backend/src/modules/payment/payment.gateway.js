@@ -65,33 +65,45 @@ export const createPaymentOrder = async ({ amount, currency = 'INR', receipt }) 
     throw new Error('Maximum payment amount is ₹1,00,00,000');
   }
 
+  const razorpayAmount = Math.round(Number(numericAmount) * 100);
+
+  // 🔥 VALIDATION: Ensure amount is an integer for Razorpay
+  if (!Number.isInteger(razorpayAmount)) {
+    throw new Error(`Razorpay amount conversion failed: ${razorpayAmount} is not an integer`);
+  }
+
   const options = {
-    amount: Math.round(numericAmount * 100), // amount in the smallest currency unit (paise for INR)
+    amount: razorpayAmount,
     currency,
     receipt: receipt || `rcpt_${Date.now()}`,
   };
 
+  // 🔥 VALIDATION: Razorpay receipt limit is 40 characters
+  if (options.receipt.length > 40) {
+    console.warn(`⚠️ [RAZORPAY] Receipt ID too long (${options.receipt.length} chars), truncating...`);
+    options.receipt = options.receipt.substring(0, 40);
+  }
+
   try {
-    console.log('📦 Creating Razorpay order:', {
-      amount: numericAmount,
-      amountInPaise: options.amount,
-      currency,
-      receipt: options.receipt
-    });
+    console.log('🚀 [RAZORPAY] Creating order...');
+    console.log('💰 Original Amount (INR):', numericAmount);
+    console.log('🪙 Converted Amount (Paise):', razorpayAmount);
+    console.log('📝 Receipt:', options.receipt);
+    console.log('🔑 Key Check:', !!env.RAZORPAY_KEY_ID);
 
     const order = await razorpay.orders.create(options);
     recordSuccess();
     
-    console.log('✅ Razorpay order created successfully:', {
+    console.log('✅ [RAZORPAY] Order created successfully:', {
       orderId: order.id,
       amount: order.amount,
-      receipt: order.receipt
+      status: order.status
     });
 
     return {
-      id: order.id, // Razorpay order ID
-      order_id: order.id, // Alias for frontend convenience
-      gatewayOrderId: order.id, // Legacy alias
+      id: order.id,
+      order_id: order.id,
+      gatewayOrderId: order.id,
       amount: order.amount,
       currency: order.currency,
       receipt: order.receipt,
@@ -99,16 +111,15 @@ export const createPaymentOrder = async ({ amount, currency = 'INR', receipt }) 
     };
   } catch (error) {
     recordFailure();
-    console.error('❌ RAZORPAY FULL ERROR:', {
-      message: error.message,
-      code: error.code,
-      description: error.description,
-      metadata: error.metadata,
-      stack: error.stack
-    });
+    console.error('❌ [RAZORPAY] CREATE ORDER ERROR:');
     
-    // Throw a more descriptive error that includes Razorpay's reason if available
-    const errorMessage = error.description || error.message || 'Razorpay order creation failed';
+    // Improved error extraction for Razorpay SDK
+    const rzpError = error.error || error;
+    const errorMessage = rzpError.description || rzpError.message || error.message || 'Razorpay order creation failed';
+    
+    console.error('Error Message:', errorMessage);
+    console.error('Full Error Object:', JSON.stringify(error, null, 2));
+
     throw new Error(`Razorpay Error: ${errorMessage}`);
   }
 };

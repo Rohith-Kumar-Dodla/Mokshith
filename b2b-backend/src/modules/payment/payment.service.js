@@ -22,7 +22,7 @@ export const createRazorpayOrder = async (amount, userId) => {
   try {
     const order = await gateway.createPaymentOrder({ 
       amount: amount,
-      receipt: `order_rcptid_${userId}_${Date.now()}`
+      receipt: `rcpt_${userId.toString().slice(-6)}_${Date.now()}` // Shortened to fit Razorpay's 40-char limit
     });
     return order;
   } catch (error) {
