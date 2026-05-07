@@ -60,12 +60,30 @@ const CategoryControl = ({ categories, onCreateCategory, onDeleteCategory, onUpd
 
   return (
     <Card style={{ marginBottom: '2.5rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h3 style={{ fontSize: '1.25rem', fontWeight: '700' }}>Category Control</h3>
-        <Button size="small" onClick={handleOpenCreate}>Create Category</Button>
-      </div>
+      <div style={{ paddingLeft: '1.5rem', paddingRight: '1.5rem' }}>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column',
+          alignItems: 'center', 
+          marginBottom: '2rem',
+          gap: '1rem'
+        }}>
+          <h3 style={{ 
+            fontSize: '1.5rem', 
+            fontWeight: '900', 
+            color: '#111827',
+            textAlign: 'center',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em'
+          }}>
+            Category Control
+          </h3>
+          <Button size="small" onClick={handleOpenCreate} style={{ borderRadius: '0.75rem', fontWeight: '800' }}>
+            Create Category
+          </Button>
+        </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2rem', paddingLeft: '1rem' }}>
         {Array.isArray(categories) && categories.length > 0 ? (
           categories.map((category) => (
             <Card key={category.id || category._id} style={{ padding: '1.5rem', border: '1px solid var(--border)', backgroundColor: 'var(--primary-light)' }}>
@@ -129,6 +147,7 @@ const CategoryControl = ({ categories, onCreateCategory, onDeleteCategory, onUpd
           </form>
         </Modal>
       )}
+      </div>
     </Card>
   );
 };

@@ -24,36 +24,114 @@ const SystemConfigForm = ({ config, onSave }) => {
   };
 
   return (
-    <Card style={{ marginBottom: '2.5rem' }}>
-      <form onSubmit={handleSubmit}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: '700' }}>System Configuration</h3>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.875rem', fontWeight: '700', color: form.maintenanceMode ? 'var(--error)' : 'var(--success)' }}>
-              Maintenance Mode: {form.maintenanceMode ? 'ON' : 'OFF'}
+    <Card style={{ marginBottom: "2.5rem" }}>
+      <form
+        onSubmit={handleSubmit}
+        style={{ paddingLeft: "1.5rem", paddingRight: "1.5rem" }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            marginBottom: "2.5rem",
+            position: "relative",
+          }}
+        >
+          <h3
+            style={{
+              fontSize: "1.5rem",
+              fontWeight: "900",
+              color: "#111827",
+              textAlign: "center",
+              letterSpacing: "-0.025em",
+              marginBottom: "0.5rem",
+            }}
+          >
+            System Configuration
+          </h3>
+
+          <div
+            style={{
+              display: "flex",
+              gap: "1rem",
+              alignItems: "center",
+              backgroundColor: "#f8fafc",
+              padding: "0.5rem 1rem",
+              borderRadius: "1rem",
+              border: "1px solid #f1f5f9",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "0.75rem",
+                fontWeight: "800",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                color: form.maintenanceMode ? "var(--error)" : "var(--success)",
+              }}
+            >
+              Maintenance Mode: {form.maintenanceMode ? "ON" : "OFF"}
             </span>
-            <label style={{ position: 'relative', display: 'inline-block', width: '40px', height: '20px' }}>
-              <input 
-                type="checkbox" 
+            <label
+              style={{
+                position: "relative",
+                display: "inline-block",
+                width: "44px",
+                height: "22px",
+              }}
+            >
+              <input
+                type="checkbox"
                 name="maintenanceMode"
-                checked={form.maintenanceMode || false} 
+                checked={form.maintenanceMode || false}
                 onChange={handleChange}
-                style={{ opacity: 0, width: 0, height: 0 }} 
+                style={{ opacity: 0, width: 0, height: 0 }}
               />
-              <span style={{ 
-                position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, 
-                backgroundColor: form.maintenanceMode ? 'var(--error)' : '#ccc', transition: '.4s', borderRadius: '20px' 
-              }}>
-                <span style={{ 
-                  position: 'absolute', height: '16px', width: '16px', left: form.maintenanceMode ? '22px' : '2px', bottom: '2px', 
-                  backgroundColor: 'white', transition: '.4s', borderRadius: '50%' 
-                }}></span>
+              <span
+                style={{
+                  position: "absolute",
+                  cursor: "pointer",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: form.maintenanceMode
+                    ? "var(--error)"
+                    : "#cbd5e1",
+                  transition: ".4s",
+                  borderRadius: "22px",
+                  boxShadow: form.maintenanceMode
+                    ? "0 4px 6px -1px rgba(239, 68, 68, 0.2)"
+                    : "none",
+                }}
+              >
+                <span
+                  style={{
+                    position: "absolute",
+                    height: "18px",
+                    width: "18px",
+                    left: form.maintenanceMode ? "24px" : "2px",
+                    bottom: "2px",
+                    backgroundColor: "white",
+                    transition: ".4s",
+                    borderRadius: "50%",
+                    boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+                  }}
+                ></span>
               </span>
             </label>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+            gap: "2rem",
+            marginBottom: "2rem",
+          }}
+        >
           <Input
             label="Site Name"
             name="siteName"
@@ -82,7 +160,14 @@ const SystemConfigForm = ({ config, onSave }) => {
           />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+            gap: "1.5rem",
+            marginBottom: "1.5rem",
+          }}
+        >
           <Input
             label="Order Cutoff Time"
             name="orderCutoffTime"
@@ -99,25 +184,41 @@ const SystemConfigForm = ({ config, onSave }) => {
           />
         </div>
 
-        <div style={{ display: 'flex', gap: '2rem', marginBottom: '1.5rem' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem' }}>
+        <div style={{ display: "flex", gap: "2rem", marginBottom: "1.5rem" }}>
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              cursor: "pointer",
+              fontSize: "0.875rem",
+            }}
+          >
             <input
               type="checkbox"
               name="allowRegistration"
               checked={form.allowRegistration || false}
               onChange={handleChange}
-              style={{ accentColor: 'var(--primary)' }}
+              style={{ accentColor: "var(--primary)" }}
             />
             Allow New Registrations
           </label>
 
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem' }}>
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              cursor: "pointer",
+              fontSize: "0.875rem",
+            }}
+          >
             <input
               type="checkbox"
               name="enableCOD"
               checked={form.enableCOD || false}
               onChange={handleChange}
-              style={{ accentColor: 'var(--primary)' }}
+              style={{ accentColor: "var(--primary)" }}
             />
             Enable COD
           </label>

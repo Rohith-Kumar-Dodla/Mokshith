@@ -63,12 +63,31 @@ const AdminManagement = ({ admins, onCreateAdmin, onDeleteAdmin, onUpdateAdmin }
 
   return (
     <Card style={{ marginBottom: '2.5rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h3 style={{ fontSize: '1.25rem', fontWeight: '700' }}>Admin Management</h3>
-        <Button size="small" onClick={handleOpenCreate}>Create Admin</Button>
-      </div>
+      <div style={{ paddingLeft: '1.5rem', paddingRight: '1.5rem' }}>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column',
+          alignItems: 'center', 
+          marginBottom: '2rem',
+          gap: '1rem'
+        }}>
+          <h3 style={{ 
+            fontSize: '1.5rem', 
+            fontWeight: '900', 
+            color: '#111827',
+            textAlign: 'center',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em'
+          }}>
+            Admin Management
+          </h3>
+          <Button size="small" onClick={handleOpenCreate} style={{ borderRadius: '0.75rem', fontWeight: '800' }}>
+            Create Admin
+          </Button>
+        </div>
 
-      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+        <div style={{ overflowX: 'auto', paddingLeft: '1rem' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
         <thead>
           <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
             <th style={{ padding: '0.75rem', fontSize: '0.875rem' }}>NAME</th>
@@ -130,6 +149,8 @@ const AdminManagement = ({ admins, onCreateAdmin, onDeleteAdmin, onUpdateAdmin }
           )}
         </tbody>
       </table>
+        </div>
+      </div>
 
       {showModal && (
         <Modal title={isEditing ? "Edit Admin" : "Create New Admin"} onClose={() => setShowModal(false)}>

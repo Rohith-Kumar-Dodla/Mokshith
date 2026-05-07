@@ -77,12 +77,28 @@ const SuperAdminPage = () => {
 
       <CategoryControl categories={categories} onCreateCategory={createCategory} onDeleteCategory={deleteCategory} onUpdateCategory={updateCategory} />
 
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-bold text-gray-900">System Audit Trail</h3>
-        <Button variant="secondary" size="small" onClick={handleExportLogs}>Export Logs</Button>
+      <div style={{ paddingLeft: '1.5rem', paddingRight: '1.5rem', marginBottom: '2rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '2rem' }}>
+          <h3 style={{ 
+            fontSize: '1.5rem', 
+            fontWeight: '900', 
+            color: '#111827',
+            textAlign: 'center',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em'
+          }}>
+            System Audit Trail
+          </h3>
+        </div>
+        <div className="flex justify-end mb-4">
+          <Button variant="secondary" size="small" onClick={handleExportLogs} style={{ borderRadius: '0.75rem', fontWeight: '800' }}>
+            Export Logs
+          </Button>
+        </div>
+        <div style={{ paddingLeft: '1rem' }}>
+          <AuditTable logs={auditLogs} />
+        </div>
       </div>
-      
-      <AuditTable logs={auditLogs} />
 
       {showDbShell && (
         <DbShell 
