@@ -205,13 +205,13 @@ const PaymentPage = () => {
         order_id: gatewayOrderId,
         
         // 🔥 ENABLE MULTIPLE PAYMENT METHODS
-        method: {
-          upi: true,          // ✅ UPI (GPay, PhonePe, PayTM, etc.)
-          card: true,         // ✅ Credit/Debit Cards
-          netbanking: true,   // ✅ Net Banking
-          wallet: true,       // ✅ Digital Wallets (PayTM, Freecharge, etc.)
-          emi: false,         // Disable EMI for now
-        },
+        // method: {
+        //   upi: true,          // ✅ UPI (GPay, PhonePe, PayTM, etc.)
+        //   card: true,         // ✅ Credit/Debit Cards
+        //   netbanking: true,   // ✅ Net Banking
+        //   wallet: true,       // ✅ Digital Wallets (PayTM, Freecharge, etc.)
+        //   emi: false,         // Disable EMI for now
+        // },
         
         // 🔥 SUCCESS HANDLER
         handler: async function (response) {
