@@ -489,163 +489,252 @@ const PaymentPage = () => {
   }
 
   return (
-    <div className="bg-slate-50 min-h-screen">
-      <div className="max-w-6xl mx-auto p-4 py-8">
-        <div className="flex items-center gap-2 mb-8 text-sm text-gray-400 font-medium">
-          <span className="hover:text-blue-600 cursor-pointer" onClick={() => navigate('/')}>Home</span>
-          <ChevronRight size={14} />
-          <span className="text-blue-600 font-bold">Payment</span>
+    <div className="bg-slate-50 min-h-screen py-8 md:py-16 px-4 md:px-8 lg:px-12">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center gap-3 mb-8 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-2">
+          <span className="hover:text-blue-600 cursor-pointer transition-colors" onClick={() => navigate('/')}>Home</span>
+          <ChevronRight size={12} className="text-slate-300" />
+          <span className="text-blue-600">Payment</span>
         </div>
 
-        <div className="mb-12">
-          <div className="flex items-center justify-between max-w-2xl mx-auto relative">
-            <div className="absolute top-5 left-0 right-0 h-[2px] bg-gray-200 -z-0"></div>
+        <div className="mb-16">
+          <div className="flex items-center justify-between max-w-3xl mx-auto relative">
+            <div className="absolute top-5 left-0 right-0 h-[2px] bg-slate-200 -z-0 rounded-full"></div>
             {['Cart', 'Checkout', 'Payment', 'Delivery'].map((step, idx) => (
-              <div key={step} className="flex flex-col items-center relative z-10 bg-slate-50 px-4">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
-                  idx < 2 ? 'bg-blue-600 border-blue-600 text-white' : idx === 2 ? 'bg-white border-blue-600 text-blue-600 ring-4 ring-blue-50' : 'bg-white border-gray-300 text-gray-400'
+              <div key={step} className="flex flex-col items-center relative z-10 bg-slate-50 px-6">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-500 ${
+                  idx < 2 ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-100' : 
+                  idx === 2 ? 'bg-blue-600 border-blue-600 text-white shadow-xl shadow-blue-100 ring-4 ring-blue-50' : 
+                  'bg-white border-slate-200 text-slate-400'
                 }`}>
-                  {idx < 2 ? <CheckCircle size={20} /> : <span className="font-bold text-sm">{idx + 1}</span>}
+                  {idx < 2 ? <CheckCircle size={20} /> : <span className="font-black text-sm">{idx + 1}</span>}
                 </div>
-                <span className="mt-3 text-[10px] font-black uppercase tracking-widest text-blue-900">{step}</span>
+                <span className={`mt-3 text-[10px] font-black uppercase tracking-widest ${idx === 2 ? 'text-blue-600' : 'text-slate-400'}`}>{step}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          <div className="lg:col-span-7 space-y-8">
-            <h2 className="text-2xl font-black text-gray-900 flex items-center gap-3">
-              <ShieldCheck className="w-8 h-8 text-blue-600" /> Select Payment Method
-            </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+          <div className="lg:col-span-7 space-y-8 md:space-y-10">
+            <div className="flex items-center gap-4 mb-2 px-2">
+              <div className="p-3 bg-blue-50 rounded-xl text-blue-600 flex-shrink-0">
+                <ShieldCheck size={28} />
+              </div>
+              <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-tight uppercase">Select Payment Method</h2>
+            </div>
 
             {/* 🔥 ENHANCED PAYMENT METHODS */}
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 gap-6">
               {/* ONLINE PAYMENT OPTION */}
-              <div onClick={() => setPaymentMethod('online')} className={`border-2 rounded-2xl p-6 cursor-pointer transition-all ${paymentMethod === 'online' ? 'border-blue-600 bg-blue-50/40 shadow-xl' : 'border-white bg-white shadow-sm hover:border-blue-200'}`}>
-                <div className="space-y-4">
-                  <div className="flex items-start gap-5">
-                    <div className={`p-4 rounded-2xl flex-shrink-0 ${paymentMethod === 'online' ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-600'}`}>
-                      <CreditCard size={28} />
-                    </div>
-                    <div className="flex-grow">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold text-gray-900">Online Payment</h3>
-                        <div className="flex gap-2">
-                          <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-black rounded-full">UPI</span>
-                          <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-black rounded-full">CARDS</span>
-                        </div>
-                      </div>
-                      <p className="text-sm text-gray-500 mt-1">Pay securely with multiple methods</p>
-                      <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <Smartphone size={14} className="text-purple-600" /> <span>UPI (GPay, PhonePe)</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <CreditCard size={14} className="text-blue-600" /> <span>Credit/Debit Cards</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <Banknote size={14} className="text-green-600" /> <span>NetBanking</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <Wallet size={14} className="text-orange-600" /> <span>Digital Wallets</span>
-                        </div>
-                      </div>
-                    </div>
+              <div 
+                onClick={() => setPaymentMethod('online')} 
+                className={`group border-2 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 cursor-pointer transition-all duration-300 ${
+                  paymentMethod === 'online' 
+                    ? 'border-blue-600 bg-white shadow-2xl shadow-blue-500/10' 
+                    : 'border-white bg-white shadow-sm hover:border-slate-200'
+                }`}
+              >
+                <div className="flex flex-col md:flex-row items-start gap-6">
+                  <div className={`p-5 rounded-2xl transition-colors duration-300 hidden md:block ${
+                    paymentMethod === 'online' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 group-hover:text-blue-500'
+                  }`}>
+                    <CreditCard size={32} />
                   </div>
-                  <div className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 ${paymentMethod === 'online' ? 'bg-white text-blue-600' : 'text-gray-600'}`}>
-                    <Lock size={14} /> Secured by Razorpay
+                  <div className="flex-grow w-full space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-4 md:block">
+                        <div className={`p-3 rounded-xl md:hidden ${
+                          paymentMethod === 'online' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400'
+                        }`}>
+                          <CreditCard size={20} />
+                        </div>
+                        <div>
+                          <h3 className="text-lg md:text-xl font-black text-slate-900 uppercase tracking-tight">Online Payment</h3>
+                          <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Instant Settlement via Secure Gateway</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 flex-wrap">
+                        <span className="px-3 py-1 bg-purple-50 text-purple-600 text-[10px] font-black rounded-lg border border-purple-100 uppercase tracking-widest whitespace-nowrap">UPI</span>
+                        <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded-lg border border-blue-100 uppercase tracking-widest whitespace-nowrap">Cards</span>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6 pt-2">
+                      {[
+                        { icon: Smartphone, label: 'UPI (GPay, PhonePe)', color: 'text-purple-500' },
+                        { icon: CreditCard, label: 'Credit / Debit Cards', color: 'text-blue-500' },
+                        { icon: Banknote, label: 'Net Banking', color: 'text-emerald-500' },
+                        { icon: Wallet, label: 'Digital Wallets', color: 'text-orange-500' }
+                      ].map((item, i) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <div className={`p-1.5 rounded-lg bg-slate-50 ${item.color}`}>
+                            <item.icon size={14} />
+                          </div>
+                          <span className="text-[10px] md:text-[11px] font-bold text-slate-600 uppercase tracking-tight">{item.label}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-50 flex items-center gap-2 text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                      <Lock size={12} className="text-emerald-500 flex-shrink-0" />
+                      Secured by Razorpay Enterprise Security
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* CREDIT OPTION */}
               {credit?.availableCredit > 0 && (
-                <div onClick={() => setPaymentMethod(credit.availableCredit >= order.totalAmount ? 'credit' : 'hybrid')} className={`border-2 rounded-2xl p-6 cursor-pointer transition-all ${paymentMethod !== 'online' ? 'border-blue-600 bg-blue-50/40 shadow-xl' : 'border-white bg-white shadow-sm hover:border-blue-200'}`}>
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-5">
-                      <div className={`p-4 rounded-2xl flex-shrink-0 ${paymentMethod !== 'online' ? 'bg-blue-600 text-white' : 'bg-green-50 text-green-600'}`}>
-                        <Wallet size={28} />
-                      </div>
-                      <div className="flex-grow">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-lg font-bold text-gray-900">Business Credit</h3>
-                          {credit.availableCredit >= order.totalAmount && (
-                            <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-black rounded-full">FULL COVERAGE</span>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-500 mt-1">Use your available credit balance</p>
-                        <div className="mt-3 flex items-center justify-between">
-                          <span className="text-xs font-bold text-gray-600">Available Balance:</span>
-                          <span className="text-lg font-black text-green-600">₹{credit.availableCredit.toLocaleString()}</span>
-                        </div>
-                        {credit.availableCredit < order.totalAmount && (
-                          <div className="mt-3 p-2 bg-blue-50 rounded-lg">
-                            <p className="text-xs font-bold text-blue-700">
-                              💡 Tip: Use hybrid payment to combine credit with online payment
-                            </p>
+                <div 
+                  onClick={() => setPaymentMethod(credit.availableCredit >= order.totalAmount ? 'credit' : 'hybrid')} 
+                  className={`group border-2 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 cursor-pointer transition-all duration-300 ${
+                    paymentMethod !== 'online' 
+                      ? 'border-blue-600 bg-white shadow-2xl shadow-blue-500/10' 
+                      : 'border-white bg-white shadow-sm hover:border-slate-200'
+                  }`}
+                >
+                  <div className="flex flex-col md:flex-row items-start gap-6">
+                    <div className={`p-5 rounded-2xl transition-colors duration-300 hidden md:block ${
+                      paymentMethod !== 'online' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 group-hover:text-emerald-500'
+                    }`}>
+                      <Wallet size={32} />
+                    </div>
+                    <div className="flex-grow w-full space-y-5">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4 md:block">
+                          <div className={`p-3 rounded-xl md:hidden ${
+                            paymentMethod !== 'online' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400'
+                          }`}>
+                            <Wallet size={20} />
                           </div>
+                          <div>
+                            <h3 className="text-lg md:text-xl font-black text-slate-900 uppercase tracking-tight">Business Credit</h3>
+                            <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Utilize Your Available Credit Line</p>
+                          </div>
+                        </div>
+                        {credit.availableCredit >= order.totalAmount && (
+                          <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-black rounded-lg border border-emerald-100 uppercase tracking-widest whitespace-nowrap self-start sm:self-center">Full Coverage</span>
                         )}
                       </div>
+                      
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-50 p-6 rounded-2xl border border-slate-100 gap-6">
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Available Balance</p>
+                          <p className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none">₹{credit.availableCredit.toLocaleString()}</p>
+                        </div>
+                        <div className="hidden sm:block h-12 w-[1px] bg-slate-200"></div>
+                        <div className="sm:text-right space-y-1">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</p>
+                          <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-black rounded-full uppercase">Approved</span>
+                        </div>
+                      </div>
+
+                      {credit.availableCredit < order.totalAmount && (
+                        <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 flex items-center gap-3">
+                          <Info size={16} className="text-blue-600 flex-shrink-0" />
+                          <p className="text-[10px] md:text-[11px] font-bold text-blue-700 leading-relaxed">
+                            Combine your credit balance with online payment for this transaction.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
               )}
 
               {/* SECURITY BADGE */}
-              <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl border-l-4 border-blue-600">
-                <Lock size={18} className="text-blue-600 flex-shrink-0" />
-                <div className="text-sm">
-                  <p className="font-bold text-gray-900">Secure Payment</p>
-                  <p className="text-gray-600 text-xs">PCI-DSS compliant • SSL Encrypted • Instant Verification</p>
+              <div className="flex flex-col sm:flex-row items-center gap-4 p-5 md:p-6 bg-slate-900 rounded-[1.5rem] md:rounded-[2rem] border border-slate-800 shadow-xl">
+                <div className="p-3 bg-blue-600 rounded-xl text-white flex-shrink-0">
+                  <Lock size={20} />
+                </div>
+                <div className="space-y-1 text-center sm:text-left">
+                  <p className="text-xs font-black text-white uppercase tracking-widest">Enterprise Security Protocol</p>
+                  <p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">PCI-DSS Compliant • 256-bit SSL Encryption • Identity Verified</p>
                 </div>
               </div>
             </div>
-            {error && <div className="p-4 bg-red-50 text-red-700 rounded-2xl border-2 border-red-100 flex gap-4"><Info />{error}</div>}
+            {error && (
+              <div className="p-6 bg-rose-50 text-rose-700 rounded-2xl border-2 border-rose-100 flex items-center gap-4 animate-pulse">
+                <Info size={24} className="flex-shrink-0" />
+                <p className="font-bold text-xs md:text-sm uppercase tracking-tight">{error}</p>
+              </div>
+            )}
           </div>
 
-          <div className="lg:col-span-5">
-            <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100">
-              <div className="bg-slate-900 p-6 text-white">
-                <h2 className="text-xl font-black tracking-tight uppercase">Order Summary</h2>
-                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Order #{orderId.slice(-8).toUpperCase()}</p>
-              </div>
-              <div className="p-6 space-y-6">
-                <div className="space-y-3">
-                  <div className="flex justify-between font-bold text-gray-700">
-                    <span>Subtotal</span>
-                    <span>₹{(order.totalAmount / 1.18).toLocaleString()}</span>
+          <div className="lg:col-span-5 lg:sticky lg:top-12 mt-8 lg:mt-0">
+            <div className="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.06)] overflow-hidden border border-slate-50">
+              <div className="bg-slate-900 p-8 md:p-10 text-white relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+                <div className="relative z-10 flex items-center justify-between pt-2">
+                  <div className="space-y-2">
+                    <h2 className="text-2xl md:text-3xl font-black tracking-tight uppercase leading-tight">Order Summary</h2>
+                    <p className="text-slate-400 text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em]">Transaction ID: #{orderId.slice(-8).toUpperCase()}</p>
                   </div>
-                  <div className="flex justify-between text-sm font-bold text-green-600">
-                    <span>Delivery</span>
-                    <span>FREE</span>
+                  <div className="p-3 bg-white/10 rounded-xl backdrop-blur-md">
+                    <FileText size={24} className="text-blue-400" />
                   </div>
                 </div>
-                <div className="border-t-2 border-dashed border-gray-100 pt-6">
-                  <div className="flex justify-between items-end">
-                    <div>
-                      <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Final Payable</p>
-                      <p className="text-4xl font-black text-slate-900">₹{order.totalAmount.toLocaleString()}</p>
+              </div>
+
+              <div className="p-8 md:p-10 space-y-10">
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gross Subtotal</span>
+                    <span className="text-xl md:text-2xl font-bold text-slate-900">₹{(order.totalAmount / 1.18).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Logistics / Delivery</span>
+                      <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[8px] font-black rounded uppercase">Standard</span>
+                    </div>
+                    <span className="text-sm md:text-base font-black text-emerald-600 uppercase tracking-widest">Free Delivery</span>
+                  </div>
+                </div>
+
+                <div className="border-t-2 border-dashed border-slate-100 pt-10">
+                  <div className="flex flex-col gap-6">
+                    <div className="space-y-3">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Final Payable Amount</p>
+                      <p className="text-5xl md:text-6xl font-black text-blue-600 tracking-tighter leading-[1.1]">₹{order.totalAmount.toLocaleString()}</p>
+                    </div>
+                    <div className="self-start bg-blue-50 px-4 py-2 rounded-xl text-[10px] font-black text-blue-600 uppercase tracking-[0.1em] border border-blue-100 shadow-sm">
+                      Including 18% GST Taxes
                     </div>
                   </div>
                 </div>
+
                 {paymentMethod !== 'online' && (
-                  <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
-                    <div className="flex justify-between text-xs font-bold mb-2">
-                      <span className="text-slate-500">Credit Used</span>
-                      <span className="text-purple-600">-₹{creditUsed.toLocaleString()}</span>
+                  <div className="bg-slate-50 rounded-[1.5rem] md:rounded-3xl p-5 md:p-6 border border-slate-100 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Credit Deduction</span>
+                      <span className="text-base md:text-lg font-black text-purple-600">-₹{creditUsed.toLocaleString()}</span>
                     </div>
                     {onlinePayable > 0 && (
-                      <div className="flex justify-between pt-3 border-t text-blue-600 font-black text-lg">
-                        <span>Net Online</span>
-                        <span>₹{onlinePayable.toLocaleString()}</span>
+                      <div className="flex justify-between items-center pt-4 border-t border-slate-200">
+                        <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Remaining Online</span>
+                        <span className="text-xl md:text-2xl font-black text-blue-600 tracking-tight">₹{onlinePayable.toLocaleString()}</span>
                       </div>
                     )}
                   </div>
                 )}
-                <Button fullWidth onClick={handlePayment} loading={processing} className="h-16 text-xl font-black rounded-2xl bg-blue-600 text-white">
-                  {onlinePayable > 0 ? 'PAY NOW' : 'CONFIRM ORDER'}
-                </Button>
+
+                <div className="space-y-4">
+                  <Button 
+                    fullWidth 
+                    onClick={handlePayment} 
+                    loading={processing} 
+                    className="h-16 md:h-20 text-lg md:text-xl font-black rounded-2xl bg-blue-600 hover:bg-blue-700 text-white shadow-[0_20px_40px_rgba(37,99,235,0.25)] transition-all transform hover:-translate-y-1 active:translate-y-0 uppercase tracking-[0.2em] group"
+                  >
+                    <span className="flex items-center justify-center gap-3">
+                      {onlinePayable > 0 ? 'Initialize Payment' : 'Confirm Order'}
+                      <ArrowRight size={24} className="group-hover:translate-x-2 transition-transform" />
+                    </span>
+                  </Button>
+                  <p className="text-center text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed px-2 md:px-4">
+                    By confirming, you agree to Mokshith Enterprises' wholesale purchase terms and standard business logistics agreement.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
