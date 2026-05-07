@@ -1,8 +1,28 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+const CART_STORAGE_KEY = 'mokshith_b2b_cart';
+
+const loadCartFromStorage = () => {
+  try {
+    const savedCart = localStorage.getItem(CART_STORAGE_KEY);
+    return savedCart ? JSON.parse(savedCart) : [];
+  } catch (err) {
+    console.error('Error loading cart from storage:', err);
+    return [];
+  }
+};
+
+const saveCartToStorage = (cart) => {
+  try {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+  } catch (err) {
+    console.error('Error saving cart to storage:', err);
+  }
+};
+
 const initialState = {
   orders: [],
-  cart: [],
+  cart: loadCartFromStorage(),
   loading: false,
   error: null,
 };
@@ -30,9 +50,11 @@ const orderSlice = createSlice({
       } else {
         state.cart.push({ ...item, quantity: quantityToAdd });
       }
+      saveCartToStorage(state.cart);
     },
     removeFromCart: (state, action) => {
       state.cart = state.cart.filter((item) => (item._id || item.id) !== action.payload);
+      saveCartToStorage(state.cart);
     },
     updateQuantity: (state, action) => {
       const { id, quantity } = action.payload;
@@ -40,9 +62,11 @@ const orderSlice = createSlice({
       if (item) {
         item.quantity = quantity;
       }
+      saveCartToStorage(state.cart);
     },
     clearCart: (state) => {
       state.cart = [];
+      localStorage.removeItem(CART_STORAGE_KEY);
     },
     fetchFailure: (state, action) => {
       state.loading = false;

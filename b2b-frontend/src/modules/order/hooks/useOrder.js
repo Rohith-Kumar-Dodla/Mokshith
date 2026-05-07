@@ -27,7 +27,6 @@ export const useOrder = (shouldFetch = false) => {
 
   const addToCart = (product) => {
     dispatch(addToCartAction(product));
-    // Persistence could be added here if needed
   };
 
   const removeFromCart = (productId) => {
@@ -46,8 +45,7 @@ export const useOrder = (shouldFetch = false) => {
     dispatch(fetchStart());
     try {
       const newOrder = await orderService.placeOrder(orderData);
-      // 🔥 CART SHOULD ONLY BE CLEARED AFTER SUCCESSFUL PAYMENT
-      // dispatch(clearCartAction()); 
+      // Note: Cart is cleared in PaymentPage after successful verification
       await fetchOrders();
       return newOrder;
     } catch (err) {
