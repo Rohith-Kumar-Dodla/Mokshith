@@ -99,26 +99,17 @@ export const createPaymentOrder = async ({ amount, currency = 'INR', receipt }) 
     };
   } catch (error) {
     recordFailure();
-    console.error('❌ RAZORPAY ERROR:', {
+    console.error('❌ RAZORPAY FULL ERROR:', {
       message: error.message,
       code: error.code,
       description: error.description,
-      statusCode: error.statusCode,
-      options: options,
-      errorFull: error
+      metadata: error.metadata,
+      stack: error.stack
     });
     
-    // If it's a validation error from Razorpay (like amount too small), return 400
-    if (error.code === 'BAD_REQUEST_ERROR' || error.statusCode === 400) {
-      throw new Error(`Razorpay validation failed: ${error.description || error.message}`);
-    }
-    
-    // Network or service errors
-    if (error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED') {
-      throw new Error('Razorpay service temporarily unavailable. Please try again.');
-    }
-
-    throw new Error(`Razorpay order creation failed: ${error.description || error.message || 'Unknown error'}`);
+    // Throw a more descriptive error that includes Razorpay's reason if available
+    const errorMessage = error.description || error.message || 'Razorpay order creation failed';
+    throw new Error(`Razorpay Error: ${errorMessage}`);
   }
 };
 

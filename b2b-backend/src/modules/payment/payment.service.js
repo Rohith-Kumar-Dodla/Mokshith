@@ -26,7 +26,11 @@ export const createRazorpayOrder = async (amount, userId) => {
     });
     return order;
   } catch (error) {
-    console.error('Razorpay SDK Error:', error.message);
+    console.error('❌ Razorpay Order Creation Failed:', {
+      error: error.message,
+      userId,
+      amount
+    });
     throw new AppError(error.message || 'Razorpay order creation failed', 500);
   }
 };
