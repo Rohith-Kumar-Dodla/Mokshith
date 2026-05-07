@@ -219,14 +219,14 @@ const AnalyticsPage = () => {
   ];
 
   return (
-    <div className="space-y-12 pb-12 pl-32 pr-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="space-y-12 pb-12 pl-12 pr-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 pl-16">
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
         <div className="space-y-1">
-          <h1 className="text-5xl font-black text-gray-900 tracking-tighter uppercase italic">
+          <h1 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tighter uppercase italic">
             Market <span className="text-blue-600">Intelligence</span>
           </h1>
-          <p className="text-lg text-gray-500 font-medium tracking-tight">Real-time performance metrics and strategic growth indicators</p>
+          <p className="text-base md:text-lg text-gray-500 font-medium tracking-tight">Real-time performance metrics and strategic growth indicators</p>
         </div>
         <div className="flex items-center gap-4 pr-4">
           <div className="bg-gray-50 border border-gray-200 rounded-[1.5rem] p-1.5 shadow-inner flex items-center">
@@ -265,15 +265,15 @@ const AnalyticsPage = () => {
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Revenue Chart */}
-        <div className="lg:col-span-2 bg-white rounded-[2.5rem] border border-gray-100 p-12 shadow-2xl shadow-gray-100/50 relative overflow-hidden group">
+        <div className="lg:col-span-2 bg-white rounded-[2.5rem] border border-gray-100 p-8 md:p-12 shadow-2xl shadow-gray-100/50 relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:scale-110 transition-transform duration-700">
             <BarChart3 size={120} />
           </div>
           
-          <div className="flex items-center justify-between mb-12 relative z-10 pl-10">
+          <div className="flex items-center justify-between mb-12 relative z-10">
             <div>
-              <h3 className="text-3xl font-black text-gray-900 tracking-tight">   Revenue Performance</h3>
-              <p className="text-sm text-gray-400 font-bold uppercase tracking-widest mt-1">Growth trajectory over time</p>
+              <h3 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">Revenue Performance</h3>
+              <p className="text-xs md:text-sm text-gray-400 font-bold uppercase tracking-widest mt-1">Growth trajectory over time</p>
             </div>
             <div className="flex items-center gap-6 bg-gray-50 px-6 py-3 rounded-2xl border border-gray-100 mr-4">
               <div className="flex items-center gap-2">
@@ -373,14 +373,14 @@ const AnalyticsPage = () => {
 
       {/* Top Products Table */}
       <div className="bg-white rounded-[2.5rem] border border-gray-100 overflow-hidden shadow-sm">
-        <div className="p-12 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pl-16">
+        <div className="p-8 md:p-12 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
           <div>
             <h3 className="text-2xl font-black text-gray-900 tracking-tight">Performance Leaderboard</h3>
-            <p className="text-sm text-gray-400 font-bold uppercase tracking-widest mt-1">Ranking products by revenue contribution</p>
+            <p className="text-xs md:text-sm text-gray-400 font-bold uppercase tracking-widest mt-1">Ranking products by revenue contribution</p>
           </div>
           <button 
             onClick={() => navigate(routes.ADMIN_ORDERS)}
-            className="px-6 py-3 bg-blue-50 text-blue-600 rounded-xl font-black text-xs tracking-widest hover:bg-blue-600 hover:text-white transition-all group flex items-center gap-2"
+            className="px-6 py-4 bg-blue-50 text-blue-600 rounded-xl font-black text-[10px] tracking-widest hover:bg-blue-600 hover:text-white transition-all group flex items-center gap-2 whitespace-nowrap self-start sm:self-center"
           >
             VIEW FULL REPORT
             <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
@@ -391,42 +391,49 @@ const AnalyticsPage = () => {
           <table className="w-full text-left">
             <thead>
               <tr className="bg-gray-50/50">
-                <th className="px-10 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Product Details</th>
-                <th className="px-10 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Category</th>
-                <th className="px-10 py-6 text-xs font-black text-gray-400 uppercase tracking-widest text-center">Unit Sales</th>
-                <th className="px-10 py-6 text-xs font-black text-gray-400 uppercase tracking-widest text-right">Net Revenue</th>
-                <th className="px-10 py-6 text-xs font-black text-gray-400 uppercase tracking-widest text-right">Trend</th>
+                <th className="px-6 md:px-10 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Product Details</th>
+                <th className="px-6 md:px-10 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Category</th>
+                <th className="px-6 md:px-10 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Unit Sales</th>
+                <th className="px-6 md:px-10 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Net Revenue</th>
+                <th className="px-6 md:px-10 py-6 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Trend</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {topProducts.length > 0 ? topProducts.map((product, i) => (
                 <tr key={i} className="hover:bg-gray-50/50 transition-colors group">
-                  <td className="px-10 py-8">
-                    <div className="flex items-center gap-6">
-                      <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform shadow-inner">
-                        {product.image || '📦'}
+                  <td className="px-6 md:px-10 py-8">
+                    <div className="flex items-center gap-4 md:gap-6">
+                      <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform shadow-inner overflow-hidden border border-gray-100 flex-shrink-0">
+                        {product.image ? (
+                          <img 
+                            src={product.image} 
+                            alt={product.name} 
+                            className="w-full h-full object-cover"
+                            onError={(e) => { e.target.style.display = 'none'; e.target.parentNode.innerText = '📦'; }}
+                          />
+                        ) : '📦'}
                       </div>
-                      <div>
-                        <p className="text-lg font-bold text-gray-900 leading-tight">{product.name}</p>
-                        <p className="text-xs text-gray-400 font-black uppercase tracking-widest mt-1">SKU: {product.sku || product.id?.substring(0,8) || 'N/A'}</p>
+                      <div className="min-w-0">
+                        <p className="text-base md:text-lg font-bold text-gray-900 leading-tight truncate">{product.name}</p>
+                        <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1 truncate">SKU: {product.sku || product.id?.substring(0,8) || 'N/A'}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-10 py-8">
-                    <span className="px-4 py-1.5 bg-blue-50 text-blue-600 text-[10px] font-black rounded-xl border border-blue-100 uppercase tracking-widest">
+                  <td className="px-6 md:px-10 py-8">
+                    <span className="inline-block px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded-lg border border-blue-100 uppercase tracking-widest whitespace-nowrap">
                       {product.category || product.categoryId?.name || 'GENERAL'}
                     </span>
                   </td>
-                  <td className="px-10 py-8 text-center font-black text-gray-700 text-lg">
+                  <td className="px-6 md:px-10 py-8 text-center font-black text-gray-700 text-base md:text-lg">
                     {product.sales || product.units || product.sold || 0}
                   </td>
-                  <td className="px-10 py-8 text-right font-black text-gray-900 text-lg">
+                  <td className="px-6 md:px-10 py-8 text-right font-black text-gray-900 text-base md:text-lg">
                     ₹{(product.revenue || 0).toLocaleString('en-IN')}
                   </td>
-                  <td className="px-10 py-8 text-right">
-                    <div className={`inline-flex items-center gap-2 font-black text-sm px-3 py-1 rounded-lg ${product.trend >= 0 || product.trend === undefined ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
+                  <td className="px-6 md:px-10 py-8 text-right">
+                    <div className={`inline-flex items-center gap-2 font-black text-xs md:text-sm px-3 py-1 rounded-lg ${product.trend >= 0 || product.trend === undefined ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
                       {product.trend >= 0 || product.trend === undefined ? '+' : ''}{product.trend || Math.floor(Math.random() * 20) + 5}%
-                      <Activity size={14} />
+                      <Activity size={14} className="hidden sm:block" />
                     </div>
                   </td>
                 </tr>

@@ -178,42 +178,44 @@ const SidebarContent = ({ location, menuItems, setShowLogoutConfirm }) => (
     </div>
 
     {/* Navigation */}
-    <nav className="flex-1 flex flex-col py-6 px-2 overflow-y-auto custom-scrollbar no-scrollbar">
-      <div className="flex-1">
-        <p className="px-2 text-[8px] font-black text-slate-600 uppercase tracking-widest mb-6 text-center">Menu</p>
-        <div className="space-y-4 flex flex-col items-center">
-          {menuItems.map((item, index) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={index}
-                to={item.path}
-                className={`flex flex-col items-center justify-center gap-1 p-2 rounded-xl transition-all duration-500 group relative overflow-hidden w-full ${
-                  isActive 
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50' 
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                }`}
-                title={item.label}
-              >
-                <div className={`${isActive ? 'text-white' : 'text-slate-500 group-hover:text-blue-500'} transition-colors duration-300`}>
-                  {React.cloneElement(item.icon, { size: 20 })}
-                </div>
-                <span className={`text-[8px] tracking-wider uppercase truncate w-full text-center ${isActive ? 'font-black' : 'font-bold'}`}>{item.label}</span>
-              </Link>
-            );
-          })}
+    <nav className="flex-1 flex flex-col py-8 px-2 overflow-y-auto no-scrollbar">
+      <div className="flex-1 flex flex-col justify-between">
+        <div className="flex flex-col h-full">
+          <p className="px-2 text-[8px] font-black text-slate-600 uppercase tracking-widest mb-4 text-center">Menu</p>
+          <div className="flex-1 flex flex-col justify-between py-4">
+            {menuItems.map((item, index) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <Link
+                  key={index}
+                  to={item.path}
+                  className={`flex flex-col items-center justify-center gap-1 p-2 rounded-xl transition-all duration-500 group relative overflow-hidden w-full ${
+                    isActive 
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/50' 
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }`}
+                  title={item.label}
+                >
+                  <div className={`${isActive ? 'text-white' : 'text-slate-500 group-hover:text-blue-500'} transition-colors duration-300`}>
+                    {React.cloneElement(item.icon, { size: 20 })}
+                  </div>
+                  <span className={`text-[8px] tracking-wider uppercase truncate w-full text-center ${isActive ? 'font-black' : 'font-bold'}`}>{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
         </div>
-      </div>
 
-      {/* Logout Button */}
-      <div className="mt-8 pt-6 border-t border-white/5 flex justify-center px-1">
-        <button
-          onClick={() => setShowLogoutConfirm(true)}
-          className="flex flex-col items-center justify-center gap-1 w-full p-2 rounded-xl bg-[#1A0B0B] text-rose-600 hover:bg-rose-600 hover:text-white transition-all duration-500 group font-black uppercase tracking-widest text-[8px] border border-rose-600/20 hover:border-rose-600 shadow-lg shadow-rose-900/20"
-        >
-          <LogOut size={18} className="group-hover:scale-110 transition-transform" />
-          <span>Logout</span>
-        </button>
+        {/* Logout Button */}
+        <div className="pt-8 border-t border-white/5 flex justify-center px-1 flex-shrink-0">
+          <button
+            onClick={() => setShowLogoutConfirm(true)}
+            className="flex flex-col items-center justify-center gap-1 w-full p-2 rounded-xl bg-[#1A0B0B] text-rose-600 hover:bg-rose-600 hover:text-white transition-all duration-500 group font-black uppercase tracking-widest text-[8px] border border-rose-600/20 hover:border-rose-600 shadow-lg shadow-rose-900/20"
+          >
+            <LogOut size={18} className="group-hover:scale-110 transition-transform" />
+            <span>Logout</span>
+          </button>
+        </div>
       </div>
     </nav>
   </div>
