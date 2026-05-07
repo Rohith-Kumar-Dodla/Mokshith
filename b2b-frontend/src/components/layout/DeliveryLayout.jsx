@@ -117,7 +117,7 @@ const DeliveryLayout = ({ title = "Logistics Command" }) => {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 w-full overflow-x-hidden">
+      <main className="flex-1 w-full max-w-[1800px] mx-auto px-4 md:px-12 py-6 md:py-10">
         <Outlet />
       </main>
 

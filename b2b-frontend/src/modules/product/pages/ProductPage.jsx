@@ -168,12 +168,15 @@ const ProductPage = () => {
           display: flex;
           gap: 1rem;
           align-items: center;
-          flex-wrap: wrap;
+          flex-wrap: wrap; /* Allow items to wrap on smaller screens */
+          width: 100%; /* Ensure controls take full width on small screens */
+          justify-content: flex-end; /* Align controls to the right */
         }
 
         .search-wrapper {
           position: relative;
-          width: 350px;
+          width: 100%; /* Take full width on small screens */
+          max-width: 350px; /* Max width on larger screens */
         }
 
         .search-icon {

@@ -87,7 +87,7 @@ const WishlistPage = () => {
   }
 
   return (
-    <div className="p-8 bg-gray-50/50 min-h-screen">
+    <div className="p-8 bg-gray-50/50 min-h-screen max-w-7xl mx-auto">
       <div className="mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
           <h1 className="text-4xl font-black text-gray-900 tracking-tight flex items-center gap-3">
@@ -133,7 +133,7 @@ const WishlistPage = () => {
       )}
 
       {safeItems.length === 0 ? (
-        <div className="max-w-2xl mx-auto mt-20">
+        <div className="max-w-4xl mx-auto mt-20">
           <Card className="text-center py-24 border-2 border-dashed border-gray-200 bg-white/50 rounded-[3rem]">
             <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
               <Heart size={64} className="text-gray-300" />
