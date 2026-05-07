@@ -113,12 +113,13 @@ export const reduceStock = async (productId, quantity, options = {}) => {
     const deductAmount = Math.min(item.stock, remaining);
     if (deductAmount <= 0) continue;
 
-    // 🔥 Optimistic Locking Update
+    // 🔥 Atomic Stock Deduction
+    // We use stock: { $gte: deductAmount } to ensure we don't oversell
+    // We removed the strict version check to prevent 409 conflicts in high-latency environments
     const updated = await mongoose.model('Inventory').findOneAndUpdate(
       { 
         _id: item._id, 
-        stock: { $gte: deductAmount },
-        version: item.version 
+        stock: { $gte: deductAmount }
       },
       { 
         $inc: { stock: -deductAmount, version: 1 } 
@@ -127,8 +128,8 @@ export const reduceStock = async (productId, quantity, options = {}) => {
     );
 
     if (!updated) {
-      // Version mismatch or stock changed since read
-      throw new AppError(`Inventory update conflict for ${productId}. Please retry.`, 409);
+      // This only happens if stock became less than deductAmount between read and write
+      throw new AppError(`Insufficient stock for product: ${productId} in selected warehouse.`, 400);
     }
 
     remaining -= deductAmount;
