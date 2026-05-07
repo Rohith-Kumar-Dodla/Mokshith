@@ -8,14 +8,16 @@ import { getProductImage } from '../../../utils/imageHelper.js';
 
 const ProductCard = ({ product, onAddToCart, onBuyNow, user }) => {
   const navigate = useNavigate();
-  const minQty = product.minOrderQty || product.moq || 1;
+  // 🔥 Fix: Prioritize 'moq' from admin, then 'minOrderQty', default to 1
+  const minQty = product.moq || product.minOrderQty || 1;
   const [qty, setQty] = useState(minQty);
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const inWishlist = isInWishlist(product._id || product.id);
 
   // Sync qty with product minQty if product changes
   useEffect(() => {
-    setQty(product.minOrderQty || product.moq || 1);
+    const currentMinQty = product.moq || product.minOrderQty || 1;
+    setQty(currentMinQty);
   }, [product]);
 
   const handleAction = (e, action) => {
@@ -116,7 +118,12 @@ const ProductCard = ({ product, onAddToCart, onBuyNow, user }) => {
           </div>
           
           <div className="quantity-selector-inline">
-            <button onClick={handleDecrease} className="qty-btn" title="Decrease">
+            <button 
+              onClick={handleDecrease} 
+              className="qty-btn" 
+              title="Decrease"
+              disabled={qty <= minQty}
+            >
               <Minus size={16} strokeWidth={3} />
             </button>
             <span className="qty-val">{qty}</span>
@@ -330,34 +337,44 @@ const ProductCard = ({ product, onAddToCart, onBuyNow, user }) => {
         }
 
         .qty-btn {
-          width: 28px;
-          height: 28px;
-          border-radius: 6px;
-          border: 1px solid #e2e8f0;
-          background: #f8fafc;
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          border: 1px solid #cbd5e1;
+          background: white;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
           color: #1e293b;
           transition: all 0.2s ease;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+          padding: 0;
+          flex-shrink: 0;
         }
 
-        .qty-btn:hover {
-          background: #f1f5f9;
-          border-color: #cbd5e1;
+        .qty-btn:hover:not(:disabled) {
+          background: #f8fafc;
+          border-color: #2563eb;
           color: #2563eb;
         }
 
-        .qty-btn:active {
-          transform: scale(0.95);
+        .qty-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          background: #f1f5f9;
+        }
+
+        .qty-btn:active:not(:disabled) {
+          transform: scale(0.9);
         }
 
         .qty-val {
-          font-weight: 700;
-          font-size: 0.875rem;
-          min-width: 20px;
+          font-weight: 800;
+          font-size: 0.9375rem;
+          min-width: 24px;
           text-align: center;
+          color: #0f172a;
         }
 
         .product-actions-full {

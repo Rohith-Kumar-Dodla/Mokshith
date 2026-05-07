@@ -42,8 +42,8 @@ const ProductDetails = () => {
       setProduct(data);
       setReviews(reviewsRes.data || []);
       
-      // Set initial quantity to MOQ
-      const minQty = data.minOrderQty || data.moq || 1;
+      // Set initial quantity to MOQ - Prioritize 'moq' from admin
+      const minQty = data.moq || data.minOrderQty || 1;
       setQty(minQty);
     } catch (err) {
       setError(err.message || "Failed to load product details");
@@ -57,7 +57,7 @@ const ProductDetails = () => {
   }, [id]);
 
   const handleAddToCart = () => {
-    const minQty = product.minOrderQty || product.moq || 1;
+    const minQty = product.moq || product.minOrderQty || 1;
     if (qty < minQty) {
       // Use toast instead if available, or just set error state
       return;
@@ -67,7 +67,7 @@ const ProductDetails = () => {
   };
 
   const handleBuyNow = () => {
-    const minQty = product.minOrderQty || product.moq || 1;
+    const minQty = product.moq || product.minOrderQty || 1;
     if (qty < minQty) {
       alert(`Minimum ${minQty} quantity required for this product.`);
       return;
@@ -77,7 +77,7 @@ const ProductDetails = () => {
   };
 
   const handleDecrease = () => {
-    const minQty = product.minOrderQty || product.moq || 1;
+    const minQty = product.moq || product.minOrderQty || 1;
     if (qty > minQty) setQty(qty - 1);
   };
 
@@ -163,28 +163,53 @@ const ProductDetails = () => {
                 Quantity Selection <span style={{ fontSize: '0.75rem', color: 'var(--primary)', backgroundColor: 'var(--primary-light)', padding: '2px 8px', borderRadius: '12px' }}>Wholesale Only</span>
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', border: '2px solid var(--border)', borderRadius: '0.75rem', overflow: 'hidden', height: '50px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', border: '2px solid var(--border)', borderRadius: '0.75rem', overflow: 'hidden', height: '50px', backgroundColor: 'white', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
                   <button 
                     onClick={handleDecrease}
-                    style={{ padding: '0 1.25rem', height: '100%', border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }}
-                    onMouseOver={(e) => e.target.style.backgroundColor = '#f1f5f9'}
-                    onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+                    disabled={qty <= (product.moq || product.minOrderQty || 1)}
+                    style={{ 
+                      padding: '0 1.25rem', 
+                      height: '100%', 
+                      border: 'none', 
+                      background: 'none', 
+                      cursor: qty <= (product.moq || product.minOrderQty || 1) ? 'not-allowed' : 'pointer', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      transition: 'all 0.2s',
+                      color: qty <= (product.moq || product.minOrderQty || 1) ? '#cbd5e1' : '#1e293b',
+                      borderRight: '1px solid var(--border)'
+                    }}
+                    onMouseOver={(e) => { if(qty > (product.moq || product.minOrderQty || 1)) e.currentTarget.style.backgroundColor = '#f8fafc'; }}
+                    onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                   >
-                    <Minus size={18} />
+                    <Minus size={18} strokeWidth={2.5} />
                   </button>
-                  <span style={{ width: '60px', textAlign: 'center', fontSize: '1.25rem', fontWeight: '700' }}>{qty}</span>
+                  <span style={{ width: '60px', textAlign: 'center', fontSize: '1.25rem', fontWeight: '800', color: '#0f172a' }}>{qty}</span>
                   <button 
                     onClick={handleIncrease}
-                    style={{ padding: '0 1.25rem', height: '100%', border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }}
-                    onMouseOver={(e) => e.target.style.backgroundColor = '#f1f5f9'}
-                    onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
+                    style={{ 
+                      padding: '0 1.25rem', 
+                      height: '100%', 
+                      border: 'none', 
+                      background: 'none', 
+                      cursor: 'pointer', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      transition: 'all 0.2s',
+                      color: '#1e293b',
+                      borderLeft: '1px solid var(--border)'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   >
-                    <Plus size={18} />
+                    <Plus size={18} strokeWidth={2.5} />
                   </button>
                 </div>
                 <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
                   <p style={{ margin: 0 }}>Unit: <strong>{product.unit || 'units'}</strong></p>
-                  <p style={{ margin: 0 }}>MOQ: <strong>{product.minOrderQty || product.moq || 1} {product.unit || 'units'}</strong></p>
+                  <p style={{ margin: 0 }}>MOQ: <strong>{product.moq || product.minOrderQty || 1} {product.unit || 'units'}</strong></p>
                 </div>
               </div>
             </div>

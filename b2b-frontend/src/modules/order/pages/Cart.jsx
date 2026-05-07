@@ -74,7 +74,10 @@ const Cart = () => {
                     <div className="flex items-center justify-center sm:justify-start gap-4">
                       <div className="flex items-center bg-gray-100 rounded-xl p-1 border border-gray-200">
                         <button 
-                          onClick={() => updateQuantity(item._id || item.id, Math.max(1, item.quantity - 1))}
+                          onClick={() => {
+                            const minQty = item.moq || item.minOrderQty || 1;
+                            updateQuantity(item._id || item.id, Math.max(minQty, item.quantity - 1));
+                          }}
                           className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-blue-600 hover:bg-white rounded-lg transition-all"
                         >
                           <Minus size={16} />

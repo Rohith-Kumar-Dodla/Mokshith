@@ -14,6 +14,7 @@ const ProductPage = () => {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [sortBy, setSortBy] = useState("default");
   const [toast, setToast] = useState(null);
   const navigate = useNavigate();
 
@@ -43,12 +44,20 @@ const ProductPage = () => {
 
   const categories = ["All", ...new Set(products.map(p => p.category || p.categoryId?.name || "General"))];
 
-  const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         (p.category || p.categoryId?.name || "").toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === "All" || (p.category || p.categoryId?.name || "General") === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredProducts = products
+    .filter(p => {
+      const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                           (p.category || p.categoryId?.name || "").toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = selectedCategory === "All" || (p.category || p.categoryId?.name || "General") === selectedCategory;
+      return matchesSearch && matchesCategory;
+    })
+    .sort((a, b) => {
+      if (sortBy === "priceLowHigh") return a.price - b.price;
+      if (sortBy === "priceHighLow") return b.price - a.price;
+      if (sortBy === "newest") return new Date(b.createdAt) - new Date(a.createdAt);
+      if (sortBy === "nameAZ") return a.name.localeCompare(b.name);
+      return 0; // default
+    });
 
   return (
     <div className="page-container">
@@ -72,7 +81,7 @@ const ProductPage = () => {
             </div>
             
             <div className="filter-wrapper">
-              <div className="category-select-wrapper">
+              <div className="category-select-wrapper" title="Filter by Category">
                 <select 
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
@@ -84,11 +93,22 @@ const ProductPage = () => {
                 </select>
                 <ChevronDown size={16} className="select-arrow" />
               </div>
-              
-              <button className="filter-button">
-                <SlidersHorizontal size={18} />
-                <span>Filters</span>
-              </button>
+
+              <div className="category-select-wrapper" title="Sort Products">
+                <select 
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="category-select"
+                  style={{ minWidth: '180px' }}
+                >
+                  <option value="default">Sort by: Default</option>
+                  <option value="priceLowHigh">Price: Low to High</option>
+                  <option value="priceHighLow">Price: High to Low</option>
+                  <option value="newest">Newest Arrivals</option>
+                  <option value="nameAZ">Name: A to Z</option>
+                </select>
+                <SlidersHorizontal size={16} className="select-arrow" />
+              </div>
             </div>
           </div>
         </header>
