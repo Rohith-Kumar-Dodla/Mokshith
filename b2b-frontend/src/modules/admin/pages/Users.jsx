@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
+import { Search, CreditCard, Filter, MoreVertical } from "lucide-react";
 import Card from "../../../components/ui/Card";
 import Button from "../../../components/ui/Button";
 import Modal from "../../../components/ui/Modal";
 import Input from "../../../components/ui/Input";
 import { adminService } from "../services/adminService";
+import './AdminShared.css';
 
 const AdminUsersPage = () => {
   const [users, setUsers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showCreditModal, setShowCreditModal] = useState(false);
@@ -18,7 +21,6 @@ const AdminUsersPage = () => {
       setLoading(true);
       const response = await adminService.getUsers();
       const allUsers = response.data || response || [];
-      // Filter out ADMIN and SUPER_ADMIN roles to only show customers/vendors
       const filteredUsers = allUsers.filter(u => u.role !== 'ADMIN' && u.role !== 'SUPER_ADMIN');
       setUsers(filteredUsers);
     } catch (err) {
@@ -35,7 +37,6 @@ const AdminUsersPage = () => {
   const handleUpdateCredit = async () => {
     try {
       await adminService.updateCredit(selectedUser._id, Number(creditLimit));
-      alert("Credit limit updated successfully!");
       setShowCreditModal(false);
       setSelectedUser(null);
       fetchUsers();
@@ -50,101 +51,150 @@ const AdminUsersPage = () => {
     setShowCreditModal(true);
   };
 
+  const filteredUsers = users.filter(user => 
+    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   if (loading) return (
-    <div className="flex items-center justify-center py-20">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    <div className="admin-loading">
+      <div className="spinner"></div>
+      <p>Fetching user directory...</p>
     </div>
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div style={{ marginBottom: '2.5rem' }}>
-          <h2 style={{ fontSize: '1.875rem', fontWeight: '700', marginBottom: '0.5rem' }}>User Management</h2>
-          <p style={{ color: 'var(--text-muted)' }}>Manage platform users and credit limits</p>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="admin-page-header">
+        <div className="page-title-section">
+          <h1 className="page-title">User Management</h1>
+          <p className="page-subtitle">Oversee platform members and credit allocations</p>
         </div>
       </div>
 
-      <Card>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
-                  <th style={{ padding: '1rem', fontSize: '0.875rem' }}>USER</th>
-                  <th style={{ padding: '1rem', fontSize: '0.875rem' }}>ROLE</th>
-                  <th style={{ padding: '1rem', fontSize: '0.875rem' }}>STATUS</th>
-                  <th style={{ padding: '1rem', fontSize: '0.875rem' }}>CREDIT LIMIT</th>
-                  <th style={{ padding: '1rem', fontSize: '0.875rem' }}>AVAILABLE CREDIT</th>
-                  <th style={{ padding: '1rem', fontSize: '0.875rem', textAlign: 'right' }}>ACTIONS</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.length > 0 ? (
-                  users.map((user) => (
-                    <tr key={user._id} style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td style={{ padding: '1rem' }}>
-                        <div style={{ fontWeight: '600' }}>{user.name}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{user.email}</div>
-                      </td>
-                      <td style={{ padding: '1rem' }}>
-                        <span style={{ fontSize: '0.75rem', fontWeight: '600' }}>{user.role}</span>
-                      </td>
-                      <td style={{ padding: '1rem' }}>
-                        <span style={{ 
-                          padding: '0.2rem 0.5rem', 
-                          borderRadius: '4px', 
-                          backgroundColor: user.status === 'ACTIVE' ? 'var(--success)' : '#f1f5f9', 
-                          color: user.status === 'ACTIVE' ? 'white' : 'var(--text-muted)',
-                          fontSize: '0.75rem',
-                          fontWeight: '700'
-                        }}>
-                          {user.status}
-                        </span>
-                      </td>
-                      <td style={{ padding: '1rem', fontWeight: '600' }}>
-                        ₹{user.creditLimit?.toLocaleString() || '50,000'}
-                      </td>
-                      <td style={{ padding: '1rem', fontWeight: '600', color: 'var(--primary)' }}>
-                        ₹{user.availableCredit?.toLocaleString() || '50,000'}
-                      </td>
-                      <td style={{ padding: '1rem', textAlign: 'right' }}>
-                        <Button size="small" variant="secondary" onClick={() => openCreditModal(user)}>
-                          Adjust Credit
-                        </Button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="6" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                      No users found.
+      <div className="table-controls">
+        <div className="table-search">
+          <Search size={18} className="text-slate-400" />
+          <input 
+            type="text" 
+            placeholder="Search by name or email..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <Button variant="secondary" className="flex items-center gap-2">
+          <Filter size={18} />
+          <span>Filters</span>
+        </Button>
+      </div>
+
+      <div className="admin-card">
+        <div className="admin-table-container">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>User Information</th>
+                <th>Platform Role</th>
+                <th>Account Status</th>
+                <th>Credit Limit</th>
+                <th>Available</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredUsers.length > 0 ? (
+                filteredUsers.map((user) => (
+                  <tr key={user._id}>
+                    <td>
+                      <div className="flex items-center gap-3">
+                        <div className="avatar" style={{ width: '32px', height: '32px', fontSize: '0.75rem' }}>
+                          {user.name?.charAt(0) || 'U'}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: '700', color: 'var(--text-main)', fontSize: '0.875rem' }}>{user.name}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{user.email}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span style={{ 
+                        fontSize: '0.75rem', 
+                        fontWeight: '700', 
+                        color: 'var(--primary-color)',
+                        backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                        padding: '0.25rem 0.6rem',
+                        borderRadius: '6px'
+                      }}>
+                        {user.role}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`status-badge ${user.status === 'ACTIVE' ? 'active' : 'inactive'}`}>
+                        {user.status}
+                      </span>
+                    </td>
+                    <td style={{ fontWeight: '700', color: 'var(--text-main)' }}>
+                      ₹{user.creditLimit?.toLocaleString() || '50,000'}
+                    </td>
+                    <td style={{ fontWeight: '800', color: 'var(--primary-color)' }}>
+                      ₹{user.availableCredit?.toLocaleString() || '50,000'}
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <Button 
+                        size="small" 
+                        variant="secondary" 
+                        onClick={() => openCreditModal(user)}
+                        className="flex items-center gap-2"
+                      >
+                        <CreditCard size={14} />
+                        <span>Credit</span>
+                      </Button>
                     </td>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+                ) )
+              ) : (
+                <tr>
+                  <td colSpan="6" style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    <div className="flex flex-col items-center gap-3">
+                      <Search size={40} opacity={0.2} />
+                      <p className="font-bold">No users match your criteria</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-        {showCreditModal && (
-          <Modal title="Adjust Credit Limit" onClose={() => setShowCreditModal(false)}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <p style={{ fontWeight: '600' }}>User: {selectedUser?.name}</p>
-              <Input 
-                label="New Credit Limit (₹)" 
-                type="number" 
-                value={creditLimit} 
-                onChange={(e) => setCreditLimit(e.target.value)} 
-              />
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                <Button variant="secondary" onClick={() => setShowCreditModal(false)} style={{ flex: 1 }}>Cancel</Button>
-                <Button onClick={handleUpdateCredit} style={{ flex: 1 }}>Update Credit</Button>
+      {showCreditModal && (
+        <Modal title="Adjust Credit Limit" onClose={() => setShowCreditModal(false)}>
+          <div className="space-y-6 pt-4">
+            <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
+              <div className="avatar">{selectedUser?.name?.charAt(0)}</div>
+              <div>
+                <p className="font-bold text-slate-900">{selectedUser?.name}</p>
+                <p className="text-xs text-slate-500">{selectedUser?.email}</p>
               </div>
             </div>
-          </Modal>
-        )}
-      </div>
-    );
+            
+            <Input 
+              label="New Credit Limit (₹)" 
+              type="number" 
+              value={creditLimit} 
+              onChange={(e) => setCreditLimit(e.target.value)} 
+              className="h-12"
+            />
+            
+            <div className="flex gap-4 pt-2">
+              <Button variant="secondary" onClick={() => setShowCreditModal(false)} className="flex-1 h-12">Cancel</Button>
+              <Button onClick={handleUpdateCredit} className="flex-1 h-12">Update Allocation</Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
 };
 
 export default AdminUsersPage;

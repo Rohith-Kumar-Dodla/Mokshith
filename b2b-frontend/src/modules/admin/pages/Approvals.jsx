@@ -1,60 +1,67 @@
 import { useAdmin } from "../hooks/useAdmin";
 import ApprovalCard from "../components/ApprovalCard";
 import Button from "../../../components/ui/Button";
+import { CheckCircle, XCircle, Loader2, Sparkles, UserCheck } from "lucide-react";
+import "./AdminShared.css";
 
 const AdminApprovalsPage = () => {
   const { approvals, loading, error, approve, reject } = useAdmin();
 
   if (loading) return (
-    <div className="flex items-center justify-center py-20">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    <div className="flex flex-col items-center justify-center py-32 gap-4">
+      <Loader2 className="animate-spin text-primary" size={48} />
+      <p className="text-muted font-bold animate-pulse">Fetching pending requests...</p>
     </div>
   );
 
   if (error) return (
-    <div className="p-10 text-center">
-      <p className="text-red-500">{error}</p>
-      <Button onClick={() => window.location.reload()} className="mt-4">Retry</Button>
+    <div className="p-10 text-center bg-red-50 rounded-2xl border border-red-100 m-8">
+      <XCircle className="mx-auto text-red-500 mb-4" size={48} />
+      <p className="text-red-600 font-bold text-lg mb-4">{error}</p>
+      <Button onClick={() => window.location.reload()} className="bg-red-600 hover:bg-red-700 text-white px-8">Retry</Button>
     </div>
   );
 
   return (
-    <div className="max-w-4xl mx-auto space-y-10 py-8">
-      <div className="text-center mb-12">
-        <h2 style={{ fontSize: '2.5rem', fontWeight: '900', marginBottom: '1rem', color: '#111827', letterSpacing: '-0.025em' }}>
-          Pending Approvals
-        </h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: '1.125rem', maxWidth: '600px', mx: 'auto' }}>
-          Review and manage user registration requests to maintain platform security and quality
-        </p>
+    <div className="admin-page-content">
+      <div className="admin-page-header">
+        <div className="page-title-section">
+          <h1 className="page-title">Pending Approvals</h1>
+          <p className="page-subtitle">Review and manage registration requests for platform security</p>
+        </div>
+        <div className="header-actions">
+          <div className="status-badge active">
+            <UserCheck size={14} />
+            <span>{approvals.length} Requests</span>
+          </div>
+        </div>
       </div>
 
-      <div className="flex flex-col items-center gap-6">
+      <div className="approvals-grid">
         {approvals.length > 0 ? (
-          approvals.map((a) => (
-            <ApprovalCard 
-              key={a.id} 
-              approval={a} 
-              onApprove={approve} 
-              onReject={reject}
-            />
-          ))
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {approvals.map((a) => (
+              <ApprovalCard 
+                key={a.id} 
+                approval={a} 
+                onApprove={approve} 
+                onReject={reject}
+              />
+            ))}
+          </div>
         ) : (
-          <div style={{ 
+          <div className="admin-card" style={{ 
             padding: '6rem 4rem', 
             textAlign: 'center', 
-            backgroundColor: 'var(--surface)', 
-            borderRadius: '2rem', 
-            border: '2px dashed var(--border)',
-            width: '100%',
-            maxWidth: '600px'
+            border: '2px dashed var(--border-color)',
+            background: 'transparent'
           }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1.5rem' }}>✨</div>
-            <p style={{ color: 'var(--text-muted)', fontSize: '1.25rem', fontWeight: '600' }}>
-              No pending approvals at this time.
-            </p>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '0.5rem' }}>
-              Check back later for new registration requests.
+            <div className="bg-primary/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Sparkles className="text-primary" size={40} />
+            </div>
+            <h3 className="text-2xl font-black text-main mb-2">All Caught Up!</h3>
+            <p className="text-muted font-medium max-w-sm mx-auto">
+              No pending approvals at this time. New registration requests will appear here.
             </p>
           </div>
         )}

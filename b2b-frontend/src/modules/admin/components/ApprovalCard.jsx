@@ -2,218 +2,174 @@ import React, { useState } from "react";
 import Card from "../../../components/ui/Card.jsx";
 import Button from "../../../components/ui/Button.jsx";
 import Modal from "../../../components/ui/Modal.jsx";
-import { User, Mail, Phone, MapPin, Shield, Calendar } from "lucide-react";
+import { User, Mail, Phone, MapPin, Shield, Calendar, ExternalLink, Check, X, Clock } from "lucide-react";
 
 const ApprovalCard = ({ approval, onApprove, onReject }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const isPending = approval.status === "pending";
 
+  const getStatusBadgeClass = (status) => {
+    switch(status.toLowerCase()) {
+      case 'approved': return 'active';
+      case 'rejected': return 'inactive';
+      default: return 'pending';
+    }
+  };
+
   return (
     <>
-      <Card style={{ 
-        marginBottom: "1.5rem", 
-        padding: '1.5rem',
-        width: '100%',
-        maxWidth: '500px',
-        display: 'flex', 
-        flexDirection: 'column', 
-        alignItems: 'center',
-        textAlign: 'center',
-        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02)',
-        borderRadius: '1.5rem',
-        border: '1px solid var(--border)',
-        transition: 'transform 0.3s ease, box-shadow 0.3s ease'
-      }}>
-        <div style={{ marginBottom: '1.5rem', width: '100%' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-            <span style={{ 
-              fontSize: '0.65rem', 
-              fontWeight: '800', 
-              textTransform: 'uppercase',
-              backgroundColor: 'var(--primary-light)',
-              color: 'var(--primary)',
-              padding: '0.3rem 0.75rem',
-              borderRadius: '1rem',
-              letterSpacing: '0.1em'
-            }}>
+      <div className="admin-card flex flex-col h-full">
+        <div className="p-6 flex-1">
+          <div className="flex justify-between items-start mb-4">
+            <span className="text-[10px] font-black uppercase tracking-widest bg-primary/10 text-primary px-3 py-1 rounded-full">
               {approval.type}
             </span>
-            <span style={{ 
-              fontSize: '0.75rem', 
-              fontWeight: '700',
-              color: approval.status === 'approved' ? 'var(--success)' : 
-                     approval.status === 'rejected' ? 'var(--error)' : 'var(--warning)',
-              backgroundColor: approval.status === 'approved' ? 'rgba(34, 197, 94, 0.1)' : 
-                               approval.status === 'rejected' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-              padding: '0.3rem 0.75rem',
-              borderRadius: '1rem'
-            }}>
+            <span className={`status-badge ${getStatusBadgeClass(approval.status)}`}>
+              {approval.status === 'pending' && <Clock size={12} />}
+              {approval.status === 'approved' && <Check size={12} />}
+              {approval.status === 'rejected' && <X size={12} />}
               {approval.status.toUpperCase()}
             </span>
           </div>
-          <h4 style={{ fontSize: '1.35rem', fontWeight: '900', marginBottom: '0.5rem', color: '#111827', letterSpacing: '-0.025em' }}>
+
+          <h4 className="text-xl font-black text-main mb-2 tracking-tight line-clamp-1">
             {approval.title}
           </h4>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', fontWeight: '500' }}>
-            Requested on {new Date(approval.createdAt).toLocaleDateString('en-IN', {
-              day: 'numeric', month: 'long', year: 'numeric'
-            })}
-          </p>
-        </div>
+          
+          <div className="flex items-center gap-2 text-muted text-sm mb-6">
+            <Calendar size={14} />
+            <span>{new Date(approval.createdAt).toLocaleDateString('en-IN', {
+              day: 'numeric', month: 'short', year: 'numeric'
+            })}</span>
+          </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
-          <Button 
-            variant="secondary"
-            onClick={() => setIsModalOpen(true)}
-            style={{ 
-              padding: '0.6rem 1rem', 
-              fontSize: '0.75rem', 
-              fontWeight: '800',
-              borderRadius: '0.75rem',
-              width: '100%',
-              backgroundColor: '#f8fafc',
-              color: '#475569',
-              border: '1px solid #e2e8f0',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em'
-            }}
-          >
-            View Details
-          </Button>
-
-          {isPending && (
-            <div style={{ display: 'flex', gap: '1rem', width: '100%', justifyContent: 'center' }}>
-              <Button 
-                onClick={() => onApprove(approval.id)} 
-                style={{ 
-                  padding: '0.75rem 1.5rem', 
-                  fontSize: '0.875rem', 
-                  fontWeight: '800',
-                  borderRadius: '1rem',
-                  backgroundColor: '#2563EB',
-                  flex: 1,
-                  maxWidth: '140px',
-                  height: 'auto',
-                  boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)'
-                }}
-              >
-                Approve
-              </Button>
-              <Button 
-                onClick={() => onReject(approval.id)} 
-                variant="secondary"
-                style={{ 
-                  padding: '0.75rem 1.5rem', 
-                  fontSize: '0.875rem', 
-                  fontWeight: '800',
-                  borderRadius: '1rem',
-                  color: '#EF4444', 
-                  borderColor: '#EF4444',
-                  flex: 1,
-                  maxWidth: '140px',
-                  height: 'auto',
-                  backgroundColor: 'white'
-                }}
-              >
-                Reject
-              </Button>
+          <div className="space-y-3 mb-6">
+            <div className="flex items-center gap-3 text-sm font-medium text-main">
+              <Mail size={16} className="text-primary" />
+              <span className="truncate">{approval.email}</span>
             </div>
-          )}
+            <div className="flex items-center gap-3 text-sm font-medium text-main">
+              <Shield size={16} className="text-primary" />
+              <span>Role: {approval.role}</span>
+            </div>
+          </div>
         </div>
-      </Card>
+
+        <div className="p-6 pt-0 border-t border-border/50 bg-gray-50/50">
+          <div className="flex flex-col gap-3">
+            <Button 
+              variant="outline"
+              onClick={() => setIsModalOpen(true)}
+              className="w-full justify-center gap-2 font-bold text-xs uppercase tracking-wider h-11"
+            >
+              <ExternalLink size={14} />
+              Review Details
+            </Button>
+
+            {isPending && (
+              <div className="flex gap-3">
+                <Button 
+                  onClick={() => onApprove(approval.id)} 
+                  className="flex-1 bg-primary hover:bg-primary-hover text-white font-black h-11"
+                >
+                  Approve
+                </Button>
+                <Button 
+                  onClick={() => onReject(approval.id)} 
+                  variant="outline"
+                  className="flex-1 border-red-200 text-red-600 hover:bg-red-50 font-black h-11"
+                >
+                  Reject
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)}
-        title="Registration Details"
+        title="Registration Request Details"
       >
-        <div style={{ padding: '1rem' }}>
-          <div style={{ display: 'grid', gap: '1.5rem' }}>
-            {/* Basic Info */}
-            <div style={{ display: 'grid', gap: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ padding: '0.5rem', backgroundColor: '#eff6ff', borderRadius: '0.5rem', color: '#3b82f6' }}>
-                  <User size={18} />
+        <div className="p-6">
+          <div className="space-y-6">
+            {/* Request Status Header */}
+            <div className="bg-primary/5 rounded-2xl p-4 flex items-center justify-between border border-primary/10">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-primary shadow-sm">
+                  <User size={24} />
                 </div>
                 <div>
-                  <p style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Full Name</p>
-                  <p style={{ fontWeight: '800', color: '#1e293b' }}>{approval.title}</p>
+                  <h3 className="font-black text-main tracking-tight">{approval.title}</h3>
+                  <p className="text-xs text-muted font-bold uppercase tracking-wider">{approval.role}</p>
                 </div>
               </div>
+              <span className={`status-badge ${getStatusBadgeClass(approval.status)}`}>
+                {approval.status.toUpperCase()}
+              </span>
+            </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ padding: '0.5rem', backgroundColor: '#f0fdf4', borderRadius: '0.5rem', color: '#22c55e' }}>
-                  <Mail size={18} />
-                </div>
-                <div>
-                  <p style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Email Address</p>
-                  <p style={{ fontWeight: '800', color: '#1e293b' }}>{approval.email}</p>
-                </div>
+            {/* Basic Info Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 rounded-xl bg-gray-50 border border-border/50">
+                <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-1">Email Address</p>
+                <p className="font-bold text-main">{approval.email}</p>
               </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ padding: '0.5rem', backgroundColor: '#fff7ed', borderRadius: '0.5rem', color: '#f97316' }}>
-                  <Phone size={18} />
-                </div>
-                <div>
-                  <p style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Mobile Number</p>
-                  <p style={{ fontWeight: '800', color: '#1e293b' }}>{approval.mobile || 'N/A'}</p>
-                </div>
+              <div className="p-4 rounded-xl bg-gray-50 border border-border/50">
+                <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-1">Mobile Number</p>
+                <p className="font-bold text-main">{approval.mobile || 'Not Provided'}</p>
               </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ padding: '0.5rem', backgroundColor: '#f5f3ff', borderRadius: '0.5rem', color: '#8b5cf6' }}>
-                  <Shield size={18} />
-                </div>
-                <div>
-                  <p style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Assigned Role</p>
-                  <p style={{ fontWeight: '800', color: '#1e293b' }}>{approval.role}</p>
-                </div>
+              <div className="p-4 rounded-xl bg-gray-50 border border-border/50">
+                <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-1">Registration Date</p>
+                <p className="font-bold text-main">
+                  {new Date(approval.createdAt).toLocaleString('en-IN')}
+                </p>
               </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ padding: '0.5rem', backgroundColor: '#f1f5f9', borderRadius: '0.5rem', color: '#475569' }}>
-                  <Calendar size={18} />
-                </div>
-                <div>
-                  <p style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase' }}>Registration Date</p>
-                  <p style={{ fontWeight: '800', color: '#1e293b' }}>
-                    {new Date(approval.createdAt).toLocaleDateString('en-IN', {
-                      day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                    })}
-                  </p>
-                </div>
+              <div className="p-4 rounded-xl bg-gray-50 border border-border/50">
+                <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-1">Request Type</p>
+                <p className="font-bold text-main capitalize">{approval.type}</p>
               </div>
             </div>
 
             {/* Address Info */}
             {approval.addresses && approval.addresses.length > 0 && (
-              <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                  <div style={{ padding: '0.5rem', backgroundColor: '#fdf2f8', borderRadius: '0.5rem', color: '#db2777' }}>
-                    <MapPin size={18} />
-                  </div>
-                  <p style={{ fontWeight: '900', color: '#1e293b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Address Details</p>
-                </div>
-                
-                <div style={{ display: 'grid', gap: '1rem' }}>
+              <div className="space-y-4">
+                <h4 className="text-sm font-black text-main uppercase tracking-widest flex items-center gap-2">
+                  <MapPin size={16} className="text-primary" />
+                  Address Details
+                </h4>
+                <div className="space-y-3">
                   {approval.addresses.map((addr, idx) => (
-                    <div key={idx} style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '1rem', border: '1px solid #f1f5f9' }}>
-                      <p style={{ fontWeight: '800', color: '#334155', marginBottom: '0.25rem' }}>{addr.name}</p>
-                      <p style={{ fontSize: '0.875rem', color: '#64748b' }}>{addr.addressLine}</p>
-                      <p style={{ fontSize: '0.875rem', color: '#64748b' }}>{addr.city}, {addr.state} - {addr.pincode}</p>
-                      <p style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '0.5rem' }}>Phone: {addr.phone}</p>
+                    <div key={idx} className="p-4 rounded-xl border border-border bg-white shadow-sm">
+                      <p className="text-sm font-bold text-main leading-relaxed">
+                        {addr.street}, {addr.city}, {addr.state} - {addr.zipCode}
+                      </p>
+                      <p className="text-xs text-muted font-medium mt-1 uppercase tracking-wider">{addr.type}</p>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-          </div>
 
-          <div style={{ marginTop: '2rem' }}>
-            <Button onClick={() => setIsModalOpen(false)} style={{ width: '100%', borderRadius: '1rem', fontWeight: '800' }}>
-              Close
-            </Button>
+            {/* Action Buttons in Modal if pending */}
+            {isPending && (
+              <div className="flex gap-4 pt-4 border-t border-border">
+                <Button 
+                  onClick={() => { onApprove(approval.id); setIsModalOpen(false); }} 
+                  className="flex-1 bg-primary hover:bg-primary-hover text-white font-black h-12"
+                >
+                  Approve Request
+                </Button>
+                <Button 
+                  onClick={() => { onReject(approval.id); setIsModalOpen(false); }} 
+                  variant="outline"
+                  className="flex-1 border-red-200 text-red-600 hover:bg-red-50 font-black h-12"
+                >
+                  Reject
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </Modal>

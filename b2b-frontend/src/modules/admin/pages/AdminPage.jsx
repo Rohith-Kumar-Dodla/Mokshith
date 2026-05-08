@@ -10,65 +10,62 @@ import {
   Package, 
   ShoppingCart, 
   Building2, 
-  Bell, 
-  Plus,
-  ArrowUpRight,
   TrendingUp,
   ShieldCheck,
-  Clock,
-  DollarSign,
-  CheckCircle2,
-  ClipboardList
+  Plus,
+  ChevronRight,
+  ArrowUpRight,
+  ClipboardList,
+  Sparkles,
+  Zap,
+  Activity,
+  ArrowRight
 } from 'lucide-react';
+import './AdminPage.css';
+import './AdminShared.css';
 
 const AdminPage = () => {
-  const { approvals, stats, loading, error, approve, reject, fetchLogs } = useAdmin();
-  const { user, logout } = useAuth();
+  const { approvals, stats, loading } = useAdmin();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const quickActions = [
-    { icon: <ShoppingCart size={24} />, label: "Orders", path: routes.ADMIN_ORDERS, color: "blue", count: stats?.totalOrders },
-    { icon: <Package size={24} />, label: "Inventory", path: routes.ADMIN_INVENTORY, color: "orange", count: "8 LOW" },
-    { icon: <Users size={24} />, label: "Customers", path: routes.ADMIN_USERS, color: "indigo", count: stats?.totalUsers },
-    { icon: <Building2 size={24} />, label: "Warehouses", path: routes.ADMIN_WAREHOUSE, color: "emerald", count: "4 ACTIVE" },
-    { icon: <TrendingUp size={24} />, label: "Analytics", path: routes.ADMIN_ANALYTICS, color: "purple", count: "LIVE" },
-    { icon: <ShieldCheck size={24} />, label: "Approvals", path: routes.ADMIN_APPROVALS, color: "amber", count: approvals?.length },
+    { icon: <ShoppingCart size={20} />, label: "Orders", path: routes.ADMIN_ORDERS, count: stats?.totalOrders, color: 'blue' },
+    { icon: <Package size={20} />, label: "Inventory", path: routes.ADMIN_INVENTORY, count: "8 LOW", color: 'amber' },
+    { icon: <Users size={20} />, label: "Customers", path: routes.ADMIN_USERS, count: stats?.totalUsers, color: 'indigo' },
+    { icon: <Building2 size={20} />, label: "Warehouses", path: routes.ADMIN_WAREHOUSE, count: "4 ACTIVE", color: 'emerald' },
+    { icon: <TrendingUp size={20} />, label: "Analytics", path: routes.ADMIN_ANALYTICS, count: "LIVE", color: 'sky' },
+    { icon: <ShieldCheck size={20} />, label: "Approvals", path: routes.ADMIN_APPROVALS, count: approvals?.length, color: 'rose' },
   ];
 
   if (loading) return (
-    <div className="flex items-center justify-center py-20">
-      <div className="flex flex-col items-center gap-6">
-        <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin shadow-xl shadow-blue-200"></div>
-        <p className="font-black text-gray-900 uppercase tracking-widest text-xs">Initializing Admin Console</p>
+    <div className="admin-page-content flex flex-col items-center justify-center py-32 gap-6">
+      <div className="relative">
+        <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Activity size={24} className="text-primary animate-pulse" />
+        </div>
       </div>
+      <p className="text-muted font-black uppercase tracking-widest text-[10px]">Orchestrating Dashboard...</p>
     </div>
   );
 
   return (
-    <div className="space-y-12 py-4">
-      <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-8">
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <h1 className="text-4xl md:text-5xl font-black text-gray-900 tracking-tighter leading-none">
-              Control <span className="text-blue-600">Center</span>
-            </h1>
-          </div>
-          <div className="flex items-center gap-3 text-slate-500 font-bold">
-            <div className="w-8 h-8 bg-blue-500/10 rounded-lg text-blue-600 border border-blue-500/20 flex items-center justify-center shadow-inner">
-              <ShieldCheck size={18} />
-            </div>
-            <p className="text-sm md:text-base">
-              Welcome back, <span className="text-gray-900 font-black">{user?.name}</span>. Operational systems are stable.
-            </p>
-          </div>
+    <div className="admin-page-content animate-in fade-in duration-700">
+      <header className="admin-page-header">
+        <div className="page-title-section">
+          <h1 className="page-title flex items-center gap-3">
+            Dashboard Overview
+            <span className="bg-primary/10 text-primary text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">v2.0</span>
+          </h1>
+          <p className="page-subtitle">Welcome back, <span className="font-black text-main underline decoration-primary/30 decoration-2 underline-offset-4">{user?.name || 'Admin'}</span>. Here's what's happening today.</p>
         </div>
-
-        <div className="flex items-center gap-4">
+        <div className="header-actions">
           <Button 
             onClick={() => navigate(routes.ADMIN_PRODUCTS)} 
-            className="h-14 px-8 rounded-2xl flex items-center gap-3 bg-blue-600 hover:bg-blue-700 text-white font-black text-sm uppercase tracking-widest shadow-2xl shadow-blue-500/40 group active:scale-95 transition-all"
+            className="h-14 px-8 bg-primary hover:bg-primary-hover text-white rounded-2xl font-black text-xs tracking-widest flex items-center gap-3 shadow-xl shadow-primary/20 uppercase"
           >
-            <Plus size={20} className="group-hover:rotate-90 transition-transform duration-500" />
+            <Plus size={20} strokeWidth={3} />
             Add Product
           </Button>
         </div>
@@ -77,63 +74,73 @@ const AdminPage = () => {
       {/* Stats Section */}
       <AdminStats stats={stats} />
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-16">
-        {/* Quick Operations - 7 cols */}
-        <div className="xl:col-span-7">
-          <div className="flex items-center justify-between mb-10">
-            <h2 className="text-2xl font-black text-gray-900 uppercase tracking-widest">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-10">
+        {/* Quick Operations */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-black text-main uppercase tracking-widest flex items-center gap-2">
+              <Zap size={16} className="text-primary" />
               Quick Operations
             </h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {quickActions.map((action, index) => (
-              <button 
+              <div 
                 key={index} 
+                className="admin-card group p-5 cursor-pointer hover:border-primary/30 transition-all flex items-center gap-4"
                 onClick={() => navigate(action.path)}
-                className="bg-white p-6 rounded-[2rem] border border-gray-50 shadow-sm hover:shadow-2xl hover:shadow-blue-500/5 transition-all group text-left relative overflow-hidden flex flex-col items-center text-center"
               >
-                <div className={`w-12 h-12 rounded-xl bg-white shadow-lg shadow-gray-200/40 text-blue-600 mb-4 flex items-center justify-center group-hover:scale-110 transition-transform border border-gray-50`}>
-                  {React.cloneElement(action.icon, { size: 22 })}
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 bg-primary/5 text-primary group-hover:scale-110`}>
+                  {action.icon}
                 </div>
-                <h3 className="font-black text-gray-900 text-lg tracking-tight mb-1">{action.label}</h3>
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{action.count || 'View All'}</span>
-                <ArrowUpRight size={16} className="absolute top-6 right-6 text-gray-100 group-hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100" />
-              </button>
+                <div className="flex-1">
+                  <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-0.5">{action.label}</p>
+                  <p className="text-lg font-black text-main tracking-tight">{action.count || 'Manage'}</p>
+                </div>
+                <ArrowRight size={16} className="text-muted opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+              </div>
             ))}
           </div>
         </div>
 
-        {/* Verification Queue - 5 cols */}
-        <div className="xl:col-span-5">
-          <div className="flex items-center justify-between mb-10 px-4">
-            <h2 className="text-2xl font-black text-gray-900 uppercase tracking-widest">
+        {/* Verification Queue */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-black text-main uppercase tracking-widest flex items-center gap-2">
+              <ShieldCheck size={16} className="text-primary" />
               Verification Queue
             </h2>
-            <Link to={routes.ADMIN_APPROVALS} className="text-[11px] font-black text-blue-600 hover:text-blue-700 uppercase tracking-[0.25em] border-b-2 border-blue-500/20 hover:border-blue-500 transition-all">View All Queue</Link>
+            <Link to={routes.ADMIN_APPROVALS} className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline">
+              View All
+            </Link>
           </div>
-          <div className="space-y-4 px-4">
+          
+          <div className="admin-card p-2 space-y-2">
             {approvals?.length > 0 ? (
-              approvals.slice(0, 4).map((approval, index) => (
-                <div key={approval._id || index} className="bg-white p-6 rounded-[2rem] border border-gray-50 shadow-sm flex items-center justify-between hover:shadow-2xl hover:shadow-blue-500/5 transition-all group">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-amber-500/5 rounded-xl flex items-center justify-center text-amber-600 font-black text-xl border border-amber-500/10 shadow-inner">
-                      {approval.title?.[0] || 'U'}
-                    </div>
-                    <div>
-                      <p className="font-black text-gray-900 text-base tracking-tight leading-none mb-1">{approval.title}</p>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Registration</p>
-                    </div>
+              approvals.slice(0, 5).map((approval, index) => (
+                <div 
+                  key={approval._id || index} 
+                  className="p-4 rounded-xl hover:bg-primary/5 transition-colors group flex items-center gap-4 cursor-pointer"
+                  onClick={() => navigate(routes.ADMIN_APPROVALS)}
+                >
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-black">
+                    {approval.title?.[0] || 'U'}
                   </div>
-                  <ArrowUpRight size={20} className="text-gray-200 group-hover:text-blue-500 transition-colors mr-2" />
+                  <div className="flex-1">
+                    <p className="text-xs font-black text-main line-clamp-1">{approval.title}</p>
+                    <p className="text-[10px] text-muted font-bold uppercase tracking-widest">New Registration</p>
+                  </div>
+                  <div className="w-8 h-8 rounded-lg bg-white border border-border flex items-center justify-center text-muted group-hover:text-primary group-hover:border-primary/30 transition-all">
+                    <ArrowUpRight size={14} />
+                  </div>
                 </div>
               ))
             ) : (
-              <div className="bg-white border-4 border-dashed border-gray-50 rounded-[4rem] p-20 text-center shadow-inner">
-                <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
-                  <ClipboardList size={40} className="text-gray-200" />
+              <div className="py-12 flex flex-col items-center text-center gap-3">
+                <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center">
+                  <ClipboardList size={32} />
                 </div>
-                <h3 className="font-black text-gray-900 text-2xl tracking-tight">Queue Cleared</h3>
-                <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-3">All verifications complete</p>
+                <p className="text-[10px] font-black text-muted uppercase tracking-widest">All verifications complete</p>
               </div>
             )}
           </div>
