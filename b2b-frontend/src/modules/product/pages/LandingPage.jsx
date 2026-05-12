@@ -21,10 +21,14 @@ import {
 } from 'lucide-react';
 import { routes } from '../../../routes/routeConfig.js';
 import { useAuth } from '../../auth/hooks/useAuth.js';
+import { useSystemConfig } from '../../../hooks/useSystemConfig.js';
 
 const LandingPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isFeatureEnabled } = useSystemConfig();
+
+  const recommendationsEnabled = isFeatureEnabled('recommendations');
 
   const categories = [
     { name: "Rice & Grains", icon: <Wheat className="w-5 h-5" />, slug: "rice-grains" },
@@ -245,27 +249,29 @@ const LandingPage = () => {
       </section>
 
       {/* Product Preview Section */}
-      <section className="product-preview-section">
-        <div className="section-header">
-          <h2>Top Wholesale Deals</h2>
-          <p>Direct from vendors with bulk pricing</p>
-        </div>
-        <div className="products-grid">
-          {products.map((prod, i) => (
-            <div key={i} className="product-mini-card">
-              <div className="prod-img">{prod.img}</div>
-              <div className="prod-info">
-                <h4>{prod.name}</h4>
-                <div className="prod-meta">
-                  <span className="prod-price">{prod.price}</span>
-                  <span className="prod-unit">/{prod.unit}</span>
+      {recommendationsEnabled && (
+        <section className="product-preview-section">
+          <div className="section-header">
+            <h2>Top Wholesale Deals</h2>
+            <p>Direct from vendors with bulk pricing</p>
+          </div>
+          <div className="products-grid">
+            {products.map((prod, i) => (
+              <div key={i} className="product-mini-card">
+                <div className="prod-img">{prod.img}</div>
+                <div className="prod-info">
+                  <h4>{prod.name}</h4>
+                  <div className="prod-meta">
+                    <span className="prod-price">{prod.price}</span>
+                    <span className="prod-unit">/{prod.unit}</span>
+                  </div>
+                  <button className="add-btn">Add</button>
                 </div>
-                <button className="add-btn">Add</button>
               </div>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* CTA Section */}
       <section className="cta-section">

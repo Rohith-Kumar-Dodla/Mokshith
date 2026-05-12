@@ -18,7 +18,7 @@ export const getAdmins = async () => {
   return User.find({ role: ROLES.ADMIN });
 };
 
-export const createAdmin = async (data) => {
+export const createAdmin = async (data, creatorId, ip) => {
   const { name, email, password, mobile } = data;
 
   const existingEmail = await User.findOne({ email });
@@ -43,6 +43,17 @@ export const createAdmin = async (data) => {
     isVerified: true
   });
 
+  // Log action
+  await Audit.create({
+    userId: creatorId,
+    action: 'CREATE_ADMIN',
+    entity: 'USER',
+    entityId: admin._id,
+    details: `Created admin: ${email}`,
+    ip,
+    severity: 'INFO'
+  });
+
   // Create credit account for admin as well (optional, but consistent)
   try {
     await createCreditAccount(admin._id, 50000);
@@ -53,7 +64,7 @@ export const createAdmin = async (data) => {
   return admin;
 };
 
-export const deleteAdmin = async (id) => {
+export const deleteAdmin = async (id, deleterId, ip) => {
   const user = await User.findById(id);
   if (!user || user.role !== ROLES.ADMIN) {
     throw new AppError('Admin not found', 404);
@@ -62,10 +73,21 @@ export const deleteAdmin = async (id) => {
   // 🔥 Use soft delete for consistency
   await User.findByIdAndUpdate(id, { isDeleted: true });
   
+  // Log action
+  await Audit.create({
+    userId: deleterId,
+    action: 'DELETE_ADMIN',
+    entity: 'USER',
+    entityId: id,
+    details: `Deleted admin: ${user.email}`,
+    ip,
+    severity: 'WARNING'
+  });
+
   return { message: 'Admin deleted successfully' };
 };
 
-export const updateAdmin = async (id, data) => {
+export const updateAdmin = async (id, data, updaterId, ip) => {
   const user = await User.findById(id);
   if (!user || user.role !== ROLES.ADMIN) {
     throw new AppError('Admin not found', 404);
@@ -78,6 +100,18 @@ export const updateAdmin = async (id, data) => {
   }
 
   const updatedAdmin = await User.findByIdAndUpdate(id, data, { new: true });
+
+  // Log action
+  await Audit.create({
+    userId: updaterId,
+    action: 'UPDATE_ADMIN',
+    entity: 'USER',
+    entityId: id,
+    details: `Updated admin: ${user.email}`,
+    ip,
+    severity: 'INFO'
+  });
+
   return updatedAdmin;
 };
 
@@ -132,8 +166,39 @@ export const getMetrics = async () => {
   };
 };
 
-export const getAuditLogs = async () => {
-  return Audit.find().sort({ createdAt: -1 }).limit(100);
+export const getAuditLogs = async (filters = {}) => {
+  const query = {};
+  
+  if (filters.action) query.action = filters.action;
+  if (filters.severity) query.severity = filters.severity;
+  if (filters.userId) query.userId = filters.userId;
+  
+  return Audit.find(query)
+    .sort({ createdAt: -1 })
+    .limit(filters.limit || 100)
+    .populate('userId', 'name email');
+};
+
+export const exportAuditLogs = async (filters = {}) => {
+  const logs = await getAuditLogs({ ...filters, limit: 5000 });
+  
+  // Create CSV content
+  const header = 'Timestamp,User,Email,Role,Action,Entity,Details,IP,Severity\n';
+  const rows = logs.map(log => {
+    return [
+      log.createdAt.toISOString(),
+      log.userId?.name || 'System',
+      log.userId?.email || 'N/A',
+      log.role || 'N/A',
+      log.action,
+      log.entity,
+      `"${(log.details || '').replace(/"/g, '""')}"`,
+      log.ip || 'N/A',
+      log.severity
+    ].join(',');
+  }).join('\n');
+  
+  return header + rows;
 };
 
 export const getConfig = async () => {
@@ -145,9 +210,20 @@ export const getConfig = async () => {
   }, {});
 };
 
-export const updateConfig = async (config) => {
+export const updateConfig = async (config, userId, ip) => {
   for (const [key, value] of Object.entries(config)) {
     await updateSetting(key, value);
+    
+    // Log the change
+    await Audit.create({
+      userId,
+      action: 'UPDATE_CONFIG',
+      entity: 'SYSTEM_SETTINGS',
+      details: `Updated ${key} to ${JSON.stringify(value)}`,
+      data: { key, value },
+      ip,
+      severity: 'WARNING'
+    });
   }
   return getConfig();
 };

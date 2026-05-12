@@ -18,6 +18,9 @@ router.post(
 
 router.get('/:key', controller.getSetting);
 
+// 🔥 Public config for frontend (before login)
+router.get('/public/config', controller.getPublicConfig);
+
 // 🔥 optional
 router.get('/', controller.getAllSettings);
 

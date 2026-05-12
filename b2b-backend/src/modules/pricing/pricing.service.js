@@ -14,7 +14,7 @@ export const getPrice = async ({ price, quantity }) => {
   // 🔥 Future: fetch rules from DB
   await repo.getPricingRules();
 
-  const finalPrice = calculatePrice({
+  const finalPrice = await calculatePrice({
     basePrice: price,
     quantity,
   });

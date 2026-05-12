@@ -14,6 +14,7 @@ import { corsConfig } from './config/cors.js';
 import { securityMiddleware } from './config/security.js';
 import { requestLogger } from './middlewares/requestLogger.middleware.js';
 import { idempotencyMiddleware } from './middlewares/idempotency.middleware.js';
+import { ipBlockMiddleware } from './middlewares/ipBlock.middleware.js';
 
 import logisticsRoutes from './modules/logistics/logistics.routes.js';
 
@@ -85,6 +86,9 @@ app.set('trust proxy', 1);
 
 // 🔥 CORS CONFIG
 app.use(corsConfig);
+
+// 🔥 IP Blocking
+app.use(ipBlockMiddleware);
 
 // 🔥 Handle preflight requests (VERY IMPORTANT)
 app.options("*", corsConfig);

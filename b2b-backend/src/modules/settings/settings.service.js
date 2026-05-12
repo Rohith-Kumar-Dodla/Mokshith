@@ -23,6 +23,7 @@ const ALLOWED_KEYS = [
   'MAX_ORDER_LIMIT',
   'DEFAULT_CURRENCY',
   'ENABLE_NOTIFICATIONS',
+  'blockedIps',
 ];
 
 export const updateSetting = async (key, value) => {
@@ -53,4 +54,16 @@ export const fetchSetting = async (key) => {
 
 export const getAllSettings = async () => {
   return repo.getAllSettings();
+};
+
+export const getPublicConfig = async () => {
+  const settings = await getAllSettings();
+  const publicKeys = ['allowRegistration', 'enableCOD', 'siteName', 'defaultCurrency', 'featureFlags'];
+  
+  return settings.reduce((acc, s) => {
+    if (publicKeys.includes(s.key)) {
+      acc[s.key] = s.value;
+    }
+    return acc;
+  }, {});
 };

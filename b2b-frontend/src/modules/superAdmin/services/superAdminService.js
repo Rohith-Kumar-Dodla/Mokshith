@@ -9,6 +9,17 @@ export const superAdminService = {
     }
   },
 
+  async exportAuditLogs() {
+    try {
+      const response = await apiClient.get("/superadmin/audit-logs/export", {
+        responseType: 'blob'
+      });
+      return response;
+    } catch {
+      throw new Error("Failed to export audit logs");
+    }
+  },
+
   async getMetrics() {
     try {
       return await apiClient.get("/superadmin/metrics");

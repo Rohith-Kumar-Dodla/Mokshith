@@ -29,6 +29,16 @@ const orderSchema = new mongoose.Schema(
       required: true,
     },
 
+    commissionRate: {
+      type: Number,
+      default: 0
+    },
+
+    commissionAmount: {
+      type: Number,
+      default: 0
+    },
+
     paymentMethod: {
       type: String,
       enum: ['COD', 'ONLINE', 'CREDIT', 'RAZORPAY', 'UPI', 'CARD'],

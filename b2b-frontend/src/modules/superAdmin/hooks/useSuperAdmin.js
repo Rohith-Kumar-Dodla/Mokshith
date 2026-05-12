@@ -131,7 +131,16 @@ export const useSuperAdmin = () => {
       return await superAdminService.getDbCollection(name);
     } catch (err) {
       console.error(err);
-      return [];
+      throw err;
+    }
+  };
+
+  const exportAuditLogs = async () => {
+    try {
+      return await superAdminService.exportAuditLogs();
+    } catch (err) {
+      console.error(err);
+      throw err;
     }
   };
 
@@ -154,6 +163,7 @@ export const useSuperAdmin = () => {
     createCategory,
     deleteCategory,
     updateCategory,
-    fetchDbCollection 
+    fetchDbCollection,
+    exportAuditLogs
   };
 };

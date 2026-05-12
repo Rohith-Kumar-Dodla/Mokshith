@@ -28,20 +28,25 @@ const SuperAdminPage = () => {
     createCategory,
     deleteCategory,
     updateCategory,
-    fetchDbCollection 
+    fetchDbCollection,
+    exportAuditLogs
   } = useSuperAdmin();
   const { logout } = useAuth();
   const { showDbShell, setShowDbShell } = useOutletContext();
 
-  const handleExportLogs = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(auditLogs));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", `audit_logs_${new Date().toISOString().split('T')[0]}.json`);
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
-    alert("Logs exported successfully!");
+  const handleExportLogs = async () => {
+    try {
+      const blob = await exportAuditLogs();
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `audit_logs_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      alert("Failed to export logs: " + err.message);
+    }
   };
 
   if (loading) return (
@@ -77,7 +82,7 @@ const SuperAdminPage = () => {
 
       <CategoryControl categories={categories} onCreateCategory={createCategory} onDeleteCategory={deleteCategory} onUpdateCategory={updateCategory} />
 
-      <div style={{ paddingLeft: '1.5rem', paddingRight: '1.5rem', marginBottom: '2rem' }}>
+      <div id="audit-trail" style={{ paddingLeft: '1.5rem', paddingRight: '1.5rem', marginBottom: '2rem' }}>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '2rem' }}>
           <h3 style={{ 
             fontSize: '1.5rem', 

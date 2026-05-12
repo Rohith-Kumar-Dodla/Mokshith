@@ -1,7 +1,16 @@
 import Card from "../../../components/ui/Card";
 import Button from "../../../components/ui/Button";
+import Modal from "../../../components/ui/Modal";
+import Input from "../../../components/ui/Input";
+import { useState } from "react";
+import { X, ShieldAlert, FileText, Plus } from "lucide-react";
 
 const FeatureAndSecurityPanel = ({ config, onSave }) => {
+  const [showIpModal, setShowIpModal] = useState(false);
+  const [newIp, setNewIp] = useState("");
+  
+  const blockedIps = config?.blockedIps || [];
+
   const defaultFlags = {
     creditSystem: true,
     cod: true,
@@ -16,6 +25,17 @@ const FeatureAndSecurityPanel = ({ config, onSave }) => {
   const handleToggleFeature = (feature) => {
     const newFlags = { ...featureFlags, [feature]: !featureFlags[feature] };
     onSave({ featureFlags: newFlags });
+  };
+
+  const handleAddIp = () => {
+    if (newIp && !blockedIps.includes(newIp)) {
+      onSave({ blockedIps: [...blockedIps, newIp] });
+      setNewIp("");
+    }
+  };
+
+  const handleRemoveIp = (ipToRemove) => {
+    onSave({ blockedIps: blockedIps.filter(ip => ip !== ipToRemove) });
   };
 
   return (
@@ -75,18 +95,92 @@ const FeatureAndSecurityPanel = ({ config, onSave }) => {
           Security Panel
         </h3>
         <div style={{ marginBottom: '2rem', paddingLeft: '1rem', paddingRight: '1rem' }}>
-          <p style={{ fontSize: '0.75rem', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.75rem', letterSpacing: '0.05em' }}>Recent Login Attempts</p>
+          <p style={{ fontSize: '0.75rem', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.75rem', letterSpacing: '0.05em' }}>Security Overview</p>
           <div style={{ fontSize: '0.75rem', backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '1rem', border: '1px solid #f1f5f9' }}>
-            <p style={{ marginBottom: '0.5rem', fontWeight: '500' }}>• user1@example.com - <span style={{ color: 'var(--success)', fontWeight: '800' }}>SUCCESS</span> (2 mins ago)</p>
-            <p style={{ marginBottom: '0.5rem', fontWeight: '500' }}>• unknown@hacker.com - <span style={{ color: 'var(--error)', fontWeight: '800' }}>FAILED</span> (15 mins ago)</p>
-            <p style={{ fontWeight: '500' }}>• admin@mokshith.com - <span style={{ color: 'var(--success)', fontWeight: '800' }}>SUCCESS</span> (1 hour ago)</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+              <span style={{ fontWeight: '500' }}>Blocked IPs</span>
+              <span style={{ fontWeight: '800', color: blockedIps.length > 0 ? 'var(--error)' : 'var(--text-muted)' }}>{blockedIps.length}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontWeight: '500' }}>Active Sessions</span>
+              <span style={{ fontWeight: '800', color: 'var(--success)' }}>Active</span>
+            </div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: '1rem', paddingLeft: '1rem', paddingRight: '1rem' }}>
-          <Button size="small" variant="secondary" style={{ flex: 1, borderRadius: '0.75rem', fontWeight: '800', textTransform: 'uppercase', fontSize: '10px' }}>Block IP List</Button>
-          <Button size="small" variant="secondary" style={{ flex: 1, borderRadius: '0.75rem', fontWeight: '800', textTransform: 'uppercase', fontSize: '10px' }}>View Logs</Button>
+          <Button 
+            size="small" 
+            variant="secondary" 
+            onClick={() => setShowIpModal(true)}
+            style={{ flex: 1, borderRadius: '0.75rem', fontWeight: '800', textTransform: 'uppercase', fontSize: '10px', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}
+          >
+            <ShieldAlert size={14} />
+            Block IP List
+          </Button>
+          <Button 
+            size="small" 
+            variant="secondary" 
+            onClick={() => {
+              const auditSection = document.getElementById('audit-trail');
+              if (auditSection) auditSection.scrollIntoView({ behavior: 'smooth' });
+            }}
+            style={{ flex: 1, borderRadius: '0.75rem', fontWeight: '800', textTransform: 'uppercase', fontSize: '10px', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}
+          >
+            <FileText size={14} />
+            View Logs
+          </Button>
         </div>
       </Card>
+
+      {/* IP Block Modal */}
+      <Modal isOpen={showIpModal} onClose={() => setShowIpModal(false)} title="IP Access Control" size="sm">
+        <div style={{ padding: '0.5rem' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem' }}>
+            <Input 
+              placeholder="Enter IP Address (e.g. 192.168.1.1)" 
+              value={newIp}
+              onChange={(e) => setNewIp(e.target.value)}
+              style={{ marginBottom: 0 }}
+            />
+            <Button onClick={handleAddIp} style={{ height: '56px', padding: '0 1.5rem' }}>
+              <Plus size={20} />
+            </Button>
+          </div>
+
+          <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #f1f5f9', borderRadius: '1rem' }}>
+            {blockedIps.length === 0 ? (
+              <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>
+                <p style={{ fontSize: '0.875rem', fontWeight: '600' }}>No IPs currently blocked</p>
+              </div>
+            ) : (
+              blockedIps.map(ip => (
+                <div key={ip} style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center', 
+                  padding: '1rem', 
+                  borderBottom: '1px solid #f1f5f9'
+                }}>
+                  <span style={{ fontWeight: '700', color: '#334155', fontSize: '0.875rem' }}>{ip}</span>
+                  <button 
+                    onClick={() => handleRemoveIp(ip)}
+                    style={{ 
+                      padding: '0.5rem', 
+                      borderRadius: '0.5rem', 
+                      color: '#ef4444', 
+                      backgroundColor: '#fef2f2',
+                      border: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

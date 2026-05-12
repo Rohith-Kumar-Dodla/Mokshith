@@ -51,6 +51,36 @@ export const createOrder = async (userId, data) => {
     throw new AppError('System under maintenance. Order placement is blocked.', 503);
   }
 
+  // 🔥 Check Order Cutoff Time
+  const cutoffSetting = await fetchSetting('orderCutoffTime');
+  if (cutoffSetting && cutoffSetting.value) {
+    const [hours, minutes] = cutoffSetting.value.split(':').map(Number);
+    const now = new Date();
+    const cutoffDate = new Date();
+    cutoffDate.setHours(hours, minutes, 0, 0);
+
+    if (now > cutoffDate) {
+      throw new AppError('Orders are closed for today after cutoff time.', 403);
+    }
+  }
+
+  // 🔥 Check COD availability
+  if (paymentMethod.toUpperCase() === 'COD') {
+    const codSetting = await fetchSetting('enableCOD');
+    const codFlag = await fetchSetting('cod');
+    if (codSetting?.value === false || codFlag?.value === false) {
+      throw new AppError('Cash on Delivery is currently unavailable.', 403);
+    }
+  }
+
+  // 🔥 Check Credit System availability
+  if (paymentMethod.toUpperCase() === 'CREDIT') {
+    const creditFlag = await fetchSetting('creditSystem');
+    if (creditFlag?.value === false) {
+      throw new AppError('Credit system is currently disabled.', 403);
+    }
+  }
+
   let finalItems = [];
   if (requestItems && requestItems.length > 0) {
     finalItems = requestItems;
@@ -101,12 +131,19 @@ export const createOrder = async (userId, data) => {
   const tax = totalAmount * 0.18;
   const finalTotal = totalAmount + tax;
 
+  // 🔥 Calculate Commission
+  const commissionSetting = await fetchSetting('commissionRate');
+  const commissionRate = commissionSetting?.value || 0;
+  const commissionAmount = totalAmount * (commissionRate / 100);
+
   // 🔥 3. Prepare Order Data
   const orderData = {
     userId,
     items,
     totalAmount: finalTotal,
     totalWeight,
+    commissionRate,
+    commissionAmount,
     paymentMethod: paymentMethod.toUpperCase(),
     address: shippingAddress,
     shippingAddress,

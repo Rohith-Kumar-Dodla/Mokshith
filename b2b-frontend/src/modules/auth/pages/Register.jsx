@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { routes } from "../../../routes/routeConfig.js";
 import { authService } from "../services/authService.js";
 import { useAuth } from "../hooks/useAuth.js";
+import { useSystemConfig } from "../../../hooks/useSystemConfig.js";
 import { 
   User, 
   Building2, 
@@ -13,13 +14,17 @@ import {
   ChevronRight, 
   ArrowLeft,
   Briefcase,
-  ShieldCheck
+  ShieldCheck,
+  AlertCircle
 } from 'lucide-react';
 
 const Register = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isFeatureEnabled, loading: configLoading } = useSystemConfig();
   const [step, setStep] = useState(1); // 1: Role Selection, 2: Details
+
+  const registrationEnabled = isFeatureEnabled('allowRegistration');
 
   // Redirect if already logged in
   useEffect(() => {
@@ -90,6 +95,75 @@ const Register = () => {
       setLoading(false);
     }
   };
+
+  if (!registrationEnabled && !configLoading) {
+    return (
+      <div style={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        backgroundColor: '#f8fafc',
+        padding: '2rem'
+      }}>
+        <div style={{ 
+          maxWidth: '480px', 
+          width: '100%',
+          backgroundColor: 'white',
+          padding: '3.5rem',
+          borderRadius: '3rem',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.08)',
+          textAlign: 'center',
+          border: '1px solid rgba(0,0,0,0.02)'
+        }}>
+          <div style={{ 
+            w: '80px', 
+            h: '80px', 
+            width: '80px',
+            height: '80px',
+            backgroundColor: '#fff1f2', 
+            borderRadius: '2rem', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            color: '#e11d48', 
+            margin: '0 auto 2rem auto'
+          }}>
+            <AlertCircle size={40} strokeWidth={2.5} />
+          </div>
+          
+          <h2 style={{ 
+            fontSize: '2rem', 
+            fontWeight: '900', 
+            color: '#0f172a', 
+            marginBottom: '1rem', 
+            letterSpacing: '-0.025em' 
+          }}>
+            Access Restricted
+          </h2>
+          
+          <p style={{ 
+            color: '#64748b', 
+            fontWeight: '600', 
+            fontSize: '0.9375rem', 
+            lineHeight: '1.6', 
+            marginBottom: '2.5rem'
+          }}>
+            New registration requests are currently paused by the system administrator. 
+            Please try again later or sign in with an existing account.
+          </p>
+          
+          <Link 
+            to={routes.LOGIN} 
+            className="block w-full py-4 bg-slate-900 text-white text-[11px] font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-slate-900/20 hover:bg-slate-800 transition-all active:scale-95 hover:-translate-y-0.5"
+            style={{ textDecoration: 'none' }}
+          >
+            Return to Login
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="auth-container">

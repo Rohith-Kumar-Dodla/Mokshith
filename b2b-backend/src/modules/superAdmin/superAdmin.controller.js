@@ -27,17 +27,17 @@ export const getAdmins = asyncHandler(async (req, res) => {
 });
 
 export const createAdmin = asyncHandler(async (req, res) => {
-  const admin = await service.createAdmin(req.body);
+  const admin = await service.createAdmin(req.body, req.user?._id, req.ip);
   successResponse(res, admin, 'Admin created successfully', 201);
 });
 
 export const deleteAdmin = asyncHandler(async (req, res) => {
-  const result = await service.deleteAdmin(req.params.id);
+  const result = await service.deleteAdmin(req.params.id, req.user?._id, req.ip);
   successResponse(res, result);
 });
 
 export const updateAdmin = asyncHandler(async (req, res) => {
-  const admin = await service.updateAdmin(req.params.id, req.body);
+  const admin = await service.updateAdmin(req.params.id, req.body, req.user?._id, req.ip);
   successResponse(res, admin, 'Admin updated successfully');
 });
 
@@ -47,8 +47,15 @@ export const getMetrics = asyncHandler(async (req, res) => {
 });
 
 export const getAuditLogs = asyncHandler(async (req, res) => {
-  const logs = await service.getAuditLogs();
+  const logs = await service.getAuditLogs(req.query);
   successResponse(res, logs);
+});
+
+export const exportAuditLogs = asyncHandler(async (req, res) => {
+  const csv = await service.exportAuditLogs(req.query);
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename=audit_logs.csv');
+  res.status(200).send(csv);
 });
 
 export const getConfig = asyncHandler(async (req, res) => {
@@ -57,7 +64,7 @@ export const getConfig = asyncHandler(async (req, res) => {
 });
 
 export const updateConfig = asyncHandler(async (req, res) => {
-  const config = await service.updateConfig(req.body);
+  const config = await service.updateConfig(req.body, req.user?._id, req.ip);
   successResponse(res, config, 'Config updated');
 });
 

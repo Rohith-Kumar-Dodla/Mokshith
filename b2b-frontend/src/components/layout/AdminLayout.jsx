@@ -23,10 +23,12 @@ import {
   Sun, 
   Settings, 
   HelpCircle, 
-  Maximize2 
+  Maximize2,
+  RefreshCcw
 } from 'lucide-react';
 import { useAuth } from '../../modules/auth/hooks/useAuth.js';
 import { routes } from '../../routes/routeConfig.js';
+import ConfirmDialog from '../feedback/ConfirmDialog.jsx';
 import './AdminLayout.css';
 
 const AdminLayout = () => {
@@ -34,6 +36,8 @@ const AdminLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -51,11 +55,15 @@ const AdminLayout = () => {
   ];
 
   const handleLogout = async () => {
+    setIsLoggingOut(true);
     try {
       await logout();
       navigate(routes.LOGIN, { replace: true });
     } catch (error) {
       console.error("Logout error:", error);
+    } finally {
+      setIsLoggingOut(false);
+      setShowLogoutConfirm(false);
     }
   };
 
@@ -104,7 +112,7 @@ const AdminLayout = () => {
           </div>
 
           <div className="sidebar-footer">
-            <button className="nav-item logout-btn" onClick={handleLogout}>
+            <button className="nav-item logout-btn" onClick={() => setShowLogoutConfirm(true)}>
               <span className="nav-icon"><LogOut size={20} /></span>
               {!isSidebarCollapsed && <span className="nav-label">Logout</span>}
             </button>
@@ -170,7 +178,7 @@ const AdminLayout = () => {
                     <HelpCircle size={16} /> Help Center
                   </Link>
                   <div className="dropdown-divider" />
-                  <button className="dropdown-item logout" onClick={handleLogout}>
+                  <button className="dropdown-item logout" onClick={() => setShowLogoutConfirm(true)}>
                     <LogOut size={16} /> Logout
                   </button>
                 </div>
@@ -184,6 +192,18 @@ const AdminLayout = () => {
           <Outlet />
         </div>
       </main>
+
+      {/* Logout Confirmation */}
+      <ConfirmDialog
+        isOpen={showLogoutConfirm}
+        onClose={() => !isLoggingOut && setShowLogoutConfirm(false)}
+        onConfirm={handleLogout}
+        loading={isLoggingOut}
+        title="Sign Out"
+        message="Are you sure you want to sign out of your account?"
+        confirmText="Sign Out"
+        variant="danger"
+      />
     </div>
   );
 };

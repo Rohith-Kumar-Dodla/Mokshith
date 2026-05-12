@@ -136,14 +136,14 @@ const DeliveryLayout = ({ title = "Logistics Command" }) => {
             <div className="grid grid-cols-2 gap-4">
               <button 
                 onClick={() => setShowLogoutConfirm(false)}
-                className="h-14 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-black text-xs uppercase tracking-widest transition-all"
+                className="h-14 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-black text-xs uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleLogout}
                 disabled={isLoggingOut}
-                className="h-14 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-rose-600/20 flex items-center justify-center gap-2"
+                className="h-14 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-rose-600/20 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
               >
                 {isLoggingOut ? <RefreshCcw size={16} className="animate-spin" /> : 'Confirm'}
               </button>

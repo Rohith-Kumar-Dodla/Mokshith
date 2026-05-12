@@ -5,6 +5,7 @@ import { useOrder } from "../../order/hooks/useOrder.js";
 import { useAuth } from "../../auth/hooks/useAuth.js";
 import { productService } from "../services/productService.js";
 import { reviewService } from "../../review/services/reviewService.js";
+import { useSystemConfig } from "../../../hooks/useSystemConfig.js";
 import Button from "../../../components/ui/Button.jsx";
 import Card from "../../../components/ui/Card.jsx";
 import Navbar from "../../../components/common/Navbar.jsx";
@@ -19,6 +20,9 @@ const ProductDetails = () => {
   const navigate = useNavigate();
   const { addToCart } = useOrder();
   const { user } = useAuth();
+  const { isFeatureEnabled } = useSystemConfig();
+  
+  const reviewsEnabled = isFeatureEnabled('reviews');
   
   const [product, setProduct] = useState(null);
   const [reviews, setReviews] = useState([]);
@@ -239,67 +243,69 @@ const ProductDetails = () => {
         </div>
 
         {/* Reviews Section */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '3rem' }}>
-          <div>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '2rem' }}>Customer Reviews</h2>
-            {reviews.length === 0 ? (
-              <p style={{ color: 'var(--text-muted)', padding: '2rem', textAlign: 'center', border: '1px dashed var(--border)', borderRadius: '0.5rem' }}>
-                No reviews yet. Be the first to review!
-              </p>
-            ) : (
-              <div style={{ display: 'grid', gap: '1.5rem' }}>
-                {reviews.map((rev) => (
-                  <Card key={rev._id}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                      <span style={{ fontWeight: '700' }}>{rev.userId?.name || 'Verified Buyer'}</span>
-                      <div style={{ color: '#fbbf24' }}>
-                        {[...Array(5)].map((_, i) => (
-                          <span key={i}>{i < rev.rating ? '★' : '☆'}</span>
-                        ))}
+        {reviewsEnabled && (
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '3rem' }}>
+            <div>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '2rem' }}>Customer Reviews</h2>
+              {reviews.length === 0 ? (
+                <p style={{ color: 'var(--text-muted)', padding: '2rem', textAlign: 'center', border: '1px dashed var(--border)', borderRadius: '0.5rem' }}>
+                  No reviews yet. Be the first to review!
+                </p>
+              ) : (
+                <div style={{ display: 'grid', gap: '1.5rem' }}>
+                  {reviews.map((rev) => (
+                    <Card key={rev._id}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                        <span style={{ fontWeight: '700' }}>{rev.userId?.name || 'Verified Buyer'}</span>
+                        <div style={{ color: '#fbbf24' }}>
+                          {[...Array(5)].map((_, i) => (
+                            <span key={i}>{i < rev.rating ? '★' : '☆'}</span>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                    <p style={{ color: 'var(--text-main)', lineHeight: '1.5' }}>{rev.comment}</p>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '1rem' }}>
-                      {new Date(rev.createdAt).toLocaleDateString()}
-                    </p>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
+                      <p style={{ color: 'var(--text-main)', lineHeight: '1.5' }}>{rev.comment}</p>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '1rem' }}>
+                        {new Date(rev.createdAt).toLocaleDateString()}
+                      </p>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
 
-          {/* Review Form */}
-          <div>
-            <Card style={{ position: 'sticky', top: '6rem' }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '1.5rem' }}>Write a Review</h3>
-              <form onSubmit={handleSubmitReview}>
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Rating</label>
-                  <select 
-                    value={rating} 
-                    onChange={(e) => setRating(Number(e.target.value))}
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)' }}
-                  >
-                    {[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{n} Stars</option>)}
-                  </select>
-                </div>
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Comment</label>
-                  <textarea 
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    required
-                    placeholder="Share your experience with this product..."
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', minHeight: '120px', resize: 'vertical' }}
-                  />
-                </div>
-                <Button type="submit" style={{ width: '100%' }} disabled={submittingReview}>
-                  {submittingReview ? 'Submitting...' : 'Post Review'}
-                </Button>
-              </form>
-            </Card>
+            {/* Review Form */}
+            <div>
+              <Card style={{ position: 'sticky', top: '6rem' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '1.5rem' }}>Write a Review</h3>
+                <form onSubmit={handleSubmitReview}>
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Rating</label>
+                    <select 
+                      value={rating} 
+                      onChange={(e) => setRating(Number(e.target.value))}
+                      style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)' }}
+                    >
+                      {[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{n} Stars</option>)}
+                    </select>
+                  </div>
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>Comment</label>
+                    <textarea 
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      required
+                      placeholder="Share your experience with this product..."
+                      style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', minHeight: '120px', resize: 'vertical' }}
+                    />
+                  </div>
+                  <Button type="submit" style={{ width: '100%' }} disabled={submittingReview}>
+                    {submittingReview ? 'Submitting...' : 'Post Review'}
+                  </Button>
+                </form>
+              </Card>
+            </div>
           </div>
-        </div>
+        )}
       </main>
     </div>
   );

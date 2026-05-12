@@ -28,6 +28,7 @@ router.patch(
 router.get('/stats', controller.getStats);
 router.get('/metrics', controller.getMetrics);
 router.get('/audit-logs', controller.getAuditLogs);
+router.get('/audit-logs/export', controller.exportAuditLogs);
 
 // ⚙️ Config
 router.get('/config', controller.getConfig);

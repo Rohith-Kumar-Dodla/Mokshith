@@ -8,7 +8,9 @@ const AuditTable = ({ logs }) => {
           <tr style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)' }}>
             <th style={{ padding: '1rem', fontSize: '0.875rem', fontWeight: '700' }}>USER</th>
             <th style={{ padding: '1rem', fontSize: '0.875rem', fontWeight: '700' }}>ACTION</th>
-            <th style={{ padding: '1rem', fontSize: '0.875rem', fontWeight: '700' }}>TARGET</th>
+            <th style={{ padding: '1rem', fontSize: '0.875rem', fontWeight: '700' }}>ENTITY</th>
+            <th style={{ padding: '1rem', fontSize: '0.875rem', fontWeight: '700' }}>IP</th>
+            <th style={{ padding: '1rem', fontSize: '0.875rem', fontWeight: '700' }}>SEVERITY</th>
             <th style={{ padding: '1rem', fontSize: '0.875rem', fontWeight: '700' }}>TIMESTAMP</th>
           </tr>
         </thead>
@@ -16,7 +18,9 @@ const AuditTable = ({ logs }) => {
           {Array.isArray(logs) && logs.length > 0 ? (
             logs.map((log) => (
               <tr key={log.id || log._id} style={{ borderBottom: '1px solid var(--border)' }}>
-                <td style={{ padding: '1rem', fontSize: '0.875rem', fontWeight: '500' }}>{log.user}</td>
+                <td style={{ padding: '1rem', fontSize: '0.875rem', fontWeight: '500' }}>
+                  {log.userId?.name || log.userEmail || 'System'}
+                </td>
                 <td style={{ padding: '1rem', fontSize: '0.875rem' }}>
                   <span style={{ 
                     padding: '0.25rem 0.5rem', 
@@ -28,7 +32,20 @@ const AuditTable = ({ logs }) => {
                     {log.action}
                   </span>
                 </td>
-                <td style={{ padding: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>{log.target}</td>
+                <td style={{ padding: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>{log.entity}</td>
+                <td style={{ padding: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>{log.ip || 'N/A'}</td>
+                <td style={{ padding: '1rem', fontSize: '0.875rem' }}>
+                  <span style={{ 
+                    padding: '0.25rem 0.5rem', 
+                    borderRadius: '4px', 
+                    backgroundColor: log.severity === 'CRITICAL' ? '#fee2e2' : log.severity === 'WARNING' ? '#ffedd5' : '#f1f5f9', 
+                    color: log.severity === 'CRITICAL' ? '#b91c1c' : log.severity === 'WARNING' ? '#c2410c' : 'inherit',
+                    fontSize: '0.75rem', 
+                    fontWeight: '700' 
+                  }}>
+                    {log.severity || 'INFO'}
+                  </span>
+                </td>
                 <td style={{ padding: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
                   {new Date(log.timestamp || log.createdAt).toLocaleString()}
                 </td>
@@ -36,7 +53,7 @@ const AuditTable = ({ logs }) => {
             ))
           ) : (
             <tr>
-              <td colSpan="4" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+              <td colSpan="6" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                 No audit logs available.
               </td>
             </tr>

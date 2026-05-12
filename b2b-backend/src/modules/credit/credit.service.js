@@ -1,10 +1,18 @@
 import * as repo from './credit.repository.js';
 import AppError from '../../errors/AppError.js';
+import { fetchSetting } from '../settings/settings.service.js';
 
 // 🆕 Create Credit Account
 export const createCreditAccount = async (userId, limit) => {
+  const maxLimitSetting = await fetchSetting('maxCreditLimit');
+  const maxLimit = maxLimitSetting?.value || 100000; // Default if not set
+
   if (limit < 0) {
     throw new AppError('Credit limit must be positive', 400);
+  }
+
+  if (limit > maxLimit) {
+    throw new AppError(`Credit limit cannot exceed system maximum of ${maxLimit}`, 400);
   }
 
   const existing = await repo.findByUser(userId);
@@ -25,6 +33,11 @@ import Order from '../order/order.model.js';
 
 // 💳 Use Credit (ORDER INTEGRATION)
 export const useCredit = async (userId, orderId) => {
+  const creditFlag = await fetchSetting('creditSystem');
+  if (creditFlag && creditFlag.value === false) {
+    throw new AppError('Credit system is currently disabled.', 403);
+  }
+
   const order = await Order.findById(orderId);
   if (!order) throw new AppError('Order not found', 404);
   

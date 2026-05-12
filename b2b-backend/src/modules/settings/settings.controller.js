@@ -22,3 +22,8 @@ export const getAllSettings = asyncHandler(async (req, res) => {
 
   successResponse(res, data);
 });
+
+export const getPublicConfig = asyncHandler(async (req, res) => {
+  const data = await service.getPublicConfig();
+  successResponse(res, data);
+});

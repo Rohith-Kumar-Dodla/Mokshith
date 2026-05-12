@@ -1,5 +1,6 @@
 import { useOrder } from "../hooks/useOrder";
 import { useAuth } from "../../auth/hooks/useAuth";
+import { useSystemConfig } from "../../../hooks/useSystemConfig";
 import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
 import Input from "../../../components/ui/Input";
@@ -25,9 +26,14 @@ import { getProductImage } from "../../../utils/imageHelper.js";
 const Checkout = () => {
   const { cart, placeOrder } = useOrder();
   const { user } = useAuth();
+  const { isFeatureEnabled } = useSystemConfig();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS.COD);
+  
+  const codEnabled = isFeatureEnabled('enableCOD') && isFeatureEnabled('cod');
+  const creditEnabled = isFeatureEnabled('creditSystem');
+
+  const [paymentMethod, setPaymentMethod] = useState(codEnabled ? PAYMENT_METHODS.COD : PAYMENT_METHODS.ONLINE);
   const [address, setAddress] = useState({
     name: user?.name || "",
     phone: "",
@@ -349,11 +355,11 @@ const Checkout = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   {[
-                    { id: PAYMENT_METHODS.COD, label: 'COD', icon: Truck },
-                    { id: PAYMENT_METHODS.CREDIT, label: 'Credit', icon: Wallet, disabled: (user?.availableCredit || 0) < total },
+                    { id: PAYMENT_METHODS.COD, label: 'COD', icon: Truck, hidden: !codEnabled },
+                    { id: PAYMENT_METHODS.CREDIT, label: 'Credit', icon: Wallet, hidden: !creditEnabled, disabled: (user?.availableCredit || 0) < total },
                     { id: PAYMENT_METHODS.RAZORPAY, label: 'Razorpay', icon: CreditCard },
                     { id: PAYMENT_METHODS.ONLINE, label: 'Online', icon: ShieldCheck },
-                  ].map((method) => (
+                  ].filter(m => !m.hidden).map((method) => (
                     <button
                       key={method.id}
                       disabled={method.disabled}
