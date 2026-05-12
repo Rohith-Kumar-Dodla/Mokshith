@@ -18,7 +18,8 @@ export const authService = {
       }
       return responseData;
     } catch (error) {
-      throw error;
+      const message = error.response?.data?.message || error.message || "Login failed";
+      throw new Error(message);
     }
   },
 
@@ -27,7 +28,8 @@ export const authService = {
       const res = await apiClient.post("/auth/register", payload);
       return res.data || res;
     } catch (error) {
-      throw new Error(error || "Registration failed");
+      const message = error.response?.data?.message || error.message || "Registration failed";
+      throw new Error(message);
     }
   },
 

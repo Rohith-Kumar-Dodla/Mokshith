@@ -28,10 +28,15 @@ const checkMaintenanceMode = async (user) => {
 };
 
 export const register = async (data) => {
-  const existing = await findUserByEmailOrMobile(data.email || data.mobile);
+  const { email, mobile } = data;
 
-  if (existing) {
-    throw new AppError('User already exists', 400);
+  // Check if email or mobile already exists
+  const existingEmail = email ? await findUserByEmailOrMobile(email) : null;
+  const existingMobile = mobile ? await findUserByEmailOrMobile(mobile) : null;
+
+  if (existingEmail || existingMobile) {
+    const field = existingEmail ? 'Email' : 'Mobile number';
+    throw new AppError(`${field} already registered`, 400);
   }
 
   const hashedPassword = await hashPassword(data.password);

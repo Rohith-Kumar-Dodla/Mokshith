@@ -12,12 +12,15 @@ export const validate = (schema) => (req, res, next) => {
       if (req.body[key] === 'true') req.body[key] = true;
       if (req.body[key] === 'false') req.body[key] = false;
       
-      // Convert numeric strings to Numbers if they look like numbers and aren't IDs
+      // Convert numeric strings to Numbers if they look like numbers and aren't IDs or Phone numbers
       const val = req.body[key];
       if (typeof val === 'string' && val.trim() !== '' && !isNaN(val)) {
         // Skip IDs (24-char hex strings or anything with 'id' in the key)
+        // Also skip Phone/Mobile numbers which should stay as strings
         const isId = key.toLowerCase().includes('id') || (val.length === 24 && /^[0-9a-fA-F]+$/.test(val));
-        if (!isId) {
+        const isPhone = key.toLowerCase().includes('mobile') || key.toLowerCase().includes('phone') || key.toLowerCase().includes('pincode');
+        
+        if (!isId && !isPhone) {
           req.body[key] = Number(val);
         }
       }
