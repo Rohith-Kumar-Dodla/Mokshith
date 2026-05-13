@@ -18,8 +18,45 @@ const ConfirmDialog = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
-      <div className="space-y-6">
+    <Modal isOpen={isOpen} onClose={onClose} size="sm" showCloseIcon={false}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        .confirm-btn-danger {
+          background-color: #f1f5f9 !important;
+          color: #64748b !important;
+          transition: all 0.3s ease !important;
+        }
+        .confirm-btn-danger:hover {
+          background-color: #e11d48 !important;
+          color: white !important;
+          transform: scale(1.02);
+          box-shadow: 0 10px 15px -3px rgba(225, 29, 72, 0.2) !important;
+        }
+        .confirm-btn-primary {
+          background-color: #f1f5f9 !important;
+          color: #64748b !important;
+          transition: all 0.3s ease !important;
+        }
+        .confirm-btn-primary:hover {
+          background-color: #0ea5e9 !important;
+          color: white !important;
+          transform: scale(1.02);
+          box-shadow: 0 10px 15px -3px rgba(14, 165, 233, 0.2) !important;
+        }
+        .confirm-btn-cancel {
+          background-color: white !important;
+          color: #94a3b8 !important;
+          border: 2px solid #f1f5f9 !important;
+          transition: all 0.3s ease !important;
+        }
+        .confirm-btn-cancel:hover {
+          background-color: #0ea5e9 !important;
+          color: white !important;
+          border-color: #0ea5e9 !important;
+          transform: scale(1.02);
+          box-shadow: 0 10px 15px -3px rgba(14, 165, 233, 0.2) !important;
+        }
+      ` }} />
+      <div className="text-center p-4">
         <div className="p-6 bg-gray-50 rounded-xl border border-gray-100">
           <p className="text-lg font-semibold text-gray-700 leading-relaxed text-center">{message}</p>
         </div>
@@ -30,10 +67,8 @@ const ConfirmDialog = ({
             onClick={handleConfirm}
             loading={loading}
             disabled={loading}
-            className={`w-full h-14 rounded-2xl text-sm font-black uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl ${
-              variant === 'danger' 
-                ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-200' 
-                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200'
+            className={`w-full h-14 rounded-2xl text-sm font-black uppercase tracking-widest transition-all shadow-lg ${
+              variant === 'danger' ? 'confirm-btn-danger' : 'confirm-btn-primary'
             }`}
           >
             {confirmText}
@@ -43,7 +78,7 @@ const ConfirmDialog = ({
             variant="secondary" 
             onClick={onClose}
             disabled={loading}
-            className="w-full h-14 rounded-2xl text-sm font-black uppercase tracking-widest border-2 border-gray-100 text-gray-400 hover:bg-gray-100 hover:text-gray-900 hover:border-gray-300 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full h-14 rounded-2xl text-sm font-black uppercase tracking-widest transition-all confirm-btn-cancel"
           >
             {cancelText}
           </Button>

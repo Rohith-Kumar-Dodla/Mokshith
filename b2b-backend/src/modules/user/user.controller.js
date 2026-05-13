@@ -33,6 +33,16 @@ export const changePassword = asyncHandler(async (req, res) => {
   successResponse(res, null, 'Password changed successfully');
 });
 
+export const getActiveSessions = asyncHandler(async (req, res) => {
+  const sessions = await service.getActiveSessions(req.user.id);
+  successResponse(res, sessions);
+});
+
+export const logoutFromAllDevices = asyncHandler(async (req, res) => {
+  await service.logoutFromAllDevices(req.user.id);
+  successResponse(res, null, 'Logged out from all devices successfully');
+});
+
 export const updateProfileImage = asyncHandler(async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ success: false, message: 'Please upload a file' });

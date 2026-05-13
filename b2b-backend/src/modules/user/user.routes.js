@@ -27,6 +27,9 @@ router.post(
 
 router.put('/change-password', protect, controller.changePassword);
 
+router.get('/sessions', protect, controller.getActiveSessions);
+router.post('/logout-all', protect, controller.logoutFromAllDevices);
+
 // ADMIN
 router.get(
   '/',

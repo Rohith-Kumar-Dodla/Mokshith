@@ -124,6 +124,26 @@ const DeliveryLayout = ({ title = "Logistics Command" }) => {
       {/* Logout Confirmation */}
       {showLogoutConfirm && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <style dangerouslySetInnerHTML={{ __html: `
+            .delivery-confirm-btn {
+              background-color: rgba(255, 255, 255, 0.05) !important;
+              color: #94a3b8 !important;
+              transition: all 0.3s ease !important;
+              border: none !important;
+            }
+            .delivery-confirm-btn-logout:hover {
+              background-color: #e11d48 !important;
+              color: white !important;
+              transform: scale(1.02);
+              box-shadow: 0 10px 15px -3px rgba(225, 29, 72, 0.2) !important;
+            }
+            .delivery-confirm-btn-cancel:hover {
+              background-color: #0ea5e9 !important;
+              color: white !important;
+              transform: scale(1.02);
+              box-shadow: 0 10px 15px -3px rgba(14, 165, 233, 0.2) !important;
+            }
+          ` }} />
           <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md" onClick={() => setShowLogoutConfirm(false)}></div>
           <div className="relative w-full max-w-md bg-[#1E293B] rounded-[3rem] border border-white/10 p-10 shadow-2xl text-center">
             <div className="w-20 h-20 bg-rose-500/20 rounded-full flex items-center justify-center mx-auto mb-8 text-rose-500 border border-rose-500/20">
@@ -136,14 +156,14 @@ const DeliveryLayout = ({ title = "Logistics Command" }) => {
             <div className="grid grid-cols-2 gap-4">
               <button 
                 onClick={() => setShowLogoutConfirm(false)}
-                className="h-14 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-black text-xs uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="h-14 rounded-2xl font-black text-xs uppercase tracking-widest delivery-confirm-btn delivery-confirm-btn-cancel"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleLogout}
                 disabled={isLoggingOut}
-                className="h-14 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-rose-600/20 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+                className="h-14 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 delivery-confirm-btn delivery-confirm-btn-logout"
               >
                 {isLoggingOut ? <RefreshCcw size={16} className="animate-spin" /> : 'Confirm'}
               </button>

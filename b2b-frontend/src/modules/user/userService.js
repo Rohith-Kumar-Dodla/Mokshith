@@ -40,4 +40,22 @@ export const userService = {
       throw new Error(error.response?.data?.message || "Failed to change password");
     }
   },
+
+  async getActiveSessions() {
+    try {
+      const response = await apiClient.get("/users/sessions");
+      return response.data || response;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || "Failed to fetch active sessions");
+    }
+  },
+
+  async logoutAllDevices() {
+    try {
+      const response = await apiClient.post("/users/logout-all");
+      return response.data || response;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || "Failed to logout from all devices");
+    }
+  },
 };

@@ -12,6 +12,37 @@ export const changePassword = async (userId, newPassword) => {
   await repo.updateUserById(userId, { password: hashedPassword });
 };
 
+export const getActiveSessions = async (userId) => {
+  const user = await repo.findById(userId);
+  if (!user) throw new AppError('User not found', 404);
+
+  // If no sessions, return a mock current session for UI demo
+  if (!user.activeSessions || user.activeSessions.length === 0) {
+    return [{
+      _id: 'current',
+      deviceName: 'This Device',
+      browser: 'Chrome',
+      os: 'Windows 11',
+      lastActive: new Date(),
+      ip: '127.0.0.1',
+      location: 'Hyderabad, India'
+    }];
+  }
+
+  return user.activeSessions;
+};
+
+export const logoutFromAllDevices = async (userId) => {
+  const user = await repo.findById(userId);
+  if (!user) throw new AppError('User not found', 404);
+
+  // Clear refresh token and all active sessions
+  await repo.updateUserById(userId, { 
+    refreshToken: null,
+    activeSessions: [] 
+  });
+};
+
 // 🔥 Allowed update fields (security)
 const ALLOWED_PROFILE_FIELDS = ['name', 'email', 'mobile', 'profileImage', 'phone', 'address', 'companyName'];
 

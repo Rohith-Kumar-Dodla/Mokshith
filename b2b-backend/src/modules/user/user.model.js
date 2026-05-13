@@ -102,6 +102,18 @@ const userSchema = new mongoose.Schema(
     phone: String,
     address: String,
     companyName: String,
+
+    activeSessions: [
+      {
+        deviceId: String,
+        deviceName: String,
+        browser: String,
+        os: String,
+        lastActive: { type: Date, default: Date.now },
+        ip: String,
+        location: String
+      }
+    ],
   },
   { timestamps: true }
 );

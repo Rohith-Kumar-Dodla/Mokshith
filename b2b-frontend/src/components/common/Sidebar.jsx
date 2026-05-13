@@ -134,6 +134,18 @@ const Sidebar = ({ isOpen, onClose, user, onLogout }) => {
     <div 
       className="fixed inset-0 z-[10000] flex justify-end"
     >
+      <style dangerouslySetInnerHTML={{ __html: `
+        .sidebar-logout-btn {
+          background-color: #fff1f2 !important;
+          color: #e11d48 !important;
+          transition: all 0.3s ease !important;
+        }
+        .sidebar-logout-btn:hover {
+          background-color: #e11d48 !important;
+          color: white !important;
+          box-shadow: 0 10px 15px -3px rgba(225, 29, 72, 0.2) !important;
+        }
+      ` }} />
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -205,12 +217,12 @@ const Sidebar = ({ isOpen, onClose, user, onLogout }) => {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-100">
+        <div className="p-6 border-t border-gray-100">
           <button 
-            className="w-full flex items-center justify-center gap-3 py-3 rounded-lg bg-rose-50 text-rose-600 font-bold text-sm hover:bg-rose-100 transition-all" 
+            className="w-full flex items-center justify-center gap-3 h-14 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 group sidebar-logout-btn" 
             onClick={() => setShowLogoutConfirm(true)}
           >
-            <LogOut size={18} />
+            <LogOut size={18} className="group-hover:rotate-12 transition-transform" />
             <span>Sign Out</span>
           </button>
         </div>

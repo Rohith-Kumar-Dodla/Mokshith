@@ -99,164 +99,64 @@ const Footer = () => {
         .footer-main {
           background-color: var(--surface);
           border-top: 1px solid var(--border);
-          padding: 3rem 2rem 1.5rem;
-          margin-top: auto;
+          padding: 80px 0 40px;
+          margin-top: 80px;
         }
 
         .footer-container {
           max-width: 1200px;
           margin: 0 auto;
+          padding: 0 20px;
         }
 
         .footer-grid {
           display: grid;
           grid-template-columns: 2fr 1fr 1fr 1.5fr;
-          gap: 2.5rem;
-          margin-bottom: 3rem;
+          gap: 60px;
+          margin-bottom: 80px;
         }
 
         .footer-logo {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
+          gap: 8px;
+          margin-bottom: 24px;
           text-decoration: none;
-          margin-bottom: 1rem;
-        }
-
-        .footer-download-app {
-          background: linear-gradient(to right, var(--primary-light), white);
-          border-radius: var(--radius-xl);
-          padding: 2rem;
-          margin-bottom: 3rem;
-          border: 1px solid var(--border);
-        }
-
-        .download-content {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 2rem;
-        }
-
-        .download-text h3 {
-          font-size: 1.5rem;
-          font-weight: 800;
-          margin-bottom: 0.75rem;
-          color: var(--text-main);
-        }
-
-        .download-text p {
-          color: var(--text-muted);
-          margin-bottom: 1.5rem;
-          max-width: 500px;
-          font-size: 0.9375rem;
-        }
-
-        .app-badges {
-          display: flex;
-          gap: 0.875rem;
-        }
-
-        .app-badge img {
-          height: 36px;
-          transition: transform var(--transition-fast);
-        }
-
-        .app-badge:hover img {
-          transform: translateY(-2px);
-        }
-
-        .download-visual {
-          flex-shrink: 0;
-        }
-
-        .mini-mockup {
-          width: 120px;
-          height: 200px;
-          background: #1a1a1a;
-          border-radius: 1.25rem;
-          padding: 5px;
-          box-shadow: var(--shadow-lg);
-        }
-
-        .mini-mockup-screen {
-          background: white;
-          height: 100%;
-          border-radius: 1rem;
-          overflow: hidden;
-          display: flex;
-          flex-direction: column;
-        }
-
-        .mini-header {
-          height: 32px;
-          background: var(--primary);
-        }
-
-        .mini-body {
-          flex: 1;
-          padding: 0.75rem;
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .mini-card {
-          height: 50px;
-          background: #f1f5f9;
-          border-radius: 0.375rem;
-        }
-
-        @media (max-width: 768px) {
-          .footer-grid {
-            grid-template-columns: 1fr;
-            gap: 2rem;
-          }
-          .download-content {
-            flex-direction: column;
-            text-align: center;
-            gap: 1.5rem;
-          }
-          .app-badges {
-            justify-content: center;
-          }
-          .download-text p {
-            margin-left: auto;
-            margin-right: auto;
-          }
         }
 
         .logo-text {
-          font-size: 1.25rem;
+          font-size: 24px;
           font-weight: 800;
-          color: #000000;
-          letter-spacing: -0.02em;
+          color: var(--text-main);
+          letter-spacing: -1px;
         }
 
         .logo-badge {
           background-color: var(--primary);
           color: white;
-          font-size: 0.625rem;
-          font-weight: 700;
-          padding: 0.125rem 0.4rem;
-          border-radius: var(--radius-sm);
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-size: 10px;
+          font-weight: 800;
+          text-transform: uppercase;
         }
 
         .brand-description {
-          color: #4b5563;
-          line-height: 1.5;
-          margin-bottom: 1.25rem;
-          font-size: 0.875rem;
+          color: var(--text-muted);
+          font-size: 14px;
+          line-height: 1.6;
+          margin-bottom: 24px;
+          max-width: 300px;
         }
 
         .social-links {
           display: flex;
-          gap: 1rem;
+          gap: 16px;
         }
 
         .social-links a {
-          color: #4b5563;
-          transition: var(--transition-fast);
+          color: var(--text-muted);
+          transition: color 0.2s;
         }
 
         .social-links a:hover {
@@ -264,10 +164,10 @@ const Footer = () => {
         }
 
         .footer-links h4, .footer-contact h4 {
-          font-size: 0.9375rem;
+          font-size: 16px;
           font-weight: 700;
-          margin-bottom: 1rem;
-          color: #000000;
+          color: var(--text-main);
+          margin-bottom: 24px;
         }
 
         .footer-links ul, .footer-contact ul {
@@ -277,14 +177,14 @@ const Footer = () => {
         }
 
         .footer-links li {
-          margin-bottom: 0.5rem;
+          margin-bottom: 12px;
         }
 
         .footer-links a {
-          color: #4b5563;
+          color: var(--text-muted);
           text-decoration: none;
-          font-size: 0.875rem;
-          transition: var(--transition-fast);
+          font-size: 14px;
+          transition: color 0.2s;
         }
 
         .footer-links a:hover {
@@ -294,52 +194,155 @@ const Footer = () => {
         .footer-contact li {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
-          color: #4b5563;
-          font-size: 0.875rem;
-          margin-bottom: 0.75rem;
+          gap: 12px;
+          color: var(--text-muted);
+          font-size: 14px;
+          margin-bottom: 16px;
+        }
+
+        .footer-contact svg {
+          color: var(--primary);
+        }
+
+        /* Download App Section Styles */
+        .footer-download-app {
+          background: linear-gradient(135deg, var(--primary) 0%, #1e40af 100%);
+          border-radius: 24px;
+          padding: 40px;
+          color: white;
+          margin-bottom: 60px;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .download-content {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 40px;
+          position: relative;
+          z-index: 2;
+        }
+
+        .download-text h3 {
+          font-size: 24px;
+          font-weight: 800;
+          margin-bottom: 12px;
+        }
+
+        .download-text p {
+          color: rgba(255, 255, 255, 0.8);
+          margin-bottom: 24px;
+          max-width: 450px;
+        }
+
+        .app-badges {
+          display: flex;
+          gap: 12px;
+        }
+
+        .app-badge img {
+          height: 40px;
+        }
+
+        .download-visual {
+          display: none;
+        }
+
+        @media (min-width: 1024px) {
+          .download-visual {
+            display: block;
+          }
+        }
+
+        .mini-mockup {
+          width: 180px;
+          height: 240px;
+          background: #111;
+          border-radius: 20px;
+          padding: 10px;
+          border: 4px solid rgba(255, 255, 255, 0.1);
+          transform: rotate(5deg);
+        }
+
+        .mini-mockup-screen {
+          height: 100%;
+          background: #f8fafc;
+          border-radius: 12px;
+          overflow: hidden;
+        }
+
+        .mini-header {
+          height: 30px;
+          background: white;
+          border-bottom: 1px solid #eee;
+        }
+
+        .mini-body {
+          padding: 10px;
+        }
+
+        .mini-card {
+          height: 60px;
+          background: white;
+          border-radius: 8px;
+          margin-bottom: 10px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
         .footer-bottom {
-          padding-top: 1.5rem;
+          padding-top: 40px;
           border-top: 1px solid var(--border);
           display: flex;
           justify-content: space-between;
           align-items: center;
-          color: #4b5563;
-          font-size: 0.8125rem;
+        }
+
+        .footer-bottom p {
+          color: var(--text-muted);
+          font-size: 14px;
         }
 
         .footer-bottom-links {
           display: flex;
-          gap: 1.5rem;
+          gap: 24px;
         }
 
         .footer-bottom-links a {
-          color: #4b5563;
+          color: var(--text-muted);
           text-decoration: none;
-          transition: var(--transition-fast);
+          font-size: 14px;
+          transition: color 0.2s;
         }
 
         .footer-bottom-links a:hover {
           color: var(--primary);
         }
 
-        @media (max-width: 992px) {
+        @media (max-width: 1024px) {
           .footer-grid {
             grid-template-columns: 1fr 1fr;
-            gap: 2.5rem;
+            gap: 40px;
           }
         }
 
-        @media (max-width: 576px) {
+        @media (max-width: 640px) {
           .footer-grid {
             grid-template-columns: 1fr;
           }
+          
           .footer-bottom {
             flex-direction: column;
-            gap: 1.25rem;
+            gap: 20px;
             text-align: center;
+          }
+
+          .footer-download-app {
+            padding: 30px;
+          }
+
+          .download-text h3 {
+            font-size: 20px;
           }
         }
       `}</style>
