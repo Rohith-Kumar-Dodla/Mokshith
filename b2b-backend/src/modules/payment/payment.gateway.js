@@ -2,41 +2,6 @@ import { razorpay } from '../../config/razorpay.js';
 import crypto from 'crypto';
 import { env } from '../../config/env.js';
 
-// 🔥 Circuit Breaker State
-const circuitBreaker = {
-  failures: 0,
-  lastFailure: null,
-  threshold: 5,
-  cooldown: 60000, // 1 minute
-  isOpen: false
-};
-
-const checkCircuit = () => {
-  if (circuitBreaker.isOpen) {
-    const now = Date.now();
-    if (now - circuitBreaker.lastFailure > circuitBreaker.cooldown) {
-      circuitBreaker.isOpen = false;
-      circuitBreaker.failures = 0;
-      return true;
-    }
-    return false;
-  }
-  return true;
-};
-
-const recordFailure = () => {
-  circuitBreaker.failures++;
-  circuitBreaker.lastFailure = Date.now();
-  if (circuitBreaker.failures >= circuitBreaker.threshold) {
-    circuitBreaker.isOpen = true;
-  }
-};
-
-const recordSuccess = () => {
-  circuitBreaker.failures = 0;
-  circuitBreaker.isOpen = false;
-};
-
 /**
  * Creates a Razorpay order for payment processing
  * @param {Object} params - Payment parameters
@@ -46,32 +11,18 @@ const recordSuccess = () => {
  * @returns {Promise<Object>} Razorpay order with required fields
  */
 export const createPaymentOrder = async ({ amount, currency = 'INR', receipt }) => {
-  if (!checkCircuit()) {
-    throw new Error('Payment gateway is temporarily unavailable (Circuit Breaker). Please try again in a minute.');
-  }
-  
-  // 🔥 VALIDATION: Ensure amount is valid
+  // Validate amount
   const numericAmount = Number(amount);
   if (isNaN(numericAmount) || numericAmount < 0) {
     throw new Error('Invalid amount provided for payment');
   }
 
-  // 🔥 VALIDATION: Razorpay minimum is ₹1 (100 paise)
+  // Razorpay minimum is ₹1 (100 paise)
   if (numericAmount < 1) {
     throw new Error('Minimum payment amount is ₹1');
   }
 
-  // 🔥 VALIDATION: Reasonable maximum (₹10,000,000)
-  if (numericAmount > 10000000) {
-    throw new Error('Maximum payment amount is ₹1,00,00,000');
-  }
-
   const razorpayAmount = Math.round(Number(numericAmount) * 100);
-
-  // 🔥 VALIDATION: Ensure amount is an integer for Razorpay
-  if (!Number.isInteger(razorpayAmount)) {
-    throw new Error(`Razorpay amount conversion failed: ${razorpayAmount} is not an integer`);
-  }
 
   const options = {
     amount: razorpayAmount,
@@ -79,24 +30,16 @@ export const createPaymentOrder = async ({ amount, currency = 'INR', receipt }) 
     receipt: receipt || `rcpt_${Date.now()}`,
   };
 
-  // 🔥 VALIDATION: Razorpay receipt limit is 40 characters
+  // Razorpay receipt limit is 40 characters
   if (options.receipt.length > 40) {
-    console.warn(`⚠️ [RAZORPAY] Receipt ID too long (${options.receipt.length} chars), truncating...`);
+    console.warn(`⚠️ Receipt ID too long (${options.receipt.length} chars), truncating...`);
     options.receipt = options.receipt.substring(0, 40);
   }
 
   try {
-    // 🔥 Add timeout wrapper for Razorpay API call
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Razorpay API timeout (10s)')), 10000);
-    });
-
-    const orderPromise = razorpay.orders.create(options);
-    const order = await Promise.race([orderPromise, timeoutPromise]);
+    const order = await razorpay.orders.create(options);
     
-    recordSuccess();
-    
-    console.log('✅ [RAZORPAY] Order created successfully:', {
+    console.log('✅ Razorpay order created:', {
       orderId: order.id,
       amount: order.amount,
       status: order.status
@@ -112,16 +55,8 @@ export const createPaymentOrder = async ({ amount, currency = 'INR', receipt }) 
       status: order.status
     };
   } catch (error) {
-    recordFailure();
-    console.error('❌ [RAZORPAY] CREATE ORDER ERROR:');
-    
-    // Improved error extraction for Razorpay SDK
-    const rzpError = error.error || error;
-    const errorMessage = rzpError.description || rzpError.message || error.message || 'Razorpay order creation failed';
-    
-    console.error('Error Message:', errorMessage);
-    console.error('Full Error Object:', JSON.stringify(error, null, 2));
-
+    console.error('❌ Razorpay order creation error:', error.message);
+    const errorMessage = error.error?.description || error.message || 'Razorpay order creation failed';
     throw new Error(`Razorpay Error: ${errorMessage}`);
   }
 };
@@ -136,69 +71,47 @@ export const createPaymentOrder = async ({ amount, currency = 'INR', receipt }) 
  */
 export const verifyPayment = async ({ razorpay_order_id, razorpay_payment_id, razorpay_signature }) => {
   try {
-    // ✅ VALIDATION: Check required fields
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-      console.error('❌ Missing payment verification fields', {
-        orderId: razorpay_order_id,
-        paymentId: razorpay_payment_id,
-        hasSignature: !!razorpay_signature
-      });
+      console.error('❌ Missing payment verification fields');
       return false;
     }
 
     const sign = razorpay_order_id + '|' + razorpay_payment_id;
     const expectedSign = crypto
-      .createHmac('sha256', env.RAZORPAY_KEY_SECRET)
+      .createHmac('sha256', env.razorpay.keySecret)
       .update(sign.toString())
       .digest('hex');
 
-    const isValid = razorpay_signature === expectedSign;
-    
-    if (isValid) {
-      logger.info('Payment signature verified successfully');
-    } else {
-      console.error('❌ Payment signature verification failed:', {
-        received: razorpay_signature,
-        expected: expectedSign,
-        sign
-      });
+    const isValid = expectedSign === razorpay_signature;
+
+    if (!isValid) {
+      console.error('❌ Payment signature verification failed');
     }
 
     return isValid;
   } catch (error) {
-    console.error('❌ Error during payment verification:', error.message);
+    console.error('❌ Payment verification error:', error.message);
     return false;
   }
 };
 
 /**
- * Verifies a Razorpay webhook signature
- * @param {string} rawBody - Raw request body as string
+ * Verifies webhook signature from Razorpay
+ * @param {string} body - Raw request body
  * @param {string} signature - X-Razorpay-Signature header value
- * @param {string} secret - Webhook secret from environment
- * @returns {boolean} True if webhook signature is valid
+ * @param {string} secret - Webhook secret
+ * @returns {boolean} True if signature is valid
  */
-export const verifyWebhookSignature = (rawBody, signature, secret) => {
+export const verifyWebhookSignature = (body, signature, secret) => {
   try {
-    if (!secret) {
-      console.error('❌ Webhook secret not configured');
-      return false;
-    }
-
     const expectedSignature = crypto
       .createHmac('sha256', secret)
-      .update(rawBody)
+      .update(body)
       .digest('hex');
 
-    const isValid = signature === expectedSignature;
-    
-    if (!isValid) {
-      console.error('❌ Webhook signature mismatch');
-    }
-
-    return isValid;
+    return expectedSignature === signature;
   } catch (error) {
-    console.error('❌ Error verifying webhook signature:', error.message);
+    console.error('❌ Webhook signature verification error:', error.message);
     return false;
   }
 };
