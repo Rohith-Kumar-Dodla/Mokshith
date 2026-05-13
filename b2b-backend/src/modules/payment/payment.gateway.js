@@ -49,6 +49,7 @@ export const createPaymentOrder = async ({ amount, currency = 'INR', receipt }) 
   if (!checkCircuit()) {
     throw new Error('Payment gateway is temporarily unavailable (Circuit Breaker). Please try again in a minute.');
   }
+  
   // 🔥 VALIDATION: Ensure amount is valid
   const numericAmount = Number(amount);
   if (isNaN(numericAmount) || numericAmount < 0) {
@@ -85,13 +86,14 @@ export const createPaymentOrder = async ({ amount, currency = 'INR', receipt }) 
   }
 
   try {
-    console.log('🚀 [RAZORPAY] Creating order...');
-    console.log('💰 Original Amount (INR):', numericAmount);
-    console.log('🪙 Converted Amount (Paise):', razorpayAmount);
-    console.log('📝 Receipt:', options.receipt);
-    console.log('🔑 Key Check:', !!env.RAZORPAY_KEY_ID);
+    // 🔥 Add timeout wrapper for Razorpay API call
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Razorpay API timeout (10s)')), 10000);
+    });
 
-    const order = await razorpay.orders.create(options);
+    const orderPromise = razorpay.orders.create(options);
+    const order = await Promise.race([orderPromise, timeoutPromise]);
+    
     recordSuccess();
     
     console.log('✅ [RAZORPAY] Order created successfully:', {
@@ -153,7 +155,7 @@ export const verifyPayment = async ({ razorpay_order_id, razorpay_payment_id, ra
     const isValid = razorpay_signature === expectedSign;
     
     if (isValid) {
-      console.log('✅ Payment signature verified successfully');
+      logger.info('Payment signature verified successfully');
     } else {
       console.error('❌ Payment signature verification failed:', {
         received: razorpay_signature,

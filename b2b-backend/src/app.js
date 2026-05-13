@@ -1,6 +1,7 @@
 import express from 'express';
 import morgan from 'morgan';
 import cors from 'cors';
+import compression from 'compression';
 
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -15,6 +16,7 @@ import { securityMiddleware } from './config/security.js';
 import { requestLogger } from './middlewares/requestLogger.middleware.js';
 import { idempotencyMiddleware } from './middlewares/idempotency.middleware.js';
 import { ipBlockMiddleware } from './middlewares/ipBlock.middleware.js';
+import { timeoutMiddleware } from './middlewares/timeout.middleware.js';
 
 import logisticsRoutes from './modules/logistics/logistics.routes.js';
 
@@ -83,6 +85,17 @@ app.use('/uploads', express.static(uploadsPath));
 // 🔥 Trust proxy (important for Render / cloud deployments)
 app.set('trust proxy', 1);
 
+// 🔥 COMPRESSION - Compress all responses (gzip/deflate)
+app.use(compression({
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  },
+  threshold: 1024, // Only compress responses larger than 1KB
+  level: 6 // Balance between speed and compression ratio
+}));
 
 // 🔥 CORS CONFIG
 app.use(corsConfig);
@@ -90,23 +103,31 @@ app.use(corsConfig);
 // 🔥 IP Blocking
 app.use(ipBlockMiddleware);
 
+// 🔥 Request timeout protection (30 seconds)
+app.use(timeoutMiddleware(30000));
+
 // 🔥 Handle preflight requests (VERY IMPORTANT)
 app.options("*", corsConfig);
 
 
-// 🔐 Security middleware
+// � Security middleware
 securityMiddleware(app);
 
 
-// 🔥 Body parsers
+// 🔥 Body parsers with size limits
 app.use(express.json({
+  limit: '10mb', // Prevent large payload attacks
   verify: (req, res, buf) => {
     if (req.originalUrl.includes('/webhook')) {
       req.rawBody = buf.toString();
     }
   }
 }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ 
+  extended: true,
+  limit: '10mb',
+  parameterLimit: 100 // Limit number of parameters
+}));
 
 
 // 📜 Logging

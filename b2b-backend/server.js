@@ -7,6 +7,27 @@ import { logger } from './src/config/logger.js';
 import { Server } from 'socket.io';
 import http from 'http';
 
+// 🔥 VALIDATE REQUIRED ENVIRONMENT VARIABLES
+const requiredEnvVars = [
+  'MONGO_URI',
+  'JWT_SECRET',
+  'RAZORPAY_KEY_ID',
+  'RAZORPAY_KEY_SECRET'
+];
+
+const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingVars.length > 0) {
+  logger.error(`❌ Missing required environment variables: ${missingVars.join(', ')}`);
+  logger.error('Please check your .env file and ensure all required variables are set.');
+  process.exit(1);
+}
+
+// Validate JWT_SECRET strength (minimum 32 characters recommended)
+if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {
+  logger.warn('⚠️ JWT_SECRET should be at least 32 characters for production security');
+}
+
 const PORT = process.env.PORT || 5000;
 
 let server;
@@ -20,16 +41,23 @@ const startServer = async () => {
     // Create HTTP server
     const httpServer = http.createServer(app);
 
-    // Initialize Socket.io
+    // Initialize Socket.io with production-ready configuration
     io = new Server(httpServer, {
       cors: {
-        origin: "*",
+        origin: process.env.NODE_ENV === 'production' 
+          ? process.env.FRONTEND_URL || "https://mokshith-entreprises.vercel.app"
+          : "*",
         methods: ["GET", "POST", "PATCH"],
         credentials: true
       },
       transports: ['websocket', 'polling'], // Allow polling fallback for stability
-      pingTimeout: 60000,
-      pingInterval: 25000
+      pingTimeout: 60000, // 60 seconds before considering connection dead
+      pingInterval: 25000, // Ping every 25 seconds
+      connectTimeout: 45000, // Connection timeout
+      maxHttpBufferSize: 1e6, // 1MB max message size
+      allowUpgrades: true, // Allow transport upgrades
+      perMessageDeflate: false, // Disable compression for better performance
+      httpCompression: false // Disable http compression (app-level compression is better)
     });
 
     // Verify IO initialization

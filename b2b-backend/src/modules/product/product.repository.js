@@ -6,13 +6,14 @@ export const findProducts = (filter, options) => {
   const { skip, limit } = options;
 
   return Product.find(filter)
-    .select('name price stock description categoryId image imageUrl unit minOrderQty moq gst') // 🔥 Field Optimization
+    .select('name price stock description categoryId image imageUrl unit minOrderQty moq gst isActive') // 🔥 Field Optimization
     .skip(skip)
     .limit(limit)
     .sort({ createdAt: -1 })
     .populate('categoryId', 'name') // 🔥 Populating only necessary fields
     .populate('vendorId', 'name')
-    .populate('companyId', 'name');
+    .populate('companyId', 'name')
+    .lean(); // 🔥 Performance: Convert to plain objects
 };
 
 export const findById = (id) =>

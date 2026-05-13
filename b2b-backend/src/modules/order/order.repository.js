@@ -6,6 +6,10 @@ export const createOrder = async (data, options = {}) => {
 };
 
 export const findOrders = (filter) =>
-  Order.find(filter).populate('userId', 'name email phone').sort({ createdAt: -1 });
+  Order.find(filter)
+    .populate('userId', 'name email mobile')
+    .select('-__v') // Exclude version key
+    .sort({ createdAt: -1 })
+    .lean(); // 🔥 Performance: Convert to plain objects
 
 export const findById = (id) => Order.findById(id);

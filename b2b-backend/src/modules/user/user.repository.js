@@ -8,9 +8,11 @@ export const findAll = async (filter, options) => {
   const { skip, limit, sort } = options;
 
   return User.find(filter)
+    .select('-password -refreshToken -otp') // Exclude sensitive fields
     .skip(skip)
     .limit(limit)
-    .sort(sort);
+    .sort(sort)
+    .lean(); // Convert to plain JS objects for better performance
 };
 
 export const countUsers = async (filter) => {

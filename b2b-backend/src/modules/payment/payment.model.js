@@ -12,6 +12,7 @@ const paymentSchema = new mongoose.Schema(
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
+      index: true,
     },
 
     amount: {
@@ -23,6 +24,7 @@ const paymentSchema = new mongoose.Schema(
       type: String,
       enum: ['INITIATED', 'PENDING', 'SUCCESS', 'FAILED'],
       default: 'INITIATED',
+      index: true,
     },
 
     paymentMethod: {
@@ -40,6 +42,7 @@ const paymentSchema = new mongoose.Schema(
       type: String,
       unique: true,
       sparse: true,
+      index: true,
     },
     
     metadata: {
@@ -49,5 +52,10 @@ const paymentSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// 🔥 Compound indexes for payment queries
+paymentSchema.index({ userId: 1, createdAt: -1 }); // User's payments sorted by date
+paymentSchema.index({ status: 1, createdAt: -1 }); // Payments by status and date
+paymentSchema.index({ orderId: 1, status: 1 }); // Order payments by status
 
 export default mongoose.model('Payment', paymentSchema);

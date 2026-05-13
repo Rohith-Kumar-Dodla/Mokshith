@@ -29,6 +29,16 @@ const orderSchema = new mongoose.Schema(
       required: true,
     },
 
+    totalWeight: {
+      type: Number,
+      default: 0,
+    },
+
+    requiresHeavyVehicle: {
+      type: Boolean,
+      default: false,
+    },
+
     commissionRate: {
       type: Number,
       default: 0
@@ -41,7 +51,7 @@ const orderSchema = new mongoose.Schema(
 
     paymentMethod: {
       type: String,
-      enum: ['COD', 'ONLINE', 'CREDIT', 'RAZORPAY', 'UPI', 'CARD'],
+      enum: ['COD', 'ONLINE', 'CREDIT', 'RAZORPAY', 'UPI', 'CARD', 'HYBRID'],
       default: 'COD',
       required: true,
     },
@@ -56,6 +66,7 @@ const orderSchema = new mongoose.Schema(
       enum: Object.values(PAYMENT_STATUS),
       default: PAYMENT_STATUS.PENDING,
       required: true,
+      index: true,
     },
 
     address: {
@@ -81,6 +92,7 @@ const orderSchema = new mongoose.Schema(
       enum: Object.values(ORDER_STATUS),
       default: ORDER_STATUS.PENDING,
       required: true,
+      index: true,
     },
 
     idempotencyKey: {
@@ -89,8 +101,19 @@ const orderSchema = new mongoose.Schema(
       sparse: true,
       index: true,
     },
+
+    metadata: {
+      type: Object,
+      default: {},
+    },
   },
   { timestamps: true }
 );
+
+// 🔥 Compound indexes for common queries
+orderSchema.index({ userId: 1, createdAt: -1 }); // User's orders sorted by date
+orderSchema.index({ status: 1, createdAt: -1 }); // Orders by status and date
+orderSchema.index({ paymentStatus: 1, status: 1 }); // Payment and order status
+orderSchema.index({ userId: 1, status: 1 }); // User's orders by status
 
 export default mongoose.model('Order', orderSchema);

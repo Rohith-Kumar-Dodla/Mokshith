@@ -30,5 +30,14 @@ export const corsConfig = cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With', 
+    'Accept',
+    'idempotency-key', // 🔥 Support idempotency
+    'x-razorpay-signature' // 🔥 Support Razorpay webhooks
+  ],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'], // 🔥 For pagination
+  maxAge: 86400, // Cache preflight requests for 24 hours
 });

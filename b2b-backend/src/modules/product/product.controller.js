@@ -2,11 +2,10 @@ import { asyncHandler } from '../../utils/asyncHandler.js';
 import * as service from './product.service.js';
 import { successResponse } from '../../utils/responseHandler.js';
 import { uploadFile } from '../../services/fileUpload.service.js';
+import { logger } from '../../config/logger.js';
 
 export const createProduct = asyncHandler(async (req, res) => {
-  console.log('--- PRODUCT CREATE DEBUG ---');
-  console.log('BODY:', req.body);
-  console.log('FILE:', req.file);
+  logger.debug('Product creation request', { hasFile: !!req.file, bodyKeys: Object.keys(req.body) });
 
   const data = { ...req.body };
   
@@ -20,14 +19,12 @@ export const createProduct = asyncHandler(async (req, res) => {
   if (data.isActive === 'false') data.isActive = false;
 
   if (req.file) {
-    console.log('Processing uploaded file:', req.file.originalname);
+    logger.debug('Processing uploaded file', { filename: req.file.originalname });
     const uploadResult = await uploadFile(req.file);
-    console.log('Upload Service Result:', uploadResult);
+    logger.debug('Upload result', { url: uploadResult.url });
     data.image = uploadResult.url;
     data.imageUrl = uploadResult.url;
   }
-
-  console.log('FINAL DATABASE PAYLOAD:', data);
 
   const product = await service.createProduct(data);
   successResponse(res, product, 'Product created');
@@ -44,9 +41,7 @@ export const getProductById = asyncHandler(async (req, res) => {
 });
 
 export const updateProduct = asyncHandler(async (req, res) => {
-  console.log('--- PRODUCT UPDATE DEBUG ---');
-  console.log('BODY:', req.body);
-  console.log('FILE:', req.file);
+  logger.debug('Product update request', { id: req.params.id, hasFile: !!req.file });
 
   const data = { ...req.body };
 

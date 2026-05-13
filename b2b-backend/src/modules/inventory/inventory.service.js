@@ -141,3 +141,36 @@ export const reduceStock = async (productId, quantity, options = {}) => {
 
   return true;
 };
+
+// 🔥 Restore Stock (for payment failures, order cancellations)
+export const restoreStock = async (productId, quantity, options = {}) => {
+  const { session } = options;
+  
+  if (quantity <= 0) {
+    throw new AppError('Quantity must be greater than 0', 400);
+  }
+
+  // Find all inventory entries for this product
+  const items = await repo.findByProduct(productId);
+
+  if (items.length === 0) {
+    console.warn(`No inventory found for product ${productId} to restore stock`);
+    return false;
+  }
+
+  // Restore to the first warehouse (or you can implement more sophisticated logic)
+  const firstWarehouse = items[0];
+  
+  const updated = await mongoose.model('Inventory').findOneAndUpdate(
+    { _id: firstWarehouse._id },
+    { $inc: { stock: quantity } },
+    { new: true, session }
+  );
+
+  if (!updated) {
+    throw new AppError('Failed to restore stock', 500);
+  }
+
+  console.log(`Restored ${quantity} units of product ${productId}`);
+  return true;
+};

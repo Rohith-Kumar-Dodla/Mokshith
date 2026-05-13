@@ -4,7 +4,7 @@ import { protect } from '../../middlewares/auth.middleware.js';
 import { authorize } from '../../middlewares/role.middleware.js';
 import { validate } from '../../middlewares/validate.middleware.js';
 import { updateProfileSchema } from './user.validation.js';
-import { upload } from '../../middlewares/upload.middleware.js';
+import { uploadImage } from '../../middlewares/upload.middleware.js';
 
 const router = express.Router();
 
@@ -21,7 +21,7 @@ router.put(
 router.post(
   '/profile-image',
   protect,
-  upload.single('image'),
+  uploadImage.single('image'),
   controller.updateProfileImage
 );
 

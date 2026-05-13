@@ -1,11 +1,7 @@
+import { logger } from '../config/logger.js';
+
 export const validate = (schema) => (req, res, next) => {
   // 🔥 Pre-processing: Convert common stringified values from FormData to proper types
-  console.log('--- VALIDATION START ---');
-  console.log('Headers Content-Type:', req.headers['content-type']);
-  console.log('Original Body Keys:', Object.keys(req.body || {}));
-  console.log('Original Body Values:', JSON.stringify(req.body));
-  console.log('File Present:', !!req.file);
-
   if (req.body) {
     Object.keys(req.body).forEach(key => {
       // Convert 'true'/'false' strings to Booleans
@@ -25,7 +21,6 @@ export const validate = (schema) => (req, res, next) => {
         }
       }
     });
-    console.log('Processed Body:', JSON.stringify(req.body));
   }
 
   const { error, value } = schema.validate(
@@ -38,11 +33,20 @@ export const validate = (schema) => (req, res, next) => {
   );
 
   if (error) {
-    console.error('❌ Validation Failed:', error.details.map(d => d.message));
+    const errorMessages = error.details.map((err) => err.message).join(', ');
+    
+    // Log validation errors without exposing sensitive data
+    logger.warn({
+      message: 'Validation failed',
+      path: req.path,
+      method: req.method,
+      errors: error.details.map(d => ({ field: d.path.join('.'), type: d.type })),
+    });
+
     return res.status(400).json({
       success: false,
-      message: error.details.map((err) => err.message).join(', '),
-      details: error.details
+      message: errorMessages,
+      data: null,
     });
   }
 

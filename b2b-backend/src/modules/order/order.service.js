@@ -37,12 +37,13 @@ export const createOrder = async (userId, data) => {
 
   // 🔥 0. Idempotency Check
   if (idempotencyKey) {
-    const existingOrder = await Order.findOne({ idempotencyKey });
+    const existingOrder = await Order.findOne({ idempotencyKey }).lean();
     if (existingOrder) return existingOrder;
   }
 
   // 🔥 0. Validation
   if (!shippingAddress) throw new AppError('Shipping address is required', 400);
+  if (!mongoose.Types.ObjectId.isValid(userId)) throw new AppError('Invalid user ID', 400);
   
   // 🔥 Check Maintenance Mode
   const maintenance = await fetchSetting('maintenanceMode');
@@ -90,15 +91,39 @@ export const createOrder = async (userId, data) => {
     finalItems = cart.items;
   }
 
+  if (finalItems.length === 0) {
+    throw new AppError('No items to order', 400);
+  }
+
+  // 🔥 1. Bulk fetch all products at once (Performance optimization)
+  const productIds = finalItems.map(item => item.productId || item.id || item.productId?._id);
+  const products = await Product.find({ _id: { $in: productIds } })
+    .select('_id name price basePrice weight minOrderQty moq')
+    .lean();
+  
+  if (products.length !== productIds.length) {
+    throw new AppError('Some products in your order no longer exist', 404);
+  }
+
+  // Create a map for quick lookup
+  const productMap = new Map(products.map(p => [p._id.toString(), p]));
+
   let totalAmount = 0;
   let totalWeight = 0;
   let totalQuantity = 0;
   const items = [];
 
-  // 🔥 1. Validate + Prepare Items + Check Stock (Pre-check)
+  // 🔥 2. Validate + Prepare Items + Check Stock
   for (const item of finalItems) {
-    const product = await Product.findById(item.productId || item.id || item.productId?._id);
+    const productId = (item.productId?._id || item.productId || item.id).toString();
+    const product = productMap.get(productId);
+    
     if (!product) throw new AppError(`Product not found`, 404);
+
+    // Input validation
+    if (!item.quantity || item.quantity < 1) {
+      throw new AppError(`Invalid quantity for ${product.name}`, 400);
+    }
 
     // 🔥 Wholesale MOQ validation
     const minQty = product.minOrderQty || product.moq || 1;
@@ -153,7 +178,7 @@ export const createOrder = async (userId, data) => {
     idempotencyKey
   };
 
-  // 🔥 4. Status Mapping based on Payment Method (Strict Flow)
+  // 🔥 4. Status Mapping based on Payment Method
   if (paymentMethod.toUpperCase() === 'COD') {
     orderData.status = ORDER_STATUS.CONFIRMED;
   } else {
@@ -161,7 +186,7 @@ export const createOrder = async (userId, data) => {
     orderData.status = ORDER_STATUS.PENDING_PAYMENT;
   }
 
-  // 🔥 5. Atomic Order Creation + Stock Deduction using Transactions if supported
+  // 🔥 5. Atomic Order Creation + Stock Deduction using Transactions
   const supportsTransactions = getTransactionSupport();
   let session = null;
   let order;
@@ -175,7 +200,7 @@ export const createOrder = async (userId, data) => {
     // Create order
     order = await orderRepo.createOrder(orderData, { session });
     
-    // Deduct stock
+    // Deduct stock for all items
     for (const item of items) {
       await reduceStock(item.productId, item.quantity, { session });
     }
@@ -191,8 +216,6 @@ export const createOrder = async (userId, data) => {
     } else {
       // Manual rollback if transactions not supported
       if (order) await Order.findByIdAndDelete(order._id);
-      // Note: Rolling back stock manually is complex without transactions, 
-      // which is why replica sets are recommended for production.
     }
     
     throw new AppError(err.message || 'Order placement failed', err.statusCode || 500);
@@ -221,16 +244,21 @@ export const createOrder = async (userId, data) => {
       await onOrderCreated(order);
       trackOrder(order);
 
-      // Shipment Creation
-      const warehouses = await Warehouse.find();
-      if (warehouses.length > 0) {
-        const shipment = await createShipment(order, warehouses);
-        order.shipmentId = shipment._id;
-        await order.save();
-      }
+      // Shipment Creation (non-blocking)
+      setImmediate(async () => {
+        try {
+          const warehouses = await Warehouse.find().limit(1).lean();
+          if (warehouses.length > 0) {
+            const shipment = await createShipment(order, warehouses);
+            await Order.findByIdAndUpdate(order._id, { shipmentId: shipment._id });
+          }
 
-      // 🔥 Auto-assign Delivery Partner ONLY for COD immediately, others after payment
-      await assignDelivery(order);
+          // Auto-assign Delivery Partner
+          await assignDelivery(order);
+        } catch (err) {
+          console.error('Post-order logistics error:', err.message);
+        }
+      });
     } else {
       // For non-COD, just notify about pending order
       await sendNotification({
@@ -295,26 +323,53 @@ export const downloadInvoice = async (orderId) => {
 };
 
 export const markOrderAsFailed = async (id) => {
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new AppError('Invalid order ID', 400);
+  }
+
   const order = await Order.findById(id);
   if (!order) throw new AppError('Order not found', 404);
   
   // Only process if not already failed
   if (order.status === ORDER_STATUS.FAILED) return order;
 
-  order.status = ORDER_STATUS.FAILED;
-  order.paymentStatus = PAYMENT_STATUS.FAILED;
-  await order.save();
+  const supportsTransactions = getTransactionSupport();
+  let session = null;
 
-  // Restore stock
   try {
-    for (const item of order.items) {
-      await restoreStock(item.productId, item.quantity);
+    if (supportsTransactions) {
+      session = await mongoose.startSession();
+      session.startTransaction();
     }
-  } catch (err) {
-    console.error('Failed to restore stock for order:', id, err.message);
-  }
 
-  return order;
+    order.status = ORDER_STATUS.FAILED;
+    order.paymentStatus = PAYMENT_STATUS.FAILED;
+    order.metadata = { ...order.metadata, markedFailedAt: new Date() };
+    await order.save({ session });
+
+    // Restore stock
+    const { restoreStock } = await import('../inventory/inventory.service.js');
+    for (const item of order.items) {
+      try {
+        await restoreStock(item.productId, item.quantity, { session });
+      } catch (err) {
+        console.error('Failed to restore stock for order:', id, err.message);
+      }
+    }
+
+    if (supportsTransactions) {
+      await session.commitTransaction();
+      session.endSession();
+    }
+
+    return order;
+  } catch (error) {
+    if (supportsTransactions && session) {
+      await session.abortTransaction();
+      session.endSession();
+    }
+    throw error;
+  }
 };
 
 export const updateOrderStatus = async (orderId, newStatus) => {
