@@ -36,18 +36,40 @@ export const createRazorpayOrder = async (amount, userId) => {
 };
 
 export const hybridPayment = async (orderId, userId, useCredit, totalAmount) => {
+  // Validate orderId first
+  if (!mongoose.Types.ObjectId.isValid(orderId)) {
+    throw new AppError('Invalid order ID format', 400);
+  }
+
+  // FAST PATH: Check if order already paid (before acquiring lock)
+  const quickCheck = await Order.findById(orderId).select('paymentStatus userId').lean();
+  if (quickCheck && quickCheck.paymentStatus === 'PAID') {
+    return { success: true, alreadyPaid: true, message: 'Order is already paid' };
+  }
+
+  // Verify order belongs to user (security check)
+  if (quickCheck && quickCheck.userId.toString() !== userId.toString()) {
+    throw new AppError('Unauthorized access to order', 403);
+  }
+
   // Distributed lock to prevent concurrent hybrid payment processing
   const { redisClient } = await import('../../config/redis.js');
   const lockKey = `hybrid_payment_lock:${orderId}`;
   const lockValue = Date.now().toString();
-  const lockTTL = 30; // 30 seconds
+  const lockTTL = 15; // Reduced to 15 seconds for faster retry
 
   try {
     // Try to acquire lock
     const lockAcquired = await redisClient.set(lockKey, lockValue, 'EX', lockTTL, 'NX');
     
     if (!lockAcquired) {
-      throw new AppError('Payment is already being processed. Please wait.', 409);
+      // Another process is processing - wait briefly and check result
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const recheckOrder = await Order.findById(orderId).select('paymentStatus').lean();
+      if (recheckOrder && recheckOrder.paymentStatus === 'PAID') {
+        return { success: true, alreadyPaid: true, message: 'Payment completed by another request' };
+      }
+      throw new AppError('Payment is being processed. Please wait a moment and retry.', 409);
     }
 
     const supportsTransactions = getTransactionSupport();
@@ -61,24 +83,20 @@ export const hybridPayment = async (orderId, userId, useCredit, totalAmount) => 
         isTransactionStarted = true;
       }
 
-      // 1. Validate orderId
-      if (!mongoose.Types.ObjectId.isValid(orderId)) {
-        throw new AppError('Invalid order ID format', 400);
-      }
-
+      // Fetch full order details
       const query = Order.findById(orderId);
       if (isTransactionStarted) query.session(session);
       const order = await query;
 
       if (!order) throw new AppError('Order not found', 404);
 
+      // Re-check payment status (race condition safety)
       if (order.paymentStatus === 'PAID') {
-        throw new AppError('Order is already paid', 400);
-      }
-
-      // Verify order belongs to user (security check)
-      if (order.userId.toString() !== userId.toString()) {
-        throw new AppError('Unauthorized access to order', 403);
+        if (isTransactionStarted) {
+          await session.endSession();
+        }
+        await redisClient.del(lockKey);
+        return { success: true, alreadyPaid: true, message: 'Order is already paid' };
       }
 
       // Safety check: frontend totalAmount vs backend totalAmount
@@ -276,36 +294,49 @@ export const verifyPayment = async (payload) => {
     throw new AppError('Missing payment verification parameters', 400);
   }
 
-  // 1. Distributed Lock: Prevent concurrent verification of same payment
+  // 1. FAST PATH: Check if payment already verified (before acquiring lock)
+  // This allows retries/refreshes to work without 409 conflicts
+  const existingPayment = await repo.findByRazorpayPaymentId(razorpay_payment_id);
+  if (existingPayment && existingPayment.status === 'SUCCESS') {
+    return existingPayment;
+  }
+
+  // 2. Distributed Lock: Prevent concurrent first-time verification
   const { redisClient } = await import('../../config/redis.js');
   const lockKey = `payment_verify_lock:${razorpay_payment_id}`;
   const lockValue = Date.now().toString();
-  const lockTTL = 30; // 30 seconds
+  const lockTTL = 10; // Reduced to 10 seconds for faster retry
 
   try {
     // Try to acquire lock with SET NX EX (atomic operation)
     const lockAcquired = await redisClient.set(lockKey, lockValue, 'EX', lockTTL, 'NX');
     
     if (!lockAcquired) {
-      // Another process is already verifying this payment
-      console.log(`⚠️ Payment verification already in progress: ${razorpay_payment_id}`);
-      // Wait a bit and check if payment was processed
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      const payment = await repo.findByRazorpayPaymentId(razorpay_payment_id);
-      if (payment && payment.status === 'SUCCESS') {
-        return payment;
+      // Another process is verifying - wait and check result
+      console.log(`⚠️ Payment verification in progress: ${razorpay_payment_id}`);
+      
+      // Poll for completion (max 8 seconds with 4 retries)
+      for (let i = 0; i < 4; i++) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        const payment = await repo.findByRazorpayPaymentId(razorpay_payment_id);
+        if (payment && payment.status === 'SUCCESS') {
+          return payment;
+        }
       }
-      throw new AppError('Payment verification in progress, please try again', 409);
+      
+      // If still not processed after polling, allow retry
+      // (lock will expire soon anyway)
+      throw new AppError('Payment verification taking longer than expected. Please retry in a moment.', 409);
     }
 
-    // 2. Idempotency Check: verify payment not already processed
-    const existingPayment = await repo.findByRazorpayPaymentId(razorpay_payment_id);
-    if (existingPayment && existingPayment.status === 'SUCCESS') {
-      await redisClient.del(lockKey); // Release lock
-      return existingPayment;
+    // 3. Double-check payment not processed (race condition safety)
+    const doubleCheck = await repo.findByRazorpayPaymentId(razorpay_payment_id);
+    if (doubleCheck && doubleCheck.status === 'SUCCESS') {
+      await redisClient.del(lockKey);
+      return doubleCheck;
     }
 
-    // 3. Signature verification
+    // 4. Signature verification
     const isValid = await gateway.verifyPayment({
       razorpay_order_id,
       razorpay_payment_id,
@@ -317,7 +348,7 @@ export const verifyPayment = async (payload) => {
       throw new AppError('Payment verification failed - invalid signature', 400);
     }
 
-    // 4. Find payment record
+    // 5. Find payment record
     let payment = await repo.findByTransactionId(razorpay_order_id);
     
     if (!payment && orderId) {
@@ -329,12 +360,13 @@ export const verifyPayment = async (payload) => {
       throw new AppError('Payment record not found', 404);
     }
 
+    // Safety check - payment might have been processed by another thread
     if (payment.status === 'SUCCESS') {
       await redisClient.del(lockKey);
       return payment;
     }
 
-    // 5. Use transaction for atomic updates
+    // 6. Use transaction for atomic updates
     const supportsTransactions = getTransactionSupport();
     let session = null;
     
@@ -380,7 +412,7 @@ export const verifyPayment = async (payload) => {
           });
         }
 
-        // 6. Post-payment triggers (non-blocking)
+        // 7. Post-payment triggers (non-blocking)
         setImmediate(async () => {
           try {
             const CartModel = mongoose.model('Cart');
