@@ -19,7 +19,9 @@ import {
   ArrowRight,
   ExternalLink,
   ShoppingBag,
-  History
+  History,
+  Filter,
+  ArrowUpDown
 } from "lucide-react";
 import { orderService } from "../services/orderService";
 
@@ -31,6 +33,10 @@ const OrdersPage = () => {
   const { showToast } = useNotification();
   const [actionLoading, setActionLoading] = useState({});
   const [retryCount, setRetryCount] = useState(0);
+  
+  // Filtering & Sorting State
+  const [timeFilter, setTimeFilter] = useState('all'); // all, week, month, year
+  const [sortBy, setSortBy] = useState('newest'); // newest, oldest, highest, lowest
 
   useEffect(() => {
     // 📡 Real-time Updates: Payment Success
@@ -111,7 +117,34 @@ const OrdersPage = () => {
     </div>
   );
 
-  const filteredOrders = Array.isArray(orders) ? orders.filter(order => order.status !== ORDER_STATUS.FAILED) : [];
+  const filteredOrders = Array.isArray(orders) ? orders
+    .filter(order => order.status !== ORDER_STATUS.FAILED)
+    .filter(order => {
+      if (timeFilter === 'all') return true;
+      const orderDate = new Date(order.createdAt);
+      const now = new Date();
+      if (timeFilter === 'week') {
+        const weekAgo = new Date(now.setDate(now.getDate() - 7));
+        return orderDate >= weekAgo;
+      }
+      if (timeFilter === 'month') {
+        const monthAgo = new Date(now.setMonth(now.getMonth() - 1));
+        return orderDate >= monthAgo;
+      }
+      if (timeFilter === 'year') {
+        const yearAgo = new Date(now.setFullYear(now.getFullYear() - 1));
+        return orderDate >= yearAgo;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
+      if (sortBy === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
+      if (sortBy === 'highest') return (b.totalAmount || 0) - (a.totalAmount || 0);
+      if (sortBy === 'lowest') return (a.totalAmount || 0) - (b.totalAmount || 0);
+      return 0;
+    })
+    : [];
 
   return (
     <div className="min-h-screen bg-slate-50 py-10 flex justify-center">
@@ -128,6 +161,43 @@ const OrdersPage = () => {
             <ShoppingBag size={20} />
             New Purchase
           </Button>
+        </div>
+
+        {/* Filters & Sorting Section */}
+        <div className="flex flex-wrap items-center gap-4 mb-8 bg-white p-6 rounded-[1.5rem] border border-slate-200 shadow-sm">
+          <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+            <Filter size={16} className="text-slate-400" />
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Time Period:</span>
+            <select 
+              value={timeFilter}
+              onChange={(e) => setTimeFilter(e.target.value)}
+              className="bg-transparent text-xs font-black text-slate-900 uppercase tracking-tight focus:outline-none cursor-pointer"
+            >
+              <option value="all">All Time</option>
+              <option value="week">Last 7 Days</option>
+              <option value="month">Last 30 Days</option>
+              <option value="year">Last Year</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+            <ArrowUpDown size={16} className="text-slate-400" />
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sort By:</span>
+            <select 
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="bg-transparent text-xs font-black text-slate-900 uppercase tracking-tight focus:outline-none cursor-pointer"
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="highest">Highest Value</option>
+              <option value="lowest">Lowest Value</option>
+            </select>
+          </div>
+
+          <div className="ml-auto text-[10px] font-black text-slate-400 uppercase tracking-widest">
+            Showing {filteredOrders.length} Transactions
+          </div>
         </div>
 
         {filteredOrders.length === 0 ? (

@@ -27,8 +27,11 @@ const app = express();
 
 // 🔥 THE ROBUST FIX: CHECK MULTIPLE POTENTIAL PATHS
 const potentialPaths = [
+  path.join(process.cwd(), 'src/uploads'),
   path.join(process.cwd(), 'uploads'),
+  path.join(process.cwd(), 'b2b-backend', 'src/uploads'),
   path.join(process.cwd(), 'b2b-backend', 'uploads'),
+  path.resolve(__dirname, '..', 'src/uploads'),
   path.resolve(__dirname, '..', 'uploads'),
   path.resolve(__dirname, '..', '..', 'uploads')
 ];
@@ -58,9 +61,19 @@ app.use((req, res, next) => {
 
 // 2. Serve static files with absolute control to fix ERR_ABORTED
 app.get('/uploads/:filename', (req, res) => {
-  const filePath = path.join(uploadsPath, req.params.filename);
+  const filename = req.params.filename;
+  let foundPath = null;
+
+  // Check all potential paths for the file
+  for (const p of potentialPaths) {
+    const fullPath = path.join(p, filename);
+    if (fs.existsSync(fullPath)) {
+      foundPath = fullPath;
+      break;
+    }
+  }
   
-  if (fs.existsSync(filePath)) {
+  if (foundPath) {
     // Set explicit headers to bypass all security blocks
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Cross-Origin-Resource-Policy', 'cross-origin');
@@ -68,19 +81,46 @@ app.get('/uploads/:filename', (req, res) => {
     res.header('Cache-Control', 'public, max-age=3600');
     
     // Explicitly set MIME type for webp images
-    if (req.params.filename.endsWith('.webp')) {
+    if (filename.endsWith('.webp')) {
       res.type('image/webp');
     }
     
-    return res.sendFile(filePath);
+    return res.sendFile(foundPath);
   } else {
-    console.error(`❌ Image not found on disk at: ${filePath}`);
-    return res.status(404).send(`Image not found at: ${filePath}`);
+    console.error(`❌ Image not found on disk in any potential path: ${filename}`);
+    return res.status(404).send(`Image not found: ${filename}`);
+  }
+});
+
+// Also handle subdirectories like /uploads/invoices/:filename
+app.get('/uploads/:folder/:filename', (req, res) => {
+  const { folder, filename } = req.params;
+  let foundPath = null;
+
+  for (const p of potentialPaths) {
+    const fullPath = path.join(p, folder, filename);
+    if (fs.existsSync(fullPath)) {
+      foundPath = fullPath;
+      break;
+    }
+  }
+
+  if (foundPath) {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.header('Cross-Origin-Embedder-Policy', 'unsafe-none');
+    return res.sendFile(foundPath);
+  } else {
+    return res.status(404).send(`File not found: ${folder}/${filename}`);
   }
 });
 
 // Backup for nested files if any
-app.use('/uploads', express.static(uploadsPath));
+potentialPaths.forEach(p => {
+  if (fs.existsSync(p)) {
+    app.use('/uploads', express.static(p));
+  }
+});
 
 // 🔥 Trust proxy (important for Render / cloud deployments)
 app.set('trust proxy', 1);

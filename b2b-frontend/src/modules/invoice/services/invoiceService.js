@@ -29,7 +29,7 @@ export const invoiceService = {
 
   async generateInvoice(orderId) {
     try {
-      const response = await apiClient.post("/invoices/generate", { orderId });
+      const response = await apiClient.post(`/invoices/${orderId}`);
       return response.data || response;
     } catch (err) {
       console.error("Error generating invoice:", err);

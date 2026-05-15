@@ -15,9 +15,9 @@ router.post('/', protect, validate(createOrderSchema), controller.createOrder);
 
 router.get('/', protect, controller.getOrders);
 
-router.get('/:id', protect, controller.getOrderById);
-
 router.get('/:id/invoice', protect, controller.downloadInvoice);
+
+router.get('/:id', protect, controller.getOrderById);
 
 router.post('/:id/fail', protect, controller.markOrderAsFailed);
 

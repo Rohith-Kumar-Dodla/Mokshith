@@ -27,6 +27,7 @@ import { PAYMENT_STATUS } from '../../constants/paymentStatus.js';
 import mongoose from 'mongoose';
 import { getTransactionSupport } from '../../config/db.js';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -301,24 +302,68 @@ export const getOrderById = async (id) => {
 };
 
 export const downloadInvoice = async (orderId) => {
-  const invoice = await getInvoiceByOrderId(orderId);
+  console.log(`[OrderService] 🔍 Searching for invoice for Order: ${orderId}`);
+  let invoice = await getInvoiceByOrderId(orderId);
+  
+  // If invoice doesn't exist OR fileUrl is missing, generate/regenerate it
   if (!invoice || !invoice.fileUrl) {
-    // If invoice doesn't exist, try generating it
-    const newInvoice = await generateInvoice(orderId);
-    if (!newInvoice || !newInvoice.fileUrl) {
-      throw new AppError('Invoice not found and could not be generated', 404);
+    console.log(`[OrderService] 📝 Invoice missing or fileUrl null. Generating...`);
+    invoice = await generateInvoice(orderId);
+    
+    if (!invoice || !invoice.fileUrl) {
+      console.error(`[OrderService] ❌ Invoice generation failed for Order ${orderId}`);
+      throw new AppError('Invoice could not be generated', 404);
     }
-    const filePath = path.join(__dirname, '../../..', newInvoice.fileUrl);
-    return {
-      filePath,
-      fileName: `invoice-${newInvoice.invoiceNumber}.pdf`
-    };
   }
 
-  const filePath = path.join(__dirname, '../../..', invoice.fileUrl);
+  // Robust path construction
+  const rawUrl = invoice.fileUrl;
+  const relativeUrl = rawUrl.startsWith('/') ? rawUrl.substring(1) : rawUrl;
+  
+  // Try multiple potential base directories for the uploads
+  const potentialBases = [
+    path.resolve(process.cwd(), 'src'), // src/ from root (Most likely)
+    path.resolve(process.cwd()), // root/
+    path.join(__dirname, '../../') // src/ relative to this file
+  ];
+
+  let filePath = null;
+  for (const base of potentialBases) {
+    const testPath = path.join(base, relativeUrl);
+    console.log(`[OrderService] 🧪 Checking path: ${testPath}`);
+    if (fs.existsSync(testPath)) {
+      filePath = testPath;
+      break;
+    }
+  }
+
+  if (!filePath) {
+    console.error(`[OrderService] ❌ Invoice file not found on disk for URL: ${rawUrl}`);
+    // Try one last thing: re-generate if file is missing from disk
+    console.log(`[OrderService] 🔄 File missing from disk. Attempting re-generation...`);
+    const newInvoice = await generateInvoice(orderId, true); // Force re-generation
+    if (newInvoice && newInvoice.fileUrl) {
+      const newRelative = newInvoice.fileUrl.startsWith('/') ? newInvoice.fileUrl.substring(1) : newInvoice.fileUrl;
+      // Re-check paths for the new file
+      for (const base of potentialBases) {
+        const testPath = path.join(base, newRelative);
+        if (fs.existsSync(testPath)) {
+          filePath = testPath;
+          break;
+        }
+      }
+    }
+  }
+
+  if (!filePath) {
+    console.error(`[OrderService] ❌ Invoice file not found on server after all attempts.`);
+    throw new AppError('Invoice file could not be found or generated on the server. Please contact support.', 404);
+  }
+
+  console.log(`[OrderService] ✅ Ready for download: ${filePath}`);
   return {
     filePath,
-    fileName: `invoice-${invoice.invoiceNumber}.pdf`
+    fileName: `invoice-${invoice.invoiceNumber || orderId}.pdf`
   };
 };
 

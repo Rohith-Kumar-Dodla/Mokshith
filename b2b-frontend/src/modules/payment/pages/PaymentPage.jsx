@@ -370,41 +370,11 @@ const PaymentPage = () => {
     try {
       setProcessing(true);
       setError(null);
-
-      console.log('📄 Fetching invoice...');
-
-      // Try to get existing invoice
-      const res = await invoiceService.getInvoiceByOrderId(orderId);
-      const invoiceData = res.data || res;
-      
-      if (invoiceData?.fileUrl) {
-        console.log('✅ Invoice found, opening...');
-        const baseUrl = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:5000';
-        const fileUrl = invoiceData.fileUrl.startsWith('http') 
-          ? invoiceData.fileUrl 
-          : `${baseUrl}${invoiceData.fileUrl}`;
-        window.open(fileUrl, '_blank');
-        return;
-      }
-
-      // If invoice doesn't exist, generate it
-      console.log('📋 Generating invoice...');
-      const genRes = await invoiceService.generateInvoice(orderId);
-      const genData = genRes.data || genRes;
-
-      if (genData?.fileUrl) {
-        console.log('✅ Invoice generated, opening...');
-        const baseUrl = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || 'http://localhost:5000';
-        const fileUrl = genData.fileUrl.startsWith('http') 
-          ? genData.fileUrl 
-          : `${baseUrl}${genData.fileUrl}`;
-        window.open(fileUrl, '_blank');
-      } else {
-        console.warn('⚠️ Invoice generation in progress');
-        setError('Invoice is being generated. Please try again in a moment.');
-      }
+      console.log('📄 Downloading invoice...');
+      await orderService.downloadInvoice(orderId);
+      console.log('✅ Invoice download triggered');
     } catch (err) {
-      console.error('❌ Error with invoice:', err);
+      console.error('❌ Error downloading invoice:', err);
       setError('Could not download invoice. Please try from the Orders section.');
     } finally {
       setProcessing(false);

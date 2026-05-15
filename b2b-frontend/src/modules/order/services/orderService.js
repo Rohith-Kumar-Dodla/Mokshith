@@ -40,10 +40,10 @@ export const orderService = {
 
   async downloadInvoice(id) {
     try {
-      const response = await apiClient.get(`/orders/${id}/invoice`, {
+      const data = await apiClient.get(`/orders/${id}/invoice`, {
         responseType: 'blob'
       });
-      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const blob = new Blob([data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -51,6 +51,7 @@ export const orderService = {
       document.body.appendChild(link);
       link.click();
       link.remove();
+      window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("API Error during downloadInvoice:", error);
       throw new Error("Failed to download invoice");
