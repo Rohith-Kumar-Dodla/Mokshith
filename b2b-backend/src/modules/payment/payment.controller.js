@@ -10,7 +10,7 @@ export const createRazorpayOrder = asyncHandler(async (req, res) => {
 });
 
 export const hybridPayment = asyncHandler(async (req, res) => {
-  const { orderId, useCredit, totalAmount } = req.body;
+  const { orderId, useCredit, totalAmount, paymentMethod } = req.body;
 
   // Fallback support for both body and params
   const finalOrderId = orderId || req.params.orderId;
@@ -20,7 +20,7 @@ export const hybridPayment = asyncHandler(async (req, res) => {
     throw new Error('orderId is required for hybrid payment');
   }
 
-  const data = await service.hybridPayment(finalOrderId, req.user.id, useCredit, totalAmount);
+  const data = await service.hybridPayment(finalOrderId, req.user.id, useCredit, totalAmount, paymentMethod);
 
   successResponse(res, data, 'Hybrid payment processed');
 });

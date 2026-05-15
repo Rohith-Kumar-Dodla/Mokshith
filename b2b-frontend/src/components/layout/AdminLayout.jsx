@@ -168,13 +168,13 @@ const AdminLayout = () => {
 
               {showProfileMenu && (
                 <div className="profile-dropdown">
-                  <Link to="/admin/profile" className="dropdown-item">
+                  <Link to={routes.ADMIN_PROFILE} className="dropdown-item">
                     <User size={16} /> My Profile
                   </Link>
-                  <Link to="/admin/settings" className="dropdown-item">
+                  <Link to={routes.ADMIN_SETTINGS} className="dropdown-item">
                     <Settings size={16} /> Settings
                   </Link>
-                  <Link to="/help" className="dropdown-item">
+                  <Link to={routes.HELP} className="dropdown-item">
                     <HelpCircle size={16} /> Help Center
                   </Link>
                   <div className="dropdown-divider" />

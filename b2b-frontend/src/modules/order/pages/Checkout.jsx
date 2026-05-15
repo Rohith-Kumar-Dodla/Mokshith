@@ -19,7 +19,8 @@ import {
   ChevronRight,
   Wallet,
   CheckCircle,
-  FileText
+  FileText,
+  Loader2
 } from "lucide-react";
 import { getProductImage } from "../../../utils/imageHelper.js";
 
@@ -135,273 +136,293 @@ const Checkout = () => {
   }
 
   return (
-    <div className="bg-[#f8fafc] min-h-screen py-8 md:py-16 px-4 md:px-8 lg:px-12">
+    <div className="bg-slate-50 min-h-screen py-6 md:py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        {/* Breadcrumbs - Modern Style */}
-        <div className="flex items-center gap-3 mb-8 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-2">
-          <span className="hover:text-blue-600 cursor-pointer transition-colors" onClick={() => navigate('/')}>Home</span>
-          <ChevronRight size={12} className="text-slate-300" />
-          <span className="hover:text-blue-600 cursor-pointer transition-colors" onClick={() => navigate(routes.CART)}>Cart</span>
-          <ChevronRight size={12} className="text-slate-300" />
-          <span className="text-blue-600">Checkout</span>
+        {/* Navigation & Progress */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-8">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-xs font-medium text-slate-400 mb-2">
+              <span className="hover:text-blue-600 cursor-pointer transition-colors" onClick={() => navigate('/')}>Marketplace</span>
+              <ChevronRight size={14} />
+              <span className="hover:text-blue-600 cursor-pointer transition-colors" onClick={() => navigate(routes.CART)}>Shopping Cart</span>
+              <ChevronRight size={14} />
+              <span className="text-slate-900 font-bold">Secure Checkout</span>
+            </div>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Checkout</h1>
+          </div>
+
+          {/* Professional Stepper */}
+          <div className="flex items-center bg-white px-6 py-3 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="flex items-center">
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-100 ring-4 ring-emerald-50">
+                <CheckCircle size={16} />
+              </div>
+              <div className="ml-3 mr-4">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-1">Step 1</p>
+                <p className="text-xs font-bold text-slate-900">Cart</p>
+              </div>
+            </div>
+            <div className="h-8 w-px bg-slate-100 mx-2"></div>
+            <div className="flex items-center">
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white shadow-lg shadow-blue-100 ring-4 ring-blue-50">
+                <span className="text-xs font-bold">2</span>
+              </div>
+              <div className="ml-3 mr-4">
+                <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider leading-none mb-1">Step 2</p>
+                <p className="text-xs font-bold text-slate-900">Details</p>
+              </div>
+            </div>
+            <div className="h-8 w-px bg-slate-100 mx-2"></div>
+            <div className="flex items-center opacity-40">
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-400 border border-slate-200">
+                <span className="text-xs font-bold">3</span>
+              </div>
+              <div className="ml-3">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-1">Step 3</p>
+                <p className="text-xs font-bold text-slate-900">Payment</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12 pb-8 border-b-2 border-slate-100">
-          <div className="space-y-4">
-            <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-none">
-              Finalize <span className="text-blue-600">Checkout</span>
-            </h1>
-            <p className="text-slate-500 font-bold flex items-center gap-3 text-base md:text-lg">
-              <div className="p-2 bg-emerald-50 rounded-lg">
-                <ShieldCheck size={20} className="text-emerald-600" />
-              </div>
-              Secure Enterprise Wholesale Transaction
-            </p>
-          </div>
-          
-          <div className="hidden md:flex items-center gap-10">
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm shadow-xl shadow-emerald-100 ring-4 ring-emerald-50">
-                <CheckCircle size={20} />
-              </div>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cart</span>
-            </div>
-            <div className="w-16 h-[3px] bg-emerald-500 mb-6 rounded-full opacity-30"></div>
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm shadow-xl shadow-blue-100 ring-4 ring-blue-50 font-black">
-                2
-              </div>
-              <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Checkout</span>
-            </div>
-            <div className="w-16 h-[3px] bg-slate-200 mb-6 rounded-full"></div>
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-white border-2 border-slate-200 text-slate-400 flex items-center justify-center text-sm font-black">
-                3
-              </div>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Payment</span>
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex flex-col lg:flex-row gap-12">
-          {/* LEFT COLUMN - 68% */}
-          <div className="lg:w-[68%] space-y-12">
-            <Card className="p-8 md:p-12 rounded-[2.5rem] border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white border border-slate-50 relative overflow-hidden group">
-              <div className="absolute top-0 left-0 w-2 h-full bg-blue-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <div className="flex items-center gap-6 mb-12">
-                <div className="p-5 bg-blue-50 rounded-2xl text-blue-600 border border-blue-100/50 shadow-inner">
-                  <MapPin size={28} />
+        <div className="flex flex-col lg:flex-row gap-10 items-start">
+          {/* Main Content: 60% width on desktop */}
+          <div className="w-full lg:w-[60%] space-y-6">
+            
+            {/* Shipping Address Card */}
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-100">
+                    <MapPin size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">Shipping Information</h3>
+                    <p className="text-xs text-slate-500 font-medium">Where should we deliver your order?</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">Shipping Details</h3>
-                  <p className="text-xs font-black text-slate-400 mt-1 uppercase tracking-[0.2em]">Business Logistics Information</p>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 rounded-full border border-emerald-100">
+                  <ShieldCheck size={14} className="text-emerald-600" />
+                  <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Verified Address</span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                <div className="space-y-3">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Business / Contact Name</p>
+              <div className="p-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
                   <Input 
+                    label="Contact Person / Business Name"
                     name="name" 
                     value={address.name} 
                     onChange={handleAddressChange} 
                     required 
-                    placeholder="Enter full legal business name"
-                    className="h-14 rounded-2xl border-slate-200 focus:border-blue-500 focus:ring-8 focus:ring-blue-500/5 text-slate-900 font-bold px-6 placeholder:font-medium placeholder:text-slate-300"
+                    placeholder="Enter recipient name"
+                    className="mb-0"
                   />
-                </div>
-                <div className="space-y-3">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Contact Phone</p>
                   <Input 
+                    label="Phone Number"
                     name="phone" 
                     placeholder="+91 XXXXX XXXXX" 
                     value={address.phone} 
                     onChange={handleAddressChange} 
                     required 
-                    className="h-14 rounded-2xl border-slate-200 focus:border-blue-500 focus:ring-8 focus:ring-blue-500/5 text-slate-900 font-bold px-6 placeholder:font-medium placeholder:text-slate-300"
+                    className="mb-0"
                   />
-                </div>
-              </div>
-              
-              <div className="mb-8 space-y-3">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Detailed Address Line</p>
-                <Input 
-                  name="addressLine" 
-                  value={address.addressLine} 
-                  onChange={handleAddressChange} 
-                  required 
-                  placeholder="Street, Area, Landmark"
-                  className="h-14 rounded-2xl border-slate-200 focus:border-blue-500 focus:ring-8 focus:ring-blue-500/5 text-slate-900 font-bold px-6 placeholder:font-medium placeholder:text-slate-300"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="space-y-3">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">City</p>
+                  <div className="md:col-span-2">
+                    <Input 
+                      label="Delivery Address"
+                      name="addressLine" 
+                      value={address.addressLine} 
+                      onChange={handleAddressChange} 
+                      required 
+                      placeholder="Street address, landmark, area"
+                      className="mb-0"
+                    />
+                  </div>
                   <Input 
+                    label="City"
                     name="city" 
                     value={address.city} 
                     onChange={handleAddressChange} 
                     required 
-                    className="h-14 rounded-2xl border-slate-200 focus:border-blue-500 focus:ring-8 focus:ring-blue-500/5 text-slate-900 font-bold px-6"
+                    className="mb-0"
                   />
-                </div>
-                <div className="space-y-3">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">State</p>
                   <Input 
+                    label="State"
                     name="state" 
                     value={address.state} 
                     onChange={handleAddressChange} 
                     required 
-                    className="h-14 rounded-2xl border-slate-200 focus:border-blue-500 focus:ring-8 focus:ring-blue-500/5 text-slate-900 font-bold px-6"
+                    className="mb-0"
                   />
-                </div>
-                <div className="space-y-3">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Pincode</p>
                   <Input 
+                    label="Pincode"
                     name="pincode" 
                     value={address.pincode} 
                     onChange={handleAddressChange} 
                     required 
-                    className="h-14 rounded-2xl border-slate-200 focus:border-blue-500 focus:ring-8 focus:ring-blue-500/5 text-slate-900 font-bold px-6"
+                    className="mb-0"
                   />
                 </div>
               </div>
-            </Card>
+            </div>
 
-            <Card className="p-8 md:p-12 rounded-[2.5rem] border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white border border-slate-50 relative overflow-hidden group">
-              <div className="absolute top-0 left-0 w-2 h-full bg-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <div className="flex items-center gap-6 mb-12">
-                <div className="p-5 bg-emerald-50 rounded-2xl text-emerald-600 border border-emerald-100/50 shadow-inner">
-                  <Package size={28} />
+            {/* Order Items Card */}
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center">
+                    <Package size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">Review Order Items</h3>
+                    <p className="text-xs text-slate-500 font-medium">Verify your items before confirming</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">Order Items</h3>
-                  <p className="text-xs font-black text-slate-400 mt-1 uppercase tracking-[0.2em]">Wholesale Inventory Selection</p>
-                </div>
+                <span className="px-4 py-1.5 bg-slate-100 rounded-full text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                  {cart.length} {cart.length === 1 ? 'Item' : 'Items'}
+                </span>
               </div>
 
-              <div className="space-y-6">
+              <div className="divide-y divide-slate-100">
                 {cart.map((item, index) => (
-                  <div key={item._id || item.id || index} className="flex items-center justify-between p-6 rounded-[2rem] bg-slate-50/50 border border-slate-100/50 hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500 group/item">
-                    <div className="flex items-center gap-8">
-                      <div className="w-24 h-24 bg-white rounded-[1.5rem] flex items-center justify-center text-slate-300 border border-slate-100 overflow-hidden shadow-sm flex-shrink-0 group-hover/item:border-blue-100 transition-colors">
-                        <img 
-                          src={getProductImage(item)} 
-                          alt={item.name}
-                          className="w-full h-full object-cover group-hover/item:scale-110 transition-transform duration-700"
-                          onError={(e) => {
-                            e.target.src = "https://images.unsplash.com/photo-1586769852044-692d6e3703f0?auto=format&fit=crop&w=100&q=80";
-                          }}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <p className="font-black text-slate-900 text-xl leading-tight group-hover/item:text-blue-600 transition-colors">{item.name}</p>
-                        <div className="flex items-center gap-3">
-                          <span className="px-4 py-1.5 bg-white rounded-full text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] border border-slate-100 shadow-sm">
-                            Quantity: {item.quantity} units
-                          </span>
-                        </div>
+                  <div key={item._id || item.id || index} className="p-6 flex items-center gap-6 hover:bg-slate-50/50 transition-colors group">
+                    <div className="w-20 h-20 bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform duration-300">
+                      <img 
+                        src={getProductImage(item)} 
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.src = "https://images.unsplash.com/photo-1586769852044-692d6e3703f0?auto=format&fit=crop&w=100&q=80";
+                        }}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-slate-900 text-lg leading-tight mb-1 truncate">{item.name}</h4>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-semibold text-slate-500">Qty: <span className="text-slate-900">{item.quantity}</span></span>
+                        <div className="w-1 h-1 rounded-full bg-slate-300"></div>
+                        <span className="text-xs font-semibold text-slate-500">Price: <span className="text-slate-900">₹{item.price.toLocaleString()}</span></span>
                       </div>
                     </div>
-                    <div className="text-right space-y-1">
-                      <p className="font-black text-slate-900 text-2xl tracking-tighter">₹{(item.price * item.quantity).toLocaleString()}</p>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">₹{item.price}/unit</p>
+                    <div className="text-right">
+                      <p className="font-bold text-slate-900 text-xl tracking-tight">₹{(item.price * item.quantity).toLocaleString()}</p>
                     </div>
                   </div>
                 ))}
               </div>
-            </Card>
+            </div>
           </div>
 
-          {/* RIGHT COLUMN - 32% */}
-          <div className="lg:w-[32%]">
-            <Card className="p-8 md:p-10 rounded-[2.5rem] border-none shadow-[0_20px_50px_rgba(0,0,0,0.06)] bg-white border border-slate-50 lg:sticky lg:top-12">
-              <div className="flex items-center gap-4 mb-10">
-                <div className="p-3 bg-blue-50 rounded-xl">
-                  <FileText size={20} className="text-blue-600" />
-                </div>
-                <h3 className="text-xl font-black text-slate-900 tracking-tight uppercase tracking-[0.1em]">Order Summary</h3>
-              </div>
-              
-              <div className="space-y-6 mb-10">
-                <div className="flex justify-between items-center text-slate-500">
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em]">Gross Subtotal</span>
-                  <span className="text-xl font-bold text-slate-900">₹{subtotal.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center text-slate-500">
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em]">Tax (18% GST)</span>
-                  <span className="text-xl font-bold text-slate-900">₹{tax.toLocaleString()}</span>
-                </div>
-                <div className="pt-8 border-t-2 border-slate-100 flex justify-between items-end">
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Total Amount</span>
-                    <p className="text-4xl font-black text-blue-600 tracking-tighter leading-none">₹{total.toLocaleString()}</p>
+          {/* Sidebar: 40% width on desktop */}
+          <div className="w-full lg:w-[40%] lg:sticky lg:top-8">
+            <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.04)]">
+              {/* Header section with accent */}
+              <div className="bg-slate-900 px-10 py-10 text-white rounded-t-[2.5rem] relative overflow-hidden">
+                <div className="absolute -top-12 -right-12 w-48 h-48 bg-blue-500/20 rounded-full blur-3xl"></div>
+                <div className="relative z-10 flex items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-2xl font-black tracking-tight whitespace-nowrap">Order Summary</h3>
+                    <p className="text-blue-400 text-[11px] font-bold uppercase tracking-[0.2em] mt-2">Final Transaction Totals</p>
                   </div>
-                  <div className="bg-blue-50 px-3 py-1.5 rounded-lg text-[10px] font-black text-blue-600 uppercase tracking-widest border border-blue-100">
-                    INC. TAXES
+                  <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/10 shrink-0">
+                    <FileText size={24} className="text-blue-400" />
                   </div>
                 </div>
               </div>
               
-              <div className="mb-10 bg-slate-50/80 p-8 rounded-[2.5rem] border border-slate-100">
-                <div className="flex items-center justify-between mb-8">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Payment Method</p>
-                  <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-slate-200 shadow-sm">
-                    <Wallet size={12} className="text-blue-600" />
-                    <span className="text-[11px] font-black text-slate-700">₹{user?.availableCredit?.toLocaleString() || '0'}</span>
+              <div className="p-10">
+                <div className="space-y-5 mb-10">
+                  <div className="flex justify-between items-center group">
+                    <span className="text-sm font-semibold text-slate-500 group-hover:text-slate-900 transition-colors">Subtotal</span>
+                    <span className="text-base font-bold text-slate-900">₹{subtotal.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center group">
+                    <span className="text-sm font-semibold text-slate-500 group-hover:text-slate-900 transition-colors">Tax (18% GST)</span>
+                    <span className="text-base font-bold text-slate-900">₹{tax.toLocaleString()}</span>
+                  </div>
+                  <div className="pt-6 border-t border-slate-100 flex justify-between items-end">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Total Amount</p>
+                      <p className="text-4xl font-black text-blue-600 tracking-tighter leading-none">₹{total.toLocaleString()}</p>
+                    </div>
+                    <div className="bg-blue-50 px-3 py-1.5 rounded-lg text-[10px] font-bold text-blue-600 uppercase tracking-widest border border-blue-100/50">
+                      INC. TAXES
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  {[
-                    { id: PAYMENT_METHODS.COD, label: 'COD', icon: Truck, hidden: !codEnabled },
-                    { id: PAYMENT_METHODS.CREDIT, label: 'Credit', icon: Wallet, hidden: !creditEnabled, disabled: (user?.availableCredit || 0) < total },
-                    { id: PAYMENT_METHODS.RAZORPAY, label: 'Razorpay', icon: CreditCard },
-                    { id: PAYMENT_METHODS.ONLINE, label: 'Online', icon: ShieldCheck },
-                  ].filter(m => !m.hidden).map((method) => (
-                    <button
-                      key={method.id}
-                      disabled={method.disabled}
-                      onClick={() => setPaymentMethod(method.id)}
-                      className={`
-                        flex flex-col items-center justify-center h-28 rounded-[1.5rem] border-2 transition-all gap-3 relative overflow-hidden
-                        ${paymentMethod === method.id 
-                          ? 'border-blue-600 bg-white text-blue-600 shadow-xl shadow-blue-500/10 scale-[1.02]' 
-                          : 'border-white bg-white/60 text-slate-400 hover:border-slate-200 hover:text-slate-600'
-                        }
-                        ${method.disabled ? 'opacity-30 cursor-not-allowed grayscale bg-slate-100' : 'cursor-pointer'}
-                      `}
-                    >
-                      {paymentMethod === method.id && (
-                        <div className="absolute top-0 right-0 p-1.5 bg-blue-600 rounded-bl-xl">
-                          <CheckCircle size={10} className="text-white" />
-                        </div>
-                      )}
-                      <method.icon size={24} strokeWidth={paymentMethod === method.id ? 2.5 : 2} />
-                      <span className="text-[10px] font-black uppercase tracking-[0.2em]">{method.label}</span>
-                    </button>
-                  ))}
+                <div className="mb-10 p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4 ml-1">Payment Method</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { id: PAYMENT_METHODS.COD, label: 'COD', icon: Truck, hidden: !codEnabled },
+                      { id: PAYMENT_METHODS.CREDIT, label: 'Credit', icon: Wallet, hidden: !creditEnabled, disabled: (user?.availableCredit || 0) < total },
+                      { id: PAYMENT_METHODS.RAZORPAY, label: 'Razorpay', icon: CreditCard },
+                      { id: PAYMENT_METHODS.ONLINE, label: 'Online', icon: ShieldCheck },
+                    ].filter(m => !m.hidden).map((method) => (
+                      <button
+                        key={method.id}
+                        disabled={method.disabled}
+                        onClick={() => setPaymentMethod(method.id)}
+                        className={`
+                          flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-300 gap-2 relative group/btn
+                          ${paymentMethod === method.id 
+                            ? 'border-blue-600 bg-white text-blue-600 shadow-lg shadow-blue-500/5' 
+                            : 'border-transparent bg-white text-slate-400 hover:border-slate-200 hover:text-slate-600'
+                          }
+                          ${method.disabled ? 'opacity-30 cursor-not-allowed grayscale' : 'cursor-pointer shadow-sm'}
+                        `}
+                      >
+                        {paymentMethod === method.id && (
+                          <div className="absolute top-2 right-2">
+                            <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></div>
+                          </div>
+                        )}
+                        <method.icon size={20} strokeWidth={paymentMethod === method.id ? 2.5 : 2} />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">{method.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {paymentMethod === PAYMENT_METHODS.CREDIT && (
+                    <div className="mt-4 p-4 bg-white rounded-2xl border border-blue-100 flex items-center justify-between shadow-sm">
+                      <span className="text-[10px] font-bold text-blue-500 uppercase">Available Credit</span>
+                      <span className="text-sm font-bold text-slate-900">₹{user?.availableCredit?.toLocaleString()}</span>
+                    </div>
+                  )}
+                </div>
+
+                <button 
+                  onClick={handlePlaceOrder} 
+                  disabled={loading}
+                  className={`
+                    w-full h-16 rounded-2xl font-bold text-lg transition-all duration-300 flex items-center justify-center gap-3 relative overflow-hidden group/order
+                    ${loading 
+                      ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
+                      : 'bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-600/20 active:scale-[0.98]'
+                    }
+                  `}
+                >
+                  {loading ? (
+                    <Loader2 className="animate-spin" size={24} />
+                  ) : (
+                    <>
+                      <span>Complete Order</span>
+                      <ArrowRight size={20} strokeWidth={2.5} className="group-hover:translate-x-1 transition-transform" />
+                    </>
+                  )}
+                </button>
+
+                <div className="mt-8 pt-8 border-t border-slate-100 space-y-4">
+                  <div className="flex items-center gap-3 text-slate-400">
+                    <ShieldCheck size={16} className="text-emerald-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest">Enterprise Grade Security</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-relaxed font-medium">
+                    Your transaction is encrypted. By confirming, you agree to our <span className="text-blue-600 cursor-pointer hover:underline font-bold">Terms of Service</span>.
+                  </p>
                 </div>
               </div>
-
-              <Button 
-                onClick={handlePlaceOrder} 
-                className="w-full h-20 rounded-[1.5rem] bg-blue-600 hover:bg-blue-700 text-white font-black text-xl shadow-[0_20px_40px_rgba(37,99,235,0.25)] transition-all transform hover:-translate-y-1 active:translate-y-0 flex items-center justify-center gap-4 uppercase tracking-[0.2em] group"
-                loading={loading}
-                disabled={loading}
-              >
-                Place Secure Order
-                <ArrowRight size={24} className="group-hover:translate-x-2 transition-transform duration-300" />
-              </Button>
-              
-              <div className="mt-8 p-6 bg-emerald-50/40 rounded-2xl flex items-start gap-4 border border-emerald-100/50">
-                <ShieldCheck size={20} className="text-emerald-600 mt-0.5 flex-shrink-0" />
-                <p className="text-[11px] font-bold text-emerald-800 leading-relaxed uppercase tracking-tight">
-                  Your transaction is protected by enterprise-grade security and wholesale buyer protection policies.
-                </p>
-              </div>
-            </Card>
+            </div>
           </div>
         </div>
       </div>

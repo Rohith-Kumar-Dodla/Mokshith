@@ -14,7 +14,8 @@ import {
   QrCode,
   Smartphone,
   Banknote,
-  Lock
+  Lock,
+  Loader2
 } from 'lucide-react';
 import { paymentService } from '../services/paymentService.js';
 import { creditService } from '../../credit/services/creditService.js';
@@ -95,7 +96,9 @@ const PaymentPage = () => {
       setCredit(creditData);
 
       // Pre-select payment method
-      if (creditData?.availableCredit >= orderData?.totalAmount) {
+      if (orderData.paymentMethod === 'COD') {
+        setPaymentMethod('cod');
+      } else if (creditData?.availableCredit >= orderData?.totalAmount) {
         setPaymentMethod('credit');
       } else if (creditData?.availableCredit > 0) {
         setPaymentMethod('hybrid');
@@ -162,6 +165,21 @@ const PaymentPage = () => {
         paymentMethod,
         totalAmount: order?.totalAmount
       });
+
+      // 🔥 SCENARIO 0: COD PAYMENT
+      if (paymentMethod === 'cod') {
+        console.log('🚚 Processing COD order...');
+        await paymentService.hybridPayment(
+          orderId,
+          false, // useCredit
+          order.totalAmount,
+          'COD' // Pass paymentMethod explicitly
+        );
+        dispatch(clearCart());
+        setPaymentSuccess(true);
+        setProcessing(false);
+        return;
+      }
 
       // 🔥 CALL HYBRID PAYMENT API
       const { data: hybridRes } = await paymentService.hybridPayment(
@@ -423,62 +441,91 @@ const PaymentPage = () => {
   );
 
   if (paymentSuccess) {
+    const isCOD = order?.paymentMethod === 'COD' || paymentMethod === 'cod';
+
     return (
-      <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 font-sans">
-        <div className="max-w-xl mx-auto">
-          <div className="bg-white rounded-[2rem] shadow-2xl shadow-blue-100/50 overflow-hidden border border-blue-50">
-            <div className="bg-blue-600 px-8 py-12 text-center relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
-              <div className="relative inline-flex items-center justify-center w-24 h-24 bg-white rounded-full mb-6 shadow-xl">
-                <CheckCircle className="text-blue-600" size={48} />
+      <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 font-sans">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-blue-100/30 overflow-hidden border border-slate-100">
+            <div className="bg-slate-900 px-8 py-16 text-center relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/10 rounded-full -ml-32 -mb-32 blur-3xl"></div>
+              
+              <div className="relative inline-flex items-center justify-center w-28 h-28 bg-white/10 rounded-3xl mb-8 backdrop-blur-md border border-white/20 shadow-2xl">
+                <CheckCircle className="text-emerald-400" size={56} />
               </div>
-              <h2 className="relative text-3xl font-black text-white mb-2 tracking-tight">Order Confirmed!</h2>
-              <p className="relative text-blue-100 text-lg font-medium opacity-90">Order #{orderId.slice(-8).toUpperCase()}</p>
+              <h2 className="relative text-4xl font-black text-white mb-3 tracking-tight uppercase">Order Confirmed!</h2>
+              <div className="relative inline-block px-4 py-2 bg-white/10 rounded-xl backdrop-blur-sm border border-white/10">
+                <p className="text-blue-400 text-sm font-black tracking-widest uppercase">Reference ID: #{orderId.slice(-8).toUpperCase()}</p>
+              </div>
             </div>
-            <div className="p-8 sm:p-10">
-              <div className="space-y-8">
-                <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Payment Status</span>
-                    <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-black uppercase tracking-widest">Paid</span>
+
+            <div className="p-10 md:p-12">
+              <div className="space-y-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100 space-y-4">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Payment Status</p>
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg ${isCOD ? 'bg-orange-100 text-orange-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                        {isCOD ? <Truck size={20} /> : <CheckCircle size={20} />}
+                      </div>
+                      <span className={`text-sm font-black uppercase tracking-wider ${isCOD ? 'text-orange-600' : 'text-emerald-600'}`}>
+                        {isCOD ? 'Pay on Delivery' : 'Payment Successful'}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm font-bold text-gray-500 uppercase tracking-wider">Delivery Partner</span>
-                    <div className="flex items-center gap-2">
-                      {deliveryAssigned ? (
-                        <span className="text-blue-600 font-black text-sm flex items-center gap-1.5 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100">
-                          <Truck size={14} /> PARTNER ASSIGNED
-                        </span>
-                      ) : (
-                        <span className="text-orange-500 font-black text-sm flex items-center gap-1.5 bg-orange-50 px-3 py-1.5 rounded-lg border border-orange-100">
-                          ASSIGNING AGENT...
-                        </span>
-                      )}
+
+                  <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100 space-y-4">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Logistics Status</p>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
+                        <Package size={20} />
+                      </div>
+                      <span className="text-sm font-black text-blue-600 uppercase tracking-wider">
+                        {deliveryAssigned ? 'Partner Assigned' : 'Preparing Order'}
+                      </span>
                     </div>
                   </div>
                 </div>
-                <div>
-                  <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <FileText size={16} className="text-blue-600" /> Order Summary
+
+                <div className="border-t border-slate-100 pt-10">
+                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
+                    <FileText size={18} className="text-blue-600" /> Transaction Summary
                   </h3>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center py-3 border-b border-gray-50">
-                      <span className="text-gray-600 font-medium">Subtotal</span>
-                      <span className="text-gray-900 font-bold">₹{(order.totalAmount / 1.18).toLocaleString()}</span>
+                  <div className="space-y-4 bg-slate-50/50 p-8 rounded-3xl border border-slate-100">
+                    <div className="flex justify-between items-center text-slate-500">
+                      <span className="text-sm font-bold uppercase tracking-wider">Net Amount</span>
+                      <span className="text-lg font-bold">₹{(order.totalAmount / 1.18).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                     </div>
-                    <div className="flex justify-between items-center pt-2">
-                      <span className="text-gray-900 font-black text-lg">Total Amount</span>
-                      <span className="text-2xl font-black text-blue-600">₹{order.totalAmount.toLocaleString()}</span>
+                    <div className="flex justify-between items-center text-slate-500">
+                      <span className="text-sm font-bold uppercase tracking-wider">Taxes (18% GST)</span>
+                      <span className="text-lg font-bold">₹{(order.totalAmount - (order.totalAmount / 1.18)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="pt-6 mt-4 border-t border-slate-200 flex justify-between items-end">
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Final Amount Paid</p>
+                        <p className="text-4xl font-black text-blue-600 tracking-tighter leading-none">₹{order.totalAmount.toLocaleString()}</p>
+                      </div>
+                      <div className="bg-blue-100 px-3 py-1.5 rounded-lg text-[10px] font-black text-blue-600 uppercase tracking-widest border border-blue-200">
+                        INVOICE ISSUED
+                      </div>
                     </div>
                   </div>
                 </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
-                  <Button variant="secondary" onClick={handleDownloadInvoice} className="rounded-xl h-14 font-black border-2 border-gray-200">
-                    <FileText size={18} /> INVOICE
-                  </Button>
-                  <Button onClick={() => navigate(routes.ORDERS || '/orders')} className="rounded-xl h-14 font-black bg-blue-600 text-white">
-                    MY ORDERS <ArrowRight size={18} />
-                  </Button>
+                  <button 
+                    onClick={handleDownloadInvoice} 
+                    className="h-16 rounded-2xl font-black text-xs tracking-widest border-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition-all uppercase flex items-center justify-center gap-3"
+                  >
+                    <FileText size={20} /> Download Invoice
+                  </button>
+                  <button 
+                    onClick={() => navigate(routes.ORDERS || '/orders')} 
+                    className="h-16 rounded-2xl font-black text-xs tracking-widest bg-blue-600 text-white shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition-all uppercase flex items-center justify-center gap-3"
+                  >
+                    Go to My Orders <ArrowRight size={20} />
+                  </button>
                 </div>
               </div>
             </div>
@@ -491,94 +538,143 @@ const PaymentPage = () => {
   return (
     <div className="bg-slate-50 min-h-screen py-8 md:py-16 px-4 md:px-8 lg:px-12">
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center gap-3 mb-8 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-2">
-          <span className="hover:text-blue-600 cursor-pointer transition-colors" onClick={() => navigate('/')}>Home</span>
-          <ChevronRight size={12} className="text-slate-300" />
-          <span className="text-blue-600">Payment</span>
-        </div>
+        {/* Navigation & Progress */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-8">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">
+              <span className="hover:text-blue-600 cursor-pointer transition-colors" onClick={() => navigate('/')}>Home</span>
+              <ChevronRight size={12} className="text-slate-300" />
+              <span className="text-blue-600">Secure Payment</span>
+            </div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Complete Transaction</h1>
+          </div>
 
-        <div className="mb-16">
-          <div className="flex items-center justify-between max-w-3xl mx-auto relative">
-            <div className="absolute top-5 left-0 right-0 h-[2px] bg-slate-200 -z-0 rounded-full"></div>
-            {['Cart', 'Checkout', 'Payment', 'Delivery'].map((step, idx) => (
-              <div key={step} className="flex flex-col items-center relative z-10 bg-slate-50 px-6">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-500 ${
-                  idx < 2 ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-100' : 
-                  idx === 2 ? 'bg-blue-600 border-blue-600 text-white shadow-xl shadow-blue-100 ring-4 ring-blue-50' : 
-                  'bg-white border-slate-200 text-slate-400'
-                }`}>
-                  {idx < 2 ? <CheckCircle size={20} /> : <span className="font-black text-sm">{idx + 1}</span>}
-                </div>
-                <span className={`mt-3 text-[10px] font-black uppercase tracking-widest ${idx === 2 ? 'text-blue-600' : 'text-slate-400'}`}>{step}</span>
+          {/* Professional Stepper */}
+          <div className="flex items-center bg-white px-8 py-4 rounded-3xl border border-slate-200 shadow-sm">
+            <div className="flex items-center">
+              <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-emerald-500 text-white shadow-lg shadow-emerald-100 ring-4 ring-emerald-50">
+                <CheckCircle size={16} />
               </div>
-            ))}
+              <div className="ml-4 mr-6">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Step 2</p>
+                <p className="text-[11px] font-black text-slate-900 uppercase">Checkout</p>
+              </div>
+            </div>
+            <div className="h-10 w-px bg-slate-100 mx-2"></div>
+            <div className="flex items-center">
+              <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-100 ring-4 ring-blue-50">
+                <span className="text-xs font-black">3</span>
+              </div>
+              <div className="ml-4 mr-6">
+                <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest leading-none mb-1">Step 3</p>
+                <p className="text-[11px] font-black text-slate-900 uppercase">Payment</p>
+              </div>
+            </div>
+            <div className="h-10 w-px bg-slate-100 mx-2"></div>
+            <div className="flex items-center opacity-40">
+              <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-slate-100 text-slate-400 border border-slate-200">
+                <span className="text-xs font-black">4</span>
+              </div>
+              <div className="ml-4">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Step 4</p>
+                <p className="text-[11px] font-black text-slate-900 uppercase">Delivery</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-          <div className="lg:col-span-7 space-y-8 md:space-y-10">
-            <div className="flex items-center gap-4 mb-2 px-2">
-              <div className="p-3 bg-blue-50 rounded-xl text-blue-600 flex-shrink-0">
-                <ShieldCheck size={28} />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+          <div className="lg:col-span-7 space-y-10">
+            <div className="flex items-center gap-5 px-2">
+              <div className="w-14 h-14 bg-blue-600 rounded-2xl text-white flex items-center justify-center shadow-xl shadow-blue-100">
+                <CreditCard size={28} />
               </div>
-              <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-tight uppercase">Select Payment Method</h2>
+              <div>
+                <h2 className="text-3xl font-black text-slate-900 tracking-tight uppercase leading-tight">Payment Method</h2>
+                <p className="text-slate-500 font-bold text-sm">Select your preferred business settlement method</p>
+              </div>
             </div>
 
-            {/* 🔥 ENHANCED PAYMENT METHODS */}
             <div className="grid grid-cols-1 gap-6">
+              {/* COD OPTION */}
+              {order.paymentMethod === 'COD' && (
+                <div 
+                  onClick={() => setPaymentMethod('cod')} 
+                  className={`group border-2 rounded-[2.5rem] p-8 cursor-pointer transition-all duration-300 relative overflow-hidden ${
+                    paymentMethod === 'cod' 
+                      ? 'border-blue-600 bg-white shadow-2xl shadow-blue-500/10' 
+                      : 'border-white bg-white shadow-sm hover:border-slate-200'
+                  }`}
+                >
+                  <div className="flex items-start gap-8">
+                    <div className={`p-6 rounded-3xl transition-all duration-300 ${
+                      paymentMethod === 'cod' ? 'bg-blue-600 text-white shadow-2xl scale-110' : 'bg-slate-50 text-slate-400 group-hover:text-blue-500'
+                    }`}>
+                      <Truck size={32} />
+                    </div>
+                    <div className="flex-grow space-y-5">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Cash on Delivery</h3>
+                          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">Pay upon successful delivery</p>
+                        </div>
+                        {paymentMethod === 'cod' && (
+                          <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-blue-100 ring-4 ring-blue-50">
+                            <CheckCircle size={14} />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="px-4 py-1.5 bg-emerald-50 text-emerald-600 text-[10px] font-black rounded-xl border border-emerald-100 uppercase tracking-widest">Available</span>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No extra convenience fee</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* ONLINE PAYMENT OPTION */}
               <div 
                 onClick={() => setPaymentMethod('online')} 
-                className={`group border-2 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 cursor-pointer transition-all duration-300 ${
+                className={`group border-2 rounded-[2.5rem] p-8 cursor-pointer transition-all duration-300 relative overflow-hidden ${
                   paymentMethod === 'online' 
                     ? 'border-blue-600 bg-white shadow-2xl shadow-blue-500/10' 
                     : 'border-white bg-white shadow-sm hover:border-slate-200'
                 }`}
               >
-                <div className="flex flex-col md:flex-row items-start gap-6">
-                  <div className={`p-5 rounded-2xl transition-colors duration-300 hidden md:block ${
-                    paymentMethod === 'online' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 group-hover:text-blue-500'
+                <div className="flex items-start gap-8">
+                  <div className={`p-6 rounded-3xl transition-all duration-300 ${
+                    paymentMethod === 'online' ? 'bg-blue-600 text-white shadow-2xl scale-110' : 'bg-slate-50 text-slate-400 group-hover:text-blue-500'
                   }`}>
                     <CreditCard size={32} />
                   </div>
-                  <div className="flex-grow w-full space-y-5">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div className="flex items-center gap-4 md:block">
-                        <div className={`p-3 rounded-xl md:hidden ${
-                          paymentMethod === 'online' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400'
-                        }`}>
-                          <CreditCard size={20} />
-                        </div>
-                        <div>
-                          <h3 className="text-lg md:text-xl font-black text-slate-900 uppercase tracking-tight">Online Payment</h3>
-                          <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Instant Settlement via Secure Gateway</p>
-                        </div>
+                  <div className="flex-grow space-y-5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Digital Settlement</h3>
+                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">Secure Online Gateway (UPI, Cards, NetBanking)</p>
                       </div>
-                      <div className="flex gap-2 flex-wrap">
-                        <span className="px-3 py-1 bg-purple-50 text-purple-600 text-[10px] font-black rounded-lg border border-purple-100 uppercase tracking-widest whitespace-nowrap">UPI</span>
-                        <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded-lg border border-blue-100 uppercase tracking-widest whitespace-nowrap">Cards</span>
-                      </div>
+                      {paymentMethod === 'online' && (
+                        <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-blue-100 ring-4 ring-blue-50">
+                          <CheckCircle size={14} />
+                        </div>
+                      )}
                     </div>
                     
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6 pt-2">
+                    <div className="grid grid-cols-2 gap-y-4 gap-x-8 pt-2">
                       {[
-                        { icon: Smartphone, label: 'UPI (GPay, PhonePe)', color: 'text-purple-500' },
+                        { icon: Smartphone, label: 'Unified Payments (UPI)', color: 'text-purple-500' },
                         { icon: CreditCard, label: 'Credit / Debit Cards', color: 'text-blue-500' },
-                        { icon: Banknote, label: 'Net Banking', color: 'text-emerald-500' },
+                        { icon: Banknote, label: 'Corporate Banking', color: 'text-emerald-500' },
                         { icon: Wallet, label: 'Digital Wallets', color: 'text-orange-500' }
                       ].map((item, i) => (
-                        <div key={i} className="flex items-center gap-3">
-                          <div className={`p-1.5 rounded-lg bg-slate-50 ${item.color}`}>
-                            <item.icon size={14} />
+                        <div key={i} className="flex items-center gap-4">
+                          <div className={`p-2 rounded-xl bg-slate-50 ${item.color} shadow-sm border border-slate-100`}>
+                            <item.icon size={16} />
                           </div>
-                          <span className="text-[10px] md:text-[11px] font-bold text-slate-600 uppercase tracking-tight">{item.label}</span>
+                          <span className="text-[11px] font-black text-slate-600 uppercase tracking-tight">{item.label}</span>
                         </div>
                       ))}
-                    </div>
-
-                    <div className="pt-4 border-t border-slate-50 flex items-center gap-2 text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                      <Lock size={12} className="text-emerald-500 flex-shrink-0" />
-                      Secured by Razorpay Enterprise Security
                     </div>
                   </div>
                 </div>
@@ -588,53 +684,49 @@ const PaymentPage = () => {
               {credit?.availableCredit > 0 && (
                 <div 
                   onClick={() => setPaymentMethod(credit.availableCredit >= order.totalAmount ? 'credit' : 'hybrid')} 
-                  className={`group border-2 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 cursor-pointer transition-all duration-300 ${
-                    paymentMethod !== 'online' 
+                  className={`group border-2 rounded-[2.5rem] p-8 cursor-pointer transition-all duration-300 relative overflow-hidden ${
+                    ['credit', 'hybrid'].includes(paymentMethod)
                       ? 'border-blue-600 bg-white shadow-2xl shadow-blue-500/10' 
                       : 'border-white bg-white shadow-sm hover:border-slate-200'
                   }`}
                 >
-                  <div className="flex flex-col md:flex-row items-start gap-6">
-                    <div className={`p-5 rounded-2xl transition-colors duration-300 hidden md:block ${
-                      paymentMethod !== 'online' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 group-hover:text-emerald-500'
+                  <div className="flex items-start gap-8">
+                    <div className={`p-6 rounded-3xl transition-all duration-300 ${
+                      ['credit', 'hybrid'].includes(paymentMethod) ? 'bg-blue-600 text-white shadow-2xl scale-110' : 'bg-slate-50 text-slate-400 group-hover:text-emerald-500'
                     }`}>
                       <Wallet size={32} />
                     </div>
-                    <div className="flex-grow w-full space-y-5">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-4 md:block">
-                          <div className={`p-3 rounded-xl md:hidden ${
-                            paymentMethod !== 'online' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400'
-                          }`}>
-                            <Wallet size={20} />
-                          </div>
-                          <div>
-                            <h3 className="text-lg md:text-xl font-black text-slate-900 uppercase tracking-tight">Business Credit</h3>
-                            <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Utilize Your Available Credit Line</p>
-                          </div>
+                    <div className="flex-grow space-y-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Business Credit Line</h3>
+                          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">Utilize approved enterprise credit</p>
                         </div>
-                        {credit.availableCredit >= order.totalAmount && (
-                          <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-black rounded-lg border border-emerald-100 uppercase tracking-widest whitespace-nowrap self-start sm:self-center">Full Coverage</span>
+                        {['credit', 'hybrid'].includes(paymentMethod) && (
+                          <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-blue-100 ring-4 ring-blue-50">
+                            <CheckCircle size={14} />
+                          </div>
                         )}
                       </div>
                       
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-50 p-6 rounded-2xl border border-slate-100 gap-6">
-                        <div className="space-y-1">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Available Balance</p>
-                          <p className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-none">₹{credit.availableCredit.toLocaleString()}</p>
+                      <div className="flex items-center justify-between bg-slate-50 p-8 rounded-3xl border border-slate-100 group-hover:bg-white group-hover:border-blue-100 transition-all">
+                        <div className="space-y-2">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Available Limit</p>
+                          <p className="text-4xl font-black text-slate-900 tracking-tighter">₹{credit.availableCredit.toLocaleString()}</p>
                         </div>
-                        <div className="hidden sm:block h-12 w-[1px] bg-slate-200"></div>
-                        <div className="sm:text-right space-y-1">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</p>
-                          <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-black rounded-full uppercase">Approved</span>
+                        <div className="text-right space-y-2">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Credit Status</p>
+                          <span className="px-5 py-2 bg-emerald-500 text-white text-[10px] font-black rounded-xl uppercase tracking-widest shadow-lg shadow-emerald-100">Approved</span>
                         </div>
                       </div>
 
                       {credit.availableCredit < order.totalAmount && (
-                        <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 flex items-center gap-3">
-                          <Info size={16} className="text-blue-600 flex-shrink-0" />
-                          <p className="text-[10px] md:text-[11px] font-bold text-blue-700 leading-relaxed">
-                            Combine your credit balance with online payment for this transaction.
+                        <div className="p-5 bg-blue-50 rounded-2xl border border-blue-100 flex items-center gap-4">
+                          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-sm border border-blue-50">
+                            <Info size={20} />
+                          </div>
+                          <p className="text-[11px] font-black text-blue-700 leading-relaxed uppercase tracking-tight">
+                            Credit insufficient for full total. Remaining balance will be settled online.
                           </p>
                         </div>
                       )}
@@ -643,96 +735,108 @@ const PaymentPage = () => {
                 </div>
               )}
 
-              {/* SECURITY BADGE */}
-              <div className="flex flex-col sm:flex-row items-center gap-4 p-5 md:p-6 bg-slate-900 rounded-[1.5rem] md:rounded-[2rem] border border-slate-800 shadow-xl">
-                <div className="p-3 bg-blue-600 rounded-xl text-white flex-shrink-0">
-                  <Lock size={20} />
-                </div>
-                <div className="space-y-1 text-center sm:text-left">
-                  <p className="text-xs font-black text-white uppercase tracking-widest">Enterprise Security Protocol</p>
-                  <p className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">PCI-DSS Compliant • 256-bit SSL Encryption • Identity Verified</p>
+              {/* SECURITY PROTOCOL */}
+              <div className="p-8 bg-slate-900 rounded-[2.5rem] border border-slate-800 shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+                <div className="flex flex-col sm:flex-row items-center gap-6 relative z-10">
+                  <div className="p-4 bg-white/10 rounded-2xl text-blue-400 backdrop-blur-md border border-white/10 group-hover:scale-110 transition-transform">
+                    <Lock size={28} />
+                  </div>
+                  <div className="space-y-2 text-center sm:text-left">
+                    <p className="text-sm font-black text-white uppercase tracking-[0.2em]">Enterprise Security Protocol</p>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">
+                      PCI-DSS Compliant Infrastructure • 256-bit AES Encryption • Zero-Trust Payment Architecture
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-            {error && (
-              <div className="p-6 bg-rose-50 text-rose-700 rounded-2xl border-2 border-rose-100 flex items-center gap-4 animate-pulse">
-                <Info size={24} className="flex-shrink-0" />
-                <p className="font-bold text-xs md:text-sm uppercase tracking-tight">{error}</p>
-              </div>
-            )}
           </div>
 
-          <div className="lg:col-span-5 lg:sticky lg:top-12 mt-8 lg:mt-0">
-            <div className="bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.06)] overflow-hidden border border-slate-50">
-              <div className="bg-slate-900 p-8 md:p-10 text-white relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full -mr-16 -mt-16 blur-3xl"></div>
-                <div className="relative z-10 flex items-center justify-between pt-2">
-                  <div className="space-y-2">
-                    <h2 className="text-2xl md:text-3xl font-black tracking-tight uppercase leading-tight">Order Summary</h2>
-                    <p className="text-slate-400 text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em]">Transaction ID: #{orderId.slice(-8).toUpperCase()}</p>
+          <div className="lg:col-span-5 lg:sticky lg:top-12">
+            <div className="bg-white rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.08)] overflow-hidden border border-slate-100">
+              <div className="bg-slate-900 p-10 md:p-12 text-white relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+                <div className="relative z-10 flex items-center justify-between">
+                  <div className="space-y-3">
+                    <h2 className="text-3xl font-black tracking-tight uppercase leading-tight">Order Summary</h2>
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 rounded-lg backdrop-blur-sm border border-white/10">
+                      <QrCode size={14} className="text-blue-400" />
+                      <p className="text-slate-300 text-[10px] font-black uppercase tracking-[0.2em]">TXN: #{orderId.slice(-8).toUpperCase()}</p>
+                    </div>
                   </div>
-                  <div className="p-3 bg-white/10 rounded-xl backdrop-blur-md">
-                    <FileText size={24} className="text-blue-400" />
+                  <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/10">
+                    <FileText size={32} className="text-blue-400" />
                   </div>
                 </div>
               </div>
 
-              <div className="p-8 md:p-10 space-y-10">
-                <div className="space-y-6">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gross Subtotal</span>
-                    <span className="text-xl md:text-2xl font-bold text-slate-900">₹{(order.totalAmount / 1.18).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <div className="p-10 md:p-12 space-y-12">
+                <div className="space-y-6 bg-slate-50 p-8 rounded-3xl border border-slate-100">
+                  <div className="flex justify-between items-center group">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-slate-600 transition-colors">Net Subtotal</span>
+                    <span className="text-2xl font-bold text-slate-900">₹{(order.totalAmount / 1.18).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Logistics / Delivery</span>
-                      <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[8px] font-black rounded uppercase">Standard</span>
+                  <div className="flex justify-between items-center group">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-slate-600 transition-colors">Wholesale Logistics</span>
+                      <span className="px-3 py-1 bg-emerald-500 text-white text-[9px] font-black rounded-lg uppercase tracking-widest shadow-lg shadow-emerald-100">Free</span>
                     </div>
-                    <span className="text-sm md:text-base font-black text-emerald-600 uppercase tracking-widest">Free Delivery</span>
+                    <span className="text-sm font-black text-emerald-600 uppercase tracking-widest">₹0.00</span>
                   </div>
                 </div>
 
-                <div className="border-t-2 border-dashed border-slate-100 pt-10">
+                <div className="pt-2">
                   <div className="flex flex-col gap-6">
                     <div className="space-y-3">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Final Payable Amount</p>
-                      <p className="text-5xl md:text-6xl font-black text-blue-600 tracking-tighter leading-[1.1]">₹{order.totalAmount.toLocaleString()}</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">Final Amount Payable</p>
+                      <p className="text-6xl md:text-7xl font-black text-blue-600 tracking-tighter leading-none">₹{order.totalAmount.toLocaleString()}</p>
                     </div>
-                    <div className="self-start bg-blue-50 px-4 py-2 rounded-xl text-[10px] font-black text-blue-600 uppercase tracking-[0.1em] border border-blue-100 shadow-sm">
-                      Including 18% GST Taxes
+                    <div className="self-start bg-blue-600 text-white px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.1em] shadow-xl shadow-blue-100">
+                      Including 18% Corporate GST
                     </div>
                   </div>
                 </div>
 
-                {paymentMethod !== 'online' && (
-                  <div className="bg-slate-50 rounded-[1.5rem] md:rounded-3xl p-5 md:p-6 border border-slate-100 space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Credit Deduction</span>
-                      <span className="text-base md:text-lg font-black text-purple-600">-₹{creditUsed.toLocaleString()}</span>
+                {paymentMethod !== 'online' && paymentMethod !== 'cod' && (
+                  <div className="bg-slate-900 rounded-3xl p-8 border border-slate-800 shadow-2xl space-y-5 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+                    <div className="flex justify-between items-center relative z-10">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Credit Deduction</span>
+                      <span className="text-xl font-black text-emerald-400">-₹{creditUsed.toLocaleString()}</span>
                     </div>
                     {onlinePayable > 0 && (
-                      <div className="flex justify-between items-center pt-4 border-t border-slate-200">
-                        <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Remaining Online</span>
-                        <span className="text-xl md:text-2xl font-black text-blue-600 tracking-tight">₹{onlinePayable.toLocaleString()}</span>
+                      <div className="flex justify-between items-center pt-5 border-t border-white/10 relative z-10">
+                        <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Balance Online</span>
+                        <span className="text-3xl font-black text-white tracking-tight">₹{onlinePayable.toLocaleString()}</span>
                       </div>
                     )}
                   </div>
                 )}
 
-                <div className="space-y-4">
-                  <Button 
-                    fullWidth 
+                <div className="space-y-6">
+                  <button 
                     onClick={handlePayment} 
-                    loading={processing} 
-                    className="h-16 md:h-20 text-lg md:text-xl font-black rounded-2xl bg-blue-600 hover:bg-blue-700 text-white shadow-[0_20px_40px_rgba(37,99,235,0.25)] transition-all transform hover:-translate-y-1 active:translate-y-0 uppercase tracking-[0.2em] group"
+                    disabled={processing} 
+                    className={`
+                      w-full h-20 text-xl font-black rounded-3xl transition-all duration-300 transform active:scale-[0.98] uppercase tracking-[0.3em] flex items-center justify-center gap-4 group relative overflow-hidden
+                      ${processing 
+                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
+                        : 'bg-blue-600 text-white shadow-[0_25px_50px_rgba(37,99,235,0.3)] hover:bg-blue-700 hover:shadow-[0_30px_60px_rgba(37,99,235,0.4)]'
+                      }
+                    `}
                   >
-                    <span className="flex items-center justify-center gap-3">
-                      {onlinePayable > 0 ? 'Initialize Payment' : 'Confirm Order'}
-                      <ArrowRight size={24} className="group-hover:translate-x-2 transition-transform" />
-                    </span>
-                  </Button>
-                  <p className="text-center text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed px-2 md:px-4">
-                    By confirming, you agree to Mokshith Enterprises' wholesale purchase terms and standard business logistics agreement.
+                    {processing ? (
+                      <Loader2 className="animate-spin" size={32} />
+                    ) : (
+                      <>
+                        {onlinePayable > 0 ? 'Secure Payment' : 'Confirm Order'}
+                        <ArrowRight size={28} className="group-hover:translate-x-2 transition-transform" />
+                      </>
+                    )}
+                  </button>
+                  <p className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed px-6">
+                    By completing this transaction, you authorize Mokshith Enterprises to process your order under wholesale commerce regulations.
                   </p>
                 </div>
               </div>

@@ -114,16 +114,16 @@ const OrdersPage = () => {
   const filteredOrders = Array.isArray(orders) ? orders.filter(order => order.status !== ORDER_STATUS.FAILED) : [];
 
   return (
-    <div className="min-h-screen bg-gray-50/50 py-12">
-      <div className="max-w-5xl mx-auto px-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
-          <div>
-            <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-2">Order Management</h1>
-            <p className="text-gray-500 font-medium">View history, download invoices, and manage your inventory purchases.</p>
+    <div className="min-h-screen bg-slate-50 py-10 flex justify-center">
+      <div className="w-full max-w-7xl px-4 md:px-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
+          <div className="space-y-2">
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight uppercase">Order History</h1>
+            <p className="text-slate-500 font-bold text-sm uppercase tracking-widest">Manage your enterprise inventory transactions</p>
           </div>
           <Button 
             onClick={() => navigate(routes.PRODUCTS)} 
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-blue-200 transition-all"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-black text-xs tracking-[0.2em] flex items-center gap-3 shadow-xl shadow-blue-100 transition-all uppercase active:scale-95"
           >
             <ShoppingBag size={20} />
             New Purchase
@@ -131,97 +131,101 @@ const OrdersPage = () => {
         </div>
 
         {filteredOrders.length === 0 ? (
-          <Card className="text-center py-20 bg-white border-2 border-dashed border-gray-200 rounded-[2.5rem]">
-            <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Package size={40} className="text-gray-300" />
+          <Card className="text-center py-24 bg-white border border-slate-200 rounded-[2.5rem] shadow-sm">
+            <div className="w-24 h-24 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-slate-100 shadow-inner">
+              <Package size={40} className="text-slate-300" />
             </div>
-            <p className="text-gray-400 font-bold uppercase tracking-widest mb-6">You haven't placed any orders yet.</p>
-            <Button onClick={() => navigate(routes.PRODUCTS)}>Start Shopping</Button>
+            <p className="text-slate-400 font-black uppercase tracking-[0.2em] mb-8 text-sm">No transaction history found</p>
+            <Button 
+              onClick={() => navigate(routes.PRODUCTS)}
+              className="bg-slate-900 text-white px-10 py-4 rounded-xl font-black text-xs tracking-widest uppercase"
+            >
+              Start Procurement
+            </Button>
           </Card>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {filteredOrders.map((order) => (
               <Card 
                 key={order._id || order.id} 
-                className="bg-white border-gray-100 hover:shadow-2xl hover:shadow-blue-500/5 transition-all duration-500 rounded-[2.5rem] overflow-hidden"
+                className="bg-white border-slate-200 hover:shadow-2xl hover:shadow-blue-500/5 transition-all duration-500 rounded-[2rem] overflow-hidden shadow-sm"
               >
-                {/* Order Header */}
-                <div className="p-6 md:p-8 border-b border-gray-50 bg-gray-50/30">
-                  <div className="flex flex-col md:flex-row justify-between gap-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs font-black text-gray-400 uppercase tracking-widest bg-white px-3 py-1 rounded-lg border border-gray-100">
-                          #{ (order._id || order.id)?.slice(-8).toUpperCase() }
-                        </span>
-                        <OrderStatusBadge status={order.status} />
-                      </div>
-                      <div className="flex items-center gap-4 text-sm font-medium text-gray-500">
-                        <span className="flex items-center gap-1.5">
-                          <Calendar size={14} />
-                          {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <Clock size={14} />
-                          {new Date(order.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                {/* Order Header: Professional & Robust */}
+                <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div className="bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Reference ID</p>
+                      <p className="text-sm font-black text-slate-900 uppercase">#{ (order._id || order.id)?.slice(-8).toUpperCase() }</p>
+                    </div>
+                    <OrderStatusBadge status={order.status} />
+                  </div>
+
+                  <div className="flex items-center gap-6">
+                    <div className="text-right hidden sm:block">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Date Authenticated</p>
+                      <div className="flex items-center gap-2 text-slate-900 font-bold text-xs">
+                        <Calendar size={14} className="text-blue-600" />
+                        {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </div>
                     </div>
-                    <div className="md:text-right flex flex-row md:flex-col justify-between items-center md:items-end gap-2">
-                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Investment</p>
-                      <p className="text-2xl font-black text-blue-600 tracking-tight">
+                    <div className="h-10 w-px bg-slate-200 hidden sm:block"></div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Final Valuation</p>
+                      <p className="text-2xl font-black text-blue-600 tracking-tighter">
                         ₹{(order.totalAmount || 0).toLocaleString()}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Items Preview */}
-                <div className="p-6 md:p-8">
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {(order.items || []).map((item, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-4 bg-gray-50/50 rounded-2xl border border-gray-100/50 group hover:bg-white hover:border-blue-100 transition-all">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-sm border border-gray-100 group-hover:scale-110 transition-transform">
-                              <Package size={20} />
-                            </div>
-                            <div>
-                              <p className="text-sm font-bold text-gray-800">{item.name}</p>
-                              <p className="text-xs font-medium text-gray-400">Qty: {item.quantity} units</p>
-                            </div>
+                {/* Items Preview: Clean Grid */}
+                <div className="p-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    {(order.items || []).slice(0, 4).map((item, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-white hover:border-blue-100 transition-all">
+                        <div className="flex items-center gap-4 min-w-0">
+                          <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-sm border border-slate-100 group-hover:scale-110 transition-transform flex-shrink-0">
+                            <Package size={22} />
                           </div>
-                          <p className="text-sm font-black text-gray-700">₹{(item.price * item.quantity).toLocaleString()}</p>
+                          <div className="min-w-0">
+                            <p className="text-sm font-black text-slate-900 truncate uppercase tracking-tight">{item.name}</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Qty: {item.quantity} units</p>
+                          </div>
                         </div>
-                      ))}
-                    </div>
+                        <p className="text-xs font-black text-slate-900">₹{(item.price * item.quantity).toLocaleString()}</p>
+                      </div>
+                    ))}
+                    {order.items?.length > 4 && (
+                      <div className="flex items-center justify-center p-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        + {order.items.length - 4} more items in manifest
+                      </div>
+                    )}
                   </div>
 
-                  {/* Action Buttons */}
-                  <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <Button 
-                      variant="outline" 
-                      className="h-12 rounded-xl border-gray-200 font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50"
+                  {/* Action Buttons: Standardized & Professional */}
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <button 
+                      className="flex-1 h-14 rounded-xl border-2 border-slate-100 bg-white font-black text-[10px] text-slate-600 uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-slate-50 hover:border-slate-200 transition-all active:scale-[0.98]"
                       onClick={() => navigate(`${routes.ORDERS}/${order._id || order.id}`)}
                     >
-                      Details
+                      View Manifest
                       <ExternalLink size={16} />
-                    </Button>
-                    <Button 
-                      variant="secondary" 
-                      className="h-12 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
-                      onClick={() => handleDownloadInvoice(order._id || order.id)}
+                    </button>
+                    <button 
                       disabled={actionLoading[(order._id || order.id) + '_invoice']}
+                      className="flex-1 h-14 rounded-xl border-2 border-slate-100 bg-white font-black text-[10px] text-slate-600 uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-slate-50 hover:border-slate-200 transition-all active:scale-[0.98] disabled:opacity-50"
+                      onClick={() => handleDownloadInvoice(order._id || order.id)}
                     >
                       <FileText size={16} />
-                      {actionLoading[(order._id || order.id) + '_invoice'] ? 'Generating...' : 'Invoice'}
-                    </Button>
-                    <Button 
-                      className="h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-100"
+                      {actionLoading[(order._id || order.id) + '_invoice'] ? 'Generating...' : 'Download Invoice'}
+                    </button>
+                    <button 
+                      className="flex-1 h-14 rounded-xl bg-blue-600 font-black text-[10px] text-white uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all active:scale-[0.98]"
                       onClick={() => handleReorder(order)}
                     >
                       <RefreshCcw size={16} />
-                      Reorder
-                    </Button>
+                      Rapid Reorder
+                    </button>
                   </div>
                 </div>
               </Card>

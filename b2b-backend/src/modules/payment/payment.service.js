@@ -35,7 +35,7 @@ export const createRazorpayOrder = async (amount, userId) => {
   }
 };
 
-export const hybridPayment = async (orderId, userId, useCredit, totalAmount) => {
+export const hybridPayment = async (orderId, userId, useCredit, totalAmount, paymentMethod = 'HYBRID') => {
   const supportsTransactions = getTransactionSupport();
   let session = null;
   let isTransactionStarted = false;
@@ -60,6 +60,20 @@ export const hybridPayment = async (orderId, userId, useCredit, totalAmount) => 
 
     if (order.paymentStatus === 'PAID') {
       throw new AppError('Order is already paid', 400);
+    }
+
+    // 🔥 HANDLE COD
+    if (paymentMethod === 'COD') {
+      order.paymentMethod = 'COD';
+      order.status = 'CONFIRMED';
+      order.paymentStatus = 'PENDING';
+      await order.save({ session: isTransactionStarted ? session : null });
+      
+      if (isTransactionStarted) {
+        await session.commitTransaction();
+        session.endSession();
+      }
+      return { success: true, paymentMethod: 'COD' };
     }
 
     // Safety check: frontend totalAmount vs backend totalAmount

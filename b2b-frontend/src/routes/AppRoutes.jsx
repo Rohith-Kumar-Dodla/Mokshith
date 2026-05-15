@@ -24,6 +24,7 @@ import AdminProductsPage from "../modules/admin/pages/Products.jsx";
 import AdminOrdersPage from "../modules/admin/pages/Orders.jsx";
 import AdminVendorsPage from "../modules/admin/pages/Vendors.jsx";
 import AdminApprovalsPage from "../modules/admin/pages/Approvals.jsx";
+import AdminProfile from "../modules/admin/pages/AdminProfile.jsx";
 import SuperAdminPage from "../modules/superAdmin/pages/SuperAdminPage.jsx";
 import DeliveryPage from "../modules/delivery/pages/DeliveryPage.jsx";
 import CreditPage from "../modules/credit/pages/CreditPage.jsx";
@@ -102,6 +103,7 @@ const AppRoutes = () => {
           <Route path={routes.ADMIN_INVENTORY} element={<InventoryPage />} />
           <Route path={routes.ADMIN_WAREHOUSE} element={<WarehousePage />} />
           <Route path={routes.ADMIN_PROMOTIONS} element={<PromotionPage />} />
+          <Route path={routes.ADMIN_PROFILE} element={<AdminProfile />} />
           <Route path={routes.ADMIN_SETTINGS} element={<SettingsPage />} />
           <Route path={routes.VENDOR_INVENTORY} element={<InventoryPage />} />
           <Route path={routes.VENDOR_COMPANY} element={<CompanyPage />} />

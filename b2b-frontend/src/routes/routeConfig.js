@@ -16,6 +16,7 @@ export const routes = {
   ADMIN_INVENTORY: "/admin/inventory",
   ADMIN_WAREHOUSE: "/admin/warehouse",
   ADMIN_PROMOTIONS: "/admin/promotions",
+  ADMIN_PROFILE: "/admin/profile",
   VENDOR_INVENTORY: "/vendor/inventory",
   VENDOR_COMPANY: "/vendor/company",
   DELIVERY_DASHBOARD: "/delivery/dashboard",
