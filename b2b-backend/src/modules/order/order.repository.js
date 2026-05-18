@@ -8,8 +8,13 @@ export const createOrder = async (data, options = {}) => {
 export const findOrders = (filter) =>
   Order.find(filter)
     .populate('userId', 'name email mobile')
+    .populate('items.productId', 'name price images category')
     .select('-__v') // Exclude version key
     .sort({ createdAt: -1 })
     .lean(); // 🔥 Performance: Convert to plain objects
 
-export const findById = (id) => Order.findById(id);
+export const findById = (id) => 
+  Order.findById(id)
+    .populate('userId', 'name email mobile role')
+    .populate('items.productId', 'name price images category stock')
+    .lean();

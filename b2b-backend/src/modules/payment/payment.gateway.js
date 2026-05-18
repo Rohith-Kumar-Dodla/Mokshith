@@ -1,6 +1,7 @@
 import { razorpay } from '../../config/razorpay.js';
 import crypto from 'crypto';
 import { env } from '../../config/env.js';
+import { logger } from '../../config/logger.js';
 
 /**
  * Creates a Razorpay order for payment processing
@@ -32,16 +33,25 @@ export const createPaymentOrder = async ({ amount, currency = 'INR', receipt }) 
 
   // Razorpay receipt limit is 40 characters
   if (options.receipt.length > 40) {
-    console.warn(`⚠️ Receipt ID too long (${options.receipt.length} chars), truncating...`);
+    logger.warn('Receipt ID too long, truncating', { originalLength: options.receipt.length, receipt: options.receipt.substring(0, 40) });
     options.receipt = options.receipt.substring(0, 40);
   }
 
   try {
-    const order = await razorpay.orders.create(options);
+    // 🔒 Timeout protection: 10 second timeout for Razorpay API
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Razorpay API timeout after 10 seconds')), 10000);
+    });
     
-    console.log('✅ Razorpay order created:', {
+    const order = await Promise.race([
+      razorpay.orders.create(options),
+      timeoutPromise
+    ]);
+    
+    logger.info('Razorpay order created successfully', {
       orderId: order.id,
       amount: order.amount,
+      currency: order.currency,
       status: order.status
     });
 
@@ -55,7 +65,7 @@ export const createPaymentOrder = async ({ amount, currency = 'INR', receipt }) 
       status: order.status
     };
   } catch (error) {
-    console.error('❌ Razorpay order creation error:', error.message);
+    logger.error('Razorpay order creation failed', { error: error.message, amount, currency });
     const errorMessage = error.error?.description || error.message || 'Razorpay order creation failed';
     throw new Error(`Razorpay Error: ${errorMessage}`);
   }
@@ -72,9 +82,15 @@ export const createPaymentOrder = async ({ amount, currency = 'INR', receipt }) 
 export const verifyPayment = async ({ razorpay_order_id, razorpay_payment_id, razorpay_signature }) => {
   try {
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-      console.error('❌ Missing payment verification fields');
+      logger.error('Payment verification missing required fields', { 
+        hasOrderId: !!razorpay_order_id, 
+        hasPaymentId: !!razorpay_payment_id, 
+        hasSignature: !!razorpay_signature 
+      });
       return false;
     }
+    
+    // Note: Signature verification is synchronous, no timeout needed
 
     const sign = razorpay_order_id + '|' + razorpay_payment_id;
     const expectedSign = crypto
@@ -85,12 +101,15 @@ export const verifyPayment = async ({ razorpay_order_id, razorpay_payment_id, ra
     const isValid = expectedSign === razorpay_signature;
 
     if (!isValid) {
-      console.error('❌ Payment signature verification failed');
+      logger.error('Payment signature verification failed', { 
+        orderId: razorpay_order_id, 
+        paymentId: razorpay_payment_id 
+      });
     }
 
     return isValid;
   } catch (error) {
-    console.error('❌ Payment verification error:', error.message);
+    logger.error('Payment verification error', { error: error.message, stack: error.stack });
     return false;
   }
 };
@@ -111,7 +130,121 @@ export const verifyWebhookSignature = (body, signature, secret) => {
 
     return expectedSignature === signature;
   } catch (error) {
-    console.error('❌ Webhook signature verification error:', error.message);
+    logger.error('Webhook signature verification error', { error: error.message });
     return false;
+  }
+};
+
+/**
+ * 🔒 PHASE 4: Razorpay refund functionality
+ * Creates a refund for a payment
+ * @param {Object} params - Refund parameters
+ * @param {string} params.paymentId - Razorpay payment ID to refund
+ * @param {number} [params.amount] - Amount to refund in INR (optional, defaults to full refund)
+ * @param {string} [params.notes] - Additional notes for the refund
+ * @param {string} [params.receipt] - Unique receipt identifier for refund
+ * @returns {Promise<Object>} Razorpay refund object
+ */
+export const createRefund = async ({ paymentId, amount, notes, receipt }) => {
+  try {
+    if (!paymentId) {
+      throw new Error('Payment ID is required for refund');
+    }
+
+    const refundOptions = {
+      payment_id: paymentId,
+    };
+
+    // If amount is specified, validate and convert to paise
+    if (amount !== undefined && amount !== null) {
+      const numericAmount = Number(amount);
+      if (isNaN(numericAmount) || numericAmount <= 0) {
+        throw new Error('Invalid refund amount provided');
+      }
+      refundOptions.amount = Math.round(numericAmount * 100); // Convert to paise
+    }
+
+    // Add optional parameters
+    if (notes) {
+      refundOptions.notes = typeof notes === 'object' ? notes : { reason: notes };
+    }
+    if (receipt) {
+      refundOptions.receipt = receipt.substring(0, 40); // Razorpay limit
+    }
+
+    logger.info('Initiating Razorpay refund', {
+      paymentId,
+      amount: refundOptions.amount,
+      isPartial: !!refundOptions.amount,
+    });
+
+    // 🔒 Timeout protection: 15 second timeout for refund API
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Razorpay refund API timeout after 15 seconds')), 15000);
+    });
+
+    const refund = await Promise.race([
+      razorpay.payments.refund(paymentId, refundOptions),
+      timeoutPromise,
+    ]);
+
+    logger.info('Razorpay refund created successfully', {
+      refundId: refund.id,
+      paymentId: refund.payment_id,
+      amount: refund.amount,
+      status: refund.status,
+      isPartial: refund.amount !== undefined,
+    });
+
+    return {
+      id: refund.id,
+      refund_id: refund.id,
+      payment_id: refund.payment_id,
+      amount: refund.amount / 100, // Convert back to INR
+      currency: refund.currency,
+      status: refund.status,
+      created_at: refund.created_at,
+      notes: refund.notes,
+    };
+  } catch (error) {
+    logger.error('Razorpay refund failed', {
+      error: error.message,
+      paymentId,
+      amount,
+      stack: error.stack,
+    });
+    const errorMessage = error.error?.description || error.message || 'Razorpay refund failed';
+    throw new Error(`Razorpay Refund Error: ${errorMessage}`);
+  }
+};
+
+/**
+ * Fetches refund details from Razorpay
+ * @param {string} refundId - Razorpay refund ID
+ * @returns {Promise<Object>} Refund details
+ */
+export const fetchRefund = async (refundId) => {
+  try {
+    if (!refundId) {
+      throw new Error('Refund ID is required');
+    }
+
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Razorpay fetch refund timeout')), 10000);
+    });
+
+    const refund = await Promise.race([razorpay.refunds.fetch(refundId), timeoutPromise]);
+
+    return {
+      id: refund.id,
+      payment_id: refund.payment_id,
+      amount: refund.amount / 100,
+      currency: refund.currency,
+      status: refund.status,
+      created_at: refund.created_at,
+    };
+  } catch (error) {
+    logger.error('Razorpay fetch refund failed', { error: error.message, refundId });
+    throw new Error(`Failed to fetch refund: ${error.message}`);
   }
 };

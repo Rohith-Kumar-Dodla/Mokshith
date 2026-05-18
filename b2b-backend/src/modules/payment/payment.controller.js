@@ -48,8 +48,52 @@ export const failPayment = asyncHandler(async (req, res) => {
 
 export const razorpayWebhook = asyncHandler(async (req, res) => {
   const signature = req.headers['x-razorpay-signature'];
-  const rawBody = req.rawBody || JSON.stringify(req.body); // Fallback if rawBody missing
+  
+  // 🔒 CRITICAL: Only use raw body for signature verification
+  // Never fall back to JSON.stringify to prevent signature bypass
+  const rawBody = req.rawBody;
+  
+  if (!rawBody) {
+    logger.error('Webhook rejected: rawBody missing', {
+      path: req.path,
+      contentType: req.headers['content-type']
+    });
+    throw new AppError('Webhook processing error - invalid request format', 400);
+  }
   
   const result = await service.handleWebhook(rawBody, signature);
   successResponse(res, result, 'Webhook processed');
+});
+
+/**
+ * 🔒 PHASE 4: Refund endpoints with authorization and validation
+ */
+export const createRefund = asyncHandler(async (req, res) => {
+  const { orderId, amount, reason } = req.body;
+  
+  const refund = await service.createRefund(
+    orderId,
+    req.user.id,
+    amount,
+    reason,
+    req.user // Pass full user object for role checking
+  );
+  
+  successResponse(res, refund, 'Refund initiated successfully');
+});
+
+export const getRefundHistory = asyncHandler(async (req, res) => {
+  const { orderId } = req.params;
+  
+  const refunds = await service.getRefundHistory(orderId);
+  
+  successResponse(res, refunds, 'Refund history retrieved');
+});
+
+export const getRefundById = asyncHandler(async (req, res) => {
+  const { refundId } = req.params;
+  
+  const refund = await service.getRefundById(refundId);
+  
+  successResponse(res, refund, 'Refund details retrieved');
 });

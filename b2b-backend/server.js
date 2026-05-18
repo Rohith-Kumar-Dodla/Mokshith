@@ -4,15 +4,27 @@ dotenv.config();
 import app from './src/app.js';
 import connectDB from './src/config/db.js';
 import { logger } from './src/config/logger.js';
+import { initializeSentry } from './src/config/sentry.js';
+import { redisClient } from './src/config/redis.js';
+import { configureSocketAdapter, cleanupSocketAdapter } from './src/config/socketAdapter.js';
+import { setupQueryTimeout } from './src/utils/queryTimeout.js';
 import { Server } from 'socket.io';
 import http from 'http';
+
+// 🔥 Initialize Sentry FIRST (before any other imports)
+initializeSentry(app);
+
+// 🔥 Setup global query timeout
+setupQueryTimeout();
 
 // 🔥 VALIDATE REQUIRED ENVIRONMENT VARIABLES
 const requiredEnvVars = [
   'MONGO_URI',
   'JWT_SECRET',
+  'JWT_REFRESH_SECRET',
   'RAZORPAY_KEY_ID',
-  'RAZORPAY_KEY_SECRET'
+  'RAZORPAY_KEY_SECRET',
+  'RAZORPAY_WEBHOOK_SECRET'
 ];
 
 const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
@@ -23,9 +35,35 @@ if (missingVars.length > 0) {
   process.exit(1);
 }
 
-// Validate JWT_SECRET strength (minimum 32 characters recommended)
-if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {
-  logger.warn('⚠️ JWT_SECRET should be at least 32 characters for production security');
+// 🔒 Conditional validation for optional features
+if (process.env.USE_S3_STORAGE === 'true') {
+  const s3Vars = ['S3_REGION', 'S3_BUCKET_NAME', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY'];
+  const missingS3 = s3Vars.filter(v => !process.env[v]);
+  if (missingS3.length > 0) {
+    logger.error(`❌ S3 enabled but missing: ${missingS3.join(', ')}`);
+    process.exit(1);
+  }
+}
+
+if (process.env.NODE_ENV === 'production' && !process.env.SENTRY_DSN) {
+  logger.warn('⚠️ SENTRY_DSN not set in production - error tracking disabled');
+}
+
+if (process.env.USE_SOCKET_REDIS_ADAPTER === 'true' && !process.env.REDIS_HOST) {
+  logger.error('❌ Socket.IO Redis adapter enabled but REDIS_HOST not set');
+  process.exit(1);
+}
+
+// 🔒 CRITICAL: Enforce JWT_SECRET strength (minimum 64 characters for production)
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 64) {
+  logger.error('❌ SECURITY ERROR: JWT_SECRET must be at least 64 characters');
+  logger.error('Generate a strong secret: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
+  if (process.env.NODE_ENV === 'production') {
+    logger.error('Exiting due to weak JWT_SECRET in production');
+    process.exit(1);
+  } else {
+    logger.warn('⚠️ Continuing in development, but this would block production');
+  }
 }
 
 const PORT = process.env.PORT || 5000;
@@ -37,6 +75,13 @@ const startServer = async () => {
   try {
     // 🔥 Connect DB
     await connectDB();
+
+    // 🔥 Connect Redis (must be before workers/socket adapters)
+    logger.info('Connecting to Redis...');
+    const redisConnected = await redisClient.connect();
+    if (!redisConnected) {
+      logger.warn('⚠️ Redis connection failed - some features may be limited');
+    }
 
     // Create HTTP server
     const httpServer = http.createServer(app);
@@ -65,6 +110,9 @@ const startServer = async () => {
       logger.info('✅ Socket.io initialized');
     }
 
+    // Configure Redis adapter for horizontal scaling
+    await configureSocketAdapter(io);
+
     // Store io globally and in app locals
     global.io = io;
     app.set('io', io);
@@ -85,7 +133,21 @@ const startServer = async () => {
       });
     });
 
-    // 🚀 Start server
+    // � Start cron jobs for payment reconciliation
+    try {
+      const { startCronJobs } = await import('./src/jobs/cron.js');
+      startCronJobs();
+    } catch (err) {
+      logger.warn('⚠️ Cron jobs not started:', err.message);
+    }
+    // Start BullMQ workers
+    try {
+      await import('./src/workers/index.js');
+      logger.info('✅ BullMQ workers initialized');
+    } catch (err) {
+      logger.warn('⚠️ Workers not started:', err.message);
+    }
+    // �🚀 Start server
     server = httpServer.listen(PORT, '0.0.0.0', () => {
       logger.info(`🚀 Server running on http://localhost:${PORT}`);
     });
@@ -106,21 +168,54 @@ const shutdown = async (signal) => {
   logger.info(`⚠️ ${signal} received. Shutting down gracefully...`);
 
   try {
+    // 1. Stop accepting new connections
     if (server) {
       server.close(() => {
-        logger.info('💤 Server closed');
-        process.exit(0);
+        logger.info('💤 HTTP Server closed');
       });
     }
+
+    // 2. Close Socket.IO connections and Redis adapter
+    if (io) {
+      await cleanupSocketAdapter(io);
+      io.close(() => {
+        logger.info('💤 Socket.IO closed');
+      });
+    }
+
+    // 3. Shutdown BullMQ workers
+    try {
+      const { shutdownWorkers } = await import('./src/workers/index.js');
+      await shutdownWorkers();
+    } catch (err) {
+      logger.warn('Workers shutdown skipped:', err.message);
+    }
+
+    // 4. Close database connection
+    if (connectDB.connection) {
+      await connectDB.connection.close();
+      logger.info('💤 MongoDB connection closed');
+    }
+
+    // 5. Close Redis connection
+    try {
+      await redisClient.quit();
+      logger.info('💤 Redis connection closed');
+    } catch (err) {
+      logger.warn('Redis quit warning:', err.message);
+    }
+
+    logger.info('✅ Graceful shutdown completed');
+    process.exit(0);
   } catch (err) {
-    logger.error('Shutdown error:', err);
+    logger.error('❌ Shutdown error:', err);
     process.exit(1);
   }
 };
 
 // 🔥 Handle system signals
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
 
 // 🔥 Handle uncaught errors
 process.on('uncaughtException', (err) => {

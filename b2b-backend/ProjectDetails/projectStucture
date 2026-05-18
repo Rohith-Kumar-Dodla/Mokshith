@@ -1,202 +1,571 @@
+# PROJECT STRUCTURE
+
+> **Comprehensive folder organization with module responsibilities**
+
+---
+
+## 📁 Root Directory
+
+```
 b2b-backend/
 │
-├── logs/
-│   ├── access.log
-│   ├── combined.log
-│   ├── error.log
-│   └── exceptions.log
+├── logs/                         # Application logs (Winston)
+│   ├── access.log                # HTTP access logs (Morgan)
+│   ├── combined.log              # All logs combined
+│   ├── error.log                 # Error logs only
+│   └── exceptions.log            # Uncaught exceptions
 │
-├── ProjectDetails/
-│   └── architecture.md
+├── ProjectDetails/               # Project documentation
+│   ├── COMPLETE SYSTEM ARCHITECTURE    # System architecture overview
+│   ├── DEVELOPMENT ORDER                # Implementation phases
+│   ├── features                         # Feature list
+│   ├── INDIVIDUAL WORKFLOWS             # Business process flows
+│   └── projectStucture                  # This file
 │
-├── scripts/
-│   ├── backup.js
-│   ├── cleanup.js
-│   ├── migrate.js
-│   └── seed.js
+├── scripts/                      # Utility scripts
+│   ├── backup.js                 # Database backup script
+│   ├── cleanup.js                # Old data cleanup
+│   ├── migrate.js                # Data migration scripts
+│   └── seed.js                   # Database seeding
 │
-├── tests/
-│   ├── e2e/
-│   │   └── checkout.test.js
+├── tests/                        # Test suite
+│   ├── e2e/                      # End-to-end tests
+│   │   ├── checkout.test.js      # Complete checkout flow
+│   │   └── ...
 │   │
-│   ├── integration/
-│   │   ├── order.test.js
-│   │   └── payment.test.js
+│   ├── integration/              # Integration tests (API + DB)
+│   │   ├── order.test.js         # Order API tests
+│   │   ├── payment.test.js       # Payment API tests
+│   │   └── ...
 │   │
-│   ├── unit/
-│   │   ├── auth.test.js
-│   │   ├── product.test.js
-│   │   └── user.test.js
+│   ├── unit/                     # Unit tests (business logic)
+│   │   ├── auth.test.js          # Auth service tests
+│   │   ├── product.test.js       # Product service tests
+│   │   └── ...
 │   │
-│   └── setup.js
+│   └── setup.js                  # Global test configuration
 │
-├── src/
+├── src/                          # Source code (main application)
 │
-│   ├── config/
-│   │   ├── cors.js
-│   │   ├── db.js
-│   │   ├── env.js
-│   │   ├── featureFlags.js
-│   │   ├── logger.js
-│   │   ├── queue.js
-│   │   ├── rateLimiter.js
-│   │   ├── redis.js
-│   │   └── security.js
+├── .env                          # Environment variables (secrets)
+├── .env.example                  # Example environment file
+├── .gitignore                    # Git ignore rules
+├── eslint.config.js              # ESLint configuration
+├── nodemon.json                  # Nodemon development config
+├── package.json                  # Project dependencies
+├── prettier.config.js            # Prettier formatting rules
+├── README.md                     # Main project documentation
+└── server.js                     # Application entry point
+```
+
+---
+
+## 📁 src/ Directory
+
+### 🔧 Infrastructure Layer
+
+```
+src/
 │
-│   ├── constants/
-│   │   ├── cacheKeys.js
-│   │   ├── creditStatus.js
-│   │   ├── deliveryStatus.js
-│   │   ├── errorMessages.js
-│   │   ├── featureFlags.js
-│   │   ├── fileTypes.js
-│   │   ├── httpStatus.js
-│   │   ├── notificationTypes.js
-│   │   ├── orderStatus.js
-│   │   ├── paymentStatus.js
-│   │   ├── permissions.js
-│   │   ├── queueNames.js
-│   │   ├── roles.js
-│   │   ├── userStatus.js
-│   │   └── vendorStatus.js
+├── config/                       # Configuration files
+│   ├── cors.js                   # CORS whitelist setup
+│   ├── db.js                     # MongoDB connection (replica set support)
+│   ├── env.js                    # Environment variable validation (Joi)
+│   ├── featureFlags.js           # Feature flag management
+│   ├── logger.js                 # Winston logger configuration
+│   ├── queue.js                  # BullMQ queue factory
+│   ├── rateLimiter.js            # Rate limiter configuration (Redis)
+│   ├── razorpay.js               # Razorpay SDK setup
+│   ├── redis.js                  # Redis client (ioredis) setup
+│   └── security.js               # Helmet + security headers
 │
-│   ├── docs/
-│   │   ├── api-guidelines.md
-│   │   ├── openapi.yaml
-│   │   ├── postman.json
-│   │   └── swagger.js
+├── constants/                    # Application constants
+│   ├── cacheKeys.js              # Redis cache key patterns
+│   ├── creditStatus.js           # Credit transaction statuses
+│   ├── deliveryStatus.js         # Delivery status enum
+│   ├── errorMessages.js          # Standard error messages
+│   ├── featureFlags.js           # Feature flag keys
+│   ├── fileTypes.js              # Allowed file types
+│   ├── httpStatus.js             # HTTP status codes
+│   ├── notificationTypes.js      # Notification event types
+│   ├── orderStatus.js            # Order lifecycle statuses
+│   ├── paymentStatus.js          # Payment transaction statuses
+│   ├── permissions.js            # RBAC permission definitions
+│   ├── queueNames.js             # Queue name constants
+│   ├── roles.js                  # User role definitions
+│   ├── userStatus.js             # User account statuses
+│   └── vendorStatus.js           # Vendor approval statuses
 │
-│   ├── errors/
-│   │   ├── AppError.js
-│   │   ├── AuthError.js
-│   │   ├── NotFoundError.js
-│   │   ├── PaymentError.js
-│   │   ├── PermissionError.js
-│   │   ├── RateLimitError.js
-│   │   └── ValidationError.js
+├── errors/                       # Custom error classes
+│   ├── AppError.js               # Base error class (extends Error)
+│   ├── AuthError.js              # Authentication errors (401)
+│   ├── NotFoundError.js          # Resource not found (404)
+│   ├── PaymentError.js           # Payment processing errors
+│   ├── PermissionError.js        # Authorization errors (403)
+│   ├── RateLimitError.js         # Rate limit exceeded (429)
+│   └── ValidationError.js        # Input validation errors (422)
 │
-│   ├── jobs/
-│   │   ├── analytics.job.js
-│   │   ├── cleanup.job.js
-│   │   ├── creditReminder.job.js
-│   │   ├── cron.js
-│   │   ├── inventorySync.job.js
-│   │   ├── notification.job.js
-│   │   ├── orderCleanup.job.js
-│   │   └── paymentReconcile.job.js
+├── middlewares/                  # Express middleware stack
+│   ├── audit.middleware.js       # Audit log interceptor
+│   ├── auth.middleware.js        # JWT token verification
+│   ├── cache.middleware.js       # Redis cache interceptor
+│   ├── error.middleware.js       # Centralized error handler
+│   ├── idempotency.middleware.js # Idempotency key handler
+│   ├── notFound.middleware.js    # 404 handler
+│   ├── permission.middleware.js  # RBAC permission checks
+│   ├── rateLimiter.middleware.js # Request throttling
+│   ├── requestLogger.middleware.js # HTTP request logging (Morgan)
+│   ├── role.middleware.js        # Role-based access control
+│   ├── sanitize.middleware.js    # Input sanitization (XSS, MongoDB injection)
+│   ├── timeout.middleware.js     # Request timeout handler
+│   ├── upload.middleware.js      # File upload (Multer)
+│   └── validate.middleware.js    # Joi schema validation
 │
-│   ├── middlewares/
-│   │   ├── audit.middleware.js
-│   │   ├── auth.middleware.js
-│   │   ├── error.middleware.js
-│   │   ├── idempotency.middleware.js
-│   │   ├── notFound.middleware.js
-│   │   ├── permission.middleware.js
-│   │   ├── rateLimiter.middleware.js
-│   │   ├── requestLogger.middleware.js
-│   │   ├── role.middleware.js
-│   │   ├── sanitize.middleware.js
-│   │   ├── timeout.middleware.js
-│   │   ├── upload.middleware.js
-│   │   └── validate.middleware.js
+├── utils/                        # Utility functions
+│   ├── apiFeatures.js            # Query features (filter, sort, pagination)
+│   ├── asyncHandler.js           # Async/await error wrapper
+│   ├── comparePassword.js        # Bcrypt password comparison
+│   ├── currency.utils.js         # Currency formatting
+│   ├── date.utils.js             # Date manipulation
+│   ├── encryption.utils.js       # Encryption/decryption helpers
+│   ├── file.utils.js             # File system utilities
+│   ├── generateToken.js          # JWT token generation
+│   ├── hashPassword.js           # Bcrypt password hashing
+│   ├── number.utils.js           # Number formatting
+│   ├── otpGenerator.js           # OTP generation (6-digit)
+│   ├── pagination.js             # Pagination helper
+│   ├── responseHandler.js        # Standard API response formatter
+│   └── retry.utils.js            # Retry logic with exponential backoff
 │
-│   ├── queues/
-│   │   ├── audit.queue.js
-│   │   ├── email.queue.js
-│   │   ├── inventory.queue.js
-│   │   ├── notification.queue.js
-│   │   ├── payment.queue.js
-│   │   └── webhook.queue.js
+├── validations/                  # Joi validation schemas (common)
+│   ├── common.validation.js      # Reusable validation rules
+│   ├── file.validation.js        # File upload validation
+│   ├── objectId.validation.js    # MongoDB ObjectId validation
+│   ├── pagination.validation.js  # Pagination query validation
+│   └── query.validation.js       # Query parameter validation
 │
-│   ├── routes/
-│   │   ├── health.routes.js
-│   │   ├── index.js
-│   │   ├── v1.routes.js
-│   │   └── v2.routes.js
+├── queues/                       # BullMQ queue definitions
+│   ├── audit.queue.js            # Audit log queue (low priority)
+│   ├── email.queue.js            # Email delivery queue (normal priority)
+│   ├── inventory.queue.js        # Inventory sync queue (normal priority)
+│   ├── notification.queue.js     # Notification queue (high priority)
+│   ├── payment.queue.js          # Payment processing queue (critical priority)
+│   └── webhook.queue.js          # Third-party webhook queue (normal priority)
 │
-│   ├── services/
-│   │   ├── audit.service.js
-│   │   ├── cache.service.js
-│   │   ├── email.service.js
-│   │   ├── encryption.service.js
-│   │   ├── featureFlag.service.js
-│   │   ├── fileUpload.service.js
-│   │   ├── notification.service.js
-│   │   ├── payment.service.js
-│   │   ├── pdf.service.js
-│   │   ├── redis.service.js
-│   │   ├── scheduler.service.js
-│   │   ├── search.service.js
-│   │   ├── sms.service.js
-│   │   ├── vendorAssignment.service.js
-│   │   └── webhook.service.js
+├── jobs/                         # Background cron jobs
+│   ├── analytics.job.js          # Hourly analytics update
+│   ├── cleanup.job.js            # Daily session cleanup
+│   ├── creditReminder.job.js     # Daily credit reminders
+│   ├── cron.js                   # Cron job scheduler (node-cron)
+│   ├── inventorySync.job.js      # 15-minute inventory sync
+│   ├── notification.job.js       # Notification delivery (future)
+│   ├── orderCleanup.job.js       # Daily order archival
+│   └── paymentReconcile.job.js   # Daily payment reconciliation
 │
-│   ├── utils/
-│   │   ├── apiFeatures.js
-│   │   ├── asyncHandler.js
-│   │   ├── comparePassword.js
-│   │   ├── currency.utils.js
-│   │   ├── date.utils.js
-│   │   ├── encryption.utils.js
-│   │   ├── file.utils.js
-│   │   ├── generateToken.js
-│   │   ├── hashPassword.js
-│   │   ├── number.utils.js
-│   │   ├── otpGenerator.js
-│   │   ├── pagination.js
-│   │   ├── responseHandler.js
-│   │   └── retry.utils.js
+├── services/                     # Shared services (used across modules)
+│   ├── audit.service.js          # Audit logging service
+│   ├── cache.service.js          # Redis caching service
+│   ├── email.service.js          # Email sending (Nodemailer)
+│   ├── encryption.service.js     # Encryption/decryption
+│   ├── featureFlag.service.js    # Feature flag management
+│   ├── fileUpload.service.js     # File upload to cloud storage
+│   ├── notification.service.js   # Multi-channel notifications
+│   ├── payment.service.js        # Razorpay API integration
+│   ├── pdf.service.js            # PDF generation (PDFKit)
+│   ├── redis.service.js          # Redis operations (locks, cache)
+│   ├── scheduler.service.js      # Job scheduling
+│   ├── search.service.js         # Full-text search
+│   ├── sms.service.js            # SMS sending (Twilio - future)
+│   ├── vendorAssignment.service.js # Vendor selection logic
+│   └── webhook.service.js        # Webhook signature verification
 │
-│   ├── validations/
-│   │   ├── common.validation.js
-│   │   ├── file.validation.js
-│   │   ├── objectId.validation.js
-│   │   ├── pagination.validation.js
-│   │   └── query.validation.js
+├── routes/                       # API route definitions
+│   ├── health.routes.js          # Health check endpoints
+│   ├── index.js                  # Route aggregator
+│   ├── v1.routes.js              # API v1 routes
+│   └── v2.routes.js              # API v2 routes (future)
 │
-│   ├── modules/
-│   │   ├── admin/
-│   │   ├── analytics/
-│   │   ├── auth/
-│   │   ├── cart/
-│   │   ├── category/
-│   │   ├── company/
-│   │   ├── credit/
-│   │   ├── inventory/
-│   │   ├── invoice/
-│   │   ├── logistics/
-│   │   ├── notification/
-│   │   ├── order/
-│   │   ├── payment/
-│   │   ├── pricing/
-│   │   ├── product/
-│   │   ├── promotion/
-│   │   ├── review/
-│   │   ├── search/
-│   │   ├── settings/
-│   │   ├── shipment/
-│   │   ├── superAdmin/
-│   │   ├── support/
-│   │   ├── user/
-│   │   ├── vendor/
-│   │   ├── warehouse/
-│   │   └── wishlist/
+├── docs/                         # API documentation
+│   ├── api-guidelines.md         # API design guidelines
+│   ├── openapi.yaml              # OpenAPI 3.0 specification
+│   ├── postman.json              # Postman collection
+│   └── swagger.js                # Swagger UI setup
 │
-│   ├── uploads/
-│   │   ├── invoices/
-│   │   ├── logs/
-│   │   ├── products/
-│   │   ├── temp/
-│   │   └── users/
+├── uploads/                      # File upload storage (temporary)
+│   ├── invoices/                 # Invoice PDFs
+│   ├── logs/                     # Uploaded logs (debug)
+│   ├── products/                 # Product images
+│   ├── temp/                     # Temporary files
+│   └── users/                    # User avatars
 │
-│   └── app.js
+└── app.js                        # Express app configuration
+```
+
+---
+
+## 📁 src/modules/ Directory
+
+### Module Structure Pattern
+
+**Each module follows the layered architecture:**
+
+```
+module-name/
 │
-├── .env
-├── .env.example
-├── .gitignore
-├── eslint.config.js
-├── nodemon.json
-├── package.json
-├── prettier.config.js
-├── README.md
-└── server.js
+├── module-name.model.js          # Mongoose schema + model
+├── module-name.validation.js     # Joi validation schemas
+├── module-name.service.js        # Business logic layer
+├── module-name.repository.js     # Data access layer (optional)
+├── module-name.controller.js     # HTTP request/response handling
+├── module-name.routes.js         # Express route definitions
+│
+└── __tests__/                    # Module-specific tests
+    ├── module-name.unit.test.js          # Service layer tests
+    └── module-name.integration.test.js   # API endpoint tests
+```
+
+---
+
+### 🔐 Authentication & Access Control Modules
+
+```
+src/modules/
+│
+├── auth/                         # Authentication module
+│   ├── auth.controller.js        # Login, register, OTP, logout, refresh
+│   ├── auth.routes.js            # /api/v1/auth endpoints
+│   ├── auth.service.js           # JWT generation, OTP logic, token refresh
+│   ├── auth.validation.js        # Login, register, OTP validation
+│   └── __tests__/
+│
+├── user/                         # User profile management
+│   ├── user.model.js             # User schema (with password hashing)
+│   ├── user.controller.js        # Get/update profile, change password
+│   ├── user.routes.js            # /api/v1/users endpoints
+│   ├── user.service.js           # User CRUD, profile management
+│   ├── user.validation.js        # Profile update, password change validation
+│   └── __tests__/
+│
+├── admin/                        # Admin operations
+│   ├── admin.controller.js       # User management, approval workflows
+│   ├── admin.routes.js           # /api/v1/admin endpoints (RBAC protected)
+│   ├── admin.service.js          # User CRUD, role assignment
+│   ├── admin.validation.js       # Admin operation validation
+│   └── __tests__/
+│
+├── superAdmin/                   # Super admin operations
+│   ├── superAdmin.controller.js  # System config, feature flags, maintenance
+│   ├── superAdmin.routes.js      # /api/v1/super-admin endpoints
+│   ├── superAdmin.service.js     # System-wide operations
+│   └── __tests__/
+```
+
+**Responsibilities:**
+- **auth:** JWT token generation, OTP verification, session management
+- **user:** Profile CRUD, password management, address management
+- **admin:** User management, vendor/company approval, role assignment
+- **superAdmin:** Feature flags, maintenance mode, system configuration
+
+---
+
+### 🏢 B2B Management Modules
+
+```
+├── company/                      # B2B company management
+│   ├── company.model.js          # Company schema (B2B organizations)
+│   ├── company.controller.js     # Company CRUD, approval workflow
+│   ├── company.routes.js         # /api/v1/companies endpoints
+│   ├── company.service.js        # Company lifecycle management
+│   ├── company.validation.js     # Company create/update validation
+│   └── __tests__/
+│
+├── vendor/                       # Vendor (seller) management
+│   ├── vendor.model.js           # Vendor profile schema
+│   ├── vendor.controller.js      # Vendor dashboard, product/order management
+│   ├── vendor.routes.js          # /api/v1/vendors endpoints
+│   ├── vendor.service.js         # Vendor onboarding, approval workflow
+│   ├── vendor.validation.js      # Vendor registration/update validation
+│   └── __tests__/
+│
+├── credit/                       # B2B credit system
+│   ├── credit.model.js           # Credit ledger schema
+│   ├── credit.controller.js      # Credit management, transactions
+│   ├── credit.routes.js          # /api/v1/credit endpoints
+│   ├── credit.service.js         # Credit limit, balance, transactions
+│   ├── credit.validation.js      # Credit operations validation
+│   └── __tests__/
+```
+
+**Responsibilities:**
+- **company:** B2B organization profiles, GST validation, multi-user companies
+- **vendor:** Seller onboarding, product/order management, payout tracking
+- **credit:** Buy now pay later, credit limits, ledger, payment reminders
+
+---
+
+### 🛍️ E-Commerce Core Modules
+
+```
+├── category/                     # Product category management
+│   ├── category.model.js         # Category schema (hierarchical)
+│   ├── category.controller.js    # Category CRUD, hierarchy management
+│   ├── category.routes.js        # /api/v1/categories endpoints
+│   ├── category.service.js       # Nested category operations
+│   ├── category.validation.js    # Category CRUD validation
+│   └── __tests__/
+│
+├── product/                      # Product catalog
+│   ├── product.model.js          # Product schema (with variants, images)
+│   ├── product.controller.js     # Product CRUD, filtering, search
+│   ├── product.routes.js         # /api/v1/products endpoints
+│   ├── product.service.js        # Product lifecycle, search
+│   ├── product.validation.js     # Product CRUD validation
+│   └── __tests__/
+│
+├── pricing/                      # Dynamic pricing
+│   ├── pricing.model.js          # Pricing rules schema
+│   ├── pricing.controller.js     # Price calculation, bulk discounts
+│   ├── pricing.routes.js         # /api/v1/pricing endpoints
+│   ├── pricing.service.js        # Wholesale/retail pricing logic
+│   ├── pricing.validation.js     # Price calculation validation
+│   └── __tests__/
+│
+├── promotion/                    # Discounts & promotions
+│   ├── promotion.model.js        # Promotion schema (coupon codes, campaigns)
+│   ├── promotion.controller.js   # Promotion management
+│   ├── promotion.routes.js       # /api/v1/promotions endpoints
+│   ├── promotion.service.js      # Apply discounts, validate codes
+│   ├── promotion.validation.js   # Promotion rules validation
+│   └── __tests__/
+│
+├── search/                       # Product search & discovery
+│   ├── search.controller.js      # Search API endpoint
+│   ├── search.routes.js          # /api/v1/search endpoints
+│   ├── search.service.js         # Full-text search, filters, sorting
+│   └── __tests__/
+│
+├── review/                       # Product reviews & ratings
+│   ├── review.model.js           # Product review schema
+│   ├── review.controller.js      # Submit/moderate reviews
+│   ├── review.routes.js          # /api/v1/reviews endpoints
+│   ├── review.service.js         # Review CRUD, rating aggregation
+│   ├── review.validation.js      # Review submission validation
+│   └── __tests__/
+```
+
+**Responsibilities:**
+- **category:** Hierarchical category taxonomy, SEO metadata
+- **product:** Product CRUD, variants, images, status management
+- **pricing:** Dynamic pricing tiers, bulk discounts, B2B/B2C pricing
+- **promotion:** Coupon codes, discount campaigns, usage limits
+- **search:** Full-text search, advanced filters, sorting, pagination
+- **review:** User reviews, ratings, moderation, vendor replies
+
+---
+
+### 🛒 Shopping & Orders Modules
+
+```
+├── cart/                         # Shopping cart
+│   ├── cart.model.js             # Shopping cart schema
+│   ├── cart.controller.js        # Add/update/remove cart items
+│   ├── cart.routes.js            # /api/v1/cart endpoints
+│   ├── cart.service.js           # Cart operations with inventory reservation
+│   ├── cart.validation.js        # Add/update cart validation
+│   └── __tests__/
+│       ├── cart.unit.test.js
+│       ├── cart.integration.test.js
+│       └── cart.concurrency.test.js  # Race condition tests
+│
+├── wishlist/                     # Wishlist (saved items)
+│   ├── wishlist.model.js         # Wishlist schema
+│   ├── wishlist.controller.js    # Add/remove wishlist items
+│   ├── wishlist.routes.js        # /api/v1/wishlist endpoints
+│   ├── wishlist.service.js       # Wishlist operations
+│   ├── wishlist.validation.js    # Wishlist validation
+│   └── __tests__/
+│
+├── order/                        # Order management
+│   ├── order.model.js            # Order schema (with status lifecycle)
+│   ├── order.controller.js       # Order CRUD, status updates
+│   ├── order.routes.js           # /api/v1/orders endpoints
+│   ├── order.service.js          # Order lifecycle with transactions
+│   ├── order.validation.js       # Order creation/update validation
+│   └── __tests__/
+│       ├── order.unit.test.js
+│       ├── order.integration.test.js
+│       └── order.e2e.test.js     # Complete order flow tests
+```
+
+**Responsibilities:**
+- **cart:** Cart CRUD, inventory reservations (15-min hold), expiry handling
+- **wishlist:** Saved items, move to cart, sync across devices
+- **order:** Order lifecycle (10+ statuses), atomic order creation, cancellation, returns, refunds
+
+---
+
+### 💳 Payment Modules
+
+```
+├── payment/                      # Payment processing
+│   ├── payment.model.js          # Payment transaction schema
+│   ├── payment.controller.js     # Payment initiation, webhook handler
+│   ├── payment.routes.js         # /api/v1/payments endpoints
+│   ├── payment.service.js        # Razorpay integration, signature verification
+│   ├── payment.validation.js     # Payment request validation
+│   └── __tests__/
+│       ├── payment.unit.test.js
+│       ├── payment.integration.test.js
+│       └── payment.webhook.test.js   # Webhook signature tests
+```
+
+**Responsibilities:**
+- **payment:** Razorpay order creation, payment capture, webhook handling (HMAC-SHA256 verification), refund processing, idempotency keys
+
+---
+
+### 🚚 Logistics Modules
+
+```
+├── warehouse/                    # Warehouse management
+│   ├── warehouse.model.js        # Warehouse schema (location, capacity)
+│   ├── warehouse.controller.js   # Warehouse CRUD
+│   ├── warehouse.routes.js       # /api/v1/warehouses endpoints
+│   ├── warehouse.service.js      # Multi-warehouse management
+│   ├── warehouse.validation.js   # Warehouse operations validation
+│   └── __tests__/
+│
+├── inventory/                    # Inventory management
+│   ├── inventory.model.js        # Inventory schema (stock tracking)
+│   ├── inventory.controller.js   # Stock management, reservations
+│   ├── inventory.routes.js       # /api/v1/inventory endpoints
+│   ├── inventory.service.js      # Reservation, fulfillment, sync (distributed locking)
+│   ├── inventory.validation.js   # Stock operations validation
+│   └── __tests__/
+│       ├── inventory.unit.test.js
+│       ├── inventory.integration.test.js
+│       └── inventory.concurrency.test.js  # Race condition tests
+│
+├── shipment/                     # Shipment tracking
+│   ├── shipment.model.js         # Shipment schema (tracking, status)
+│   ├── shipment.controller.js    # Shipment CRUD, tracking
+│   ├── shipment.routes.js        # /api/v1/shipments endpoints
+│   ├── shipment.service.js       # Shipment lifecycle, tracking
+│   ├── shipment.validation.js    # Shipment creation validation
+│   └── __tests__/
+│
+├── logistics/                    # Logistics partners
+│   ├── logistics.model.js        # Delivery partner schema
+│   ├── logistics.controller.js   # Partner management
+│   ├── logistics.routes.js       # /api/v1/logistics endpoints
+│   ├── logistics.service.js      # Route optimization, partner assignment
+│   ├── logistics.validation.js   # Delivery assignment validation
+│   └── __tests__/
+```
+
+**Responsibilities:**
+- **warehouse:** Multi-warehouse support, location tracking, capacity management
+- **inventory:** Stock tracking (available, reserved, sold), distributed locking, 15-min sync
+- **shipment:** Tracking numbers, status updates, delivery confirmation
+- **logistics:** Delivery partner assignment, cost calculation, performance tracking
+
+---
+
+### 📄 Financial Modules
+
+```
+├── invoice/                      # Invoice generation
+│   ├── invoice.model.js          # Invoice schema
+│   ├── invoice.controller.js     # Invoice generation, download
+│   ├── invoice.routes.js         # /api/v1/invoices endpoints
+│   ├── invoice.service.js        # PDF generation, tax calculation
+│   ├── invoice.validation.js     # Invoice generation validation
+│   └── __tests__/
+```
+
+**Responsibilities:**
+- **invoice:** Automatic invoice generation (post-payment), PDF download, GST invoice, email delivery
+
+---
+
+### 🔔 Communication Modules
+
+```
+├── notification/                 # Multi-channel notifications
+│   ├── notification.model.js     # Notification record schema
+│   ├── notification.controller.js # Notification management, mark read
+│   ├── notification.routes.js    # /api/v1/notifications endpoints
+│   ├── notification.service.js   # Multi-channel dispatch (email, SMS, push, in-app)
+│   ├── notification.validation.js # Notification preferences validation
+│   └── __tests__/
+```
+
+**Responsibilities:**
+- **notification:** Email, SMS, push, in-app notifications, user preferences, read/unread status
+
+---
+
+### 📊 Analytics & Tracking Modules
+
+```
+├── analytics/                    # Business intelligence
+│   ├── analytics.model.js        # Analytics data schema
+│   ├── analytics.controller.js   # Dashboard data, reports
+│   ├── analytics.routes.js       # /api/v1/analytics endpoints
+│   ├── analytics.service.js      # Aggregation pipelines, metrics calculation
+│   ├── analytics.validation.js   # Report query validation
+│   └── __tests__/
+│
+├── audit/                        # Audit logging
+│   ├── audit.model.js            # Audit log schema
+│   ├── audit.controller.js       # Audit log retrieval
+│   ├── audit.routes.js           # /api/v1/audit endpoints (Admin only)
+│   ├── audit.service.js          # Log tracking, compliance queries
+│   ├── audit.validation.js       # Audit query validation
+│   └── __tests__/
+```
+
+**Responsibilities:**
+- **analytics:** Sales dashboard, revenue reports, product analytics, user analytics, cached metrics (1-hour TTL)
+- **audit:** Comprehensive audit logs (user actions, API calls), 90-day retention, compliance queries
+
+---
+
+### ⚙️ System Control Modules
+
+```
+├── settings/                     # System settings
+│   ├── settings.model.js         # Settings schema
+│   ├── settings.controller.js    # Settings management
+│   ├── settings.routes.js        # /api/v1/settings endpoints
+│   ├── settings.service.js       # Feature flags, maintenance mode
+│   ├── settings.validation.js    # Settings validation
+│   └── __tests__/
+```
+
+**Responsibilities:**
+- **settings:** Feature flags, maintenance mode, system configuration
+
+---
+
+## 📊 Module Count Summary
+
+| Category | Modules | Total Files |
+|----------|---------|-------------|
+| **Auth & Access** | 4 (auth, user, admin, superAdmin) | ~28 files |
+| **B2B Management** | 3 (company, vendor, credit) | ~21 files |
+| **E-Commerce Core** | 6 (category, product, pricing, promotion, search, review) | ~42 files |
+| **Shopping & Orders** | 3 (cart, wishlist, order) | ~21 files |
+| **Payment** | 1 (payment) | ~7 files |
+| **Logistics** | 4 (warehouse, inventory, shipment, logistics) | ~28 files |
+| **Financial** | 1 (invoice) | ~7 files |
+| **Communication** | 1 (notification) | ~7 files |
+| **Analytics** | 2 (analytics, audit) | ~14 files |
+| **System** | 1 (settings) | ~7 files |
+| **TOTAL** | **26 modules** | **~182 module files** |
+
+---
+
+**Total Backend Files:** 350+ files (including infrastructure, tests, docs)  
+**Last Updated:** May 2026  
+**Maintained By:** Mokshith Enterprises Engineering Team

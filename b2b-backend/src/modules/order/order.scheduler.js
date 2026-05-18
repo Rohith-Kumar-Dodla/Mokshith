@@ -1,5 +1,6 @@
 import Order from './order.model.js';
 import { sendNotification } from '../notification/notification.service.js';
+import { logger } from '../../config/logger.js';
 
 export const cancelPendingOrders = async () => {
   try {
@@ -22,8 +23,8 @@ export const cancelPendingOrders = async () => {
       });
     }
 
-    console.log(`✅ Expired orders cancelled: ${orders.length}`);
+    logger.info('Cancelled expired orders', { count: orders.length });
   } catch (error) {
-    console.error('❌ Order cleanup job failed:', error.message);
+    logger.error('Order cleanup job failed', { error: error.message, stack: error.stack });
   }
 };

@@ -1,37 +1,571 @@
-                ┌──────────────┐
-                │  AUTH SYSTEM │
-                └──────┬───────┘
-                       ↓
-        ┌────────────────────────────┐
-        │ USER / ADMIN / SUPERADMIN │
-        └──────────┬────────────────┘
-                   ↓
-        ┌────────────────────────────┐
-        │ COMPANY / VENDOR MANAGEMENT│
-        └──────────┬────────────────┘
-                   ↓
-        ┌────────────────────────────┐
-        │ PRODUCT / CATEGORY / SEARCH│
-        └──────────┬────────────────┘
-                   ↓
-        ┌────────────────────────────┐
-        │ CART / WISHLIST           │
-        └──────────┬────────────────┘
-                   ↓
-        ┌────────────────────────────┐
-        │ ORDER SYSTEM              │
-        └──────────┬────────────────┘
-                   ↓
-        ┌──────────────┬─────────────┐
-        ↓              ↓             ↓
-   PAYMENT        CREDIT        INVENTORY
-        ↓              ↓             ↓
-        └──────→ SHIPMENT / LOGISTICS
+# COMPLETE SYSTEM ARCHITECTURE
+
+> **B2B + B2C E-Commerce Backend - Production-Grade Architecture**
+
+---
+
+## System Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        CLIENT LAYER                             │
+│  (Web App, Mobile App, Admin Dashboard, Partner Integrations)  │
+└────────────────────────┬────────────────────────────────────────┘
                          ↓
-                    DELIVERY
+┌─────────────────────────────────────────────────────────────────┐
+│                     NGINX / LOAD BALANCER                       │
+│        (SSL Termination, Rate Limiting, Request Routing)        │
+└────────────────────────┬────────────────────────────────────────┘
                          ↓
-                     INVOICE
+┌─────────────────────────────────────────────────────────────────┐
+│                    API GATEWAY LAYER                            │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ CORS │ Helmet │ Compression │ Request Logger (Morgan)   │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Rate Limiting (Redis Store) │ Request Correlation ID    │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└────────────────────────┬────────────────────────────────────────┘
                          ↓
-                   NOTIFICATION
+┌─────────────────────────────────────────────────────────────────┐
+│                 AUTHENTICATION LAYER                            │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ JWT Validation │ Token Verification │ Session Check     │  │
+│  │ Refresh Token Rotation │ 2FA Support (TOTP)            │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└────────────────────────┬────────────────────────────────────────┘
                          ↓
-                     ANALYTICS
+┌─────────────────────────────────────────────────────────────────┐
+│                 AUTHORIZATION LAYER (RBAC)                      │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Role Check │ Permission Validation │ Resource Ownership │  │
+│  │ Roles: SuperAdmin, Admin, Vendor, Customer              │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└────────────────────────┬────────────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                   VALIDATION LAYER                              │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Joi Schema Validation │ Input Sanitization              │  │
+│  │ XSS Prevention │ MongoDB Injection Prevention           │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└────────────────────────┬────────────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────────────┐
+│              BUSINESS LOGIC LAYER (25+ Modules)                 │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ AUTH SYSTEM                                               │  │
+│  │ ├── auth/ (JWT, OTP, Refresh Tokens)                     │  │
+│  │ ├── user/ (Profile, Preferences)                         │  │
+│  │ ├── admin/ (User Management)                             │  │
+│  │ └── superAdmin/ (System Config)                          │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ E-COMMERCE CORE                                           │  │
+│  │ ├── product/ (Catalog, CRUD)                             │  │
+│  │ ├── category/ (Taxonomy)                                 │  │
+│  │ ├── search/ (Filters, Sorting)                           │  │
+│  │ ├── cart/ (Shopping Cart)                                │  │
+│  │ ├── wishlist/ (Saved Items)                              │  │
+│  │ └── review/ (Ratings, Comments)                          │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ ORDER & PAYMENT                                           │  │
+│  │ ├── order/ (Lifecycle Management)                        │  │
+│  │ ├── payment/ (Razorpay Integration)                      │  │
+│  │ ├── credit/ (B2B Credit System)                          │  │
+│  │ └── invoice/ (PDF Generation)                            │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ INVENTORY & LOGISTICS                                     │  │
+│  │ ├── inventory/ (Stock Tracking, Reservations)            │  │
+│  │ ├── warehouse/ (Multi-Warehouse)                         │  │
+│  │ ├── shipment/ (Tracking)                                 │  │
+│  │ └── logistics/ (Delivery Partners)                       │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ BUSINESS MANAGEMENT                                       │  │
+│  │ ├── company/ (B2B Organizations)                         │  │
+│  │ ├── vendor/ (Seller Management)                          │  │
+│  │ ├── pricing/ (Dynamic Pricing)                           │  │
+│  │ └── promotion/ (Discounts, Campaigns)                    │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ SYSTEM SUPPORT                                            │  │
+│  │ ├── notification/ (Email, SMS, Push)                     │  │
+│  │ ├── analytics/ (Business Intelligence)                   │  │
+│  │ ├── audit/ (Compliance, Logging)                         │  │
+│  │ └── settings/ (Configuration)                            │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└────────────────────────┬────────────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────────────┐
+│                    DATA ACCESS LAYER                            │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ Repository Pattern │ Mongoose ODM │ Query Optimization   │  │
+│  │ Connection Pooling │ Index Management │ Aggregations    │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└────────────────────────┬────────────────────────────────────────┘
+                         ↓
+┌──────────────────┬──────────────────┬─────────────────┬─────────┐
+│                  │                  │                 │         │
+│    MONGODB       │     REDIS        │    BULLMQ       │  RAZORPAY│
+│   (Primary DB)   │  (Cache/Locks)   │  (Job Queue)    │   (API)  │
+│                  │                  │                 │         │
+│ • 15+ Models     │ • Cache Store    │ • 8 Queues      │ • Orders │
+│ • Indexes        │ • Session Store  │ • Workers       │ • Refunds│
+│ • Replica Set    │ • Lock Manager   │ • Cron Jobs     │ • Webhooks│
+│ • Transactions   │ • Rate Limiter   │ • Retry Logic   │          │
+│                  │ • Pub/Sub        │                 │          │
+└──────────────────┴──────────────────┴─────────────────┴─────────┘
+```
+
+---
+
+## Detailed Component Architecture
+
+### 1. API Gateway Layer
+
+**Responsibilities:**
+- Request routing and load balancing
+- SSL/TLS termination
+- Request/response logging
+- Compression (gzip)
+- CORS handling
+- Security headers (Helmet.js)
+
+**Technologies:**
+- NGINX (production)
+- Express.js middleware stack
+- Morgan (HTTP logging)
+- Compression middleware
+
+---
+
+### 2. Authentication Layer
+
+**JWT Strategy:**
+- Access Token: 7 days expiry
+- Refresh Token: 30 days expiry
+- Token rotation on refresh
+- Redis-backed session store
+
+**Security Features:**
+- bcrypt password hashing (12 rounds)
+- OTP generation (TOTP)
+- 2FA support
+- Account lockout (5 failed attempts)
+- Session management across devices
+
+**Flow:**
+```
+Login → Validate Credentials → Generate JWT
+                                     ↓
+                              Store in Redis
+                                     ↓
+                           Return Access + Refresh
+```
+
+---
+
+### 3. Authorization Layer (RBAC)
+
+**Roles:**
+
+| Role | Permissions | Use Case |
+|------|-------------|----------|
+| **SuperAdmin** | All permissions | System administration |
+| **Admin** | User, Product, Order management | Platform management |
+| **Vendor** | Own products, own orders | Seller operations |
+| **Customer** | Browse, buy, review | Shopping |
+
+**Permission Model:**
+- Fine-grained permissions (e.g., `product:create`, `order:refund`)
+- Resource ownership validation
+- Dynamic permission checking
+
+---
+
+### 4. Business Logic Layer
+
+#### Module Architecture Pattern
+
+Each module follows layered architecture:
+
+```
+┌──────────────────────┐
+│   Routes (Router)    │ ← HTTP endpoints
+└──────────┬───────────┘
+           ↓
+┌──────────────────────┐
+│  Controller Layer    │ ← Request/Response handling
+└──────────┬───────────┘
+           ↓
+┌──────────────────────┐
+│   Service Layer      │ ← Business logic
+└──────────┬───────────┘
+           ↓
+┌──────────────────────┐
+│  Repository Layer    │ ← Data access
+└──────────┬───────────┘
+           ↓
+┌──────────────────────┐
+│   Model (Mongoose)   │ ← MongoDB schema
+└──────────────────────┘
+```
+
+**Key Patterns:**
+- **Repository Pattern:** Abstract data access
+- **Service Layer:** Encapsulate business logic
+- **Dependency Injection:** Loose coupling
+- **Error Boundaries:** Graceful error handling
+
+---
+
+### 5. Data Layer
+
+#### MongoDB (Primary Database)
+
+**Schema Design:**
+- 15+ collections (User, Product, Order, Payment, etc.)
+- Embedded documents for 1-to-few relationships
+- References for 1-to-many relationships
+- Compound indexes for query optimization
+
+**Optimization:**
+- Connection pooling (10 connections)
+- Query pagination
+- Aggregation pipelines for analytics
+- TTL indexes for auto-expiry (sessions, OTPs)
+
+**High Availability:**
+- Replica Set (3 nodes: Primary + 2 Secondary)
+- Automatic failover
+- Read preference: primaryPreferred
+
+#### Redis (Cache + Lock Manager)
+
+**Use Cases:**
+
+1. **Caching (80%+ hit ratio)**
+   - Product catalog (5-10 min TTL)
+   - User sessions (7 days)
+   - Rate limit counters (15 min window)
+   - Analytics aggregates (1 hour)
+
+2. **Distributed Locks**
+   - Inventory reservations
+   - Payment processing
+   - Order creation
+
+3. **Session Store**
+   - JWT refresh tokens
+   - Active sessions
+   - User preferences
+
+4. **Queue Backend (BullMQ)**
+   - Job persistence
+   - Worker coordination
+
+5. **Pub/Sub**
+   - Socket.io adapter (multi-instance)
+   - Real-time notifications
+
+**Configuration:**
+- ioredis client (primary)
+- redis package (Socket.io adapter)
+- Connection retry strategy
+- Graceful degradation if unavailable
+
+---
+
+### 6. Queue System (BullMQ)
+
+**8 Specialized Queues:**
+
+| Queue | Purpose | Priority | Concurrency | Retry |
+|-------|---------|----------|-------------|-------|
+| `emailQueue` | Send emails | Normal | 5 | 3x exponential |
+| `notificationQueue` | Push notifications | High | 10 | 5x exponential |
+| `inventoryQueue` | Stock sync | Normal | 3 | 2x fixed |
+| `paymentQueue` | Payment processing | Critical | 3 | 5x exponential |
+| `webhookQueue` | Third-party webhooks | Normal | 5 | 3x exponential |
+| `auditQueue` | Audit logs | Low | 2 | 1x |
+| `imageQueue` | Image processing | Low | 2 | 2x fixed |
+| `archivalQueue` | Data archival | Low | 1 | 1x |
+
+**Background Cron Jobs:**
+
+| Job | Schedule | Purpose |
+|-----|----------|---------|
+| Payment Reconciliation | Daily 2:00 AM | Verify Razorpay transactions |
+| Inventory Sync | Every 15 min | Multi-warehouse stock sync |
+| Credit Reminders | Daily 9:00 AM | B2B payment due notices |
+| Order Cleanup | Daily 1:00 AM | Archive old orders |
+| Analytics Update | Hourly | Refresh cached statistics |
+| Cleanup | Daily 3:00 AM | Expire sessions/tokens |
+
+---
+
+### 7. External Integrations
+
+#### Razorpay (Payment Gateway)
+
+**Integration Points:**
+- Order creation API
+- Payment capture webhook
+- Refund processing API
+- Signature verification (HMAC-SHA256)
+
+**Security:**
+- Webhook signature validation
+- Idempotency keys
+- Server-side amount verification
+- PCI compliance considerations
+
+**Flow:**
+```
+1. User initiates checkout
+2. Backend creates Razorpay order
+3. Frontend shows Razorpay modal
+4. User completes payment
+5. Razorpay sends webhook
+6. Backend verifies signature
+7. Update order status
+8. Queue invoice generation
+9. Send confirmation email
+```
+
+---
+
+## Concurrency & Reliability
+
+### Distributed Locking Strategy
+
+**Use Cases:**
+- **Inventory Reservation:** Prevent overselling
+- **Payment Processing:** Prevent double charges
+- **Order Creation:** Ensure atomicity
+
+**Implementation:**
+```javascript
+// Redis-based distributed lock
+const lockKey = `lock:inventory:${productId}`;
+await acquireLock(lockKey, 10); // 10s TTL
+
+try {
+  // Critical section: atomic stock update
+  await Inventory.findOneAndUpdate(
+    { productId, availableStock: { $gte: quantity } },
+    { $inc: { availableStock: -qty, reservedStock: qty } }
+  );
+} finally {
+  await releaseLock(lockKey);
+}
+```
+
+### Idempotency Keys
+
+**Purpose:** Prevent duplicate operations from retries
+
+**Implementation:**
+- Client sends `Idempotency-Key` header
+- Server checks Redis cache
+- If exists, return cached response
+- If new, process and cache result (24 hours)
+
+**Protected Endpoints:**
+- Payment processing
+- Order creation
+- Refund requests
+
+### MongoDB Transactions
+
+**Use Cases:**
+- Multi-document updates (Order + Inventory + Credit)
+- Ensure ACID properties
+
+**Example:**
+```javascript
+const session = await mongoose.startSession();
+session.startTransaction();
+
+try {
+  await Order.create([orderData], { session });
+  await Inventory.update({...}, { session });
+  await Credit.update({...}, { session });
+  
+  await session.commitTransaction();
+} catch (error) {
+  await session.abortTransaction();
+  throw error;
+} finally {
+  session.endSession();
+}
+```
+
+---
+
+## Scalability Architecture
+
+### Horizontal Scaling
+
+**Stateless Design:**
+- No session data on application servers
+- All state in Redis (shared)
+- Load balancer distributes requests
+- Multiple Node.js instances (PM2 cluster mode)
+
+**Configuration:**
+```bash
+# PM2 cluster mode - one instance per CPU core
+pm2 start ecosystem.config.js -i max
+```
+
+### Caching Strategy
+
+**Multi-Layer Caching:**
+
+1. **Application Cache (Redis)**
+   - Product catalog: 10 min TTL
+   - User sessions: 7 days
+   - API responses: 5 min
+
+2. **Database Query Cache**
+   - MongoDB query cache
+   - Mongoose lean queries
+
+3. **CDN (Future)**
+   - Static assets
+   - Product images
+
+### Database Scaling
+
+**MongoDB:**
+- Replica Set (read scaling)
+- Sharding (future - for >100M documents)
+- Index optimization
+- Connection pooling
+
+**Redis:**
+- Single instance (current)
+- Redis Cluster (future - for >10GB data)
+- Sentinel (high availability)
+
+---
+
+## Monitoring & Observability
+
+### Logging Stack
+
+**Winston (Application Logs):**
+- Structured JSON logs
+- Log levels: error, warn, info, http, debug
+- Rotate logs (max 5MB, 5 files)
+- Separate error logs
+
+**Morgan (HTTP Logs):**
+- Request/response logging
+- Response time tracking
+- Custom format for production
+
+### Metrics Tracking
+
+**Custom Metrics (Redis):**
+- Request counters
+- Response times
+- Business metrics (orders, revenue)
+- Error rates
+
+**Health Checks:**
+- `/health` - Basic liveness probe
+- `/health/detailed` - MongoDB, Redis status
+
+### Error Tracking
+
+**Sentry Integration:**
+- Automatic error capture
+- Source maps for stack traces
+- User context (userId, IP)
+- Performance monitoring
+
+---
+
+## Security Architecture
+
+### Defense in Depth
+
+**Layer 1: Network**
+- Firewall rules
+- VPC (if cloud)
+- DDoS protection (Cloudflare)
+
+**Layer 2: Transport**
+- HTTPS/TLS 1.3
+- Certificate management
+
+**Layer 3: Application**
+- Helmet.js (security headers)
+- Rate limiting
+- CORS whitelist
+
+**Layer 4: Authentication**
+- JWT with strong secrets
+- Password hashing (bcrypt)
+- 2FA support
+
+**Layer 5: Authorization**
+- RBAC
+- Resource ownership checks
+
+**Layer 6: Data**
+- Input validation (Joi)
+- SQL/NoSQL injection prevention
+- XSS protection
+
+**Layer 7: Audit**
+- Comprehensive audit logs
+- Action tracking
+- Compliance (90-day retention)
+
+---
+
+## Deployment Architecture
+
+### Development
+```
+Local Machine → nodemon → MongoDB (local) → Redis (local)
+```
+
+### Staging
+```
+GitHub → CI/CD → Docker Build → Staging Server → Health Check
+```
+
+### Production
+```
+GitHub → Manual Approval → Docker Build → Blue-Green Deployment
+                                               ↓
+                                         Load Balancer
+                                               ↓
+                                  ┌────────────┴────────────┐
+                                  ↓                         ↓
+                             Instance 1                Instance 2
+                             (PM2 Cluster)             (PM2 Cluster)
+                                  ↓                         ↓
+                           ┌──────┴───────┐         ┌──────┴───────┐
+                           ↓              ↓         ↓              ↓
+                      MongoDB      Redis/BullMQ    MongoDB    Redis/BullMQ
+                     (Replica Set)               (Replica Set)
+```
+
+---
+
+**Last Updated:** May 2026  
+**Architecture Version:** 2.0  
+**Maintained By:** Mokshith Enterprises Engineering Team

@@ -75,3 +75,6 @@ export const protect = async (req, res, next) => {
     next(new AppError('Authentication failed', 401));
   }
 };
+
+// Alias for consistency with new RBAC system
+export const authenticate = protect;
