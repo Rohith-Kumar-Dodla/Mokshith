@@ -299,6 +299,14 @@ export const logoutAll = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Get CSRF Token
+ */
+export const getCsrfTokenHandler = asyncHandler(async (req, res) => {
+  const token = getCsrfToken(req, res);
+  successResponse(res, { csrfToken: token });
+});
+
+/**
  * Get active sessions
  */
 export const getActiveSessions = asyncHandler(async (req, res) => {

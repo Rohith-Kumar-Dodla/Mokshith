@@ -24,6 +24,7 @@ router.post('/login', authLimiter, validate(loginSchema), controller.login);
 router.post('/send-otp', authLimiter, validate(otpSchema), controller.sendOTP);
 router.post('/verify-otp', authLimiter, validate(verifyOtpSchema), controller.verifyOTP);
 router.post('/refresh-token', controller.refreshToken);
+router.get('/csrf-token', controller.getCsrfTokenHandler);
 
 // 2FA routes
 router.post('/2fa/verify', authLimiter, validate(verify2FASchema), controller.verify2FA);
@@ -38,9 +39,9 @@ router.post('/2fa/disable', csrfProtection, controller.disable2FA);
 router.post('/change-password', csrfProtection, validate(changePasswordSchema), controller.changePassword);
 
 // Session management
-router.post('/logout', csrfProtection(), controller.logout);
-router.post('/logout-all', csrfProtection(), controller.logoutAll);
+router.post('/logout', csrfProtection, controller.logout);
+router.post('/logout-all', csrfProtection, controller.logoutAll);
 router.get('/sessions', controller.getActiveSessions);
-router.delete('/sessions/:tokenId', csrfProtection(), controller.revokeSession);
+router.delete('/sessions/:tokenId', csrfProtection, controller.revokeSession);
 
 export default router;

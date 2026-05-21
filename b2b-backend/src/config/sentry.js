@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/node';
-import { ProfilingIntegration } from '@sentry/profiling-node';
+import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import { logger } from './logger.js';
 
 export const initializeSentry = (app) => {
@@ -20,14 +20,7 @@ export const initializeSentry = (app) => {
       profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
       integrations: [
-        // Express integration
-        new Sentry.Integrations.Http({ tracing: true }),
-        new Sentry.Integrations.Express({ app }),
-        new ProfilingIntegration(),
-        // MongoDB integration
-        new Sentry.Integrations.Mongo({
-          useMongoose: true
-        })
+        nodeProfilingIntegration(),
       ],
 
       // Filter sensitive data
@@ -75,28 +68,19 @@ export const initializeSentry = (app) => {
   }
 };
 
-// Request handler (must be first middleware)
+// Request handler (no longer needed in Sentry v8 but kept for compatibility)
 export const sentryRequestHandler = () => {
-  return Sentry.Handlers.requestHandler({
-    user: ['id', 'email', 'role'],
-    ip: true,
-    transaction: 'methodPath'
-  });
+  return (req, res, next) => next();
 };
 
-// Tracing handler
+// Tracing handler (no longer needed in Sentry v8 but kept for compatibility)
 export const sentryTracingHandler = () => {
-  return Sentry.Handlers.tracingHandler();
+  return (req, res, next) => next();
 };
 
 // Error handler (must be after all routes)
 export const sentryErrorHandler = () => {
-  return Sentry.Handlers.errorHandler({
-    shouldHandleError(error) {
-      // Capture all errors with status code >= 500
-      return !error.statusCode || error.statusCode >= 500;
-    }
-  });
+  return (error, req, res, next) => next(error);
 };
 
 // Manual error capture

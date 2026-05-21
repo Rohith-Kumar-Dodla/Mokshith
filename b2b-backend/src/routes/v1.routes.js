@@ -42,51 +42,54 @@ import searchRoutes from '../modules/search/search.routes.js';
 import adminRoutes from '../modules/admin/admin.routes.js';
 import superAdminRoutes from '../modules/superAdmin/superAdmin.routes.js';
 
+import { authenticate } from '../middlewares/auth.middleware.js';
+import { injectCsrfToken } from '../middlewares/csrf.middleware.js';
+
 const router = express.Router();
 
 // 🔐 Auth & Users
 router.use('/auth', authRoutes);
-router.use('/users', userRoutes);
+router.use('/users', authenticate, injectCsrfToken, userRoutes);
 
 // 🏢 Organization
-router.use('/companies', companyRoutes);
-router.use('/vendors', vendorRoutes);
+router.use('/companies', authenticate, injectCsrfToken, companyRoutes);
+router.use('/vendors', authenticate, injectCsrfToken, vendorRoutes);
 
 // 🛍️ Catalog
-router.use('/categories', categoryRoutes);
-router.use('/products', productRoutes);
+router.use('/categories', authenticate, injectCsrfToken, categoryRoutes);
+router.use('/products', productRoutes); // Products list is public
 router.use('/pricing', pricingRoutes);
-router.use('/promotions', promotionRoutes);
+router.use('/promotions', authenticate, injectCsrfToken, promotionRoutes);
 
 // 🛒 Buying
-router.use('/cart', cartRoutes);
-router.use('/wishlist', wishlistRoutes);
-router.use('/orders', orderRoutes);
+router.use('/cart', authenticate, injectCsrfToken, cartRoutes);
+router.use('/wishlist', authenticate, injectCsrfToken, wishlistRoutes);
+router.use('/orders', authenticate, injectCsrfToken, orderRoutes);
 
 // 💳 Finance
-router.use('/payments', paymentRoutes);
-router.use('/invoices', invoiceRoutes);
-router.use('/credit', creditRoutes);
+router.use('/payments', paymentRoutes); // Payments has its own internal protection logic
+router.use('/invoices', authenticate, injectCsrfToken, invoiceRoutes);
+router.use('/credit', authenticate, injectCsrfToken, creditRoutes);
 
 // 🚚 Logistics
-router.use('/warehouses', warehouseRoutes);
-router.use('/inventory', inventoryRoutes);
-router.use('/shipments', shipmentRoutes);
-router.use('/logistics', logisticsRoutes);
+router.use('/warehouses', authenticate, injectCsrfToken, warehouseRoutes);
+router.use('/inventory', authenticate, injectCsrfToken, inventoryRoutes);
+router.use('/shipments', authenticate, injectCsrfToken, shipmentRoutes);
+router.use('/logistics', authenticate, injectCsrfToken, logisticsRoutes);
 
 // 🔔 Support
-router.use('/notifications', notificationRoutes);
-router.use('/analytics', analyticsRoutes);
+router.use('/notifications', authenticate, injectCsrfToken, notificationRoutes);
+router.use('/analytics', authenticate, injectCsrfToken, analyticsRoutes);
 router.use('/settings', settingsRoutes);
-router.use('/support', supportRoutes);
+router.use('/support', authenticate, injectCsrfToken, supportRoutes);
 
 // 🔍 Engagement
 router.use('/reviews', reviewRoutes);
 router.use('/search', searchRoutes);
 
 // 🛡️ Admin
-router.use('/admin', adminRoutes);
-router.use('/super-admin', superAdminRoutes);
-router.use('/superadmin', superAdminRoutes); // Alias for frontend
+router.use('/admin', authenticate, injectCsrfToken, adminRoutes);
+router.use('/super-admin', authenticate, injectCsrfToken, superAdminRoutes);
+router.use('/superadmin', authenticate, injectCsrfToken, superAdminRoutes);
 
 export default router;

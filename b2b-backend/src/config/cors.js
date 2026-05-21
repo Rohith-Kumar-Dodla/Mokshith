@@ -35,6 +35,7 @@ export const corsConfig = cors({
     'Authorization', 
     'X-Requested-With', 
     'Accept',
+    'x-csrf-token', // 🔥 Support CSRF protection
     'idempotency-key', // 🔥 Support idempotency
     'x-razorpay-signature' // 🔥 Support Razorpay webhooks
   ],

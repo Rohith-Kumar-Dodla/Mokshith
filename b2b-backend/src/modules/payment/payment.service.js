@@ -631,7 +631,9 @@ export const handleWebhook = async (rawBody, signature) => {
         };
         await order.save();
         
-        // 🔒 STOP entire payment processing immediately\n        throw new AppError('Payment amount mismatch detected - transaction rejected for security', 400);\n      }
+        // 🔒 STOP entire payment processing immediately
+        throw new AppError('Payment amount mismatch detected - transaction rejected for security', 400);
+      }
       
       order.paymentStatus = 'PAID';
       order.status = 'CONFIRMED';

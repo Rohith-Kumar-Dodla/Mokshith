@@ -52,8 +52,20 @@ export const csrfProtection = (req, res, next) => {
   }
   
   // Skip CSRF for public auth endpoints (login, register, etc.)
-  const publicEndpoints = ['/api/auth/login', '/api/auth/register', '/api/auth/send-otp', '/api/auth/verify-otp', '/api/auth/refresh-token', '/api/auth/2fa/verify'];
-  if (publicEndpoints.includes(req.path)) {
+  const publicEndpoints = [
+    '/auth/login', 
+    '/auth/register', 
+    '/auth/send-otp', 
+    '/auth/verify-otp', 
+    '/auth/refresh-token', 
+    '/auth/2fa/verify',
+    '/auth/csrf-token'
+  ];
+  
+  // Use regex or check if path ends with public endpoint to handle /api/v1 prefix
+  const isPublic = publicEndpoints.some(endpoint => req.path.endsWith(endpoint));
+  
+  if (isPublic) {
     return next();
   }
 
@@ -110,11 +122,7 @@ export const csrfProtection = (req, res, next) => {
  * Add this to login/register responses
  */
 export const getCsrfToken = (req, res) => {
-  const token = setCsrfToken(res);
-  
-  return {
-    csrfToken: token
-  };
+  return setCsrfToken(res);
 };
 
 /**

@@ -57,7 +57,6 @@ router.delete(
   authenticate,
   requireRole(ROLES.SUPER_ADMIN),
   requirePermission(PERMISSIONS.USERS_DELETE),
-  authorize('ADMIN', 'SUPER_ADMIN'),
   controller.deleteUser
 );
 

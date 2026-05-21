@@ -60,7 +60,7 @@ router.patch(
   csrfProtection,
   controller.loadProduct,
   requireOwnershipOr('product', 'vendorId', PERMISSIONS.INVENTORY_UPDATE),
-  authorize('ADMIN', 'SUPER_ADMIN'),
+  requireRole(ROLES.ADMIN, ROLES.SUPER_ADMIN),
   controller.updateStock,
   clearCacheMiddleware(['cache:*products*', 'cache:product:*'])
 );
@@ -68,8 +68,8 @@ router.patch(
 // ADMIN/SUPER_ADMIN: Update status
 router.patch(
   '/:id/status',
-  protect,
-  authorize('ADMIN', 'SUPER_ADMIN'),
+  authenticate,
+  requireRole(ROLES.ADMIN, ROLES.SUPER_ADMIN),
   controller.updateStatus
 );
 
