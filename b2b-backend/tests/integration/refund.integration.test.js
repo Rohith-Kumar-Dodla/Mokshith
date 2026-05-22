@@ -88,11 +88,19 @@ describe('Refund Integration Tests', () => {
     // Create paid order
     testOrder = await Order.create({
       userId: testUser._id,
-      items: [{ productId: testProduct._id, quantity: 5, price: 1000 }],
+      items: [{ productId: testProduct._id, name: 'Refund Test Product', quantity: 5, price: 1000 }],
       totalAmount: 5000,
       paymentStatus: 'PAID',
       status: 'CONFIRMED',
       paymentMethod: 'ONLINE',
+      address: {
+        name: 'Refund Test User',
+        phone: '9876543210',
+        addressLine: '123 Test Street',
+        city: 'Test City',
+        state: 'Test State',
+        pincode: '123456',
+      },
     });
 
     testPayment = await Payment.create({
@@ -191,10 +199,18 @@ describe('Refund Integration Tests', () => {
       // Create unpaid order
       const unpaidOrder = await Order.create({
         userId: testUser._id,
-        items: [{ productId: testProduct._id, quantity: 2, price: 1000 }],
+        items: [{ productId: testProduct._id, name: 'Refund Test Product', quantity: 2, price: 1000 }],
         totalAmount: 2000,
         paymentStatus: 'PENDING',
         status: 'PENDING',
+        address: {
+          name: 'Refund Test User',
+          phone: '9876543210',
+          addressLine: '123 Test Street',
+          city: 'Test City',
+          state: 'Test State',
+          pincode: '123456',
+        },
       });
 
       const res = await request(app)
@@ -329,12 +345,20 @@ describe('Refund Integration Tests', () => {
       const multiItemOrder = await Order.create({
         userId: testUser._id,
         items: [
-          { productId: testProduct._id, quantity: 3, price: 1000 },
-          { productId: product2._id, quantity: 2, price: 500 },
+          { productId: testProduct._id, name: 'Refund Test Product', quantity: 3, price: 1000 },
+          { productId: product2._id, name: 'Test Product 2', quantity: 2, price: 500 },
         ],
         totalAmount: 4000,
         paymentStatus: 'PAID',
         status: 'CONFIRMED',
+        address: {
+          name: 'Refund Test User',
+          phone: '9876543210',
+          addressLine: '123 Test Street',
+          city: 'Test City',
+          state: 'Test State',
+          pincode: '123456',
+        },
       });
 
       await Payment.create({
@@ -397,10 +421,18 @@ describe('Refund Integration Tests', () => {
     it('should return empty array for orders with no refunds', async () => {
       const newOrder = await Order.create({
         userId: testUser._id,
-        items: [{ productId: testProduct._id, quantity: 1, price: 1000 }],
+        items: [{ productId: testProduct._id, name: 'Refund Test Product', quantity: 1, price: 1000 }],
         totalAmount: 1000,
         paymentStatus: 'PAID',
         status: 'CONFIRMED',
+        address: {
+          name: 'Refund Test User',
+          phone: '9876543210',
+          addressLine: '123 Test Street',
+          city: 'Test City',
+          state: 'Test State',
+          pincode: '123456',
+        },
       });
 
       const res = await request(app)

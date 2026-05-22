@@ -94,10 +94,18 @@ describe('Load & Concurrency Tests', () => {
       await Order.create({
         _id: orderId,
         userId,
-        items: [{ productId, quantity: 1, price: 100 }],
+        items: [{ productId, name: 'Test Product', quantity: 1, price: 100 }],
         totalAmount: 100,
         paymentStatus: 'PENDING',
         status: 'PENDING',
+        address: {
+          name: 'Test User',
+          phone: '9876543210',
+          addressLine: '123 Test Street',
+          city: 'Test City',
+          state: 'Test State',
+          pincode: '123456',
+        },
       });
 
       // Simulate 100 concurrent payment verification attempts

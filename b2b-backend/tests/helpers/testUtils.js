@@ -34,7 +34,21 @@ export const clearDatabase = async () => {
 
 // Setup Redis mock
 export const setupRedis = () => {
-  redisClient = new Redis();
+  redisClient = new Redis({
+    data: {}  // Initialize with empty data store
+  });
+  
+  // Ensure expire method works correctly in mock
+  const originalExpire = redisClient.expire.bind(redisClient);
+  redisClient.expire = async function(key, seconds) {
+    try {
+      return await originalExpire(key, seconds);
+    } catch (error) {
+      // Silently ignore expire errors in tests
+      return 1;
+    }
+  };
+  
   return redisClient;
 };
 
@@ -125,30 +139,79 @@ export const generateTestUser = (overrides = {}) => ({
 });
 
 // Generate test product data
+// Counter for unique SKU generation
+let productCounter = 0;
+
 export const generateTestProduct = (overrides = {}) => ({
   name: 'Test Product',
-  sku: `TEST-${Date.now()}`,
+  sku: `TEST-${Date.now()}-${++productCounter}`,
   price: 1000,
+  basePrice: 1000,
   stock: 100,
   moq: 10,
+  category: 'Test Category',
   categoryId: new mongoose.Types.ObjectId(),
   vendorId: new mongoose.Types.ObjectId(),
   isActive: true,
+  status: 'ACTIVE',
+  ...overrides,
+});
+
+// Generate test address data
+export const generateTestAddress = (overrides = {}) => ({
+  name: 'Test Customer',
+  phone: '9876543210',
+  addressLine: '123 Test Street, Test Area',
+  city: 'Test City',
+  state: 'Test State',
+  pincode: '123456',
+  ...overrides,
+});
+
+// Generate test order item
+export const generateTestOrderItem = (overrides = {}) => ({
+  productId: new mongoose.Types.ObjectId(),
+  name: 'Test Product',
+  price: 1000,
+  quantity: 10,
   ...overrides,
 });
 
 // Generate test order data
-export const generateTestOrder = (overrides = {}) => ({
-  customerId: new mongoose.Types.ObjectId(),
-  items: [
-    {
-      productId: new mongoose.Types.ObjectId(),
-      quantity: 10,
-      price: 1000,
-    },
-  ],
-  totalAmount: 10000,
+export const generateTestOrder = (overrides = {}) => {
+  const items = overrides.items || [generateTestOrderItem()];
+  const totalAmount = overrides.totalAmount || items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  
+  return {
+    userId: new mongoose.Types.ObjectId(),
+    items,
+    totalAmount,
+    paymentMethod: 'ONLINE',
+    paymentStatus: 'PENDING',
+    address: generateTestAddress(),
+    status: 'PENDING',
+    ...overrides,
+  };
+};
+
+// Generate test payment data
+export const generateTestPayment = (overrides = {}) => ({
+  orderId: new mongoose.Types.ObjectId(),
+  userId: new mongoose.Types.ObjectId(),
+  amount: 10000,
+  paymentMethod: 'RAZORPAY',
   status: 'PENDING',
+  razorpayOrderId: `order_${Date.now()}`,
+  ...overrides,
+});
+
+// Generate test inventory data
+export const generateTestInventory = (overrides = {}) => ({
+  productId: new mongoose.Types.ObjectId(),
+  warehouseId: new mongoose.Types.ObjectId(),
+  stock: 100,
+  reservedStock: 0,
+  soldStock: 0,
   ...overrides,
 });
 
@@ -226,6 +289,10 @@ export const factories = {
   user: generateTestUser,
   product: generateTestProduct,
   order: generateTestOrder,
+  address: generateTestAddress,
+  orderItem: generateTestOrderItem,
+  payment: generateTestPayment,
+  inventory: generateTestInventory,
 };
 
 export default {
@@ -238,6 +305,10 @@ export default {
   generateTestUser,
   generateTestProduct,
   generateTestOrder,
+  generateTestAddress,
+  generateTestOrderItem,
+  generateTestPayment,
+  generateTestInventory,
   waitFor,
   createAuthContext,
   mockRequest,

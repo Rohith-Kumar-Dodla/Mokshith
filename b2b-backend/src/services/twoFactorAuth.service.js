@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { authenticator } from 'otplib';
 import QRCode from 'qrcode';
+import bcrypt from 'bcryptjs';
 import AppError from '../errors/AppError.js';
 import { logger } from '../config/logger.js';
 
@@ -83,7 +84,6 @@ class TwoFactorAuthService {
    * Hash backup code for storage
    */
   async hashBackupCode(code) {
-    const bcrypt = await import('bcryptjs');
     return bcrypt.hash(code, 10);
   }
 
@@ -91,7 +91,6 @@ class TwoFactorAuthService {
    * Verify backup code
    */
   async verifyBackupCode(code, hashedCode) {
-    const bcrypt = await import('bcryptjs');
     return bcrypt.compare(code, hashedCode);
   }
 

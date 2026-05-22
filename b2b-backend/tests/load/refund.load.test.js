@@ -87,11 +87,19 @@ describe('Refund System Load Tests', () => {
     // Create paid order
     const order = await Order.create({
       userId,
-      items: [{ productId, quantity: 5, price: 1000 }],
+      items: [{ productId, name: 'Test Product', quantity: 5, price: 1000 }],
       totalAmount: 5000,
       paymentStatus: 'PAID',
       status: 'CONFIRMED',
       paymentMethod: 'ONLINE',
+      address: {
+        name: 'Test User',
+        phone: '9876543210',
+        addressLine: '123 Test Street',
+        city: 'Test City',
+        state: 'Test State',
+        pincode: '123456',
+      },
     });
     orderId = order._id;
 
@@ -157,11 +165,19 @@ describe('Refund System Load Tests', () => {
       // Create new order for this test
       const testOrder = await Order.create({
         userId,
-        items: [{ productId, quantity: 10, price: 1000 }],
+        items: [{ productId, name: 'Test Product', quantity: 10, price: 1000 }],
         totalAmount: 10000,
         paymentStatus: 'PAID',
         status: 'CONFIRMED',
         paymentMethod: 'ONLINE',
+        address: {
+          name: 'Test User',
+          phone: '9876543210',
+          addressLine: '123 Test Street',
+          city: 'Test City',
+          state: 'Test State',
+          pincode: '123456',
+        },
       });
 
       const testPayment = await Payment.create({
@@ -220,11 +236,19 @@ describe('Refund System Load Tests', () => {
       // Create order for partial refund
       const partialOrder = await Order.create({
         userId,
-        items: [{ productId, quantity: 5, price: 1000 }],
+        items: [{ productId, name: 'Test Product', quantity: 5, price: 1000 }],
         totalAmount: 5000,
         paymentStatus: 'PAID',
         status: 'CONFIRMED',
         paymentMethod: 'ONLINE',
+        address: {
+          name: 'Test User',
+          phone: '9876543210',
+          addressLine: '123 Test Street',
+          city: 'Test City',
+          state: 'Test State',
+          pincode: '123456',
+        },
       });
 
       const partialPayment = await Payment.create({

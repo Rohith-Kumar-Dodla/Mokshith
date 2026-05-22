@@ -1,5 +1,5 @@
 import { jest, beforeAll, afterAll } from '@jest/globals';
-import { setupTestDB, teardownTestDB, setupRedis, teardownRedis } from './helpers/testUtils.js';
+import { setupTestDB, teardownTestDB } from './helpers/testUtils.js';
 import dotenv from 'dotenv';
 
 // Load test environment variables
@@ -15,13 +15,11 @@ process.env.RAZORPAY_KEY_SECRET = 'test_razorpay_secret';
 // Setup before all tests
 beforeAll(async () => {
   await setupTestDB();
-  setupRedis();
 }, 60000);
 
 // Teardown after all tests
 afterAll(async () => {
   await teardownTestDB();
-  await teardownRedis();
 }, 60000);
 
 // Suppress console logs in tests (optional)

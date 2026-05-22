@@ -55,11 +55,19 @@ describe('Partial Failure Tests', () => {
     // Create test order
     testOrder = await Order.create({
       userId: testUser._id,
-      items: [{ productId: testProduct._id, quantity: 2, price: 1000 }],
+      items: [{ productId: testProduct._id, name: 'Test Product', quantity: 2, price: 1000 }],
       totalAmount: 2000,
       paymentStatus: 'PAID',
       status: 'CONFIRMED',
       paymentMethod: 'ONLINE',
+      address: {
+        name: 'Test User',
+        phone: '9876543210',
+        addressLine: '123 Test Street',
+        city: 'Test City',
+        state: 'Test State',
+        pincode: '123456',
+      },
     });
 
     testPayment = await Payment.create({
