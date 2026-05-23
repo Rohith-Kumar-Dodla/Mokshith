@@ -196,7 +196,11 @@ export const createOrder = async (userId, data) => {
   try {
     if (supportsTransactions) {
       session = await mongoose.startSession();
-      session.startTransaction();
+      session.startTransaction({
+        readPreference: 'primary',
+        readConcern: { level: 'snapshot' },
+        writeConcern: { w: 'majority' }
+      });
     }
 
     // Create order
