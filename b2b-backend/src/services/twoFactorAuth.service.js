@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { authenticator } from 'otplib';
+import { authenticator } from '@otplib/preset-default';
 import QRCode from 'qrcode';
 import bcrypt from 'bcryptjs';
 import AppError from '../errors/AppError.js';
