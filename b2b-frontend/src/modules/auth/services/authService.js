@@ -13,6 +13,9 @@ export const authService = {
       if (responseData?.refreshToken) {
         localStorage.setItem("refreshToken", responseData.refreshToken);
       }
+      if (responseData?.csrfToken) {
+        localStorage.setItem("csrfToken", responseData.csrfToken);
+      }
       if (responseData?.user) {
         localStorage.setItem("user", JSON.stringify(responseData.user));
       }
@@ -63,6 +66,20 @@ export const authService = {
       localStorage.removeItem("refreshToken");
       localStorage.removeItem("user");
       throw new Error(error || "Token refresh failed");
+    }
+  },
+
+  async fetchCsrfToken() {
+    try {
+      const res = await apiClient.get("/auth/csrf-token");
+      const responseData = res.data || res;
+      if (responseData?.csrfToken) {
+        localStorage.setItem("csrfToken", responseData.csrfToken);
+      }
+      return responseData;
+    } catch (error) {
+      console.error("Failed to fetch CSRF token:", error);
+      return null;
     }
   },
 };

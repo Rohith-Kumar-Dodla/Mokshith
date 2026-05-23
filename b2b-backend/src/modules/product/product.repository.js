@@ -13,8 +13,11 @@ export const findProducts = (filter, options) => {
     .populate('categoryId', 'name') // 🔥 Populating only necessary fields
     .populate('vendorId', 'name')
     .populate('companyId', 'name')
-    .lean(); // 🔥 Performance: Convert to plain objects
+    .lean() // 🔥 Performance: Convert to plain objects
+    .maxTimeMS(5000); // Query timeout
 };
+
+export const countProducts = (filter) => Product.countDocuments(filter).maxTimeMS(3000);
 
 export const findById = (id) =>
   Product.findById(id).populate('categoryId vendorId companyId');

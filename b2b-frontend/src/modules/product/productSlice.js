@@ -2,6 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
   products: [],
+  pagination: null,
   selectedProduct: null,
   loading: false,
   error: null,
@@ -17,7 +18,18 @@ const productSlice = createSlice({
     },
     fetchProductsSuccess: (state, action) => {
       state.loading = false;
-      state.products = action.payload.data || action.payload; // Handle both direct array and {data: []}
+      const payloadData = action.payload.data || action.payload;
+      
+      if (Array.isArray(payloadData)) {
+        state.products = payloadData;
+        state.pagination = null;
+      } else if (payloadData && typeof payloadData === 'object') {
+        state.products = payloadData.products || [];
+        state.pagination = payloadData.pagination || null;
+      } else {
+        state.products = [];
+        state.pagination = null;
+      }
     },
     fetchProductDetailSuccess: (state, action) => {
       state.loading = false;

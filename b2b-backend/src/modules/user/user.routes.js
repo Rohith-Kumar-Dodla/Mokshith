@@ -1,54 +1,62 @@
 import express from 'express';
 import * as controller from './user.controller.js';
-import { protect } from '../../middlewares/auth.middleware.js';
-import { authorize } from '../../middlewares/role.middleware.js';
+import { authenticate } from '../../middlewares/auth.middleware.js';
+import { requirePermission, requireRole } from '../../middlewares/permission.middleware.js';
 import { validate } from '../../middlewares/validate.middleware.js';
 import { updateProfileSchema } from './user.validation.js';
-import { uploadImage } from '../../middlewares/upload.middleware.js';
+import { uploadImageToCloud } from '../../middlewares/upload.middleware.js';
+import { csrfProtection } from '../../middlewares/csrf.middleware.js';
+import { PERMISSIONS } from '../../constants/permissions.js';
+import { ROLES } from '../../constants/roles.js';
 
 const router = express.Router();
 
-// USER
-router.get('/me', protect, controller.getProfile);
+// USER - Read operations (no CSRF)
+router.get('/me', authenticate, controller.getProfile);
+router.get('/sessions', authenticate, controller.getActiveSessions);
 
+// USER - State-changing operations (CSRF protected)
 router.put(
   '/me',
-  protect,
+  authenticate,
+  csrfProtection,
   validate(updateProfileSchema),
   controller.updateProfile
 );
 
 router.post(
   '/profile-image',
-  protect,
-  uploadImage.single('image'),
+  authenticate,
+  csrfProtection,
+  uploadImageToCloud('image'),
   controller.updateProfileImage
 );
 
-router.put('/change-password', protect, controller.changePassword);
-
-router.get('/sessions', protect, controller.getActiveSessions);
-router.post('/logout-all', protect, controller.logoutFromAllDevices);
+router.put('/change-password', authenticate, csrfProtection, controller.changePassword);
+router.post('/logout-all', authenticate, csrfProtection, controller.logoutFromAllDevices);
 
 // ADMIN
 router.get(
   '/',
-  protect,
-  authorize('ADMIN', 'SUPER_ADMIN'),
+  authenticate,
+  requireRole(ROLES.ADMIN, ROLES.SUPER_ADMIN),
+  requirePermission(PERMISSIONS.USERS_LIST),
   controller.getAllUsers
 );
 
 router.get(
   '/:id',
-  protect,
-  authorize('ADMIN', 'SUPER_ADMIN'),
+  authenticate,
+  requireRole(ROLES.ADMIN, ROLES.SUPER_ADMIN),
+  requirePermission(PERMISSIONS.USERS_READ),
   controller.getUserById
 );
 
 router.delete(
   '/:id',
-  protect,
-  authorize('ADMIN', 'SUPER_ADMIN'),
+  authenticate,
+  requireRole(ROLES.SUPER_ADMIN),
+  requirePermission(PERMISSIONS.USERS_DELETE),
   controller.deleteUser
 );
 

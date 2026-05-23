@@ -1,66 +1,582 @@
-🔐 AUTH FLOW
-Register → OTP → Verify → Login → JWT → Access APIs
+# INDIVIDUAL WORKFLOWS
 
-🏢 COMPANY + VENDOR FLOW
-Admin creates Company
-        ↓
-Vendor registers
-        ↓
-Admin approves vendor
+> **Complete production-ready business flows with concurrency handling and error recovery**
 
-🛍️ PRODUCT FLOW
-Admin/Vendor → Create Product
-       ↓
-Assign Category + Pricing
-       ↓
-Visible in search/catalog
+---
 
+## 🔐 Authentication Workflows
 
-🛒 BUYING FLOW
-Wishlist → Cart → Order
+### 1. User Registration Flow
 
-Detailed:
+```
+1. User submits registration form
+   ↓
+2. Validate input (Joi schema)
+   - Email format
+   - Password strength (8+ chars, uppercase, number, special char)
+   - Phone number format (10 digits)
+   ↓
+3. Check for existing user (email uniqueness)
+   ↓
+4. Hash password (bcrypt, 12 rounds)
+   ↓
+5. Create user record in MongoDB
+   - Default role: CUSTOMER
+   - Status: PENDING_VERIFICATION
+   ↓
+6. Generate email verification OTP
+   - 6-digit code
+   - 5-minute expiry
+   - Store in Redis: `otp:email:${email}`
+   ↓
+7. Queue email job (async)
+   - Welcome email
+   - Verification code
+   ↓
+8. Return user ID (no tokens yet)
+   ↓
+9. User verifies OTP
+   ↓
+10. Update status to ACTIVE
+   ↓
+11. Generate JWT tokens
+    - Access token: 7 days
+    - Refresh token: 30 days
+    ↓
+12. Store refresh token in Redis
+    - Key: `refresh_token:${userId}`
+    - TTL: 30 days
+    ↓
+13. Return tokens + user profile
+```
 
-User adds product → Cart
-      ↓
-Order created
-      ↓
-Inventory checked
+**Error Handling:**
+- Duplicate email → 409 Conflict
+- Weak password → 422 Validation Error
+- OTP expired → 400 Bad Request (regenerate)
 
+---
 
-💳 PAYMENT FLOW
-Order → Payment Initiated → Gateway → Verify → SUCCESS
+### 2. Login Flow
 
-OR
+```
+1. User submits credentials (email + password)
+   ↓
+2. Check account lockout (Redis)
+   - Key: `auth:attempts:${email}`
+   - If >= 5 attempts → 429 Too Many Requests
+   ↓
+3. Find user by email
+   ↓
+4. Verify account status
+   - Status must be ACTIVE
+   - If SUSPENDED → 403 Forbidden
+   ↓
+5. Compare password (bcrypt)
+   ↓
+6. [SUCCESS PATH]
+   ├─→ Clear failed attempts (Redis)
+   ├─→ Generate new JWT tokens
+   ├─→ Store refresh token in Redis
+   ├─→ Create session record
+   ├─→ Log login event (audit)
+   └─→ Return tokens + user profile
+   
+7. [FAILURE PATH]
+   ├─→ Increment failed attempts (Redis)
+   ├─→ Set TTL: 15 minutes
+   ├─→ Log failed attempt (audit)
+   └─→ Return 401 Unauthorized
+```
 
-Order → Credit used → Ledger updated
+**Concurrency Handling:**
+- Redis atomic increment for failed attempts
+- No race conditions on account lockout
 
+---
 
-🚚 LOGISTICS FLOW
-Order → Warehouse selected
-      ↓
-Inventory reduced
-      ↓
-Shipment created
-      ↓
-Delivered
+### 3. Token Refresh Flow
 
+```
+1. Client sends refresh token
+   ↓
+2. Verify JWT signature
+   ↓
+3. Extract userId from token
+   ↓
+4. Retrieve stored refresh token from Redis
+   - Key: `refresh_token:${userId}`
+   ↓
+5. Compare tokens
+   - If mismatch → Token rotation detected → 401
+   ↓
+6. Generate new token pair
+   - New access token
+   - New refresh token
+   ↓
+7. Store new refresh token in Redis
+   ↓
+8. Delete old refresh token (token rotation)
+   ↓
+9. Return new tokens
+```
 
-📄 INVOICE FLOW
-Order Success → Invoice Generated
+**Security Features:**
+- Refresh token rotation prevents replay attacks
+- Single-use refresh tokens
+- Automatic logout on token theft detection
 
+---
 
-🔔 NOTIFICATION FLOW
-Order → Notification
-Payment → Notification
-Shipment → Notification
+## 🛒 E-Commerce Workflows
 
+### 4. Product Browse → Add to Cart Flow
 
-📊 ANALYTICS FLOW
-Order → Track revenue
-User → Track activity
+```
+1. User browses product catalog
+   ↓
+2. Check cache for product list (Redis)
+   - Cache key: `cache:products:list`
+   - TTL: 10 minutes
+   - If HIT → Return cached data
+   ↓
+3. [Cache MISS]
+   ├─→ Query MongoDB with filters
+   ├─→ Apply pagination (20 items/page)
+   ├─→ Cache results in Redis
+   └─→ Return to user
+   ↓
+4. User selects product
+   ↓
+5. Check product availability
+   - Stock > 0
+   - Status: ACTIVE
+   ↓
+6. User adds to cart (quantity: N)
+   ↓
+7. **[CRITICAL SECTION - DISTRIBUTED LOCK]**
+   ├─→ Acquire lock: `lock:inventory:${productId}`
+   ├─→ Lock TTL: 10 seconds
+   ├─→
+   ├─→ Check available stock in MongoDB
+   ├─→ If availableStock < quantity → Release lock → 400 Insufficient Stock
+   ├─→
+   ├─→ **RESERVE STOCK (Atomic Operation)**
+   ├─→ Inventory.findOneAndUpdate({
+   │     productId,
+   │     availableStock: { $gte: quantity }
+   │   }, {
+   │     $inc: {
+   │       availableStock: -quantity,
+   │       reservedStock: +quantity
+   │     }
+   │   })
+   ├─→
+   ├─→ Create/Update cart item
+   ├─→ Set reservation expiry (15 minutes)
+   ├─→
+   └─→ Release lock
+   ↓
+8. Queue inventory sync job (async)
+   ↓
+9. Return cart with reserved items
+```
 
+**Concurrency Protection:**
+- Redis distributed lock prevents race conditions
+- MongoDB atomic `$inc` operators
+- No overselling even under high load
 
-⚙️ SETTINGS FLOW
-SuperAdmin → Toggle maintenance mode
-            → Feature flags
+**Reservation Expiry:**
+- Background job releases expired reservations
+- Cron: Every 5 minutes
+- Action: `reservedStock -= qty`, `availableStock += qty`
+
+---
+
+### 5. Checkout → Order Creation Flow
+
+```
+1. User initiates checkout
+   ↓
+2. Validate cart items
+   - Check reservations still valid (<15 min)
+   - Verify prices haven't changed
+   ↓
+3. **[MONGODB TRANSACTION]**
+   ├─→ Start session.startTransaction()
+   ├─→
+   ├─→ Create Order document
+   │   - Status: PENDING_PAYMENT
+   │   - Items: from cart
+   │   - Calculate total with taxes
+   ├─→
+   ├─→ For each cart item:
+   │   ├─→ Verify reserved stock
+   │   └─→ Convert reservation to fulfillment
+   │       - reservedStock -= qty
+   │       - (no change to availableStock)
+   ├─→
+   ├─→ If B2B credit payment:
+   │   ├─→ Check credit limit
+   │   └─→ Reserve credit amount
+   ├─→
+   ├─→ Clear cart items
+   ├─→
+   ├─→ session.commitTransaction()
+   └─→ [If any step fails → session.abortTransaction()]
+   ↓
+4. Return order ID + payment details
+```
+
+**Transaction Guarantees:**
+- All-or-nothing: Order creation + Inventory update + Credit reservation
+- Automatic rollback on failure
+- Data consistency across collections
+
+---
+
+## 💳 Payment Workflows
+
+### 6. Payment Processing Flow
+
+```
+1. Frontend initiates payment with order ID
+   ↓
+2. **[DISTRIBUTED LOCK]**
+   ├─→ Acquire lock: `lock:payment:${orderId}`
+   ├─→ Lock TTL: 30 seconds
+   ├─→
+   ├─→ Check if payment already processed
+   │   - Query: Payment.findOne({ orderId, status: 'SUCCESS' })
+   │   - If exists → Release lock → Return existing payment
+   ├─→
+   ├─→ Create Razorpay order
+   │   - POST https://api.razorpay.com/v1/orders
+   │   - amount: totalAmount * 100 (paise)
+   │   - currency: INR
+   │   - receipt: orderId
+   ├─→
+   ├─→ Create Payment record in MongoDB
+   │   - orderId
+   │   - razorpayOrderId
+   │   - amount
+   │   - status: PENDING
+   │   - idempotencyKey (if provided)
+   ├─→
+   └─→ Release lock
+   ↓
+3. Return Razorpay order details to frontend
+   ↓
+4. Frontend shows Razorpay checkout modal
+   ↓
+5. User completes payment on Razorpay
+   ↓
+6. **[WEBHOOK HANDLER]**
+   ├─→ Razorpay sends webhook to backend
+   ├─→ Endpoint: POST /api/v1/payments/webhook
+   ├─→
+   ├─→ **VERIFY SIGNATURE (Critical Security)**
+   │   const expectedSignature = crypto
+   │     .createHmac('sha256', RAZORPAY_WEBHOOK_SECRET)
+   │     .update(JSON.stringify(request.body))
+   │     .digest('hex');
+   │   
+   │   if (signature !== expectedSignature) {
+   │     return 401 Unauthorized;
+   │   }
+   ├─→
+   ├─→ Extract payment details from webhook
+   │   - razorpayPaymentId
+   │   - razorpayOrderId
+   │   - status (authorized, captured, failed)
+   ├─→
+   ├─→ **[IDEMPOTENCY CHECK]**
+   │   - Check if webhook already processed
+   │   - Query: WebhookLog.findOne({ razorpayPaymentId })
+   │   - If exists → Return 200 OK (idempotent)
+   ├─→
+   ├─→ Update Payment record
+   │   - paymentStatus: SUCCESS / FAILED
+   │   - razorpayPaymentId
+   │   - capturedAt: Date.now()
+   ├─→
+   ├─→ Update Order status
+   │   - If payment SUCCESS → orderStatus: PAID
+   │   - If payment FAILED → orderStatus: PAYMENT_FAILED
+   ├─→
+   ├─→ If payment SUCCESS:
+   │   ├─→ Queue invoice generation job
+   │   ├─→ Queue confirmation email job
+   │   ├─→ Queue notification job
+   │   └─→ Trigger inventory fulfillment
+   ├─→
+   ├─→ If payment FAILED:
+   │   ├─→ Release inventory reservations
+   │   └─→ Queue failed payment notification
+   ├─→
+   ├─→ Log webhook in WebhookLog collection
+   │   - Prevent duplicate processing
+   ├─→
+   ├─→ Log audit event
+   │   - userId, action: PAYMENT_COMPLETED, amount
+   ├─→
+   └─→ Return 200 OK to Razorpay
+   ↓
+7. Payment reconciliation job (daily 2 AM)
+   - Fetch last 24h payments from Razorpay API
+   - Compare with local Payment records
+   - Flag mismatches for manual review
+```
+
+**Security Measures:**
+- HMAC-SHA256 signature verification (mandatory)
+- Idempotency keys prevent duplicate charges
+- Webhook logs prevent replay attacks
+- Server-side amount validation
+
+**Error Recovery:**
+- Failed payments: Retry queue with exponential backoff
+- Webhook failures: Razorpay retries (8 attempts over 3 days)
+- Network errors: Queue-based retry (5 attempts)
+
+---
+
+### 7. Refund Flow
+
+```
+1. Admin/System initiates refund
+   ↓
+2. Validate refund request
+   - Payment exists and is SUCCESS
+   - Order is CANCELLED or RETURNED
+   - Refund amount <= captured amount
+   - No existing refund for this payment
+   ↓
+3. Create refund in Razorpay
+   - POST https://api.razorpay.com/v1/payments/{paymentId}/refund
+   - amount: refundAmount * 100
+   ↓
+4. Create Refund record in MongoDB
+   - paymentId
+   - razorpayRefundId
+   - amount
+   - status: PROCESSING
+   ↓
+5. Razorpay processes refund (instant/batch)
+   ↓
+6. Razorpay webhook: refund.created
+   ↓
+7. Update Refund status: COMPLETED
+   ↓
+8. Update Order status: REFUNDED
+   ↓
+9. If B2B credit payment:
+   - Restore credit to customer account
+   ↓
+10. Queue refund confirmation email
+   ↓
+11. Log audit event
+```
+
+---
+
+## 🚚 Inventory & Logistics Workflows
+
+### 8. Inventory Synchronization (Multi-Warehouse)
+
+```
+Background Job: Every 15 minutes
+
+1. Cron job triggers inventory sync
+   ↓
+2. Fetch all warehouses
+   ↓
+3. For each product:
+   ├─→ Aggregate stock across warehouses
+   │   - SUM(warehouse.stock) by productId
+   ├─→ Calculate totals:
+   │   - totalStock = SUM(all warehouse stock)
+   │   - reservedStock (from active carts/orders)
+   │   - availableStock = totalStock - reservedStock
+   ├─→ Update Inventory record (atomic)
+   └─→ Check low stock threshold
+       - If availableStock < minStock:
+         ├─→ Queue low stock alert
+         └─→ Notify warehouse manager
+   ↓
+4. Cache updated inventory (Redis)
+   - Key: `cache:inventory:${productId}`
+   - TTL: 2 minutes
+   ↓
+5. Log sync completion
+```
+
+---
+
+### 9. Order Shipment Flow
+
+```
+1. Order status: PAID
+   ↓
+2. Warehouse selection logic
+   - Check inventory closest to delivery address
+   - Select warehouse with sufficient stock
+   ↓
+3. Create Shipment record
+   - orderId
+   - warehouseId
+   - items
+   - trackingNumber (generate/external)
+   ↓
+4. Update Order status: PROCESSING
+   ↓
+5. **[DISTRIBUTED LOCK]**
+   ├─→ Acquire lock: `lock:inventory:${productId}`
+   ├─→
+   ├─→ Reduce inventory (atomic)
+   │   - reservedStock -= quantity
+   │   - soldStock += quantity
+   ├─→
+   └─→ Release lock
+   ↓
+6. Assign logistics partner
+   - Internal delivery team
+   - Or third-party integration (future)
+   ↓
+7. Update Shipment status: SHIPPED
+   ↓
+8. Update Order status: SHIPPED
+   ↓
+9. Queue shipment notification
+   - Email with tracking link
+   - SMS with tracking number
+   - Push notification
+   ↓
+10. Start delivery tracking
+    - Real-time location updates (future)
+    - Estimated delivery time
+   ↓
+11. On delivery completion:
+    ├─→ Update Shipment status: DELIVERED
+    ├─→ Update Order status: DELIVERED
+    ├─→ Queue delivery confirmation
+    └─→ Request review/rating
+```
+
+---
+
+## 📊 Analytics & Reporting Workflows
+
+### 10. Real-Time Analytics Update
+
+```
+Background Job: Hourly
+
+1. Cron job triggers analytics update
+   ↓
+2. **[MONGODB AGGREGATION PIPELINE]**
+   ├─→ Calculate metrics:
+   │   - Total revenue (last 24h, 7d, 30d)
+   │   - Order count by status
+   │   - Top-selling products
+   │   - Customer acquisition
+   │   - Average order value
+   │   - Conversion rate
+   ├─→ Group by:
+   │   - Date (daily/hourly)
+   │   - Category
+   │   - User role (B2B/B2C)
+   ├─→ Execute aggregation
+   └─→ Store results in Analytics collection
+   ↓
+3. Cache results in Redis
+   - Key: `cache:analytics:dashboard`
+   - TTL: 1 hour
+   ↓
+4. Admin dashboard fetches from cache
+   - Fast response (<50ms)
+   - No expensive queries on every page load
+```
+
+---
+
+## 🔔 Notification Workflows
+
+### 11. Multi-Channel Notification Flow
+
+```
+Event: Order status change
+
+1. Event triggered (e.g., order shipped)
+   ↓
+2. Queue notification job
+   - Job data: { userId, orderId, event: 'ORDER_SHIPPED' }
+   - Queue: notificationQueue (high priority)
+   ↓
+3. **[NOTIFICATION WORKER]**
+   ├─→ Fetch user preferences
+   │   - Email enabled? SMS enabled? Push enabled?
+   ├─→
+   ├─→ Create Notification record in MongoDB
+   │   - userId, message, type, read: false
+   ├─→
+   ├─→ **[PARALLEL PROCESSING]**
+   │   ├─→ Email notification (if enabled)
+   │   │   - Queue: emailQueue
+   │   │   - Template: order_shipped.html
+   │   │   - Variables: trackingNumber, estimatedDelivery
+   │   │
+   │   ├─→ SMS notification (if enabled)
+   │   │   - Queue: smsQueue
+   │   │   - Template: "Your order #{orderId} shipped..."
+   │   │
+   │   ├─→ Push notification (if enabled)
+   │   │   - Queue: pushQueue
+   │   │   - Send via FCM/APNS
+   │   │
+   │   └─→ Real-time notification (if user online)
+   │       - Socket.io emit to user's room
+   │       - Event: 'notification'
+   │       - Payload: notification object
+   ├─→
+   └─→ Log notification sent
+   ↓
+4. User receives notifications across channels
+```
+
+---
+
+## ⚠️ Error Handling & Recovery
+
+### 12. Failed Job Recovery
+
+```
+Scenario: Email sending fails
+
+1. Job in emailQueue fails
+   ↓
+2. BullMQ retry mechanism
+   - Attempt 1: Immediate retry
+   - Attempt 2: After 2 seconds
+   - Attempt 3: After 4 seconds (exponential backoff)
+   ↓
+3. If all retries exhausted:
+   ├─→ Move to failed queue
+   ├─→ Log error with full context
+   ├─→ Alert operations team (if critical)
+   └─→ Store in dead letter queue
+   ↓
+4. Admin reviews failed jobs dashboard
+   ↓
+5. Options:
+   ├─→ Retry job manually
+   ├─→ Edit job data and retry
+   └─→ Discard job
+```
+
+---
+
+**Last Updated:** May 2026  
+**Version:** 2.0 (Production-Ready)  
+**Maintained By:** Mokshith Enterprises Engineering Team

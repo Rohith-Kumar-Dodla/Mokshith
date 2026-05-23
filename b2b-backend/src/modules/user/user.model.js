@@ -74,6 +74,53 @@ const userSchema = new mongoose.Schema(
       select: false,
     },
 
+    // 2FA / MFA fields
+    twoFactorEnabled: {
+      type: Boolean,
+      default: false
+    },
+
+    twoFactorSecret: {
+      type: String,
+      select: false
+    },
+
+    twoFactorBackupCodes: [{
+      type: String,
+      select: false
+    }],
+
+    twoFactorMethod: {
+      type: String,
+      enum: ['totp', 'sms', 'email'],
+      default: 'totp'
+    },
+
+    // Security tracking
+    lastPasswordChange: {
+      type: Date,
+      default: Date.now
+    },
+
+    passwordHistory: [{
+      hash: String,
+      changedAt: Date
+    }],
+
+    loginAttempts: {
+      type: Number,
+      default: 0
+    },
+
+    lockUntil: {
+      type: Date
+    },
+
+    securityQuestions: [{
+      question: String,
+      answer: String // Hashed
+    }],
+
     addresses: [
       {
         name: { type: String, required: true },

@@ -9,7 +9,20 @@ export const securityMiddleware = (app) => {
   app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
     crossOriginEmbedderPolicy: false,
-    contentSecurityPolicy: false, // Disable CSP for API-only backend
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+        imgSrc: ["'self'", "data:", "https:", "blob:"],
+        connectSrc: ["'self'", "https:"],
+        fontSrc: ["'self'", "https:", "data:"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'", "https:"],
+        frameSrc: ["'none'"],
+        upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null
+      }
+    },
     hsts: {
       maxAge: 31536000, // 1 year
       includeSubDomains: true,
@@ -20,6 +33,8 @@ export const securityMiddleware = (app) => {
     xssFilter: true, // Enable XSS filter
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
     hidePoweredBy: true, // Hide X-Powered-By header
+    permittedCrossDomainPolicies: { permittedPolicies: "none" },
+    dnsPrefetchControl: { allow: false }
   }));
 
   // 🔥 Prevent NoSQL injection with enhanced logging

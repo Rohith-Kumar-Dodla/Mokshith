@@ -4,6 +4,7 @@ import { protect } from '../../middlewares/auth.middleware.js';
 import { authorize } from '../../middlewares/role.middleware.js';
 import { validate } from '../../middlewares/validate.middleware.js';
 import { addStockSchema } from './inventory.validation.js';
+import { operationIdempotency } from '../../middlewares/idempotency.middleware.js';
 
 const router = express.Router();
 
@@ -11,6 +12,7 @@ router.post(
   '/',
   protect,
   authorize('ADMIN'),
+  operationIdempotency('inventory:add'),
   validate(addStockSchema),
   controller.addStock
 );
@@ -23,6 +25,7 @@ router.patch(
   '/update',
   protect,
   authorize('ADMIN', 'VENDOR'),
+  operationIdempotency('inventory:update'),
   controller.updateStock
 );
 

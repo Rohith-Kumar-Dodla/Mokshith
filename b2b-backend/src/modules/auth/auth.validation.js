@@ -30,3 +30,27 @@ export const verifyOtpSchema = Joi.object({
     otp: Joi.string().required(),
   }),
 });
+
+export const verify2FASchema = Joi.object({
+  body: Joi.object({
+    userId: Joi.string().required(),
+    code: Joi.string().length(6).required(),
+  }),
+});
+
+export const enable2FAVerifySchema = Joi.object({
+  body: Joi.object({
+    code: Joi.string().length(6).required(),
+  }),
+});
+
+export const changePasswordSchema = Joi.object({
+  body: Joi.object({
+    oldPassword: Joi.string().required(),
+    newPassword: Joi.string().min(12).required()
+      .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
+      .messages({
+        'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+      }),
+  }),
+});

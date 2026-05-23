@@ -3,6 +3,22 @@ import * as service from './product.service.js';
 import { successResponse } from '../../utils/responseHandler.js';
 import { uploadFile } from '../../services/fileUpload.service.js';
 import { logger } from '../../config/logger.js';
+import AppError from '../../errors/AppError.js';
+
+/**
+ * Middleware to load product and attach to req.product
+ * Used for ownership checks in permission middleware
+ */
+export const loadProduct = asyncHandler(async (req, res, next) => {
+  const product = await service.getProductById(req.params.id);
+  
+  if (!product) {
+    throw new AppError('Product not found', 404);
+  }
+  
+  req.product = product;
+  next();
+});
 
 export const createProduct = asyncHandler(async (req, res) => {
   logger.debug('Product creation request', { hasFile: !!req.file, bodyKeys: Object.keys(req.body) });

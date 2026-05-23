@@ -21,6 +21,7 @@ const API_BASE_URL = API_V1_URL.replace(/\/api\/v1$/, '');
 const apiClient = axios.create({
   baseURL: API_V1_URL,
   timeout: 30000,
+  withCredentials: true, // 🔥 Fix: Send cookies with requests
   headers: {
     "Content-Type": "application/json",
   },
@@ -49,6 +50,11 @@ apiClient.interceptors.request.use(
     const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    const csrfToken = localStorage.getItem("csrfToken");
+    if (csrfToken) {
+      config.headers["x-csrf-token"] = csrfToken;
     }
     
     // 🔥 Fix: For FormData, we must ensure Content-Type is NOT set manually
@@ -146,7 +152,7 @@ apiClient.interceptors.response.use(
 
     // Handle other errors
     if (error.response?.status === 403) {
-      window.location.href = "/unauthorized";
+      console.warn('403 Forbidden - Access Denied', originalRequest.url);
     }
 
     // 🔥 Fix: Reject with the full error object so services can access status/data
