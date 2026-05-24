@@ -36,7 +36,12 @@ export const SocketProvider = ({ children }) => {
       return;
     }
 
-    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+    const envSocketUrl = import.meta.env.VITE_SOCKET_URL;
+    const fallbackSocketUrl = window.location.origin.includes('vercel.app')
+      ? 'https://mokshith-entreprises.onrender.com'
+      : 'http://localhost:5000';
+
+    const SOCKET_URL = envSocketUrl || fallbackSocketUrl;
     
     socketInstance = io(SOCKET_URL, {
       auth: {

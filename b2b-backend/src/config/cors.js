@@ -8,7 +8,8 @@ const allowedOrigins = [
   'http://localhost:5173', // Common Vite default
   'http://127.0.0.1:5173',
   /\.vercel\.app$/, // Allow all Vercel deployments
-  'https://mokshith-entreprises.vercel.app' // Add your specific production URL here
+  'https://mokshith-entreprises.vercel.app', // Add your specific production URL here
+  'https://mokshith-entreprises-subhashandes-projects.vercel.app' // Additional Vercel preview URL if needed
 ];
 
 export const corsConfig = cors({

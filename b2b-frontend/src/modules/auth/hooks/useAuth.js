@@ -39,16 +39,17 @@ export const useAuth = () => {
     fetchCsrf();
   }, [isAuthenticated, dispatch]);
 
-  const getUser = () => {
+  const getUser = useCallback(() => {
     const token = localStorage.getItem("token");
     if (!token) return null;
 
     try {
-      return JSON.parse(localStorage.getItem("user"));
+      const storedUser = localStorage.getItem("user");
+      return storedUser ? JSON.parse(storedUser) : null;
     } catch {
       return null;
     }
-  };
+  }, []);
 
   const user = reduxUser || getUser();
 

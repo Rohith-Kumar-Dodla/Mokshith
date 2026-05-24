@@ -1,9 +1,6 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-
-console.log('Sidebar.jsx module loaded');
-
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { routes } from '../../routes/routeConfig.js';
 import ConfirmDialog from '../feedback/ConfirmDialog.jsx';
 import { 
@@ -30,7 +27,7 @@ import {
   MapPin
 } from 'lucide-react';
 
-const Sidebar = ({ isOpen, onClose, user, onLogout }) => {
+const Sidebar = React.memo(({ isOpen, onClose, user, onLogout }) => {
   const navigate = useNavigate();
   const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
@@ -38,11 +35,11 @@ const Sidebar = ({ isOpen, onClose, user, onLogout }) => {
   // Debugging log
   React.useEffect(() => {
     if (isOpen) {
-      console.log('Sidebar is now OPEN', { userRole: user?.role });
+      // console.log('Sidebar is now OPEN', { userRole: user?.role });
     }
   }, [isOpen, user]);
 
-  const adminLinks = [
+  const adminLinks = React.useMemo(() => [
     { icon: <LayoutDashboard size={18} />, label: "Dashboard", path: routes.ADMIN },
     { icon: <BarChart3 size={18} />, label: "Analytics", path: routes.ADMIN_ANALYTICS },
     { icon: <Users size={18} />, label: "Manage Users", path: routes.ADMIN_USERS },
@@ -53,41 +50,41 @@ const Sidebar = ({ isOpen, onClose, user, onLogout }) => {
     { icon: <Warehouse size={18} />, label: "Warehouse", path: routes.ADMIN_WAREHOUSE },
     { icon: <Tag size={18} />, label: "Promotions", path: routes.ADMIN_PROMOTIONS },
     { icon: <SettingsIcon size={18} />, label: "Settings", path: routes.ADMIN_SETTINGS },
-  ];
+  ], []);
 
-  const vendorLinks = [
+  const vendorLinks = React.useMemo(() => [
     { icon: <LayoutDashboard size={18} />, label: "Dashboard", path: routes.ADMIN },
     { icon: <Building2 size={18} />, label: "Company Profile", path: routes.VENDOR_COMPANY },
     { icon: <Boxes size={18} />, label: "Inventory", path: routes.VENDOR_INVENTORY },
     { icon: <PackageIcon size={18} />, label: "Orders", path: routes.ADMIN_ORDERS },
     { icon: <SettingsIcon size={18} />, label: "Settings", path: routes.ADMIN_SETTINGS },
-  ];
+  ], []);
 
-  const deliveryLinks = [
+  const deliveryLinks = React.useMemo(() => [
     { icon: <LayoutDashboard size={18} />, label: "Logistics Dashboard", path: routes.DELIVERY_DASHBOARD },
     { icon: <Truck size={18} />, label: "My Shipments", path: routes.DELIVERY_SHIPMENTS },
     { icon: <History size={18} />, label: "History", path: routes.DELIVERY_HISTORY },
-  ];
+  ], []);
 
-  const b2bCustomerLinks = [
+  const b2bCustomerLinks = React.useMemo(() => [
     { icon: <User size={18} />, label: "My Profile", path: routes.PROFILE },
     { icon: <PackageIcon size={18} />, label: "My Orders", path: routes.ORDERS },
     { icon: <Heart size={18} />, label: "Wishlist", path: routes.WISHLIST },
     { icon: <CreditCard size={18} />, label: "Credit Balance", path: routes.CREDIT },
     { icon: <Shield size={18} />, label: "Security", path: routes.SECURITY },
     { icon: <HelpCircle size={18} />, label: "Help & Support", path: routes.HELP },
-  ];
+  ], []);
 
-  const b2cCustomerLinks = [
+  const b2cCustomerLinks = React.useMemo(() => [
     { icon: <LayoutDashboard size={18} />, label: "Home", path: routes.HOME },
     { icon: <User size={18} />, label: "My Profile", path: routes.PROFILE },
     { icon: <PackageIcon size={18} />, label: "My Orders", path: routes.ORDERS },
     { icon: <Heart size={18} />, label: "Wishlist", path: routes.WISHLIST },
     { icon: <Shield size={18} />, label: "Security", path: routes.SECURITY },
     { icon: <HelpCircle size={18} />, label: "Help & Support", path: routes.HELP },
-  ];
+  ], []);
 
-  const getLinksByRole = () => {
+  const links = React.useMemo(() => {
     switch (user?.role) {
       case "SUPER_ADMIN":
       case "ADMIN":
@@ -103,9 +100,7 @@ const Sidebar = ({ isOpen, onClose, user, onLogout }) => {
       default:
         return b2cCustomerLinks;
     }
-  };
-
-  const links = getLinksByRole();
+  }, [user?.role, adminLinks, vendorLinks, deliveryLinks, b2bCustomerLinks, b2cCustomerLinks]);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -119,7 +114,7 @@ const Sidebar = ({ isOpen, onClose, user, onLogout }) => {
     }
   };
 
-  console.log('Sidebar component rendered', { isOpen, userRole: user?.role });
+  // console.log('Sidebar component rendered', { isOpen, userRole: user?.role });
 
   if (!isOpen) return null;
 
@@ -242,6 +237,6 @@ const Sidebar = ({ isOpen, onClose, user, onLogout }) => {
     </div>,
     target
   );
-};
+});
 
 export default Sidebar;
