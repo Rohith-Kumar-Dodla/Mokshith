@@ -22,13 +22,13 @@
     "docker:dev": "docker-compose up -d mongo redis && npm run dev"
   },
   "dependencies": {
-    "bcryptjs": "^2.4.3",
+    "bcryptjs": "^3.0.3",
     "bullmq": "^5.41.6",
     "compression": "^1.8.0",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
     "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.0.0",
@@ -36,10 +36,10 @@
     "ioredis": "^5.5.0",
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.10.1",
+    "mongoose": "^9.6.2",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
-    "node-cron": "^3.0.3",
+    "node-cron": "^4.2.1",
     "otp-generator": "^4.0.1",
     "pdfkit": "^0.18.0",
     "razorpay": "^2.9.6",
@@ -50,7 +50,7 @@
   },
   "devDependencies": {
     "eslint": "^9.20.1",
-    "jest": "^29.7.0",
+    "jest": "^30.4.2",
     "nodemon": "^3.1.9",
     "prettier": "^3.5.1",
     "supertest": "^7.0.0"

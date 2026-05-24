@@ -1,3 +1,5 @@
+import { logger } from '../config/logger.js';
+
 export const processWebhook = async (payload) => {
-  console.log('Processing webhook:', payload);
+  logger.info('Processing webhook', { eventType: payload?.event });
 };

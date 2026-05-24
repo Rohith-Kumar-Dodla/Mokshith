@@ -18,7 +18,7 @@ export const createQueue = (name) => {
     return {
       name,
       add: async (job) => {
-        console.log(`🧪 [DEV QUEUE] ${name}`, job);
+        // Queue simulation in dev mode - job would be processed in production
       },
     };
   }

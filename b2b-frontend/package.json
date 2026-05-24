@@ -10,7 +10,7 @@
     "lint:fix": "eslint . --ext .js,.jsx --fix || echo 'ESLint not configured'",
     "format": "prettier --write \"src/**/*.{js,jsx,css}\" || echo 'Prettier not configured'",
     "format:check": "prettier --check \"src/**/*.{js,jsx,css}\" || echo 'Prettier not configured'",
-    "test": "echo 'No tests configured yet' && exit 0",
+    "test": "echo 'Tests not yet implemented - consider adding Vitest' && exit 0",
     "analyze": "vite build --mode analyze",
     "docker:build": "docker build -t b2b-frontend:latest .",
     "docker:run": "docker run -p 3000:80 b2b-frontend:latest"
@@ -29,7 +29,12 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.4",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@vitest/ui": "^4.1.7",
     "autoprefixer": "^10.5.0",
-    "postcss": "^8.5.10"
+    "jsdom": "^29.1.1",
+    "postcss": "^8.5.10",
+    "vitest": "^4.1.7"
   }
 }

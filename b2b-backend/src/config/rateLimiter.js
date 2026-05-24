@@ -1,5 +1,6 @@
 import rateLimit from 'express-rate-limit';
 import { redisClient } from './redis.js';
+import { logger } from './logger.js';
 
 // Redis-backed rate limiter store for distributed systems
 class RedisStore {
@@ -17,7 +18,7 @@ class RedisStore {
       }
       return { totalHits: current, resetTime: new Date(Date.now() + this.windowMs) };
     } catch (error) {
-      console.error('Redis rate limiter error:', error);
+      logger.error('Redis rate limiter error:', error);
       // Fallback to allow request if Redis fails
       return { totalHits: 1, resetTime: new Date(Date.now() + this.windowMs) };
     }
@@ -27,7 +28,7 @@ class RedisStore {
     try {
       await redisClient.decr(`${this.prefix}${key}`);
     } catch (error) {
-      console.error('Redis decrement error:', error);
+      logger.error('Redis decrement error:', error);
     }
   }
 
@@ -35,7 +36,7 @@ class RedisStore {
     try {
       await redisClient.del(`${this.prefix}${key}`);
     } catch (error) {
-      console.error('Redis resetKey error:', error);
+      logger.error('Redis resetKey error:', error);
     }
   }
 }
