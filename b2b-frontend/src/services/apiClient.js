@@ -3,16 +3,18 @@ import { store } from "../app/store.js";
 import { updateToken, logout } from "../modules/auth/authSlice.js";
 
 const getBaseURL = () => {
-  const envUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
-  // Remove trailing slash
-  const cleanUrl = envUrl.replace(/\/$/, '');
+  const envUrl = import.meta.env.VITE_API_URL;
   
-  // 🔥 Fix: If the URL already contains /api/v1, don't append it again
-  if (cleanUrl.endsWith('/api/v1')) {
-    return cleanUrl;
-  }
+  // Use current window origin as fallback if VITE_API_URL is missing
+  // This helps when running in production where Vercel might not have variables set yet
+  const fallbackUrl = window.location.origin.includes('vercel.app') 
+    ? "https://mokshith-entreprises.onrender.com" 
+    : "http://localhost:5000";
+
+  const baseUrl = envUrl || fallbackUrl;
+  const cleanUrl = baseUrl.replace(/\/$/, '');
   
-  return `${cleanUrl}/api/v1`;
+  return cleanUrl.endsWith('/api/v1') ? cleanUrl : `${cleanUrl}/api/v1`;
 };
 
 const API_V1_URL = getBaseURL();

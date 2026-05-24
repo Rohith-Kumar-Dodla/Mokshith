@@ -24,6 +24,12 @@ export const orderService = {
       return response.data || response;
     } catch (error) {
       console.error("API Error during placeOrder:", error);
+      
+      // Special handling for 409 Conflict (Idempotency Hit)
+      if (error.response?.status === 409 && error.response?.data?.data?._id) {
+        return error.response.data;
+      }
+      
       throw new Error(error.response?.data?.message || error.message || "Order placement failed");
     }
   },
@@ -34,6 +40,16 @@ export const orderService = {
       return response.data || response;
     } catch (error) {
       console.error("API Error during markOrderAsFailed:", error);
+      throw error;
+    }
+  },
+
+  async updateOrderStatus(id, status) {
+    try {
+      const response = await apiClient.patch(`/orders/${id}/status`, { status });
+      return response.data || response;
+    } catch (error) {
+      console.error("API Error during updateOrderStatus:", error);
       throw error;
     }
   },

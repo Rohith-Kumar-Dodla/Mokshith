@@ -89,10 +89,13 @@ const Checkout = () => {
   };
 
   const handlePlaceOrder = async () => {
+    if (loading) return;
     if (!validateCheckout()) return;
     
     setLoading(true);
     try {
+      const orderIdempotencyKey = `order_${user?._id || 'guest'}_${Date.now()}`;
+      
       const payload = {
         items: cart.map(item => ({
           productId: item.id || item._id,
@@ -102,19 +105,30 @@ const Checkout = () => {
         })),
         totalAmount: total,
         paymentMethod,
-        shippingAddress: address
+        shippingAddress: address,
+        idempotencyKey: orderIdempotencyKey
       };
 
       const response = await placeOrder(payload);
       const newOrder = response.data || response;
       
+      if (!newOrder?._id) {
+        // If it's a 409 Conflict, the backend might have returned the existing order
+        // but it could be wrapped differently. Let's try to handle it.
+        throw new Error("Order placement did not return a valid ID");
+      }
+
       navigate(routes.PAYMENT.replace(':orderId', newOrder._id));
     } catch (err) {
-      console.error("Checkout Error:", err);
-      alert(err.message || "Failed to place order. Please check your connection and try again.");
-    } finally {
-      setLoading(false);
-    }
+        console.error("Checkout Error:", err);
+        setLoading(false); // Reset loading on error
+        // Only alert if it's not a "duplicate" error which might happen during navigation/retries
+        if (!err.message?.includes('Duplicate')) {
+          alert(err.message || "Failed to place order. Please check your connection and try again.");
+        }
+      } finally {
+        // Keep loading true if navigating to prevent double clicks
+      }
   };
 
   if (cart.length === 0) {

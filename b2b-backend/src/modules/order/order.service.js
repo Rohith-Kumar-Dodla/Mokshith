@@ -39,7 +39,7 @@ export const createOrder = async (userId, data) => {
 
   // 🔥 0. Idempotency Check
   if (idempotencyKey) {
-    const existingOrder = await Order.findOne({ idempotencyKey }).lean();
+    const existingOrder = await Order.findOne({ idempotencyKey, userId }).lean();
     if (existingOrder) return existingOrder;
   }
 

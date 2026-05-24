@@ -14,12 +14,12 @@ export const securityMiddleware = (app) => {
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'", "'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'", "https:"],
-        imgSrc: ["'self'", "data:", "https:", "blob:"],
-        connectSrc: ["'self'", "https:"],
+        imgSrc: ["'self'", "data:", "https:", "blob:", "*.razorpay.com"],
+        connectSrc: ["'self'", "https:", "wss:", "*.razorpay.com"],
         fontSrc: ["'self'", "https:", "data:"],
         objectSrc: ["'none'"],
         mediaSrc: ["'self'", "https:"],
-        frameSrc: ["'none'"],
+        frameSrc: ["'self'", "https://checkout.razorpay.com", "https://api.razorpay.com"],
         upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null
       }
     },
@@ -28,7 +28,7 @@ export const securityMiddleware = (app) => {
       includeSubDomains: true,
       preload: true
     },
-    frameguard: { action: 'deny' }, // Prevent clickjacking
+    frameguard: { action: 'sameorigin' }, // Allow SAMEORIGIN for Razorpay integration if needed, or deny if strict
     noSniff: true, // Prevent MIME sniffing
     xssFilter: true, // Enable XSS filter
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
