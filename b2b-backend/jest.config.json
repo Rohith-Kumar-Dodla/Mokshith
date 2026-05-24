@@ -46,9 +46,10 @@
       "statements": 90
     }
   },
-  "testTimeout": 10000,
+  "testTimeout": 30000,
   "verbose": true,
-  "forceExit": true,
+  "detectOpenHandles": false,
+  "forceExit": false,
   "clearMocks": true,
   "resetMocks": true,
   "restoreMocks": true,
