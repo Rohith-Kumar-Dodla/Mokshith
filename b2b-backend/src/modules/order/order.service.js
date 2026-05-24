@@ -56,7 +56,7 @@ export const createOrder = async (userId, data) => {
 
   // 🔥 Check Order Cutoff Time
   const cutoffSetting = await fetchSetting('orderCutoffTime');
-  if (cutoffSetting && cutoffSetting.value) {
+  if (cutoffSetting && cutoffSetting.value && cutoffSetting.value !== '00:00') {
     const [hours, minutes] = cutoffSetting.value.split(':').map(Number);
     const now = new Date();
     const cutoffDate = new Date();

@@ -20,14 +20,20 @@ export const orderService = {
 
   async placeOrder(payload) {
     try {
-      const response = await apiClient.post("/orders", payload);
+      const config = {};
+      if (payload.idempotencyKey) {
+        config.headers = { 'idempotency-key': payload.idempotencyKey };
+      }
+      
+      const response = await apiClient.post("/orders", payload, config);
       return response.data || response;
     } catch (error) {
       console.error("API Error during placeOrder:", error);
       
       // Special handling for 409 Conflict (Idempotency Hit)
+      // If the backend returned the existing order, we return it to the caller
       if (error.response?.status === 409 && error.response?.data?.data?._id) {
-        return error.response.data;
+        return error.response.data.data;
       }
       
       throw new Error(error.response?.data?.message || error.message || "Order placement failed");

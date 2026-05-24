@@ -64,8 +64,9 @@ export const operationIdempotency = (operationType) => {
     
     switch (operationType) {
       case 'order:create':
-        // Use userId + cart signature for order creation
-        autoKey = `order:create:${req.user?.id}:${Date.now()}`;
+        // Use userId + hash of items for stable auto-key
+        const cartSignature = req.body.items?.map(i => `${i.productId}:${i.quantity}`).join('|') || 'empty';
+        autoKey = `order:create:${req.user?.id}:${cartSignature}`;
         break;
         
       case 'inventory:add':

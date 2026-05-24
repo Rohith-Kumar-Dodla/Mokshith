@@ -4,7 +4,7 @@ import { useSystemConfig } from "../../../hooks/useSystemConfig";
 import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
 import Input from "../../../components/ui/Input";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { routes } from "../../../routes/routeConfig";
 import { PAYMENT_METHODS } from "../../../utils/constants";
@@ -27,10 +27,12 @@ import { getProductImage } from "../../../utils/imageHelper.js";
 const Checkout = () => {
   const { cart, placeOrder } = useOrder();
   const { user } = useAuth();
-  const { isFeatureEnabled } = useSystemConfig();
+  const { isFeatureEnabled, getSetting } = useSystemConfig();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  
+  const isProcessing = useRef(false);
+  const checkoutKey = useRef(`chk_${user?._id || 'guest'}_${Date.now()}`);
+
   const codEnabled = isFeatureEnabled('enableCOD') && isFeatureEnabled('cod');
   const creditEnabled = isFeatureEnabled('creditSystem');
 
@@ -53,10 +55,25 @@ const Checkout = () => {
     setAddress({ ...address, [name]: value });
   };
 
+  const cutoffTime = getSetting('orderCutoffTime');
+
   const validateCheckout = () => {
     if (cart.length === 0) {
       alert("Your cart is empty!");
       return false;
+    }
+
+    // 🔥 Check Cutoff Time Client-side
+    if (cutoffTime && cutoffTime !== '00:00') {
+      const [hours, minutes] = cutoffTime.split(':').map(Number);
+      const now = new Date();
+      const cutoffDate = new Date();
+      cutoffDate.setHours(hours, minutes, 0, 0);
+
+      if (now > cutoffDate) {
+        alert(`Orders are closed for today after ${cutoffTime}. Please try again tomorrow.`);
+        return false;
+      }
     }
 
     const requiredFields = ['name', 'phone', 'addressLine', 'city', 'state', 'pincode'];
@@ -89,13 +106,13 @@ const Checkout = () => {
   };
 
   const handlePlaceOrder = async () => {
-    if (loading) return;
+    if (loading || isProcessing.current) return;
     if (!validateCheckout()) return;
     
     setLoading(true);
+    isProcessing.current = true;
+
     try {
-      const orderIdempotencyKey = `order_${user?._id || 'guest'}_${Date.now()}`;
-      
       const payload = {
         items: cart.map(item => ({
           productId: item.id || item._id,
@@ -106,29 +123,30 @@ const Checkout = () => {
         totalAmount: total,
         paymentMethod,
         shippingAddress: address,
-        idempotencyKey: orderIdempotencyKey
+        idempotencyKey: checkoutKey.current
       };
 
       const response = await placeOrder(payload);
       const newOrder = response.data || response;
       
       if (!newOrder?._id) {
-        // If it's a 409 Conflict, the backend might have returned the existing order
-        // but it could be wrapped differently. Let's try to handle it.
         throw new Error("Order placement did not return a valid ID");
       }
 
       navigate(routes.PAYMENT.replace(':orderId', newOrder._id));
     } catch (err) {
-        console.error("Checkout Error:", err);
-        setLoading(false); // Reset loading on error
-        // Only alert if it's not a "duplicate" error which might happen during navigation/retries
-        if (!err.message?.includes('Duplicate')) {
-          alert(err.message || "Failed to place order. Please check your connection and try again.");
-        }
-      } finally {
-        // Keep loading true if navigating to prevent double clicks
+      console.error("Checkout Error:", err);
+      setLoading(false);
+      isProcessing.current = false;
+      // Generate a new key for the next attempt after an error
+      checkoutKey.current = `chk_${user?._id}_${Date.now()}`;
+      
+      if (!err.message?.includes('Duplicate')) {
+        alert(err.message || "Failed to place order. Please check your connection and try again.");
       }
+    } finally {
+      // Keep isProcessing true if navigating to prevent double clicks
+    }
   };
 
   if (cart.length === 0) {
