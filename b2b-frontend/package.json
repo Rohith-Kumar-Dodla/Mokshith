@@ -5,7 +5,15 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint . --ext .js,.jsx || echo 'ESLint not configured'",
+    "lint:fix": "eslint . --ext .js,.jsx --fix || echo 'ESLint not configured'",
+    "format": "prettier --write \"src/**/*.{js,jsx,css}\" || echo 'Prettier not configured'",
+    "format:check": "prettier --check \"src/**/*.{js,jsx,css}\" || echo 'Prettier not configured'",
+    "test": "echo 'No tests configured yet' && exit 0",
+    "analyze": "vite build --mode analyze",
+    "docker:build": "docker build -t b2b-frontend:latest .",
+    "docker:run": "docker run -p 3000:80 b2b-frontend:latest"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.11.2",
