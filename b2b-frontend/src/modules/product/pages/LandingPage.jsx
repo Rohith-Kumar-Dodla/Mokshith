@@ -110,7 +110,7 @@ const LandingPage = () => {
         navigate(routes.PRODUCTS);
       }
     } catch (err) {
-      console.error("Auth check failed:", err);
+      // Auth parsing failed
       navigate(routes.LOGIN);
     }
   };

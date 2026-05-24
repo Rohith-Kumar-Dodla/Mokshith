@@ -18,6 +18,14 @@ const productSlice = createSlice({
     },
     fetchProductsSuccess: (state, action) => {
       state.loading = false;
+      
+      // Handle null/undefined payload
+      if (!action.payload) {
+        state.products = [];
+        state.pagination = null;
+        return;
+      }
+      
       const payloadData = action.payload.data || action.payload;
       
       if (Array.isArray(payloadData)) {

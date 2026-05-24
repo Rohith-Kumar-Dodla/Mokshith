@@ -16,7 +16,6 @@ export const useSystemConfig = () => {
       // The backend returns an object with key-value pairs
       setConfig(response.data || response || {});
     } catch (err) {
-      console.error('Failed to fetch system config:', err);
       setError(err);
     } finally {
       setLoading(false);

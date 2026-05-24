@@ -57,12 +57,9 @@ apiClient.interceptors.request.use(
       config.headers["x-csrf-token"] = csrfToken;
     }
     
-    // 🔥 Fix: For FormData, we must ensure Content-Type is NOT set manually
-    // This allows the browser to set it correctly with the boundary
+    // Handle FormData: browser must set Content-Type with boundary
     if (config.data instanceof FormData) {
-      console.log('📡 Interceptor: FormData detected, removing Content-Type header');
-      
-      // Handle both uppercase and lowercase versions
+      // Remove Content-Type header for FormData
       if (config.headers) {
         if (typeof config.headers.delete === 'function') {
           config.headers.delete("Content-Type");

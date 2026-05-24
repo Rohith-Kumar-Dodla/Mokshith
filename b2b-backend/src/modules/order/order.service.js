@@ -395,7 +395,11 @@ export const markOrderAsFailed = async (id) => {
   try {
     if (supportsTransactions) {
       session = await mongoose.startSession();
-      session.startTransaction();
+      session.startTransaction({
+        readPreference: 'primary',
+        readConcern: { level: 'snapshot' },
+        writeConcern: { w: 'majority' }
+      });
     }
 
     order.status = ORDER_STATUS.FAILED;

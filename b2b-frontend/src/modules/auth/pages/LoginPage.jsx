@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
 import { useSelector } from "react-redux";
@@ -39,7 +39,7 @@ const LoginPage = () => {
       await login(form);
       // Success is handled by useAuth/AppRoutes
     } catch (err) {
-      console.error("Login failed:", err);
+      // Login error handled by useAuth
     }
   };
 
