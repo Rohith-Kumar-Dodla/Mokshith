@@ -1,6 +1,6 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { Queue, Worker } from 'bullmq';
-import { clearDatabase } from '../helpers/testUtils.js';
+import { clearDatabase, cleanupQueuesAndWorkers } from '../helpers/testUtils.js';
 import { redisClient } from '../../src/config/redis.js';
 
 /**
@@ -45,12 +45,23 @@ describe('Queue Retry & DLQ Tests', () => {
   });
 
   afterEach(async () => {
-    if (testWorker) {
-      await testWorker.close();
+    // Use safe cleanup utility with timeout protection
+    await cleanupQueuesAndWorkers({
+      workers: [testWorker].filter(Boolean),
+      queues: [testQueue].filter(Boolean),
+      obliterate: true,
+      timeout: 5000
+    });
+    
+    // Flush Redis data if client is available
+    try {
+      if (redisClient && typeof redisClient.flushdb === 'function') {
+        await redisClient.flushdb();
+      }
+    } catch (error) {
+      console.error('Failed to flush Redis in afterEach:', error.message);
+      // Non-fatal - continue cleanup
     }
-    await testQueue.obliterate({ force: true });
-    await testQueue.close();
-    await redisClient.flushdb();
   });
 
   describe('Exponential Backoff Retry', () => {
@@ -131,9 +142,13 @@ describe('Queue Retry & DLQ Tests', () => {
 
       expect(attemptCount).toBe(3);
 
-      await customWorker.close();
-      await customQueue.obliterate({ force: true });
-      await customQueue.close();
+      // Safe cleanup
+      await cleanupQueuesAndWorkers({
+        workers: [customWorker].filter(Boolean),
+        queues: [customQueue].filter(Boolean),
+        obliterate: true,
+        timeout: 5000
+      });
     }, 15000);
   });
 
@@ -503,9 +518,13 @@ describe('Queue Retry & DLQ Tests', () => {
         expect(window1).toBeLessThanOrEqual(2000);
       }
 
-      await rateLimitedWorker.close();
-      await rateLimitedQueue.obliterate({ force: true });
-      await rateLimitedQueue.close();
+      // Safe cleanup
+      await cleanupQueuesAndWorkers({
+        workers: [rateLimitedWorker].filter(Boolean),
+        queues: [rateLimitedQueue].filter(Boolean),
+        obliterate: true,
+        timeout: 5000
+      });
     }, 12000);
   });
 

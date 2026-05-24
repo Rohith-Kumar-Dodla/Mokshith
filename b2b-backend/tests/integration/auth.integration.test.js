@@ -16,12 +16,18 @@ import * as authService from '../../src/modules/auth/auth.service.js';
 import { hashPassword } from '../../src/utils/hashPassword.js';
 import { ROLES } from '../../src/constants/roles.js';
 import { USER_STATUS } from '../../src/constants/userStatus.js';
+import { redisClient } from '../../src/config/redis.js';
 
 const request = supertest(app);
 
 describe('Authentication Module - Comprehensive Tests', () => {
   beforeEach(async () => {
     await clearDatabase();
+    await redisClient.flushdb();
+  });
+
+  afterEach(async () => {
+    await redisClient.flushdb();
   });
 
   describe('POST /api/auth/register - User Registration', () => {

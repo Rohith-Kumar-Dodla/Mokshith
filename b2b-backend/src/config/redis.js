@@ -194,6 +194,77 @@ export const redisClient = {
       return null;
     }
   },
+
+  /**
+   * 🔥 List operations for security audit logs
+   */
+  async lpush(key, ...values) {
+    if (!circuitBreaker.canAttempt()) {
+      logger.debug('Redis circuit breaker OPEN, skipping LPUSH');
+      return null;
+    }
+    
+    try {
+      const result = await redis.lpush(key, ...values);
+      circuitBreaker.recordSuccess();
+      return result;
+    } catch (error) {
+      circuitBreaker.recordFailure();
+      logger.error('Redis LPUSH error:', error.message);
+      return null;
+    }
+  },
+
+  async rpush(key, ...values) {
+    if (!circuitBreaker.canAttempt()) {
+      logger.debug('Redis circuit breaker OPEN, skipping RPUSH');
+      return null;
+    }
+    
+    try {
+      const result = await redis.rpush(key, ...values);
+      circuitBreaker.recordSuccess();
+      return result;
+    } catch (error) {
+      circuitBreaker.recordFailure();
+      logger.error('Redis RPUSH error:', error.message);
+      return null;
+    }
+  },
+
+  async ltrim(key, start, stop) {
+    if (!circuitBreaker.canAttempt()) {
+      logger.debug('Redis circuit breaker OPEN, skipping LTRIM');
+      return null;
+    }
+    
+    try {
+      const result = await redis.ltrim(key, start, stop);
+      circuitBreaker.recordSuccess();
+      return result;
+    } catch (error) {
+      circuitBreaker.recordFailure();
+      logger.error('Redis LTRIM error:', error.message);
+      return null;
+    }
+  },
+
+  async lrange(key, start, stop) {
+    if (!circuitBreaker.canAttempt()) {
+      logger.debug('Redis circuit breaker OPEN, skipping LRANGE');
+      return [];
+    }
+    
+    try {
+      const result = await redis.lrange(key, start, stop);
+      circuitBreaker.recordSuccess();
+      return result;
+    } catch (error) {
+      circuitBreaker.recordFailure();
+      logger.error('Redis LRANGE error:', error.message);
+      return [];
+    }
+  },
   
   async setex(key, ttl, value) {
     if (!circuitBreaker.canAttempt()) {
