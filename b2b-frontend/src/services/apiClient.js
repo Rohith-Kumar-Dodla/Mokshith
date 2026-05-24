@@ -7,7 +7,7 @@ const getBaseURL = () => {
   
   // Use current window origin as fallback if VITE_API_URL is missing
   // This helps when running in production where Vercel might not have variables set yet
-  const fallbackUrl = window.location.origin.includes('vercel.app') 
+  const fallbackUrl = (typeof window !== 'undefined' && window.location?.origin?.includes('vercel.app'))
     ? "https://mokshith-entreprises.onrender.com" 
     : "http://localhost:5000";
 
