@@ -81,7 +81,11 @@ export const hybridPayment = async (orderId, userId, useCredit, totalAmount, pay
   try {
     if (supportsTransactions) {
       session = await mongoose.startSession();
-      session.startTransaction();
+      session.startTransaction({
+        readPreference: 'primary',
+        readConcern: { level: 'snapshot' },
+        writeConcern: { w: 'majority' }
+      });
       isTransactionStarted = true;
     }
 

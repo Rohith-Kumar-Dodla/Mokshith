@@ -480,7 +480,7 @@ describe('Timeout Scenario Tests', () => {
 
     it('should rollback database transactions on timeout', async () => {
       const session = await mongoose.startSession();
-      session.startTransaction();
+      session.startTransaction({ readPreference: 'primary' });
 
       try {
         // Simulate slow operation in transaction
