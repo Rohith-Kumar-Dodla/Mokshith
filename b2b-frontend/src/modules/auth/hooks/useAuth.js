@@ -31,7 +31,7 @@ export const useAuth = () => {
             dispatch(updateCsrfToken(res.csrfToken));
           }
         } catch (err) {
-          console.error("CSRF auto-fetch failed:", err);
+          // CSRF fetch failed silently
         }
       }
     };

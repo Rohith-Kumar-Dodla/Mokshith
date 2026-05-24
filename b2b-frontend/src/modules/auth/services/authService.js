@@ -4,6 +4,12 @@ export const authService = {
   async login(payload) {
     try {
       const res = await apiClient.post("/auth/login", payload);
+      
+      // Handle null/undefined response
+      if (!res) {
+        return null;
+      }
+      
       // Since apiClient returns response.data, res is already the body
       const responseData = res.data || res;
       

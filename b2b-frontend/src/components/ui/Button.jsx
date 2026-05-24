@@ -27,12 +27,10 @@ const Button = ({
   return (
     <button 
       type={type}
-      onClick={(e) => {
-        console.log("Button clicked:", children);
-        if (onClick) onClick(e);
-      }}
+      onClick={onClick}
       className={`premium-button ${variantClass} ${widthClass} ${className} ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
       disabled={loading || validProps.disabled}
+      aria-busy={loading}
       {...validProps}
     >
       {loading ? (

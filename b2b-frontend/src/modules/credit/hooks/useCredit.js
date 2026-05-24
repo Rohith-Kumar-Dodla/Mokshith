@@ -17,8 +17,6 @@ export const useCredit = () => {
 
       setCredit(creditData.data);
       setLedger(ledgerData.data || []);
-      console.log("Credit Data Loaded:", creditData.data);
-      console.log("Ledger Data Loaded:", ledgerData.data || []);
     } catch (err) {
       setError(err.message || err);
     } finally {
