@@ -5,9 +5,13 @@ import { updateToken, logout } from "../modules/auth/authSlice.js";
 const getBaseURL = () => {
   const envUrl = import.meta.env.VITE_API_URL;
   
-  // Use current window origin as fallback if VITE_API_URL is missing
-  // This helps when running in production where Vercel might not have variables set yet
-  const fallbackUrl = (typeof window !== 'undefined' && window.location?.origin?.includes('vercel.app'))
+  // 🔥 Improved Production Fallback
+  const isVercel = typeof window !== 'undefined' && (
+    window.location?.origin?.includes('vercel.app') || 
+    window.location?.hostname?.includes('vercel.app')
+  );
+
+  const fallbackUrl = isVercel
     ? "https://mokshith-entreprises.onrender.com" 
     : "http://localhost:5000";
 

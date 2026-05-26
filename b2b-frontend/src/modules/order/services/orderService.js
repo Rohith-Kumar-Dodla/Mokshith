@@ -31,9 +31,18 @@ export const orderService = {
       console.error("API Error during placeOrder:", error);
       
       // Special handling for 409 Conflict (Idempotency Hit)
-      // If the backend returned the existing order, we return it to the caller
-      if (error.response?.status === 409 && error.response?.data?.data?._id) {
-        return error.response.data.data;
+      if (error.response?.status === 409) {
+        // Case 1: Order already finished and cached
+        if (error.response.data?.data?._id) {
+          return error.response.data.data;
+        }
+        // Case 2: Duplicate operation still in progress
+        if (error.response.data?.message?.includes('Duplicate operation')) {
+          const inProgressError = new Error("Duplicate operation in progress");
+          inProgressError.status = 409;
+          inProgressError.isConcurrencyError = true;
+          throw inProgressError;
+        }
       }
       
       throw new Error(error.response?.data?.message || error.message || "Order placement failed");

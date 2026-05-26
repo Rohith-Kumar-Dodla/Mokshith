@@ -106,19 +106,20 @@ const Checkout = () => {
   };
 
   const handlePlaceOrder = async () => {
-    // 🔒 Synchronous locking to prevent concurrent executions
-    if (isProcessing.current) {
+    // 🔒 Double-lock: Synchronous Ref + Local State
+    if (isProcessing.current || loading) {
       console.warn("Checkout already in progress, ignoring duplicate trigger.");
       return;
     }
     
     if (!validateCheckout()) return;
     
-    setLoading(true);
+    // Set both locks immediately
     isProcessing.current = true;
+    setLoading(true);
 
     try {
-      // Use the stable key from the ref
+      // Use a stable key for this specific attempt
       const currentKey = checkoutKey.current;
 
       const payload = {
@@ -141,19 +142,33 @@ const Checkout = () => {
         throw new Error("Order placement did not return a valid ID");
       }
 
-      // If successful, we don't reset isProcessing.current to prevent late double-clicks during navigation
+      // 🏆 Success: Navigate to payment
+      // We keep isProcessing.current = true to prevent double-clicks during route transition
       navigate(routes.PAYMENT.replace(':orderId', newOrder._id));
     } catch (err) {
       console.error("Checkout Error:", err);
       
-      // Reset locks on error to allow retry
+      // ⚠️ Handle 409 Conflict "In Progress" gracefully
+      if (err.isConcurrencyError || err.message?.includes('Duplicate operation in progress')) {
+        // If it's just a concurrent request error, we don't reset everything immediately
+        // We wait a bit and check if we should allow a retry if it hasn't redirected
+        setTimeout(() => {
+          if (isProcessing.current) {
+            setLoading(false);
+            isProcessing.current = false;
+          }
+        }, 3000);
+        return; // Don't show alert for "in progress" duplicates
+      }
+
+      // Reset locks on real errors to allow retry
       setLoading(false);
       isProcessing.current = false;
       
-      // Generate a NEW key for the next attempt so it's not blocked by the previous failed attempt's idempotency
+      // Generate a NEW key for the next attempt so it's not blocked by backend idempotency
       checkoutKey.current = `chk_${user?._id || 'guest'}_${Date.now()}`;
       
-      // Only alert if it's not a "duplicate" error which might happen during navigation/retries
+      // Only alert if it's not a duplicate error
       if (!err.message?.includes('Duplicate')) {
         alert(err.message || "Failed to place order. Please check your connection and try again.");
       }
