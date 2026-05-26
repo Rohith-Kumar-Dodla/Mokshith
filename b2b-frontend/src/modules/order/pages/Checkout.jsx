@@ -106,13 +106,21 @@ const Checkout = () => {
   };
 
   const handlePlaceOrder = async () => {
-    if (loading || isProcessing.current) return;
+    // 🔒 Synchronous locking to prevent concurrent executions
+    if (isProcessing.current) {
+      console.warn("Checkout already in progress, ignoring duplicate trigger.");
+      return;
+    }
+    
     if (!validateCheckout()) return;
     
     setLoading(true);
     isProcessing.current = true;
 
     try {
+      // Use the stable key from the ref
+      const currentKey = checkoutKey.current;
+
       const payload = {
         items: cart.map(item => ({
           productId: item.id || item._id,
@@ -123,7 +131,7 @@ const Checkout = () => {
         totalAmount: total,
         paymentMethod,
         shippingAddress: address,
-        idempotencyKey: checkoutKey.current
+        idempotencyKey: currentKey
       };
 
       const response = await placeOrder(payload);
@@ -133,19 +141,22 @@ const Checkout = () => {
         throw new Error("Order placement did not return a valid ID");
       }
 
+      // If successful, we don't reset isProcessing.current to prevent late double-clicks during navigation
       navigate(routes.PAYMENT.replace(':orderId', newOrder._id));
     } catch (err) {
       console.error("Checkout Error:", err);
+      
+      // Reset locks on error to allow retry
       setLoading(false);
       isProcessing.current = false;
-      // Generate a new key for the next attempt after an error
-      checkoutKey.current = `chk_${user?._id}_${Date.now()}`;
       
+      // Generate a NEW key for the next attempt so it's not blocked by the previous failed attempt's idempotency
+      checkoutKey.current = `chk_${user?._id || 'guest'}_${Date.now()}`;
+      
+      // Only alert if it's not a "duplicate" error which might happen during navigation/retries
       if (!err.message?.includes('Duplicate')) {
         alert(err.message || "Failed to place order. Please check your connection and try again.");
       }
-    } finally {
-      // Keep isProcessing true if navigating to prevent double clicks
     }
   };
 
