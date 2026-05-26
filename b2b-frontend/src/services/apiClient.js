@@ -3,21 +3,25 @@ import { store } from "../app/store.js";
 import { updateToken, logout } from "../modules/auth/authSlice.js";
 
 const getBaseURL = () => {
+  // Try environment variable first
   const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
+    const cleanUrl = envUrl.replace(/\/$/, '');
+    return cleanUrl.endsWith('/api/v1') ? cleanUrl : `${cleanUrl}/api/v1`;
+  }
   
-  // 🔥 Improved Production Fallback
-  const isVercel = typeof window !== 'undefined' && (
-    window.location?.origin?.includes('vercel.app') || 
-    window.location?.hostname?.includes('vercel.app')
-  );
+  // 🔥 Dynamic Production Detection (Runtime)
+  // This handles cases where Vercel build didn't have env vars set
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname.includes('vercel.app') || hostname.includes('mokshith-entreprises')) {
+      return "https://mokshith-entreprises.onrender.com/api/v1";
+    }
+  }
 
-  const fallbackUrl = isVercel
-    ? "https://mokshith-entreprises.onrender.com" 
-    : "http://localhost:5000";
-
-  const baseUrl = envUrl || fallbackUrl;
+  // Local development default
+  const baseUrl = envUrl || "http://localhost:5000";
   const cleanUrl = baseUrl.replace(/\/$/, '');
-  
   return cleanUrl.endsWith('/api/v1') ? cleanUrl : `${cleanUrl}/api/v1`;
 };
 

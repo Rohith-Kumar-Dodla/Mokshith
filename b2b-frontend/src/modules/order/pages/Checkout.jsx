@@ -4,7 +4,7 @@ import { useSystemConfig } from "../../../hooks/useSystemConfig";
 import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
 import Input from "../../../components/ui/Input";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { routes } from "../../../routes/routeConfig";
 import { PAYMENT_METHODS } from "../../../utils/constants";
@@ -105,13 +105,17 @@ const Checkout = () => {
     return true;
   };
 
-  const handlePlaceOrder = async () => {
+  const handlePlaceOrder = useCallback(async (e) => {
     // 🔒 Double-lock: Synchronous Ref + Local State
     if (isProcessing.current || loading) {
       console.warn("Checkout already in progress, ignoring duplicate trigger.");
       return;
     }
     
+    // Prevent default if called from a form or with an event
+    if (e && e.preventDefault) e.preventDefault();
+    if (e && e.stopPropagation) e.stopPropagation();
+
     if (!validateCheckout()) return;
     
     // Set both locks immediately
@@ -157,7 +161,7 @@ const Checkout = () => {
             setLoading(false);
             isProcessing.current = false;
           }
-        }, 3000);
+        }, 5000);
         return; // Don't show alert for "in progress" duplicates
       }
 
@@ -173,7 +177,7 @@ const Checkout = () => {
         alert(err.message || "Failed to place order. Please check your connection and try again.");
       }
     }
-  };
+  }, [loading, validateCheckout, cart, total, paymentMethod, address, placeOrder, navigate, user?._id]);
 
   if (cart.length === 0) {
     return (
@@ -449,26 +453,17 @@ const Checkout = () => {
                   )}
                 </div>
 
-                <button 
+                <Button 
                   onClick={handlePlaceOrder} 
-                  disabled={loading}
-                  className={`
-                    w-full h-16 rounded-2xl font-bold text-lg transition-all duration-300 flex items-center justify-center gap-3 relative overflow-hidden group/order
-                    ${loading 
-                      ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-                      : 'bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-600/20 active:scale-[0.98]'
-                    }
-                  `}
+                  loading={loading}
+                  fullWidth
+                  className="h-16 rounded-2xl font-bold text-lg shadow-xl shadow-blue-600/20"
                 >
-                  {loading ? (
-                    <Loader2 className="animate-spin" size={24} />
-                  ) : (
-                    <>
-                      <span>Complete Order</span>
-                      <ArrowRight size={20} strokeWidth={2.5} className="group-hover:translate-x-1 transition-transform" />
-                    </>
-                  )}
-                </button>
+                  <div className="flex items-center justify-center gap-3">
+                    <span>Complete Order</span>
+                    <ArrowRight size={20} strokeWidth={2.5} className="group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </Button>
 
                 <div className="mt-8 pt-8 border-t border-slate-100 space-y-4">
                   <div className="flex items-center gap-3 text-slate-400">
