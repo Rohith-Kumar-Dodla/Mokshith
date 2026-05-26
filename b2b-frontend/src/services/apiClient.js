@@ -5,21 +5,21 @@ import { updateToken, logout } from "../modules/auth/authSlice.js";
 const getBaseURL = () => {
   // Try environment variable first
   const envUrl = import.meta.env.VITE_API_URL;
-  if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
-    const cleanUrl = envUrl.replace(/\/$/, '');
-    return cleanUrl.endsWith('/api/v1') ? cleanUrl : `${cleanUrl}/api/v1`;
-  }
   
   // 🔥 Dynamic Production Detection (Runtime)
-  // This handles cases where Vercel build didn't have env vars set
+  // This handles cases where Vercel build didn't have env vars set or they were misconfigured
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
-    if (hostname.includes('vercel.app') || hostname.includes('mokshith-entreprises')) {
+    const isProduction = 
+      hostname.includes('vercel.app') || 
+      hostname.includes('mokshith-entreprises') ||
+      hostname !== 'localhost' && hostname !== '127.0.0.1';
+
+    if (isProduction && (!envUrl || envUrl.includes('localhost'))) {
       return "https://mokshith-entreprises.onrender.com/api/v1";
     }
   }
 
-  // Local development default
   const baseUrl = envUrl || "http://localhost:5000";
   const cleanUrl = baseUrl.replace(/\/$/, '');
   return cleanUrl.endsWith('/api/v1') ? cleanUrl : `${cleanUrl}/api/v1`;

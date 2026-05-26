@@ -152,17 +152,23 @@ const Checkout = () => {
     } catch (err) {
       console.error("Checkout Error:", err);
       
-      // ⚠️ Handle 409 Conflict "In Progress" gracefully
-      if (err.isConcurrencyError || err.message?.includes('Duplicate operation in progress')) {
-        // If it's just a concurrent request error, we don't reset everything immediately
-        // We wait a bit and check if we should allow a retry if it hasn't redirected
+      // ⚠️ Handle Concurrency/Duplicate errors silently
+      const isConcurrency = 
+        err.isConcurrencyError || 
+        err.message?.includes('Duplicate operation') || 
+        err.status === 409;
+
+      if (isConcurrency) {
+        // If it's a concurrency error, the background polling in orderService 
+        // will likely resolve it. We just need to make sure we don't block the UI 
+        // forever if something goes wrong.
         setTimeout(() => {
           if (isProcessing.current) {
             setLoading(false);
             isProcessing.current = false;
           }
-        }, 5000);
-        return; // Don't show alert for "in progress" duplicates
+        }, 8000); // Longer timeout to account for polling
+        return; 
       }
 
       // Reset locks on real errors to allow retry
@@ -172,10 +178,8 @@ const Checkout = () => {
       // Generate a NEW key for the next attempt so it's not blocked by backend idempotency
       checkoutKey.current = `chk_${user?._id || 'guest'}_${Date.now()}`;
       
-      // Only alert if it's not a duplicate error
-      if (!err.message?.includes('Duplicate')) {
-        alert(err.message || "Failed to place order. Please check your connection and try again.");
-      }
+      // Alert for real errors
+      alert(err.message || "Failed to place order. Please check your connection and try again.");
     }
   }, [loading, validateCheckout, cart, total, paymentMethod, address, placeOrder, navigate, user?._id]);
 

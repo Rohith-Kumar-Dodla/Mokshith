@@ -18,7 +18,7 @@ export const orderService = {
     }
   },
 
-  async placeOrder(payload) {
+  async placeOrder(payload, retryCount = 0) {
     try {
       const config = {};
       if (payload.idempotencyKey) {
@@ -28,7 +28,7 @@ export const orderService = {
       const response = await apiClient.post("/orders", payload, config);
       return response.data || response;
     } catch (error) {
-      console.error("API Error during placeOrder:", error);
+      console.error(`API Error during placeOrder (Attempt ${retryCount + 1}):`, error);
       
       // Special handling for 409 Conflict (Idempotency Hit)
       if (error.response?.status === 409) {
@@ -36,12 +36,13 @@ export const orderService = {
         if (error.response.data?.data?._id) {
           return error.response.data.data;
         }
+
         // Case 2: Duplicate operation still in progress
-        if (error.response.data?.message?.includes('Duplicate operation')) {
-          const inProgressError = new Error("Duplicate operation in progress");
-          inProgressError.status = 409;
-          inProgressError.isConcurrencyError = true;
-          throw inProgressError;
+        // We poll/retry up to 5 times (5 seconds total) to wait for the first request to finish
+        if (error.response.data?.message?.includes('Duplicate operation') && retryCount < 5) {
+          console.warn(`Duplicate operation in progress. Polling... (Attempt ${retryCount + 1})`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          return this.placeOrder(payload, retryCount + 1);
         }
       }
       
