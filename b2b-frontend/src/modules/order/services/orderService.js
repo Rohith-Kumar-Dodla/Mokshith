@@ -38,8 +38,8 @@ export const orderService = {
         }
 
         // Case 2: Duplicate operation still in progress
-        // We poll/retry up to 5 times (5 seconds total) to wait for the first request to finish
-        if (error.response.data?.message?.includes('Duplicate operation') && retryCount < 5) {
+        // We poll/retry up to 10 times (10 seconds total) to wait for the first request to finish
+        if (error.response.data?.message?.includes('Duplicate operation') && retryCount < 10) {
           console.warn(`Duplicate operation in progress. Polling... (Attempt ${retryCount + 1})`);
           await new Promise(resolve => setTimeout(resolve, 1000));
           return this.placeOrder(payload, retryCount + 1);

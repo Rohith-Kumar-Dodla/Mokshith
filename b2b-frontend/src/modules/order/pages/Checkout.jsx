@@ -167,7 +167,7 @@ const Checkout = () => {
             setLoading(false);
             isProcessing.current = false;
           }
-        }, 8000); // Longer timeout to account for polling
+        }, 15000); // Increased timeout to account for extended polling (10s polling + buffer)
         return; 
       }
 
