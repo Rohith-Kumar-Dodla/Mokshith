@@ -145,7 +145,7 @@ app.use(ipBlockMiddleware);
 app.use(timeoutMiddleware(30000));
 
 // 🔥 Handle preflight requests (VERY IMPORTANT)
-app.options("*", corsConfig);
+app.options(/.*/, corsConfig);
 
 
 // � Security middleware

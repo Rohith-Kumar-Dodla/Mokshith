@@ -119,9 +119,8 @@ const userSchema = new mongoose.Schema(
 );
 
 // 🔥 Soft delete filter
-userSchema.pre(/^find/, function (next) {
+userSchema.pre(/^find/, function () {
   this.find({ isDeleted: { $ne: true } });
-  next();
 });
 
 export default mongoose.model('User', userSchema);

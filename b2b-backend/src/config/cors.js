@@ -7,6 +7,7 @@ const allowedOrigins = [
   'http://127.0.0.1:5174',
   'http://localhost:5173', // Common Vite default
   'http://127.0.0.1:5173',
+  'http://localhost:3000', // Standard React default
   /\.vercel\.app$/, // Allow all Vercel deployments
   'https://mokshith-entreprises.vercel.app' // Add your specific production URL here
 ];

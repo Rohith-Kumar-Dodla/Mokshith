@@ -1,8 +1,7 @@
 import helmet from 'helmet';
-import mongoSanitize from 'express-mongo-sanitize';
-import xss from 'xss-clean';
 import { apiLimiter } from './rateLimiter.js';
-import { logger } from './logger.js';
+import { mongoSanitizeMiddleware } from '../middlewares/mongoSanitize.middleware.js';
+import { xssSanitizeMiddleware } from '../middlewares/xssSanitize.middleware.js';
 
 export const securityMiddleware = (app) => {
   // 🔥 Helmet: Secure HTTP headers with production-ready configuration
@@ -22,20 +21,11 @@ export const securityMiddleware = (app) => {
     hidePoweredBy: true, // Hide X-Powered-By header
   }));
 
-  // 🔥 Prevent NoSQL injection with enhanced logging
-  app.use(mongoSanitize({
-    replaceWith: '_',
-    onSanitize: ({ req, key }) => {
-      logger.warn('⚠️ Potential NoSQL injection attempt blocked', {
-        ip: req.ip,
-        path: req.originalUrl,
-        key,
-      });
-    },
-  }));
+  // 🔥 Prevent NoSQL injection (Custom middleware for Express 5 compatibility)
+  app.use((req, res, next) => mongoSanitizeMiddleware(req, res, next));
 
-  // 🔥 Prevent XSS attacks
-  app.use(xss());
+  // 🔥 Prevent XSS attacks (Custom middleware for Express 5 compatibility)
+  app.use((req, res, next) => xssSanitizeMiddleware(req, res, next));
 
   // 🔥 Rate limiting (applied globally)
   app.use('/api', apiLimiter);
