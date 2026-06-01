@@ -51,9 +51,9 @@ export const validate = (schema) => (req, res, next) => {
   }
 
   // 🔥 Update req with validated/transformed values
-  req.body = value.body;
-  req.query = value.query;
-  req.params = value.params;
+  if (value.body) Object.assign(req.body, value.body);
+  if (value.query) Object.assign(req.query, value.query);
+  if (value.params) Object.assign(req.params, value.params);
 
   next();
 };

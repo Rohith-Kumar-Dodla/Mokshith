@@ -46,7 +46,6 @@ let uploadsPath = potentialPaths[0]; // Default
 for (const p of potentialPaths) {
   if (fs.existsSync(p)) {
     uploadsPath = p;
-    console.log(`✅ FOUND UPLOADS AT: ${p}`);
     break;
   }
 }
@@ -92,7 +91,6 @@ app.get('/uploads/:filename', (req, res) => {
     
     return res.sendFile(foundPath);
   } else {
-    console.error(`❌ Image not found on disk in any potential path: ${filename}`);
     return res.status(404).send(`Image not found: ${filename}`);
   }
 });
@@ -163,7 +161,7 @@ app.use(ipBlockMiddleware);
 app.use(timeoutMiddleware(30000));
 
 // 🔥 Handle preflight requests (VERY IMPORTANT)
-app.options("*", corsConfig);
+app.options(/.*/, corsConfig);
 
 
 // 🛡️ Security middleware
