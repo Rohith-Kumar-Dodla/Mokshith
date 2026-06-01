@@ -3,16 +3,26 @@ import { store } from "../app/store.js";
 import { updateToken, logout } from "../modules/auth/authSlice.js";
 
 const getBaseURL = () => {
-  const envUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
-  // Remove trailing slash
-  const cleanUrl = envUrl.replace(/\/$/, '');
+  // Try environment variable first
+  const envUrl = import.meta.env.VITE_API_URL;
   
-  // 🔥 Fix: If the URL already contains /api/v1, don't append it again
-  if (cleanUrl.endsWith('/api/v1')) {
-    return cleanUrl;
+  // 🔥 Dynamic Production Detection (Runtime)
+  // This handles cases where Vercel build didn't have env vars set or they were misconfigured
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    const isProduction = 
+      hostname.includes('vercel.app') || 
+      hostname.includes('mokshith-entreprises') ||
+      hostname !== 'localhost' && hostname !== '127.0.0.1';
+
+    if (isProduction && (!envUrl || envUrl.includes('localhost'))) {
+      return "https://mokshith-entreprises.onrender.com/api/v1";
+    }
   }
-  
-  return `${cleanUrl}/api/v1`;
+
+  const baseUrl = envUrl || "http://localhost:5000";
+  const cleanUrl = baseUrl.replace(/\/$/, '');
+  return cleanUrl.endsWith('/api/v1') ? cleanUrl : `${cleanUrl}/api/v1`;
 };
 
 const API_V1_URL = getBaseURL();
@@ -21,6 +31,7 @@ const API_BASE_URL = API_V1_URL.replace(/\/api\/v1$/, '');
 const apiClient = axios.create({
   baseURL: API_V1_URL,
   timeout: 30000,
+  withCredentials: true, // 🔥 Fix: Send cookies with requests
   headers: {
     "Content-Type": "application/json",
   },
@@ -50,13 +61,15 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    const csrfToken = localStorage.getItem("csrfToken");
+    if (csrfToken) {
+      config.headers["x-csrf-token"] = csrfToken;
+    }
     
-    // 🔥 Fix: For FormData, we must ensure Content-Type is NOT set manually
-    // This allows the browser to set it correctly with the boundary
+    // Handle FormData: browser must set Content-Type with boundary
     if (config.data instanceof FormData) {
-      console.log('📡 Interceptor: FormData detected, removing Content-Type header');
-      
-      // Handle both uppercase and lowercase versions
+      // Remove Content-Type header for FormData
       if (config.headers) {
         if (typeof config.headers.delete === 'function') {
           config.headers.delete("Content-Type");
@@ -146,7 +159,7 @@ apiClient.interceptors.response.use(
 
     // Handle other errors
     if (error.response?.status === 403) {
-      window.location.href = "/unauthorized";
+      console.warn('403 Forbidden - Access Denied', originalRequest.url);
     }
 
     // 🔥 Fix: Reject with the full error object so services can access status/data

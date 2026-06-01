@@ -44,7 +44,9 @@ export const useOrder = (shouldFetch = false) => {
   const placeOrder = async (orderData) => {
     dispatch(fetchStart());
     try {
-      const newOrder = await orderService.placeOrder(orderData);
+      const response = await orderService.placeOrder(orderData);
+      // Ensure we extract the nested data if it exists
+      const newOrder = response.data || response;
       // Note: Cart is cleared in PaymentPage after successful verification
       await fetchOrders();
       return newOrder;

@@ -54,6 +54,7 @@ const PaymentPage = () => {
   const [deliveryAssigned, setDeliveryAssigned] = useState(false);
   const [error, setError] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('online');
+  const isInitiating = useRef(false);
 
   const fetchData = async () => {
     try {
@@ -156,7 +157,10 @@ const PaymentPage = () => {
   const { creditUsed, onlinePayable } = calculateBreakdown();
 
   const handlePayment = async () => {
+    if (processing || isInitiating.current) return;
+    
     setProcessing(true);
+    isInitiating.current = true;
     setError(null);
 
     try {
@@ -289,6 +293,7 @@ const PaymentPage = () => {
           ondismiss: async function() {
             console.log('❌ Razorpay modal closed by user');
             setProcessing(false);
+            isInitiating.current = false;
             setError('Payment cancelled. You can retry whenever you are ready.');
             
             // We DON'T mark as failed immediately on dismiss to allow retries.
@@ -331,6 +336,7 @@ const PaymentPage = () => {
         PaymentLogger.error('Razorpay payment failed', response.error);
         setError(`Payment failed: ${response.error.description}`);
         setProcessing(false);
+        isInitiating.current = false;
 
         try {
           await orderService.markOrderAsFailed(orderId);
@@ -353,6 +359,7 @@ const PaymentPage = () => {
 
       setError(errorMessage);
       setProcessing(false);
+      isInitiating.current = false;
     }
   };
   //       modal: { ondismiss: () => setProcessing(false) }

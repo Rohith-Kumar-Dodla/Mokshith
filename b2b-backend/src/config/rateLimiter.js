@@ -82,3 +82,21 @@ export const authLimiter = rateLimit({
   },
   skipSuccessfulRequests: true,
 });
+
+// 🔒 PHASE 3: Order creation rate limiter to prevent spam and inventory exhaustion
+export const orderLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 10, // Max 10 orders per 5 minutes per user
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: new RedisStore({ prefix: 'order:', windowMs: 5 * 60 * 1000 }),
+  message: {
+    success: false,
+    message: 'Too many order creation attempts. Please wait a few minutes before creating more orders.',
+  },
+  skipSuccessfulRequests: false, // Count all attempts to prevent inventory locking abuse
+  keyGenerator: (req) => {
+    // Use user ID if authenticated, otherwise IP address
+    return req.user?.id || req.ip;
+  },
+});

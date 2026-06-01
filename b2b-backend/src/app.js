@@ -2,6 +2,7 @@ import express from 'express';
 import morgan from 'morgan';
 import cors from 'cors';
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
 
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -17,6 +18,10 @@ import { requestLogger } from './middlewares/requestLogger.middleware.js';
 import { idempotencyMiddleware } from './middlewares/idempotency.middleware.js';
 import { ipBlockMiddleware } from './middlewares/ipBlock.middleware.js';
 import { timeoutMiddleware } from './middlewares/timeout.middleware.js';
+import { correlationMiddleware } from './middlewares/correlation.middleware.js';
+import { monitoringMiddleware, errorRateTracker } from './middlewares/monitoring.middleware.js';
+
+import { sentryRequestHandler, sentryTracingHandler, sentryErrorHandler } from './config/sentry.js';
 
 import logisticsRoutes from './modules/logistics/logistics.routes.js';
 
@@ -123,7 +128,18 @@ potentialPaths.forEach(p => {
 // 🔥 Trust proxy (important for Render / cloud deployments)
 app.set('trust proxy', 1);
 
-// 🔥 COMPRESSION - Compress all responses (gzip/deflate)
+// 🔥 Sentry request handler (MUST be first middleware)
+app.use(sentryRequestHandler());
+app.use(sentryTracingHandler());
+
+// 🔥 Correlation ID middleware (must be early in chain)
+app.use(correlationMiddleware);
+
+// � Monitoring middleware (tracks performance metrics)
+app.use(monitoringMiddleware);
+app.use(errorRateTracker());
+
+// �🔥 COMPRESSION - Compress all responses (gzip/deflate)
 app.use(compression({
   filter: (req, res) => {
     if (req.headers['x-no-compression']) {
@@ -148,9 +164,11 @@ app.use(timeoutMiddleware(30000));
 app.options(/.*/, corsConfig);
 
 
-// � Security middleware
+// 🛡️ Security middleware
 securityMiddleware(app);
 
+// 🍪 Cookie parser (must be before routes that use cookies)
+app.use(cookieParser());
 
 // 🔥 Body parsers with size limits
 app.use(express.json({
@@ -168,7 +186,7 @@ app.use(express.urlencoded({
 }));
 
 
-// 📜 Logging
+// 📜 Logging (now using structured format with correlation IDs)
 app.use(morgan('dev'));
 app.use(requestLogger);
 
@@ -177,13 +195,13 @@ app.use(requestLogger);
 app.use(idempotencyMiddleware);
 
 
-// ❤️ Health check route
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    timestamp: new Date()
-  });
-});
+// ❤️ Health check routes
+import { healthCheck, livenessProbe, readinessProbe, getMetrics } from './controllers/health.controller.js';
+
+app.get('/health', healthCheck);
+app.get('/health/live', livenessProbe);
+app.get('/health/ready', readinessProbe);
+app.get('/metrics', getMetrics); // System metrics for monitoring
 
 
 // 🚀 API routes
@@ -193,6 +211,9 @@ app.use('/api', routes);
 // ❌ Not Found handler
 app.use(notFound);
 
+
+// 💥 Sentry error handler (MUST be after routes, before other error handlers)
+app.use(sentryErrorHandler());
 
 // 💥 Global error handler (must be last)
 app.use(errorHandler);

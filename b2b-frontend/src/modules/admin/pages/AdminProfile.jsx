@@ -119,7 +119,7 @@ const AdminProfile = () => {
               <div className="w-32 h-32 rounded-3xl bg-primary/10 flex items-center justify-center text-primary text-4xl font-black overflow-hidden border-4 border-white shadow-xl">
                 {user?.profileImage ? (
                   <img 
-                    src={user.profileImage.startsWith('http') ? user.profileImage : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${user.profileImage}`} 
+                    src={user.profileImage.startsWith('http') ? user.profileImage : `${import.meta.env.VITE_API_URL || (window.location.origin.includes('vercel.app') ? 'https://mokshith-entreprises.onrender.com' : 'http://localhost:5000')}${user.profileImage}`} 
                     alt="Profile" 
                     className="w-full h-full object-cover"
                   />

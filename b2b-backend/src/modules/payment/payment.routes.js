@@ -4,8 +4,8 @@ import { protect } from '../../middlewares/auth.middleware.js';
 import { validate } from '../../middlewares/validate.middleware.js';
 import { verifyPaymentSchema } from './payment.validation.js';
 import { paymentLimiter } from '../../config/rateLimiter.js';
+import { csrfProtection } from '../../middlewares/csrf.middleware.js';
 
-// 🔥 ADD THIS
 import Joi from 'joi';
 
 const router = express.Router();
@@ -18,8 +18,15 @@ const hybridPaymentSchema = Joi.object({
   }),
 }).unknown(true);
 
-// 1. /hybrid (MUST BE FIRST)
-router.post(
+// 1. /webhook (Razorpay Webhook - MUST BE BEFORE CSRF PROTECTED ROUTES)
+router.post('/webhook', paymentLimiter, controller.razorpayWebhook);
+
+// 🔒 Apply CSRF protection to all state-changing routes below
+const csrfProtected = express.Router();
+csrfProtected.use(csrfProtection);
+
+// 2. /hybrid
+csrfProtected.post(
   '/hybrid',
   paymentLimiter,
   protect,
@@ -27,11 +34,11 @@ router.post(
   controller.hybridPayment
 );
 
-// 2. /create-order
-router.post('/create-order', paymentLimiter, protect, controller.createRazorpayOrder);
+// 3. /create-order
+csrfProtected.post('/create-order', paymentLimiter, protect, controller.createRazorpayOrder);
 
-// 3. /verify
-router.post(
+// 4. /verify
+csrfProtected.post(
   '/verify',
   paymentLimiter,
   protect,
@@ -39,13 +46,13 @@ router.post(
   controller.verifyPayment
 );
 
-// 4. /webhook (Razorpay Webhook)
-router.post('/webhook', paymentLimiter, controller.razorpayWebhook);
-
 // 5. /fail
-router.post('/fail', paymentLimiter, protect, controller.failPayment);
+csrfProtected.post('/fail', paymentLimiter, protect, controller.failPayment);
 
-// 6. /initiate/:orderId (CHANGED FROM /:orderId TO AVOID CONFLICTS)
-router.post('/initiate/:orderId', paymentLimiter, protect, controller.initiatePayment);
+// 6. /initiate/:orderId
+csrfProtected.post('/initiate/:orderId', paymentLimiter, protect, controller.initiatePayment);
+
+// Mount CSRF protected routes
+router.use(csrfProtected);
 
 export default router;

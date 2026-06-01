@@ -124,7 +124,7 @@ const Profile = () => {
               <div className="w-32 h-32 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-5xl font-bold shadow-2xl border-4 border-white overflow-hidden">
                 {user?.profileImage ? (
                   <img 
-                    src={user.profileImage.startsWith('http') ? user.profileImage : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${user.profileImage}`} 
+                    src={user.profileImage.startsWith('http') ? user.profileImage : `${import.meta.env.VITE_API_URL || (window.location.origin.includes('vercel.app') ? 'https://mokshith-entreprises.onrender.com' : 'http://localhost:5000')}${user.profileImage}`} 
                     alt="Profile" 
                     className="w-full h-full object-cover"
                   />

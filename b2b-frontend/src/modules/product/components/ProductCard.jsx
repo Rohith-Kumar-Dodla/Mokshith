@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { ShoppingCart, Eye, Star, Plus, Minus, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { routes } from '../../../routes/routeConfig.js';
@@ -58,7 +58,7 @@ const ProductCard = ({ product, onAddToCart, onBuyNow, user }) => {
         await addToWishlist(product._id || product.id);
       }
     } catch (err) {
-      console.error('Wishlist error:', err);
+      // Wishlist action failed
     }
   };
 
@@ -421,4 +421,4 @@ const ProductCard = ({ product, onAddToCart, onBuyNow, user }) => {
   );
 };
 
-export default ProductCard;
+export default memo(ProductCard);

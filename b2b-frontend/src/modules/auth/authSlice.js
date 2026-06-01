@@ -23,9 +23,14 @@ const getStoredUser = () => {
   }
 };
 
+const getStoredCsrfToken = () => {
+  return localStorage.getItem('csrfToken');
+};
+
 const initialState = {
   user: getStoredUser(),
   token: getStoredToken(),
+  csrfToken: getStoredCsrfToken(),
   isAuthenticated: !!getStoredToken(),
   loading: false,
   error: null,
@@ -40,14 +45,16 @@ const authSlice = createSlice({
       state.error = null;
     },
     loginSuccess: (state, action) => {
-      const { user, token } = action.payload;
+      const { user, token, csrfToken } = action.payload;
       state.loading = false;
       state.isAuthenticated = !!token;
       state.user = user;
       state.token = token;
+      state.csrfToken = csrfToken;
       
       if (user) localStorage.setItem('user', JSON.stringify(user));
       if (token) localStorage.setItem('token', token);
+      if (csrfToken) localStorage.setItem('csrfToken', csrfToken);
     },
     loginFailure: (state, action) => {
       state.loading = false;
@@ -62,12 +69,18 @@ const authSlice = createSlice({
       state.isAuthenticated = !!action.payload;
       localStorage.setItem('token', action.payload);
     },
+    updateCsrfToken: (state, action) => {
+      state.csrfToken = action.payload;
+      localStorage.setItem('csrfToken', action.payload);
+    },
     logout: (state) => {
       state.user = null;
       state.token = null;
+      state.csrfToken = null;
       state.isAuthenticated = false;
       localStorage.removeItem('user');
       localStorage.removeItem('token');
+      localStorage.removeItem('csrfToken');
     },
   },
 });
@@ -75,6 +88,7 @@ const authSlice = createSlice({
 export const { loginStart, loginSuccess, loginFailure, 
   updateUser,
   updateToken,
+  updateCsrfToken,
   logout 
 } = authSlice.actions;
 export default authSlice.reducer;

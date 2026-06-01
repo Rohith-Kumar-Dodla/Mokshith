@@ -1,6 +1,8 @@
 import * as repo from './product.repository.js';
 import AppError from '../../errors/AppError.js';
 import { buildProductFilter } from './product.utils.js';
+import { parsePaginationParams, buildPaginationMeta } from '../../utils/pagination.js';
+import { transformProductsArray } from '../../utils/cdn.js';
 
 // 🔥 Simple In-Memory Cache
 const productCache = {
@@ -33,22 +35,34 @@ export const createProduct = async (data) => {
 };
 
 export const getProducts = async (query) => {
-  const { page = 1, limit = 10, categoryId, search } = query;
+  // Parse and enforce pagination limits
+  const { page, limit, skip } = parsePaginationParams(query);
+  const { categoryId, search } = query;
 
   // 🔥 Caching for default product list
-  const isDefaultQuery = page === 1 && limit === 10 && !categoryId && !search;
+  const isDefaultQuery = page === 1 && limit === 20 && !categoryId && !search;
   if (isDefaultQuery && productCache.data && (Date.now() - productCache.lastFetched < productCache.ttl)) {
     return productCache.data;
   }
 
-  const skip = (page - 1) * limit;
-
   const filter = buildProductFilter({ categoryId, search });
 
-  const result = await repo.findProducts(filter, {
-    skip,
-    limit: Number(limit),
-  });
+  // Get total count and products in parallel
+  const [products, total] = await Promise.all([
+    repo.findProducts(filter, { skip, limit }),
+    repo.countProducts(filter)
+  ]);
+
+  // Transform product images to CDN URLs
+  const transformedProducts = transformProductsArray(products);
+
+  // Build pagination metadata
+  const pagination = buildPaginationMeta(page, limit, total);
+
+  const result = {
+    products: transformedProducts,
+    pagination
+  };
 
   if (isDefaultQuery) {
     productCache.data = result;

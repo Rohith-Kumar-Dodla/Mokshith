@@ -83,8 +83,9 @@ const AdminProductsPage = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const data = await productService.getProducts({ limit: 100 });
-      setProducts(Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : []);
+      const res = await productService.getProducts({ limit: 100 });
+      const data = res.data || res;
+      setProducts(Array.isArray(data.products) ? data.products : Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -94,8 +95,9 @@ const AdminProductsPage = () => {
 
   const fetchCategories = async () => {
     try {
-      const data = await productService.getCategories();
-      setCategories(Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : []);
+      const res = await productService.getCategories();
+      const data = res.data || res;
+      setCategories(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Failed to fetch categories:", err);
     }

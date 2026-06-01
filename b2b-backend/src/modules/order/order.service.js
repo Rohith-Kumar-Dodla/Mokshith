@@ -14,7 +14,7 @@ import { sendNotification } from '../notification/notification.service.js';
 import { onOrderCreated } from './order.events.js';
 import { trackOrder } from '../analytics/analytics.events.js';
 
-import { checkStock, reduceStock } from '../inventory/inventory.service.js';
+import { checkStock, reduceStock, reserveInventory } from '../inventory/inventory.service.js';
 import { useCredit } from '../credit/credit.service.js';
 import { createShipment } from '../logistics/logistics.service.js';
 import { assignDelivery } from '../../services/deliveryAssignment.service.js';
@@ -23,6 +23,7 @@ import { fetchSetting } from '../settings/settings.service.js';
 
 import { ORDER_STATUS } from '../../constants/orderStatus.js';
 import { PAYMENT_STATUS } from '../../constants/paymentStatus.js';
+import { logger } from '../../config/logger.js';
 
 import mongoose from 'mongoose';
 import { getTransactionSupport } from '../../config/db.js';
@@ -38,7 +39,7 @@ export const createOrder = async (userId, data) => {
 
   // 🔥 0. Idempotency Check
   if (idempotencyKey) {
-    const existingOrder = await Order.findOne({ idempotencyKey }).lean();
+    const existingOrder = await Order.findOne({ idempotencyKey, userId }).lean();
     if (existingOrder) return existingOrder;
   }
 
@@ -55,7 +56,7 @@ export const createOrder = async (userId, data) => {
 
   // 🔥 Check Order Cutoff Time
   const cutoffSetting = await fetchSetting('orderCutoffTime');
-  if (cutoffSetting && cutoffSetting.value) {
+  if (cutoffSetting && cutoffSetting.value && cutoffSetting.value !== '00:00') {
     const [hours, minutes] = cutoffSetting.value.split(':').map(Number);
     const now = new Date();
     const cutoffDate = new Date();
@@ -195,15 +196,32 @@ export const createOrder = async (userId, data) => {
   try {
     if (supportsTransactions) {
       session = await mongoose.startSession();
-      session.startTransaction();
+      session.startTransaction({
+        readPreference: 'primary',
+        readConcern: { level: 'snapshot' },
+        writeConcern: { w: 'majority' }
+      });
     }
 
     // Create order
     order = await orderRepo.createOrder(orderData, { session });
     
-    // Deduct stock for all items
-    for (const item of items) {
-      await reduceStock(item.productId, item.quantity, { session });
+    // 🔒 CRITICAL FIX: Use different stock handling based on payment method
+    // COD: Immediate deduction (payment guaranteed)
+    // NON-COD: Reserve only (finalize after payment success)
+    if (paymentMethod.toUpperCase() === 'COD') {
+      // Immediate stock deduction for COD
+      for (const item of items) {
+        await reduceStock(item.productId, item.quantity, { session });
+      }
+    } else {
+      // Reserve inventory for pending payment (15 min TTL)
+      // Actual deduction happens in payment verification
+      const reservationItems = items.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity
+      }));
+      await reserveInventory(order._id.toString(), reservationItems, 900);
     }
 
     if (supportsTransactions) {
@@ -245,20 +263,13 @@ export const createOrder = async (userId, data) => {
       await onOrderCreated(order);
       trackOrder(order);
 
-      // Shipment Creation (non-blocking)
-      setImmediate(async () => {
-        try {
-          const warehouses = await Warehouse.find().limit(1).lean();
-          if (warehouses.length > 0) {
-            const shipment = await createShipment(order, warehouses);
-            await Order.findByIdAndUpdate(order._id, { shipmentId: shipment._id });
-          }
-
-          // Auto-assign Delivery Partner
-          await assignDelivery(order);
-        } catch (err) {
-          console.error('Post-order logistics error:', err.message);
-        }
+      // 🔒 PHASE 4: Queue-based post-order processing (replaces setImmediate)
+      // Survives server crashes and has retry logic
+      const { queuePostOrderJobs } = await import('../../services/queueManager.service.js');
+      await queuePostOrderJobs({
+        orderId: order._id.toString(),
+        userId,
+        paymentMethod: 'COD',
       });
     } else {
       // For non-COD, just notify about pending order
@@ -269,7 +280,7 @@ export const createOrder = async (userId, data) => {
       });
     }
   } catch (err) {
-    console.error('Non-critical post-order error:', err.message);
+    logger.error('Non-critical post-order error', { orderId: order?._id, userId, error: err.message, stack: err.stack });
   }
 
   return order;
@@ -302,16 +313,16 @@ export const getOrderById = async (id) => {
 };
 
 export const downloadInvoice = async (orderId) => {
-  console.log(`[OrderService] 🔍 Searching for invoice for Order: ${orderId}`);
+  logger.info('Searching for invoice', { orderId });
   let invoice = await getInvoiceByOrderId(orderId);
   
   // If invoice doesn't exist OR fileUrl is missing, generate/regenerate it
   if (!invoice || !invoice.fileUrl) {
-    console.log(`[OrderService] 📝 Invoice missing or fileUrl null. Generating...`);
+    logger.info('Invoice missing or fileUrl null - generating', { orderId });
     invoice = await generateInvoice(orderId);
     
     if (!invoice || !invoice.fileUrl) {
-      console.error(`[OrderService] ❌ Invoice generation failed for Order ${orderId}`);
+      logger.error('Invoice generation failed', { orderId });
       throw new AppError('Invoice could not be generated', 404);
     }
   }
@@ -330,7 +341,7 @@ export const downloadInvoice = async (orderId) => {
   let filePath = null;
   for (const base of potentialBases) {
     const testPath = path.join(base, relativeUrl);
-    console.log(`[OrderService] 🧪 Checking path: ${testPath}`);
+    logger.debug('Checking invoice path', { testPath, orderId });
     if (fs.existsSync(testPath)) {
       filePath = testPath;
       break;
@@ -338,9 +349,9 @@ export const downloadInvoice = async (orderId) => {
   }
 
   if (!filePath) {
-    console.error(`[OrderService] ❌ Invoice file not found on disk for URL: ${rawUrl}`);
+    logger.error('Invoice file not found on disk', { orderId, fileUrl: rawUrl });
     // Try one last thing: re-generate if file is missing from disk
-    console.log(`[OrderService] 🔄 File missing from disk. Attempting re-generation...`);
+    logger.info('Attempting invoice re-generation', { orderId });
     const newInvoice = await generateInvoice(orderId, true); // Force re-generation
     if (newInvoice && newInvoice.fileUrl) {
       const newRelative = newInvoice.fileUrl.startsWith('/') ? newInvoice.fileUrl.substring(1) : newInvoice.fileUrl;
@@ -356,11 +367,11 @@ export const downloadInvoice = async (orderId) => {
   }
 
   if (!filePath) {
-    console.error(`[OrderService] ❌ Invoice file not found on server after all attempts.`);
+    logger.error('Invoice file not found after all attempts', { orderId });
     throw new AppError('Invoice file could not be found or generated on the server. Please contact support.', 404);
   }
 
-  console.log(`[OrderService] ✅ Ready for download: ${filePath}`);
+  logger.info('Invoice ready for download', { orderId, filePath });
   return {
     filePath,
     fileName: `invoice-${invoice.invoiceNumber || orderId}.pdf`
@@ -384,7 +395,11 @@ export const markOrderAsFailed = async (id) => {
   try {
     if (supportsTransactions) {
       session = await mongoose.startSession();
-      session.startTransaction();
+      session.startTransaction({
+        readPreference: 'primary',
+        readConcern: { level: 'snapshot' },
+        writeConcern: { w: 'majority' }
+      });
     }
 
     order.status = ORDER_STATUS.FAILED;
@@ -398,7 +413,7 @@ export const markOrderAsFailed = async (id) => {
       try {
         await restoreStock(item.productId, item.quantity, { session });
       } catch (err) {
-        console.error('Failed to restore stock for order:', id, err.message);
+        logger.error('Failed to restore stock for order', { orderId: id, productId: item.productId, error: err.message });
       }
     }
 

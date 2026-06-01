@@ -1,26 +1,55 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { authService } from "../services/authService.js";
-import { loginStart, loginSuccess, loginFailure, updateUser as updateUserAction, logout as logoutAction } from "../authSlice.js";
+import { 
+  loginStart, 
+  loginSuccess, 
+  loginFailure, 
+  updateUser as updateUserAction, 
+  logout as logoutAction,
+  updateCsrfToken
+} from "../authSlice.js";
 import { fetchConfigSuccess } from "../../superAdmin/superAdminSlice.js";
 import { routes } from "../../../routes/routeConfig.js";
 
 export const useAuth = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user: reduxUser, loading, error, isAuthenticated } = useSelector((state) => state.auth);
+  const { user: reduxUser, loading, error, isAuthenticated, csrfToken } = useSelector((state) => state.auth);
 
-  const getUser = () => {
+  // Auto-fetch CSRF token if authenticated but missing token
+  useEffect(() => {
+    const fetchCsrf = async () => {
+      const token = localStorage.getItem('token');
+      const csrf = localStorage.getItem('csrfToken');
+      
+      if (token && !csrf) {
+        try {
+          const res = await authService.fetchCsrfToken();
+          if (res?.csrfToken) {
+            dispatch(updateCsrfToken(res.csrfToken));
+          }
+        } catch (err) {
+          // CSRF fetch failed silently
+        }
+      }
+    };
+    
+    fetchCsrf();
+  }, [isAuthenticated, dispatch]);
+
+  const getUser = useCallback(() => {
     const token = localStorage.getItem("token");
     if (!token) return null;
 
     try {
-      return JSON.parse(localStorage.getItem("user"));
+      const storedUser = localStorage.getItem("user");
+      return storedUser ? JSON.parse(storedUser) : null;
     } catch {
       return null;
     }
-  };
+  }, []);
 
   const user = reduxUser || getUser();
 
@@ -57,7 +86,11 @@ export const useAuth = () => {
       }
 
       // 2. Dispatch success (updates Redux + localStorage)
-      dispatch(loginSuccess({ user, token: accessToken }));
+      dispatch(loginSuccess({ 
+        user, 
+        token: accessToken,
+        csrfToken: responseData.csrfToken 
+      }));
       
       // 3. Immediate redirect to minimize perceived delay
       const redirectPath = (() => {

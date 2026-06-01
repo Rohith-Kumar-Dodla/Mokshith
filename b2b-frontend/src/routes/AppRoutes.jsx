@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import { routes } from "./routeConfig.js";
 
@@ -6,52 +7,59 @@ import ProtectedRoute from "../components/common/ProtectedRoute.jsx";
 import RoleGuard from "../components/common/RoleGuard.jsx";
 import RoleBasedRoute from "../components/common/RoleBasedRoute.jsx";
 
-// Layouts
+// Layouts (not lazy loaded as they're frequently used)
 import MainLayout from "../components/layout/MainLayout.jsx";
 import PublicLayout from "../components/layout/PublicLayout.jsx";
 import AdminLayout from "../components/layout/AdminLayout.jsx";
 import SuperAdminLayout from "../components/layout/SuperAdminLayout.jsx";
 import DeliveryLayout from "../components/layout/DeliveryLayout.jsx";
 
-// Pages
+// Frequently accessed pages (not lazy loaded)
 import LandingPage from "../modules/product/pages/LandingPage.jsx";
 import LoginPage from "../modules/auth/pages/LoginPage.jsx";
-import RegisterPage from "../modules/auth/pages/Register.jsx";
 import ProductPage from "../modules/product/pages/ProductPage.jsx";
-import AdminPage from "../modules/admin/pages/AdminPage.jsx";
-import AdminUsersPage from "../modules/admin/pages/Users.jsx";
-import AdminProductsPage from "../modules/admin/pages/Products.jsx";
-import AdminOrdersPage from "../modules/admin/pages/Orders.jsx";
-import AdminVendorsPage from "../modules/admin/pages/Vendors.jsx";
-import AdminApprovalsPage from "../modules/admin/pages/Approvals.jsx";
-import AdminProfile from "../modules/admin/pages/AdminProfile.jsx";
-import SuperAdminPage from "../modules/superAdmin/pages/SuperAdminPage.jsx";
-import DeliveryPage from "../modules/delivery/pages/DeliveryPage.jsx";
-import CreditPage from "../modules/credit/pages/CreditPage.jsx";
-import CheckoutPage from "../modules/order/pages/Checkout.jsx";
-import OrdersPage from "../modules/order/pages/OrdersPage.jsx";
-import OrderDetails from "../modules/order/pages/OrderDetails.jsx";
-import CartPage from "../modules/order/pages/Cart.jsx";
-import PaymentPage from "../modules/payment/pages/PaymentPage.jsx";
-import ProfilePage from "../modules/user/pages/Profile.jsx";
-import SecurityPage from "../modules/user/pages/Security.jsx";
-import HelpPage from "../modules/user/pages/Help.jsx";
-import ProductDetails from "../modules/product/pages/ProductDetails.jsx";
-import Dashboard from "../modules/user/pages/Dashboard.jsx";
-import WishlistPage from "../modules/wishlist/pages/WishlistPage.jsx";
 
-// New Module Pages
-import AnalyticsPage from "../modules/analytics/pages/AnalyticsPage.jsx";
-import CompanyPage from "../modules/company/pages/CompanyPage.jsx";
-import InventoryPage from "../modules/inventory/pages/InventoryPage.jsx";
-import LogisticsPage from "../modules/logistics/pages/LogisticsPage.jsx";
-import WarehousePage from "../modules/warehouse/pages/WarehousePage.jsx";
-import PromotionPage from "../modules/promotion/pages/PromotionPage.jsx";
-import SettingsPage from "../modules/settings/SettingsPage.jsx";
+// Lazy load less frequently accessed pages
+const RegisterPage = lazy(() => import("../modules/auth/pages/Register.jsx"));
+const AdminPage = lazy(() => import("../modules/admin/pages/AdminPage.jsx"));
+const AdminUsersPage = lazy(() => import("../modules/admin/pages/Users.jsx"));
+const AdminProductsPage = lazy(() => import("../modules/admin/pages/Products.jsx"));
+const AdminOrdersPage = lazy(() => import("../modules/admin/pages/Orders.jsx"));
+const AdminVendorsPage = lazy(() => import("../modules/admin/pages/Vendors.jsx"));
+const AdminApprovalsPage = lazy(() => import("../modules/admin/pages/Approvals.jsx"));
+const AdminProfile = lazy(() => import("../modules/admin/pages/AdminProfile.jsx"));
+const SuperAdminPage = lazy(() => import("../modules/superAdmin/pages/SuperAdminPage.jsx"));
+const DeliveryPage = lazy(() => import("../modules/delivery/pages/DeliveryPage.jsx"));
+const CreditPage = lazy(() => import("../modules/credit/pages/CreditPage.jsx"));
+const CheckoutPage = lazy(() => import("../modules/order/pages/Checkout.jsx"));
+const OrdersPage = lazy(() => import("../modules/order/pages/OrdersPage.jsx"));
+const OrderDetails = lazy(() => import("../modules/order/pages/OrderDetails.jsx"));
+const CartPage = lazy(() => import("../modules/order/pages/Cart.jsx"));
+const PaymentPage = lazy(() => import("../modules/payment/pages/PaymentPage.jsx"));
+const ProfilePage = lazy(() => import("../modules/user/pages/Profile.jsx"));
+const SecurityPage = lazy(() => import("../modules/user/pages/Security.jsx"));
+const HelpPage = lazy(() => import("../modules/user/pages/Help.jsx"));
+const ProductDetails = lazy(() => import("../modules/product/pages/ProductDetails.jsx"));
+const Dashboard = lazy(() => import("../modules/user/pages/Dashboard.jsx"));
+const WishlistPage = lazy(() => import("../modules/wishlist/pages/WishlistPage.jsx"));
+const AnalyticsPage = lazy(() => import("../modules/analytics/pages/AnalyticsPage.jsx"));
+const CompanyPage = lazy(() => import("../modules/company/pages/CompanyPage.jsx"));
+const InventoryPage = lazy(() => import("../modules/inventory/pages/InventoryPage.jsx"));
+const LogisticsPage = lazy(() => import("../modules/logistics/pages/LogisticsPage.jsx"));
+const WarehousePage = lazy(() => import("../modules/warehouse/pages/WarehousePage.jsx"));
+const PromotionPage = lazy(() => import("../modules/promotion/pages/PromotionPage.jsx"));
+const SettingsPage = lazy(() => import("../modules/settings/SettingsPage.jsx"));
+
+const LoadingFallback = () => (
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+    <div style={{ fontSize: '1.25rem', fontWeight: '600', color: '#64748b' }}>Loading...</div>
+  </div>
+);
 
 const AppRoutes = () => {
   return (
-    <Routes>
+    <Suspense fallback={<LoadingFallback />}>
+      <Routes>
       {/* PUBLIC ROUTES */}
         <Route path={routes.LANDING} element={<PublicLayout><LandingPage /></PublicLayout>} />
         <Route path={routes.LOGIN} element={<LoginPage />} />
@@ -185,6 +193,7 @@ const AppRoutes = () => {
         {/* FALLBACK */}
         <Route path="*" element={<MainLayout><h2>404 Not Found</h2></MainLayout>} />
       </Routes>
+    </Suspense>
   );
 };
 

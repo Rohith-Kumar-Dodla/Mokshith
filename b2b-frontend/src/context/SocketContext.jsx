@@ -1,15 +1,26 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { io } from 'socket.io-client';
-import { useAuth } from '../modules/auth/hooks/useAuth.js';
 import { useSelector } from 'react-redux';
 
-const SocketContext = createContext();
+const SocketContext = createContext(undefined);
 
-export const useSocket = () => useContext(SocketContext);
+export const useSocket = () => {
+  const context = useContext(SocketContext);
+  if (context === undefined) {
+    // Return a dummy object with no-op functions to prevent crashing
+    // while the provider is initializing or if it's accidentally used outside
+    return {
+      socket: null,
+      isConnected: false,
+      emit: () => {},
+      on: () => () => {}
+    };
+  }
+  return context;
+};
 
 export const SocketProvider = ({ children }) => {
-  const { user } = useAuth();
-  const token = useSelector((state) => state.auth.token);
+  const { user, token } = useSelector((state) => state.auth);
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
 
@@ -25,7 +36,12 @@ export const SocketProvider = ({ children }) => {
       return;
     }
 
-    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+    const envSocketUrl = import.meta.env.VITE_SOCKET_URL;
+    const fallbackSocketUrl = window.location.origin.includes('vercel.app')
+      ? 'https://mokshith-entreprises.onrender.com'
+      : 'http://localhost:5000';
+
+    const SOCKET_URL = envSocketUrl || fallbackSocketUrl;
     
     socketInstance = io(SOCKET_URL, {
       auth: {
@@ -56,7 +72,7 @@ export const SocketProvider = ({ children }) => {
     });
 
     socketInstance.on('reconnect_attempt', (attempt) => {
-      console.log(`🔄 Socket reconnection attempt: ${attempt}`);
+      // Reconnection in progress
     });
 
     socketInstance.on('reconnect_failed', () => {

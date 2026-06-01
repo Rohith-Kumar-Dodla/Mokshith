@@ -9,7 +9,8 @@ const allowedOrigins = [
   'http://127.0.0.1:5173',
   'http://localhost:3000', // Standard React default
   /\.vercel\.app$/, // Allow all Vercel deployments
-  'https://mokshith-entreprises.vercel.app' // Add your specific production URL here
+  'https://mokshith-entreprises.vercel.app', // Add your specific production URL here
+  'https://mokshith-entreprises-subhashandes-projects.vercel.app' // Additional Vercel preview URL if needed
 ];
 
 export const corsConfig = cors({
@@ -36,6 +37,7 @@ export const corsConfig = cors({
     'Authorization', 
     'X-Requested-With', 
     'Accept',
+    'x-csrf-token', // 🔥 Support CSRF protection
     'idempotency-key', // 🔥 Support idempotency
     'x-razorpay-signature' // 🔥 Support Razorpay webhooks
   ],

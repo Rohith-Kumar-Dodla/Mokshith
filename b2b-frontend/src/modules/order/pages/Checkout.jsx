@@ -4,7 +4,7 @@ import { useSystemConfig } from "../../../hooks/useSystemConfig";
 import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
 import Input from "../../../components/ui/Input";
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { routes } from "../../../routes/routeConfig";
 import { PAYMENT_METHODS } from "../../../utils/constants";
@@ -27,10 +27,12 @@ import { getProductImage } from "../../../utils/imageHelper.js";
 const Checkout = () => {
   const { cart, placeOrder } = useOrder();
   const { user } = useAuth();
-  const { isFeatureEnabled } = useSystemConfig();
+  const { isFeatureEnabled, getSetting } = useSystemConfig();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  
+  const isProcessing = useRef(false);
+  const checkoutKey = useRef(`chk_${user?._id || 'guest'}_${Date.now()}`);
+
   const codEnabled = isFeatureEnabled('enableCOD') && isFeatureEnabled('cod');
   const creditEnabled = isFeatureEnabled('creditSystem');
 
@@ -53,10 +55,25 @@ const Checkout = () => {
     setAddress({ ...address, [name]: value });
   };
 
+  const cutoffTime = getSetting('orderCutoffTime');
+
   const validateCheckout = () => {
     if (cart.length === 0) {
       alert("Your cart is empty!");
       return false;
+    }
+
+    // 🔥 Check Cutoff Time Client-side
+    if (cutoffTime && cutoffTime !== '00:00') {
+      const [hours, minutes] = cutoffTime.split(':').map(Number);
+      const now = new Date();
+      const cutoffDate = new Date();
+      cutoffDate.setHours(hours, minutes, 0, 0);
+
+      if (now > cutoffDate) {
+        alert(`Orders are closed for today after ${cutoffTime}. Please try again tomorrow.`);
+        return false;
+      }
     }
 
     const requiredFields = ['name', 'phone', 'addressLine', 'city', 'state', 'pincode'];
@@ -88,11 +105,27 @@ const Checkout = () => {
     return true;
   };
 
-  const handlePlaceOrder = async () => {
+  const handlePlaceOrder = useCallback(async (e) => {
+    // 🔒 Double-lock: Synchronous Ref + Local State
+    if (isProcessing.current || loading) {
+      console.warn("Checkout already in progress, ignoring duplicate trigger.");
+      return;
+    }
+    
+    // Prevent default if called from a form or with an event
+    if (e && e.preventDefault) e.preventDefault();
+    if (e && e.stopPropagation) e.stopPropagation();
+
     if (!validateCheckout()) return;
     
+    // Set both locks immediately
+    isProcessing.current = true;
     setLoading(true);
+
     try {
+      // Use a stable key for this specific attempt
+      const currentKey = checkoutKey.current;
+
       const payload = {
         items: cart.map(item => ({
           productId: item.id || item._id,
@@ -102,20 +135,53 @@ const Checkout = () => {
         })),
         totalAmount: total,
         paymentMethod,
-        shippingAddress: address
+        shippingAddress: address,
+        idempotencyKey: currentKey
       };
 
       const response = await placeOrder(payload);
       const newOrder = response.data || response;
       
+      if (!newOrder?._id) {
+        throw new Error("Order placement did not return a valid ID");
+      }
+
+      // 🏆 Success: Navigate to payment
+      // We keep isProcessing.current = true to prevent double-clicks during route transition
       navigate(routes.PAYMENT.replace(':orderId', newOrder._id));
     } catch (err) {
       console.error("Checkout Error:", err);
-      alert(err.message || "Failed to place order. Please check your connection and try again.");
-    } finally {
+      
+      // ⚠️ Handle Concurrency/Duplicate errors silently
+      const isConcurrency = 
+        err.isConcurrencyError || 
+        err.message?.includes('Duplicate operation') || 
+        err.status === 409;
+
+      if (isConcurrency) {
+        // If it's a concurrency error, the background polling in orderService 
+        // will likely resolve it. We just need to make sure we don't block the UI 
+        // forever if something goes wrong.
+        setTimeout(() => {
+          if (isProcessing.current) {
+            setLoading(false);
+            isProcessing.current = false;
+          }
+        }, 15000); // Increased timeout to account for extended polling (10s polling + buffer)
+        return; 
+      }
+
+      // Reset locks on real errors to allow retry
       setLoading(false);
+      isProcessing.current = false;
+      
+      // Generate a NEW key for the next attempt so it's not blocked by backend idempotency
+      checkoutKey.current = `chk_${user?._id || 'guest'}_${Date.now()}`;
+      
+      // Alert for real errors
+      alert(err.message || "Failed to place order. Please check your connection and try again.");
     }
-  };
+  }, [loading, validateCheckout, cart, total, paymentMethod, address, placeOrder, navigate, user?._id]);
 
   if (cart.length === 0) {
     return (
@@ -391,26 +457,17 @@ const Checkout = () => {
                   )}
                 </div>
 
-                <button 
+                <Button 
                   onClick={handlePlaceOrder} 
-                  disabled={loading}
-                  className={`
-                    w-full h-16 rounded-2xl font-bold text-lg transition-all duration-300 flex items-center justify-center gap-3 relative overflow-hidden group/order
-                    ${loading 
-                      ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-                      : 'bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-600/20 active:scale-[0.98]'
-                    }
-                  `}
+                  loading={loading}
+                  fullWidth
+                  className="h-16 rounded-2xl font-bold text-lg shadow-xl shadow-blue-600/20"
                 >
-                  {loading ? (
-                    <Loader2 className="animate-spin" size={24} />
-                  ) : (
-                    <>
-                      <span>Complete Order</span>
-                      <ArrowRight size={20} strokeWidth={2.5} className="group-hover:translate-x-1 transition-transform" />
-                    </>
-                  )}
-                </button>
+                  <div className="flex items-center justify-center gap-3">
+                    <span>Complete Order</span>
+                    <ArrowRight size={20} strokeWidth={2.5} className="group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </Button>
 
                 <div className="mt-8 pt-8 border-t border-slate-100 space-y-4">
                   <div className="flex items-center gap-3 text-slate-400">
