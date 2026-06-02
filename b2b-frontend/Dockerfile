@@ -37,42 +37,44 @@ FROM nginx:1.25-alpine AS production
 # Install required packages
 RUN apk add --no-cache shadow
 
-# Copy custom nginx configuration
-RUN echo 'server {\n\
-    listen 80;\n\
-    server_name _;\n\
-    root /usr/share/nginx/html;\n\
-    index index.html;\n\
-\n\
-    # Gzip compression\n\
-    gzip on;\n\
-    gzip_vary on;\n\
-    gzip_min_length 1024;\n\
-    gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json;\n\
-\n\
-    # Security headers\n\
-    add_header X-Frame-Options "SAMEORIGIN" always;\n\
-    add_header X-Content-Type-Options "nosniff" always;\n\
-    add_header X-XSS-Protection "1; mode=block" always;\n\
-\n\
-    # Cache static assets\n\
-    location ~* \\.(?:css|js|jpg|jpeg|gif|png|ico|svg|woff|woff2|ttf|eot)$ {\n\
-        expires 1y;\n\
-        add_header Cache-Control "public, immutable";\n\
-    }\n\
-\n\
-    # SPA fallback - all routes go to index.html\n\
-    location / {\n\
-        try_files $uri $uri/ /index.html;\n\
-    }\n\
-\n\
-    # Health check endpoint\n\
-    location /health {\n\
-        access_log off;\n\
-        return 200 "healthy\n";\n\
-        add_header Content-Type text/plain;\n\
-    }\n\
-}' > /etc/nginx/conf.d/default.conf
+# Copy custom nginx configuration using heredoc (prevents shell escaping issues)
+RUN cat <<"EOF" > /etc/nginx/conf.d/default.conf
+server {
+    listen 80;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json;
+
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+
+    # Cache static assets
+    location ~* \.(?:css|js|jpg|jpeg|gif|png|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # SPA fallback - all routes go to index.html
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Health check endpoint
+    location /health {
+        access_log off;
+        return 200 "healthy\n";
+        add_header Content-Type text/plain;
+    }
+}
+EOF
 
 # Copy built files from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html

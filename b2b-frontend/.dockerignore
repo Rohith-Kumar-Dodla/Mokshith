@@ -4,6 +4,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# CRITICAL: package-lock.json must NOT be ignored for npm ci to work
+# !package-lock.json (already included by default)
+
 # Build output (will be built inside Docker)
 dist/
 build/
