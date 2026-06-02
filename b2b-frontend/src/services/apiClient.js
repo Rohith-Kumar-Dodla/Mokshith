@@ -9,11 +9,11 @@ const getBaseURL = () => {
   // 🔥 Dynamic Production Detection (Runtime)
   // This handles cases where Vercel build didn't have env vars set or they were misconfigured
   if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
+    const hostname = window.location?.hostname || '';
     const isProduction = 
       hostname.includes('vercel.app') || 
       hostname.includes('mokshith-entreprises') ||
-      hostname !== 'localhost' && hostname !== '127.0.0.1';
+      (hostname !== 'localhost' && hostname !== '127.0.0.1');
 
     if (isProduction && (!envUrl || envUrl.includes('localhost'))) {
       return "https://mokshith-entreprises.onrender.com/api/v1";
