@@ -219,6 +219,7 @@ jobs:
           context: ${{ env.WORKING_DIRECTORY }}
           file: ${{ env.WORKING_DIRECTORY }}/Dockerfile
           push: false
+          load: true # <--- This prevents the daemon error by loading the image locally
           tags: b2b-frontend:ci-test
           build-args: |
             VITE_API_URL=https://api.example.com
