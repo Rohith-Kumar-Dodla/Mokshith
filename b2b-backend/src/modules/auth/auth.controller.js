@@ -47,11 +47,11 @@ export const login = asyncHandler(async (req, res) => {
       // Track partial login
       await Audit.create({
         userId: result.userId,
-        userEmail: req.body.identifier,
+        userEmail: req.body.mobile,
         action: 'LOGIN_2FA_REQUIRED',
         entity: 'USER',
         entityId: result.userId,
-        details: `2FA required for: ${req.body.identifier}`,
+        details: `2FA required for: ${req.body.mobile}`,
         ip: req.ip,
         severity: 'INFO'
       });
@@ -73,7 +73,7 @@ export const login = asyncHandler(async (req, res) => {
       action: 'LOGIN_SUCCESS',
       entity: 'USER',
       entityId: user._id,
-      details: `User logged in: ${user.email}`,
+      details: `User logged in: ${user.mobile}`,
       ip: req.ip,
       severity: 'INFO'
     });
@@ -90,10 +90,10 @@ export const login = asyncHandler(async (req, res) => {
   } catch (error) {
     // Log failure
     await Audit.create({
-      userEmail: req.body.identifier,
+      userEmail: req.body.mobile,
       action: 'LOGIN_FAILED',
       entity: 'USER',
-      details: `Failed login attempt for: ${req.body.identifier}. Reason: ${error.message}`,
+      details: `Failed login attempt for: ${req.body.mobile}. Reason: ${error.message}`,
       ip: req.ip,
       severity: 'WARNING'
     });
@@ -101,21 +101,6 @@ export const login = asyncHandler(async (req, res) => {
     trackAuthAttempt(null, false, req);
     throw error;
   }
-});
-
-export const sendOTP = asyncHandler(async (req, res) => {
-  await authService.sendOTP(req.body.identifier);
-
-  // 🔥 SECURITY: Never expose OTP in response
-  successResponse(res, { 
-    message: 'OTP sent successfully. Please check your email/mobile.',
-    expiresIn: '5 minutes'
-  }, 'OTP sent successfully');
-});
-
-export const verifyOTP = asyncHandler(async (req, res) => {
-  const data = await authService.verifyOTP(req.body);
-  successResponse(res, data, 'OTP verified');
 });
 
 export const refreshToken = asyncHandler(async (req, res) => {

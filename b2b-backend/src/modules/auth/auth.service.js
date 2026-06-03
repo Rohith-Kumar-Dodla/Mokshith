@@ -1,6 +1,7 @@
 import AppError from '../../errors/AppError.js';
 import {
   findUserByEmailOrMobile,
+  findUserByMobile,
   createUser,
   updateUser,
   findUserById,
@@ -8,7 +9,6 @@ import {
 
 import { hashPassword } from '../../utils/hashPassword.js';
 import { comparePassword } from '../../utils/comparePassword.js';
-import { generateOTP } from '../../utils/otpGenerator.js';
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -85,12 +85,11 @@ export const register = async (data, req = {}) => {
 };
 
 // PASSWORD LOGIN
-export const loginWithPassword = async ({ identifier, password }, req = {}) => {
+export const loginWithPassword = async ({ mobile, password }, req = {}) => {
   const ip = req.ip || 'unknown';
-  const userAgent = req.get?.('user-agent') || 'unknown';
 
   // Check if user is temporarily blocked
-  const blockCheck = await fraudDetection.isUserBlocked(identifier);
+  const blockCheck = await fraudDetection.isUserBlocked(mobile);
   if (blockCheck.blocked) {
     throw new AppError(
       `Account temporarily locked due to ${blockCheck.reason}. Please try again later`,
@@ -98,12 +97,12 @@ export const loginWithPassword = async ({ identifier, password }, req = {}) => {
     );
   }
 
-  const user = await findUserByEmailOrMobile(identifier);
+  const user = await findUserByMobile(mobile);
 
   if (!user) {
     // Track failed attempt even if user doesn't exist (to prevent enumeration)
-    await fraudDetection.trackLoginAttempt(identifier, ip, false);
-    throw new AppError('Invalid credentials', 401);
+    await fraudDetection.trackLoginAttempt(mobile, ip, false);
+    throw new AppError('No account found with this mobile number.', 404);
   }
 
   // Check Maintenance Mode
@@ -111,9 +110,12 @@ export const loginWithPassword = async ({ identifier, password }, req = {}) => {
 
   // Check Approval Status
   if (user.role !== ROLES.SUPER_ADMIN && user.status !== USER_STATUS.ACTIVE) {
-    const message = user.status === USER_STATUS.PENDING 
-      ? 'Your account is pending admin approval. Please wait for activation.' 
-      : 'Your account is inactive or suspended. Please contact support.';
+    let message = 'Your account is inactive or suspended. Please contact support.';
+    if (user.status === USER_STATUS.PENDING) {
+      message = 'Your account is awaiting administrator approval.';
+    } else if (user.status === USER_STATUS.REJECTED) {
+      message = 'Your account has been rejected. Please contact support.';
+    }
     throw new AppError(message, 403);
   }
 
@@ -122,13 +124,13 @@ export const loginWithPassword = async ({ identifier, password }, req = {}) => {
 
   if (!isMatch) {
     // Track failed login attempt
-    await fraudDetection.trackLoginAttempt(identifier, ip, false);
-    logger.warn('Failed login attempt', { identifier, ip });
+    await fraudDetection.trackLoginAttempt(mobile, ip, false);
+    logger.warn('Failed login attempt', { mobile, ip });
     throw new AppError('Invalid credentials', 401);
   }
 
   // Track successful login
-  await fraudDetection.trackLoginAttempt(identifier, ip, true);
+  await fraudDetection.trackLoginAttempt(mobile, ip, true);
 
   // Check if 2FA is enabled
   if (user.twoFactorEnabled) {
@@ -152,61 +154,6 @@ export const loginWithPassword = async ({ identifier, password }, req = {}) => {
     accessToken, 
     refreshToken: refreshTokenValue 
   };
-};
-
-// SEND OTP
-export const sendOTP = async (identifier) => {
-  const user = await findUserByEmailOrMobile(identifier);
-
-  if (!user) throw new AppError('User not found', 404);
-
-  const otp = generateOTP();
-
-  await updateUser(user._id, {
-    otp: {
-      code: otp,
-      expiresAt: Date.now() + 5 * 60 * 1000,
-    },
-  });
-
-  return otp; // 🔥 dev only
-};
-
-// VERIFY OTP
-export const verifyOTP = async ({ identifier, otp }) => {
-  const user = await findUserByEmailOrMobile(identifier);
-
-  if (!user) throw new AppError('User not found', 404);
-
-  // 🔥 Check Maintenance Mode
-  await checkMaintenanceMode(user);
-
-  // 🔥 Check Approval Status
-  if (user.role !== ROLES.SUPER_ADMIN && user.status !== USER_STATUS.ACTIVE) {
-    const message = user.status === USER_STATUS.PENDING 
-      ? 'Your account is pending admin approval. Please wait for activation.' 
-      : 'Your account is inactive or suspended. Please contact support.';
-    throw new AppError(message, 403);
-  }
-
-  if (!user.otp || user.otp.code !== otp) {
-    throw new AppError('Invalid OTP', 400);
-  }
-
-  if (user.otp.expiresAt < Date.now()) {
-    throw new AppError('OTP expired', 400);
-  }
-
-  const accessToken = generateAccessToken(user);
-  const refreshToken = generateRefreshToken(user);
-
-  await updateUser(user._id, {
-    refreshToken,
-    otp: null,
-    isVerified: true,
-  });
-
-  return { user, accessToken, refreshToken };
 };
 
 // REFRESH TOKEN WITH ROTATION

@@ -3,7 +3,11 @@ import User from '../user/user.model.js';
 export const findUserByEmailOrMobile = async (identifier) => {
   return User.findOne({
     $or: [{ email: identifier }, { mobile: identifier }],
-  }).select('+password +otp +refreshToken');
+  }).select('+password +refreshToken');
+};
+
+export const findUserByMobile = async (mobile) => {
+  return User.findOne({ mobile }).select('+password +refreshToken');
 };
 
 export const findUserById = async (id) => {

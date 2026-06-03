@@ -60,17 +60,19 @@
 ### 2. Login Flow
 
 ```
-1. User submits credentials (email + password)
+1. User submits credentials (mobile + password)
    ↓
 2. Check account lockout (Redis)
-   - Key: `auth:attempts:${email}`
+   - Key: `auth:attempts:${mobile}`
    - If >= 5 attempts → 429 Too Many Requests
    ↓
-3. Find user by email
+3. Find user by mobile
    ↓
 4. Verify account status
    - Status must be ACTIVE
-   - If SUSPENDED → 403 Forbidden
+   - If PENDING → 403 "Your account is awaiting administrator approval."
+   - If REJECTED → 403 "Your account has been rejected. Please contact support."
+   - If SUSPENDED → 403 "Your account is inactive or suspended. Please contact support."
    ↓
 5. Compare password (bcrypt)
    ↓

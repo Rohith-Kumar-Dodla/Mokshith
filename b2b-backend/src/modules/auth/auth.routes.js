@@ -9,8 +9,6 @@ import { csrfProtection } from '../../middlewares/csrf.middleware.js';
 import {
   registerSchema,
   loginSchema,
-  otpSchema,
-  verifyOtpSchema,
   verify2FASchema,
   changePasswordSchema,
   enable2FAVerifySchema
@@ -21,8 +19,6 @@ const router = express.Router();
 // Public routes (with rate limiting)
 router.post('/register', authLimiter, requireRegistrationsEnabled(), validate(registerSchema), controller.register);
 router.post('/login', authLimiter, validate(loginSchema), controller.login);
-router.post('/send-otp', authLimiter, validate(otpSchema), controller.sendOTP);
-router.post('/verify-otp', authLimiter, validate(verifyOtpSchema), controller.verifyOTP);
 router.post('/refresh-token', controller.refreshToken);
 router.get('/csrf-token', controller.getCsrfTokenHandler);
 

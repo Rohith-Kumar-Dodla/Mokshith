@@ -48,7 +48,6 @@ b2b-frontend/
 │
 │ │ ├── auth/
 │ │ │ ├── components/
-│ │ │ │ └── OTPInput.jsx # NEW
 │
 │ │ ├── user/
 │ │ │ ├── pages/

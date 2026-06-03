@@ -13,21 +13,10 @@ export const registerSchema = Joi.object({
 
 export const loginSchema = Joi.object({
   body: Joi.object({
-    identifier: Joi.string().required(),
+    mobile: Joi.string().required().pattern(/^[0-9]{10}$/).messages({
+      'string.pattern.base': 'Mobile number must be 10 digits'
+    }),
     password: Joi.string().required(),
-  }),
-});
-
-export const otpSchema = Joi.object({
-  body: Joi.object({
-    identifier: Joi.string().required(),
-  }),
-});
-
-export const verifyOtpSchema = Joi.object({
-  body: Joi.object({
-    identifier: Joi.string().required(),
-    otp: Joi.string().required(),
   }),
 });
 
