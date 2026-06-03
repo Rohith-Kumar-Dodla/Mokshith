@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDelivery } from '../hooks/useDelivery.js';
-import Card from '../../../components/ui/Card.jsx';
+import { routes } from '../../../routes/routeConfig.js';
 import Button from '../../../components/ui/Button.jsx';
-import RouteMap from '../components/RouteMap.jsx';
 import { 
   Truck, 
   MapPin, 
@@ -10,349 +10,287 @@ import {
   Package, 
   CheckCircle2, 
   Clock, 
-  Navigation,
-  ChevronRight,
-  TrendingUp,
-  AlertCircle,
-  RefreshCcw,
+  Search,
+  Filter,
   Calendar,
   DollarSign,
-  Map as MapIcon,
-  X,
-  Zap,
-  Activity,
-  Shield,
-  Fuel,
-  Award,
-  ArrowUpRight,
-  ClipboardCheck,
-  Camera,
-  Signature
+  ArrowLeft,
+  ChevronRight,
+  MoreVertical,
+  Download,
+  ExternalLink,
+  RefreshCcw,
+  LayoutGrid,
+  List
 } from 'lucide-react';
 
-const DeliveryPage = () => {
-  const { deliveries, loading, error, updateDeliveryStatus, fetchDeliveries } = useDelivery();
-  const [isUpdating, setIsUpdating] = useState({});
-  const [activeRoute, setActiveRoute] = useState(null);
-  const [showPODModal, setShowPODModal] = useState(null);
+const DeliveryHistoryPage = () => {
+  const navigate = useNavigate();
+  const { 
+    deliveries, 
+    loading, 
+    fetchDeliveries
+  } = useDelivery();
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateFilter, setDateFilter] = useState('all');
+  const [viewMode, setViewMode] = useState('list'); // grid or list
 
-  const safeDeliveries = Array.isArray(deliveries) ? deliveries : [];
-  const activeDeliveries = useMemo(() => safeDeliveries.filter(d => d.status !== 'DELIVERED'), [safeDeliveries]);
-  const activeCount = activeDeliveries.length;
-  const completedToday = useMemo(() => safeDeliveries.filter(d => d.status === 'DELIVERED').length, [safeDeliveries]);
-  const earningsToday = completedToday * 450; // Mock calculation
+  const history = useMemo(() => deliveries?.completed || [], [deliveries]);
 
-  const handleUpdateStatus = async (id, status) => {
-    setIsUpdating(prev => ({ ...prev, [id]: true }));
-    try {
-      if (typeof updateDeliveryStatus === 'function') {
-        await updateDeliveryStatus(id, status);
-      } else {
-        console.error("updateDeliveryStatus is not a function", updateDeliveryStatus);
-      }
-    } catch (err) {
-      console.error("Failed to update status:", err);
-    } finally {
-      setIsUpdating(prev => ({ ...prev, [id]: false }));
+  const filteredHistory = useMemo(() => {
+    let list = [...history];
+
+    // Search filter
+    if (searchQuery) {
+      list = list.filter(d => 
+        (d.orderId?._id || d._id)?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (d.customerName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (d.address || '').toLowerCase().includes(searchQuery.toLowerCase())
+      );
     }
-  };
 
-  const handleCallCustomer = (phone) => {
-    if (phone) window.location.href = `tel:${phone}`;
-  };
+    // Date filter
+    if (dateFilter !== 'all') {
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
 
-  const handleOpenMaps = (address) => {
-    if (address) window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`, '_blank');
-  };
+      list = list.filter(d => {
+        const dDate = new Date(d.deliveredAt).toDateString();
+        if (dateFilter === 'today') return dDate === today.toDateString();
+        if (dateFilter === 'yesterday') return dDate === yesterday.toDateString();
+        return true;
+      });
+    }
 
-  if (loading && safeDeliveries.length === 0) {
+    return list;
+  }, [history, searchQuery, dateFilter]);
+
+  const earningsSummary = useMemo(() => {
+    return filteredHistory.length * 450;
+  }, [filteredHistory]);
+
+  if (loading && history.length === 0) {
     return (
-      <div className="p-8 bg-gray-50/50 min-h-screen flex flex-col items-center justify-center">
-        <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6 text-blue-600 animate-bounce">
-          <Truck size={40} />
-        </div>
-        <p className="text-xl font-black text-gray-400 animate-pulse">Syncing delivery routes...</p>
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center">
+        <RefreshCcw size={40} className="text-sky-500 animate-spin mb-4" />
+        <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Retrieving Logistics History...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-8 lg:p-12 max-w-[1800px] mx-auto min-h-screen">
-      {/* Top Intelligence Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-12">
-        <div>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-[0.2em]">
-              Logistics Command
-            </div>
-            <div className="flex items-center gap-1.5 text-[10px] font-black text-emerald-400 uppercase tracking-widest">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-              Network Stable
-            </div>
-          </div>
-          <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter leading-none">
-            Operational <span className="text-blue-500">Intelligence</span>
-          </h1>
-          <p className="text-slate-400 font-bold mt-4 flex items-center gap-3 text-base">
-            <Calendar size={18} className="text-blue-500" />
-            {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <Button 
-            onClick={fetchDeliveries} 
-            disabled={loading}
-            className="h-14 px-8 rounded-xl bg-white/5 backdrop-blur-xl border border-white/10 hover:bg-white/10 transition-all font-black text-white flex items-center gap-4 group"
-          >
-            <RefreshCcw size={20} className={`${loading ? 'animate-spin' : 'group-hover:rotate-180'} transition-transform duration-700 text-blue-400`} />
-            <span className="text-sm">Refresh Stream</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* Hero Analytics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        <div className="rounded-[2rem] p-6 bg-white/5 border border-white/10 backdrop-blur-xl hover:bg-white/[0.08] transition-all">
-          <div className="w-12 h-12 rounded-xl bg-blue-500/20 border border-blue-500/20 flex items-center justify-center mb-4 text-blue-400">
-            <Activity size={24} />
-          </div>
-          <h3 className="text-3xl font-black text-white tracking-tighter mb-1">{activeCount}</h3>
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Active Shipments</p>
-        </div>
-
-        <div className="rounded-[2rem] p-6 bg-white/5 border border-white/10 backdrop-blur-xl hover:bg-white/[0.08] transition-all">
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/20 flex items-center justify-center mb-4 text-emerald-400">
-            <Zap size={24} />
-          </div>
-          <h3 className="text-3xl font-black text-white tracking-tighter mb-1">98.4%</h3>
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">On-Time Rate</p>
-        </div>
-
-        <div className="rounded-[2rem] p-6 bg-white/5 border border-white/10 backdrop-blur-xl hover:bg-white/[0.08] transition-all">
-          <div className="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/20 flex items-center justify-center mb-4 text-amber-400">
-            <DollarSign size={24} />
-          </div>
-          <h3 className="text-3xl font-black text-white tracking-tighter mb-1">₹{earningsToday.toLocaleString()}</h3>
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Daily Payout</p>
-        </div>
-
-        <div className="rounded-[2rem] p-6 bg-white/5 border border-white/10 backdrop-blur-xl hover:bg-white/[0.08] transition-all">
-          <div className="w-12 h-12 rounded-xl bg-indigo-500/20 border border-indigo-500/20 flex items-center justify-center mb-4 text-indigo-400">
-            <Shield size={24} />
-          </div>
-          <h3 className="text-3xl font-black text-white tracking-tighter mb-1">Tier 1</h3>
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Fleet Ranking</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-        <div className="xl:col-span-8 space-y-8">
-          <h2 className="text-2xl font-black text-white flex items-center gap-4">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-              <Navigation size={20} className="text-white" />
-            </div>
-            Active Missions
-          </h2>
-
-          {activeDeliveries.length === 0 && !loading ? (
-            <div className="rounded-[2.5rem] p-16 text-center bg-white/5 border border-white/10 border-dashed">
-              <div className="w-24 h-24 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-8 text-emerald-400">
-                <CheckCircle2 size={48} />
-              </div>
-              <h3 className="text-3xl font-black text-white mb-3 tracking-tighter">All Routes Cleared</h3>
-              <p className="text-slate-400 font-bold max-w-sm mx-auto text-base leading-relaxed uppercase tracking-wide">
-                Stand by for new B2B assignments.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-6">
-              {activeDeliveries.map((delivery) => (
-                <div key={delivery._id} className="rounded-[2rem] bg-white/5 border border-white/10 overflow-hidden hover:bg-white/[0.07] transition-all group p-8">
-                  <div className="flex flex-col lg:flex-row gap-10">
-                    <div className="flex-1 space-y-6">
-                      <div className="flex items-center gap-3">
-                        <div className="px-4 py-1.5 rounded-xl bg-white/10 text-blue-400 text-[10px] font-black tracking-widest uppercase border border-white/5">
-                          REF: {delivery.orderId?._id?.slice(-6).toUpperCase() || delivery._id?.slice(-6).toUpperCase()}
-                        </div>
-                        <div className="px-4 py-1.5 rounded-xl bg-white/5 text-slate-400 text-[10px] font-black tracking-widest uppercase border border-white/5">
-                          {delivery.status?.replace('_', ' ')}
-                        </div>
-                      </div>
-
-                      <div>
-                        <h4 className="text-2xl font-black text-white mb-2 tracking-tight">{delivery.customerName || 'Premium B2B Client'}</h4>
-                        <div className="flex flex-wrap items-center gap-4 text-slate-400 text-sm font-bold">
-                          <span className="flex items-center gap-2">
-                            <Phone size={14} className="text-blue-500" />
-                            {delivery.phone || 'N/A'}
-                          </span>
-                          <span className="flex items-center gap-2">
-                            <Package size={14} className="text-indigo-400" />
-                            {delivery.orderId?.items?.length || 0} Items
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
-                        <MapPin size={18} className="text-blue-500 mt-1 shrink-0" />
-                        <p className="text-sm font-bold text-slate-300 leading-relaxed line-clamp-2">{delivery.address || 'N/A'}</p>
-                      </div>
-                    </div>
-
-                    <div className="lg:w-64 flex flex-col gap-3 justify-center">
-                      <Button 
-                        onClick={() => handleUpdateStatus(delivery._id, 'OUT_FOR_DELIVERY')}
-                        className="w-full h-14 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2"
-                      >
-                        <Zap size={16} />
-                        Start Mission
-                      </Button>
-                      <Button 
-                        onClick={() => setActiveRoute(delivery.route)}
-                        className="w-full h-12 rounded-xl bg-white/5 hover:bg-white/10 text-white font-black text-[10px] uppercase tracking-widest border border-white/10 flex items-center justify-center gap-2"
-                      >
-                        <MapIcon size={14} />
-                        View Path
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="xl:col-span-4 space-y-8">
-          <h2 className="text-2xl font-black text-white flex items-center gap-4">
-            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center">
-              <Activity size={20} className="text-white" />
-            </div>
-            Fleet Status
-          </h2>
-
-          <div className="rounded-[2rem] p-8 bg-gradient-to-br from-indigo-600/20 to-indigo-900/20 border border-indigo-500/20 backdrop-blur-xl">
-            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-4">Partner Performance</p>
-            <div className="flex items-end gap-2 mb-6">
-              <h3 className="text-5xl font-black text-white tracking-tighter">#04</h3>
-              <span className="text-xs font-bold text-slate-500 mb-1 uppercase tracking-widest">In Network</span>
-            </div>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                <span className="text-slate-500">Reliability Score</span>
-                <span className="text-emerald-400">9.8/10</span>
-              </div>
-              <div className="w-full bg-white/5 h-1 rounded-full overflow-hidden">
-                <div className="bg-emerald-500 h-full w-[98%]"></div>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-[2rem] p-8 bg-white/5 border border-white/10 backdrop-blur-xl">
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">Live Logs</p>
-            <div className="space-y-4">
-              {[
-                { time: '14:20', msg: 'Assigned to sector 7' },
-                { time: '13:45', msg: 'Delivery completed #8821' },
-                { time: '12:10', msg: 'Traffic delay Route 4' },
-              ].map((log, i) => (
-                <div key={i} className="flex gap-4">
-                  <span className="text-[10px] font-black text-slate-600 shrink-0">{log.time}</span>
-                  <p className="text-xs font-bold text-slate-400">{log.msg}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-[2rem] p-8 bg-blue-600 shadow-2xl shadow-blue-600/20 group relative overflow-hidden">
-            <div className="absolute -right-4 -bottom-4 opacity-20 group-hover:scale-110 transition-transform duration-700">
-              <Phone size={100} />
-            </div>
-            <div className="relative z-10">
-              <h4 className="text-xl font-black text-white mb-2 tracking-tight">Logistics Support</h4>
-              <p className="text-blue-100 text-xs font-bold opacity-80 mb-6 uppercase tracking-widest leading-relaxed">
-                24/7 Dedicated Dispatcher
-              </p>
-              <Button className="w-full h-12 bg-white text-blue-600 hover:bg-blue-50 font-black rounded-xl text-[10px] uppercase tracking-widest border-0 shadow-lg">
-                Connect Now
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Modals */}
-      {activeRoute && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300">
-          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md" onClick={() => setActiveRoute(null)}></div>
-          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+    <div className="min-h-screen bg-white text-slate-900 font-sans">
+      {/* Header */}
+      <div className="sticky top-0 z-30 bg-white border-b border-slate-100 px-4 md:px-8 py-4">
+        <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
             <button 
-              onClick={() => setActiveRoute(null)}
-              className="absolute right-6 top-6 z-10 p-3 bg-white/10 hover:bg-white/20 text-white rounded-2xl backdrop-blur-xl transition-all border border-white/10"
+              onClick={() => navigate(routes.DELIVERY_DASHBOARD)}
+              className="p-2 hover:bg-slate-50 rounded-lg text-slate-500 transition-colors"
             >
-              <X size={24} />
+              <ArrowLeft size={20} />
             </button>
-            <RouteMap route={activeRoute} />
+            <div>
+              <h1 className="text-2xl font-black tracking-tight">Delivery History</h1>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Archive & Settlement Records</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="bg-sky-50 px-4 py-2 rounded-lg border border-sky-100 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-md bg-white flex items-center justify-center text-sky-600 shadow-sm">
+                <DollarSign size={16} />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-sky-600 uppercase tracking-widest leading-none mb-1">Total Earnings</p>
+                <p className="text-sm font-black text-slate-900 leading-none">₹{earningsSummary.toLocaleString()}</p>
+              </div>
+            </div>
+            <Button className="h-10 bg-slate-900 hover:bg-black text-white font-bold text-xs uppercase tracking-widest rounded-lg flex items-center gap-2 px-4">
+              <Download size={16} />
+              Export
+            </Button>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Proof of Delivery (POD) Modal */}
-      {showPODModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 animate-in fade-in zoom-in duration-300">
-          <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-xl" onClick={() => setShowPODModal(null)}></div>
-          <div className="relative w-full max-w-lg bg-[#1E293B] rounded-[3rem] border border-white/10 shadow-2xl overflow-hidden">
-            <div className="p-10 border-b border-white/5 flex items-center justify-between">
-              <div>
-                <h3 className="text-2xl font-black text-white tracking-tight">POD Verification</h3>
-                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">Digital Handover Protocol</p>
-              </div>
-              <button onClick={() => setShowPODModal(null)} className="text-slate-500 hover:text-white transition-colors">
-                <X size={24} />
-              </button>
+      <div className="max-w-[1600px] mx-auto p-4 md:p-8 space-y-8">
+        {/* Filters & Search */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 md:p-6">
+          <div className="flex flex-col xl:flex-row gap-6">
+            <div className="relative flex-1">
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search by ID, Customer, or Destination..."
+                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
             
-            <div className="p-10 space-y-8">
-              <div className="grid grid-cols-2 gap-4">
-                <button className="flex flex-col items-center justify-center gap-4 p-8 rounded-[2rem] bg-white/5 border border-white/10 hover:bg-white/10 transition-all group">
-                  <div className="p-4 bg-blue-500/20 rounded-2xl text-blue-400 group-hover:scale-110 transition-transform">
-                    <Camera size={32} />
-                  </div>
-                  <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Capture Goods</span>
-                </button>
-                <button className="flex flex-col items-center justify-center gap-4 p-8 rounded-[2rem] bg-white/5 border border-white/10 hover:bg-white/10 transition-all group">
-                  <div className="p-4 bg-indigo-500/20 rounded-2xl text-indigo-400 group-hover:scale-110 transition-transform">
-                    <Signature size={32} />
-                  </div>
-                  <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">E-Signature</span>
-                </button>
-              </div>
-              
-              <div className="p-6 rounded-3xl bg-blue-500/10 border border-blue-500/20">
-                <div className="flex items-center gap-4 mb-4">
-                  <Shield size={20} className="text-blue-400" />
-                  <span className="text-sm font-black text-white">Compliance Check</span>
-                </div>
-                <p className="text-xs font-bold text-slate-400 leading-relaxed">
-                  By finalizing this POD, you confirm that all logistics units have been verified by the recipient and the operation meets B2B quality standards.
-                </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex p-1 bg-slate-50 rounded-lg border border-slate-200">
+                {[
+                  { id: 'all', label: 'All Time' },
+                  { id: 'today', label: 'Today' },
+                  { id: 'yesterday', label: 'Yesterday' }
+                ].map(filter => (
+                  <button
+                    key={filter.id}
+                    onClick={() => setDateFilter(filter.id)}
+                    className={`px-4 py-2 rounded-md text-xs font-bold transition-all ${
+                      dateFilter === filter.id 
+                        ? 'bg-white text-sky-600 shadow-sm border border-slate-100' 
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
               </div>
 
-              <Button 
-                onClick={() => {
-                  handleUpdateStatus(showPODModal._id, 'DELIVERED');
-                  setShowPODModal(null);
-                }}
-                className="w-full h-16 rounded-[2rem] bg-emerald-500 hover:bg-emerald-600 text-white font-black text-sm uppercase tracking-widest shadow-2xl shadow-emerald-500/20 active:scale-95 transition-all"
-              >
-                Confirm & Finalize Operation
-              </Button>
+              <div className="h-10 w-px bg-slate-200 mx-2 hidden md:block"></div>
+
+              <div className="flex p-1 bg-slate-50 rounded-lg border border-slate-200">
+                <button 
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-white text-sky-600 shadow-sm' : 'text-slate-400'}`}
+                >
+                  <List size={18} />
+                </button>
+                <button 
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white text-sky-600 shadow-sm' : 'text-slate-400'}`}
+                >
+                  <LayoutGrid size={18} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      )}
+
+        {/* Results */}
+        {filteredHistory.length === 0 ? (
+          <div className="py-32 text-center bg-white rounded-2xl border border-slate-100 border-dashed">
+            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
+              <Clock size={40} />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">No Records Found</h3>
+            <p className="text-slate-500 text-sm max-w-xs mx-auto font-medium">Adjust your search or filters to find specific delivery records.</p>
+          </div>
+        ) : viewMode === 'list' ? (
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Delivery Info</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Customer & Destination</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Metrics</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Settlement</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredHistory.map((d) => (
+                    <tr key={d._id} className="hover:bg-slate-50/50 transition-colors group">
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                            <CheckCircle2 size={20} />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
+                              ID: {(d.orderId?._id || d._id).slice(-8).toUpperCase()}
+                            </p>
+                            <p className="text-xs font-bold text-slate-700">
+                              {new Date(d.deliveredAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="max-w-xs">
+                          <p className="text-sm font-black text-slate-900 mb-1">{d.customerName || 'B2B Partner'}</p>
+                          <p className="text-xs font-medium text-slate-500 line-clamp-1 truncate">{d.address}</p>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-1.5">
+                            <Package size={14} className="text-slate-400" />
+                            <span className="text-xs font-bold text-slate-700">{d.orderId?.items?.length || 0}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Clock size={14} className="text-slate-400" />
+                            <span className="text-xs font-bold text-slate-700">24m</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5 text-right">
+                        <div className="inline-flex flex-col items-end">
+                          <p className="text-sm font-black text-slate-900 mb-1">₹{(d.orderId?.totalAmount || 0).toLocaleString()}</p>
+                          <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[9px] font-black uppercase tracking-widest rounded border border-emerald-100">
+                            PAID
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredHistory.map((d) => (
+              <div key={d._id} className="bg-white rounded-xl border border-slate-200 p-6 hover:border-sky-200 transition-colors">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-1 bg-slate-100 text-[10px] font-black text-slate-500 rounded uppercase tracking-widest border border-slate-200">
+                      ID: {(d.orderId?._id || d._id).slice(-8).toUpperCase()}
+                    </span>
+                    <span className="px-2 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-black rounded uppercase tracking-widest border border-emerald-100">
+                      DELIVERED
+                    </span>
+                  </div>
+                  <button className="text-slate-400 hover:text-slate-900">
+                    <MoreVertical size={18} />
+                  </button>
+                </div>
+                
+                <h4 className="text-lg font-black text-slate-900 mb-1">{d.customerName || 'B2B Partner'}</h4>
+                <div className="flex items-start gap-2 text-slate-500 mb-6">
+                  <MapPin size={16} className="mt-0.5 shrink-0 text-sky-500" />
+                  <p className="text-xs font-medium leading-relaxed line-clamp-2">{d.address}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 pt-6 border-t border-slate-100">
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Completion</p>
+                    <p className="text-xs font-black text-slate-900">
+                      {new Date(d.deliveredAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Earnings</p>
+                    <p className="text-sm font-black text-sky-600">₹450.00</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+      `}</style>
     </div>
   );
 };
 
-export default DeliveryPage;
+export default DeliveryHistoryPage;
