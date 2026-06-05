@@ -166,20 +166,31 @@ const OrderDetails = () => {
                       </div>
                       <div className="min-w-0">
                         <p className="font-black text-slate-900 text-2xl leading-tight mb-2 truncate uppercase tracking-tight">{item.name}</p>
-                        <div className="flex items-center gap-6">
+                        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
                           <span className="text-sm font-black text-slate-500 uppercase tracking-widest">
                             Quantity: <span className="text-slate-900">{item.quantity} units</span>
                           </span>
-                          <span className="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>
+                          <span className="w-1.5 h-1.5 bg-slate-300 rounded-full hidden md:block"></span>
                           <span className="text-sm font-black text-slate-500 uppercase tracking-widest">
-                            Rate: <span className="text-slate-900">₹{item.price.toLocaleString()}</span>
+                            Rate: <span className="text-slate-900">₹{(item.price || 0).toLocaleString()}</span>
                           </span>
+                          {item.discountPercent > 0 && (
+                            <>
+                              <span className="w-1.5 h-1.5 bg-slate-300 rounded-full hidden md:block"></span>
+                              <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                                {item.discountPercent}% Bulk Discount
+                              </span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Value</p>
-                      <p className="font-black text-slate-900 text-3xl tracking-tighter">₹{(item.price * item.quantity).toLocaleString()}</p>
+                      <p className="font-black text-slate-900 text-3xl tracking-tighter">₹{((item.finalPrice || item.price) * item.quantity).toLocaleString()}</p>
+                      {item.discountAmount > 0 && (
+                        <p className="text-[10px] font-bold text-slate-400 line-through">₹{(item.price * item.quantity).toLocaleString()}</p>
+                      )}
                     </div>
                   </div>
                 ))}

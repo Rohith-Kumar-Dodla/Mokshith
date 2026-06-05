@@ -14,10 +14,12 @@ const SuperAdminLayout = () => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showDbShell, setShowDbShell] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     setShowLogoutConfirm(false);
     setIsLoggingOut(false);
+    setIsSidebarOpen(false);
   }, [location.pathname]);
 
   const handleLogout = async () => {
@@ -33,13 +35,26 @@ const SuperAdminLayout = () => {
 
   return (
     <div className="flex min-h-screen bg-[#f8f9fa] overflow-x-hidden">
+      <Sidebar 
+        isOpen={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)} 
+        user={user} 
+        onLogout={() => setShowLogoutConfirm(true)} 
+      />
+
       {/* ================= MAIN CONTENT WRAPPER ================= */}
       <div className="flex-1 flex flex-col min-h-screen">
         {/* Header */}
         <header className="h-16 flex items-center px-4 md:px-10 bg-white border-b sticky top-0 z-40 shadow-sm">
           <div className="flex-1 flex justify-between items-center">
             <div className="flex items-center gap-2 md:gap-4">
-              <span className="w-1.5 md:w-2 h-6 md:h-8 bg-rose-600 rounded-full"></span>
+              <button 
+                onClick={() => setIsSidebarOpen(true)}
+                className="p-2 -ml-2 hover:bg-gray-100 rounded-lg lg:hidden"
+              >
+                <ShieldCheck size={24} className="text-rose-600" />
+              </button>
+              <span className="w-1.5 md:w-2 h-6 md:h-8 bg-rose-600 rounded-full hidden lg:block"></span>
               <h2 className="text-base md:text-xl font-bold text-gray-900 tracking-tight">Root Control</h2>
               <span className="hidden sm:inline-block px-3 py-1 bg-rose-500/10 text-rose-500 text-[10px] font-bold rounded-lg border border-rose-500/20 uppercase tracking-widest ml-2">
                 Omega Access

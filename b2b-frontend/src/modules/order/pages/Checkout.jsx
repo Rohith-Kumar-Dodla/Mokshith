@@ -36,6 +36,30 @@ const Checkout = () => {
   const codEnabled = isFeatureEnabled('enableCOD') && isFeatureEnabled('cod');
   const creditEnabled = isFeatureEnabled('creditSystem');
 
+  const calculateItemDiscount = (price, quantity) => {
+    let percent = 0;
+    if (quantity >= 20) percent = 20;
+    else if (quantity >= 15) percent = 15;
+    else if (quantity >= 10) percent = 10;
+    else if (quantity >= 5) percent = 5;
+    
+    const amount = (price * quantity) * (percent / 100);
+    return { percent, amount };
+  };
+
+  const subtotal = cart.reduce((acc, item) => {
+    const { amount } = calculateItemDiscount(item.price || 0, item.quantity || 0);
+    return acc + (item.price || 0) * (item.quantity || 0) - amount;
+  }, 0);
+
+  const totalDiscount = cart.reduce((acc, item) => {
+    const { amount } = calculateItemDiscount(item.price || 0, item.quantity || 0);
+    return acc + amount;
+  }, 0);
+
+  const tax = subtotal * 0.18; // 18% GST
+  const total = subtotal + tax;
+
   const [paymentMethod, setPaymentMethod] = useState(codEnabled ? PAYMENT_METHODS.COD : PAYMENT_METHODS.ONLINE);
   const [address, setAddress] = useState({
     name: user?.name || "",
@@ -45,10 +69,6 @@ const Checkout = () => {
     state: "",
     pincode: ""
   });
-
-  const subtotal = cart.reduce((acc, item) => acc + (item.price || 0) * (item.quantity || 0), 0);
-  const tax = subtotal * 0.18; // 18% GST
-  const total = subtotal + tax;
 
   const handleAddressChange = (e) => {
     const { name, value } = e.target;
@@ -368,10 +388,25 @@ const Checkout = () => {
                         <span className="text-xs font-semibold text-slate-500">Qty: <span className="text-slate-900">{item.quantity}</span></span>
                         <div className="w-1 h-1 rounded-full bg-slate-300"></div>
                         <span className="text-xs font-semibold text-slate-500">Price: <span className="text-slate-900">₹{item.price.toLocaleString()}</span></span>
+                        {item.quantity >= 5 && (
+                          <>
+                            <div className="w-1 h-1 rounded-full bg-slate-300"></div>
+                            <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-1.5 py-0.5 rounded">
+                              {calculateItemDiscount(item.price, item.quantity).percent}% OFF
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-slate-900 text-xl tracking-tight">₹{(item.price * item.quantity).toLocaleString()}</p>
+                      <p className="font-bold text-slate-900 text-xl tracking-tight">
+                        ₹{(item.price * item.quantity - calculateItemDiscount(item.price, item.quantity).amount).toLocaleString()}
+                      </p>
+                      {item.quantity >= 5 && (
+                        <p className="text-[10px] font-bold text-slate-400 line-through">
+                          ₹{(item.price * item.quantity).toLocaleString()}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -400,8 +435,14 @@ const Checkout = () => {
                 <div className="space-y-5 mb-10">
                   <div className="flex justify-between items-center group">
                     <span className="text-sm font-semibold text-slate-500 group-hover:text-slate-900 transition-colors">Subtotal</span>
-                    <span className="text-base font-bold text-slate-900">₹{subtotal.toLocaleString()}</span>
+                    <span className="text-base font-bold text-slate-900">₹{(subtotal + totalDiscount).toLocaleString()}</span>
                   </div>
+                  {totalDiscount > 0 && (
+                    <div className="flex justify-between items-center group">
+                      <span className="text-sm font-semibold text-blue-500 group-hover:text-blue-600 transition-colors">Bulk Discount</span>
+                      <span className="text-base font-bold text-blue-600">-₹{totalDiscount.toLocaleString()}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center group">
                     <span className="text-sm font-semibold text-slate-500 group-hover:text-slate-900 transition-colors">Tax (18% GST)</span>
                     <span className="text-base font-bold text-slate-900">₹{tax.toLocaleString()}</span>

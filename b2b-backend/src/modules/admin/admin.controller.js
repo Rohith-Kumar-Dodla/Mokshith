@@ -3,8 +3,19 @@ import * as adminService from './admin.service.js';
 import { successResponse } from '../../utils/responseHandler.js';
 
 export const getUsers = asyncHandler(async (req, res) => {
-  const users = await adminService.getAllUsers();
+  const { role } = req.query;
+  const users = await adminService.getAllUsers(role);
   successResponse(res, users);
+});
+
+export const createB2BCustomer = asyncHandler(async (req, res) => {
+  const user = await adminService.createB2BCustomer(req.body);
+  successResponse(res, user, 'B2B Customer created successfully', 201);
+});
+
+export const createDeliveryPartner = asyncHandler(async (req, res) => {
+  const user = await adminService.createDeliveryPartner(req.body);
+  successResponse(res, user, 'Delivery Partner created successfully', 201);
 });
 
 export const getApprovals = asyncHandler(async (req, res) => {

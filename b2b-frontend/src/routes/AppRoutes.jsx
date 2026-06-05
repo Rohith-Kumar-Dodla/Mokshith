@@ -26,6 +26,7 @@ const AdminUsersPage = lazy(() => import("../modules/admin/pages/Users.jsx"));
 const AdminProductsPage = lazy(() => import("../modules/admin/pages/Products.jsx"));
 const AdminOrdersPage = lazy(() => import("../modules/admin/pages/Orders.jsx"));
 const AdminVendorsPage = lazy(() => import("../modules/admin/pages/Vendors.jsx"));
+const AdminDeliveryPartnersPage = lazy(() => import("../modules/admin/pages/DeliveryPartners.jsx"));
 const AdminApprovalsPage = lazy(() => import("../modules/admin/pages/Approvals.jsx"));
 const AdminProfile = lazy(() => import("../modules/admin/pages/AdminProfile.jsx"));
 const SuperAdminPage = lazy(() => import("../modules/superAdmin/pages/SuperAdminPage.jsx"));
@@ -105,7 +106,6 @@ const AppRoutes = () => {
           <Route path={routes.ADMIN_USERS} element={<AdminUsersPage />} />
           <Route path={routes.ADMIN_PRODUCTS} element={<AdminProductsPage />} />
           <Route path={routes.ADMIN_ORDERS} element={<AdminOrdersPage />} />
-          <Route path={routes.ADMIN_VENDORS} element={<AdminVendorsPage />} />
           <Route path={routes.ADMIN_APPROVALS} element={<AdminApprovalsPage />} />
           <Route path={routes.ADMIN_ANALYTICS} element={<AnalyticsPage />} />
           <Route path={routes.ADMIN_INVENTORY} element={<InventoryPage />} />
@@ -126,6 +126,8 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }>
           <Route path={routes.SUPER_ADMIN} element={<SuperAdminPage />} />
+          <Route path={routes.SUPER_ADMIN_VENDORS} element={<AdminVendorsPage />} />
+          <Route path={routes.SUPER_ADMIN_DELIVERY} element={<AdminDeliveryPartnersPage />} />
         </Route>
 
         {/* DELIVERY ROUTES */}

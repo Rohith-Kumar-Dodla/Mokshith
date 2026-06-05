@@ -136,7 +136,17 @@ export const createOrder = async (userId, data) => {
     await checkStock(product._id, item.quantity);
 
     const productPrice = product.price || product.basePrice || 0;
-    const itemTotal = productPrice * item.quantity;
+    
+    // 🔥 Feature 3: Bulk Quantity Discount Logic
+    let discountPercent = 0;
+    if (item.quantity >= 20) discountPercent = 20;
+    else if (item.quantity >= 15) discountPercent = 15;
+    else if (item.quantity >= 10) discountPercent = 10;
+    else if (item.quantity >= 5) discountPercent = 5;
+
+    const discountAmount = (productPrice * item.quantity) * (discountPercent / 100);
+    const itemTotal = (productPrice * item.quantity) - discountAmount;
+
     totalAmount += itemTotal;
     totalWeight += (product.weight || 0) * item.quantity;
     totalQuantity += item.quantity;
@@ -146,6 +156,9 @@ export const createOrder = async (userId, data) => {
       name: product.name,
       price: productPrice,
       quantity: item.quantity,
+      discountPercent,
+      discountAmount,
+      finalPrice: itemTotal / item.quantity
     });
   }
 
@@ -181,8 +194,11 @@ export const createOrder = async (userId, data) => {
   };
 
   // 🔥 4. Status Mapping based on Payment Method
-  if (paymentMethod.toUpperCase() === 'COD') {
+  if (paymentMethod.toUpperCase() === 'COD' || paymentMethod.toUpperCase() === 'CREDIT') {
     orderData.status = ORDER_STATUS.CONFIRMED;
+    if (paymentMethod.toUpperCase() === 'CREDIT') {
+      orderData.paymentStatus = PAYMENT_STATUS.PAID;
+    }
   } else {
     orderData.paymentStatus = PAYMENT_STATUS.PENDING;
     orderData.status = ORDER_STATUS.PENDING_PAYMENT;
@@ -196,21 +212,22 @@ export const createOrder = async (userId, data) => {
   try {
     if (supportsTransactions) {
       session = await mongoose.startSession();
-      session.startTransaction({
-        readPreference: 'primary',
-        readConcern: { level: 'snapshot' },
-        writeConcern: { w: 'majority' }
-      });
+      session.startTransaction();
+    }
+
+    // 🔥 Feature 4: Handle Credit Payment
+    if (paymentMethod.toUpperCase() === 'CREDIT') {
+      await useCredit(userId, finalTotal, { session });
     }
 
     // Create order
     order = await orderRepo.createOrder(orderData, { session });
     
     // 🔒 CRITICAL FIX: Use different stock handling based on payment method
-    // COD: Immediate deduction (payment guaranteed)
-    // NON-COD: Reserve only (finalize after payment success)
-    if (paymentMethod.toUpperCase() === 'COD') {
-      // Immediate stock deduction for COD
+    // COD & CREDIT: Immediate deduction
+    // NON-COD: Reserve only
+    if (paymentMethod.toUpperCase() === 'COD' || paymentMethod.toUpperCase() === 'CREDIT') {
+      // Immediate stock deduction
       for (const item of items) {
         await reduceStock(item.productId, item.quantity, { session });
       }
@@ -242,8 +259,10 @@ export const createOrder = async (userId, data) => {
 
   // 🔥 6. Post-Order Processing
   try {
-    // Clear Cart ONLY for COD immediately, others after payment
-    if (paymentMethod.toUpperCase() === 'COD') {
+    // Clear Cart ONLY for COD/CREDIT immediately, others after payment
+    const isAutoConfirmed = ['COD', 'CREDIT'].includes(paymentMethod.toUpperCase());
+    
+    if (isAutoConfirmed) {
       if (!requestItems || requestItems.length === 0) {
         const cart = await cartRepo.findCartByUser(userId);
         if (cart) {
@@ -257,19 +276,18 @@ export const createOrder = async (userId, data) => {
       await sendNotification({
         userId,
         title: 'Order Confirmed',
-        message: `Your order #${order._id} for ₹${finalTotal.toLocaleString()} has been placed successfully.`,
+        message: `Your order #${order._id} for ₹${finalTotal.toLocaleString()} has been placed successfully via ${paymentMethod}.`,
       });
       
       await onOrderCreated(order);
       trackOrder(order);
 
-      // 🔒 PHASE 4: Queue-based post-order processing (replaces setImmediate)
-      // Survives server crashes and has retry logic
+      // 🔒 PHASE 4: Queue-based post-order processing
       const { queuePostOrderJobs } = await import('../../services/queueManager.service.js');
       await queuePostOrderJobs({
         orderId: order._id.toString(),
         userId,
-        paymentMethod: 'COD',
+        paymentMethod: paymentMethod.toUpperCase(),
       });
     } else {
       // For non-COD, just notify about pending order

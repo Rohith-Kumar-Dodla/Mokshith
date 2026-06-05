@@ -1,11 +1,40 @@
 import * as adminRepo from './admin.repository.js';
 import NotFoundError from '../../errors/NotFoundError.js';
 import { USER_STATUS } from '../../constants/userStatus.js';
+import { ROLES } from '../../constants/roles.js';
 import User from '../user/user.model.js';
 import Order from '../order/order.model.js';
+import { hashPassword } from '../../utils/hashPassword.js';
 
-export const getAllUsers = async () => {
-  return User.find({ isDeleted: { $ne: true } }).sort({ createdAt: -1 });
+export const getAllUsers = async (role) => {
+  const query = { isDeleted: { $ne: true } };
+  if (role) query.role = role;
+  return User.find(query).sort({ createdAt: -1 });
+};
+
+export const createB2BCustomer = async (data) => {
+  const hashedPassword = await hashPassword(data.password);
+  const user = await User.create({
+    ...data,
+    password: hashedPassword,
+    role: ROLES.B2B_CUSTOMER,
+    status: USER_STATUS.ACTIVE,
+    availableCredit: data.creditLimit || 50000,
+    isVerified: true
+  });
+  return user;
+};
+
+export const createDeliveryPartner = async (data) => {
+  const hashedPassword = await hashPassword(data.password);
+  const user = await User.create({
+    ...data,
+    password: hashedPassword,
+    role: ROLES.DELIVERY_PARTNER,
+    status: USER_STATUS.ACTIVE,
+    isVerified: true
+  });
+  return user;
 };
 
 export const getPendingUsers = async () => {
@@ -42,6 +71,8 @@ export const changeUserStatus = async (userId, status) => {
 export const getStats = async () => {
   const totalUsers = await User.countDocuments({ isDeleted: { $ne: true } });
   const totalOrders = await Order.countDocuments();
+  const totalVendors = await User.countDocuments({ role: ROLES.B2B_CUSTOMER, isDeleted: { $ne: true } });
+  const totalDeliveryPartners = await User.countDocuments({ role: ROLES.DELIVERY_PARTNER, isDeleted: { $ne: true } });
   const pendingApprovals = await User.countDocuments({ 
     status: USER_STATUS.PENDING, 
     isDeleted: { $ne: true } 
@@ -55,6 +86,8 @@ export const getStats = async () => {
   return {
     totalUsers,
     totalOrders,
+    totalVendors,
+    totalDeliveryPartners,
     pendingApprovals,
     revenue: revenue[0]?.total || 0,
   };

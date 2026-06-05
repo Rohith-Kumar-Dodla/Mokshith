@@ -41,11 +41,28 @@ export const adminService = {
     }
   },
 
-  async getUsers() {
+  async getUsers(role) {
     try {
-      return await apiClient.get("/admin/users");
+      const url = role ? `/admin/users?role=${role}` : "/admin/users";
+      return await apiClient.get(url);
     } catch {
       throw new Error("Failed to fetch users");
+    }
+  },
+
+  async createB2BCustomer(data) {
+    try {
+      return await apiClient.post("/admin/b2b-customers", data);
+    } catch (err) {
+      throw new Error(err.response?.data?.message || "Failed to create B2B Customer");
+    }
+  },
+
+  async createDeliveryPartner(data) {
+    try {
+      return await apiClient.post("/admin/delivery-partners", data);
+    } catch (err) {
+      throw new Error(err.response?.data?.message || "Failed to create Delivery Partner");
     }
   },
 

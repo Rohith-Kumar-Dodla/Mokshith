@@ -10,9 +10,9 @@ const MetricsCards = ({ metrics }) => {
 
   const items = [
     { label: "Total Users", value: metrics.totalUsers || 0, color: "var(--primary)" },
-    { label: "Active Vendors", value: metrics.activeVendors || 0, color: "var(--success)" },
-    { label: "Orders Today", value: metrics.ordersToday || 0, color: "var(--info)" },
-    { label: "Revenue Today", value: formatCurrency(metrics.revenueToday), color: "var(--accent)" },
+    { label: "B2B Partners", value: metrics.totalVendors || 0, color: "var(--success)" },
+    { label: "Logistics Fleet", value: metrics.totalDeliveryPartners || 0, color: "var(--info)" },
+    { label: "Revenue Today", value: formatCurrency(metrics.revenue), color: "var(--accent)" },
     { label: "Pending Approvals", value: metrics.pendingApprovals || 0, color: "var(--warning)" }
   ];
 

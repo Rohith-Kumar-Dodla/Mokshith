@@ -44,7 +44,8 @@ export const authService = {
 
   async logout() {
     try {
-      await apiClient.post("/auth/logout");
+      const refreshToken = localStorage.getItem("refreshToken");
+      await apiClient.post("/auth/logout", { refreshToken });
     } catch {
       throw new Error("Logout failed");
     } finally {

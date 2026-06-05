@@ -115,4 +115,52 @@ export const superAdminService = {
       throw new Error(error);
     }
   },
+
+  async createB2BCustomer(payload) {
+    try {
+      return await apiClient.post("/admin/b2b-customers", payload);
+    } catch (error) {
+      throw new Error(error.response?.data?.message || "Failed to create B2B Customer");
+    }
+  },
+
+  async createDeliveryPartner(payload) {
+    try {
+      return await apiClient.post("/admin/delivery-partners", payload);
+    } catch (error) {
+      throw new Error(error.response?.data?.message || "Failed to create Delivery Partner");
+    }
+  },
+
+  async getB2BCustomers() {
+    try {
+      return await apiClient.get("/admin/users?role=B2B_CUSTOMER");
+    } catch (error) {
+      throw new Error(error.response?.data?.message || "Failed to fetch B2B Customers");
+    }
+  },
+
+  async deleteB2BCustomer(id) {
+    try {
+      return await apiClient.delete(`/users/${id}`);
+    } catch (error) {
+      throw new Error(error.response?.data?.message || "Failed to delete B2B Customer");
+    }
+  },
+
+  async getDeliveryPartners() {
+    try {
+      return await apiClient.get("/admin/users?role=DELIVERY_PARTNER");
+    } catch (error) {
+      throw new Error(error.response?.data?.message || "Failed to fetch Delivery Partners");
+    }
+  },
+
+  async deleteDeliveryPartner(id) {
+    try {
+      return await apiClient.delete(`/users/${id}`);
+    } catch (error) {
+      throw new Error(error.response?.data?.message || "Failed to delete Delivery Partner");
+    }
+  },
 };

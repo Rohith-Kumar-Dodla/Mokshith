@@ -144,6 +144,68 @@ export const useSuperAdmin = () => {
     }
   };
 
+  const createB2BCustomer = async (payload) => {
+    try {
+      const response = await superAdminService.createB2BCustomer(payload);
+      // Refresh metrics if needed
+      return response.data || response;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  };
+
+  const createDeliveryPartner = async (payload) => {
+    try {
+      const response = await superAdminService.createDeliveryPartner(payload);
+      // Refresh metrics if needed
+      return response.data || response;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  };
+
+  const getB2BCustomers = async () => {
+    try {
+      const response = await superAdminService.getB2BCustomers();
+      return response.data || response;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  };
+
+  const deleteB2BCustomer = async (id) => {
+    try {
+      await superAdminService.deleteB2BCustomer(id);
+      return true;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  };
+
+  const getDeliveryPartners = async () => {
+    try {
+      const response = await superAdminService.getDeliveryPartners();
+      return response.data || response;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  };
+
+  const deleteDeliveryPartner = async (id) => {
+    try {
+      await superAdminService.deleteDeliveryPartner(id);
+      return true;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  };
+
   useEffect(() => {
     fetchSuperAdminData();
   }, [fetchSuperAdminData]);
@@ -164,6 +226,12 @@ export const useSuperAdmin = () => {
     deleteCategory,
     updateCategory,
     fetchDbCollection,
-    exportAuditLogs
+    exportAuditLogs,
+    createB2BCustomer,
+    createDeliveryPartner,
+    getB2BCustomers,
+    deleteB2BCustomer,
+    getDeliveryPartners,
+    deleteDeliveryPartner
   };
 };

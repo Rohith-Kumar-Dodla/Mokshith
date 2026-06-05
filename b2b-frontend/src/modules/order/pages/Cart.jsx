@@ -18,7 +18,27 @@ const Cart = () => {
   const { cart, removeFromCart, updateQuantity, clearCart } = useOrder();
   const navigate = useNavigate();
 
-  const subtotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  const calculateItemDiscount = (price, quantity) => {
+    let percent = 0;
+    if (quantity >= 20) percent = 20;
+    else if (quantity >= 15) percent = 15;
+    else if (quantity >= 10) percent = 10;
+    else if (quantity >= 5) percent = 5;
+    
+    const amount = (price * quantity) * (percent / 100);
+    return { percent, amount };
+  };
+
+  const subtotal = cart.reduce((acc, item) => {
+    const { amount } = calculateItemDiscount(item.price, item.quantity);
+    return acc + (item.price * item.quantity) - amount;
+  }, 0);
+
+  const totalDiscount = cart.reduce((acc, item) => {
+    const { amount } = calculateItemDiscount(item.price, item.quantity);
+    return acc + amount;
+  }, 0);
+
   const tax = subtotal * 0.18;
   const total = subtotal + tax;
 
@@ -69,7 +89,14 @@ const Cart = () => {
                   
                   <div className="flex-1 text-center sm:text-left">
                     <h3 className="text-lg font-bold text-gray-900 mb-1">{item.name}</h3>
-                    <p className="text-sm font-medium text-gray-400 mb-4">Unit Price: ₹{item.price.toLocaleString()}</p>
+                    <div className="flex flex-col gap-1 mb-4">
+                      <p className="text-sm font-medium text-gray-400">Unit Price: ₹{item.price.toLocaleString()}</p>
+                      {item.quantity >= 5 && (
+                        <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-2 py-0.5 rounded w-fit">
+                          {calculateItemDiscount(item.price, item.quantity).percent}% Bulk Discount Applied
+                        </span>
+                      )}
+                    </div>
                     
                     <div className="flex items-center justify-center sm:justify-start gap-4">
                       <div className="flex items-center bg-gray-100 rounded-xl p-1 border border-gray-200">
@@ -102,8 +129,13 @@ const Cart = () => {
 
                   <div className="text-right">
                     <p className="text-xl font-black text-blue-600 tracking-tight">
-                      ₹{(item.price * item.quantity).toLocaleString()}
+                      ₹{(item.price * item.quantity - calculateItemDiscount(item.price, item.quantity).amount).toLocaleString()}
                     </p>
+                    {item.quantity >= 5 && (
+                      <p className="text-[10px] font-bold text-gray-400 line-through">
+                        ₹{(item.price * item.quantity).toLocaleString()}
+                      </p>
+                    )}
                   </div>
                 </div>
               </Card>
@@ -126,8 +158,14 @@ const Cart = () => {
               <div className="space-y-4 mb-8">
                 <div className="flex justify-between text-gray-500 font-medium">
                   <span>Subtotal</span>
-                  <span>₹{subtotal.toLocaleString()}</span>
+                  <span>₹{(subtotal + totalDiscount).toLocaleString()}</span>
                 </div>
+                {totalDiscount > 0 && (
+                  <div className="flex justify-between text-blue-600 font-bold">
+                    <span>Bulk Discount</span>
+                    <span>-₹{totalDiscount.toLocaleString()}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-gray-500 font-medium">
                   <span>GST (18%)</span>
                   <span>₹{tax.toLocaleString()}</span>

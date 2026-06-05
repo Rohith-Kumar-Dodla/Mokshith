@@ -1,5 +1,5 @@
 import { useState, useEffect, memo } from 'react';
-import { ShoppingCart, Eye, Star, Plus, Minus, Heart } from 'lucide-react';
+import { ShoppingCart, Eye, Star, Plus, Minus, Heart, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { routes } from '../../../routes/routeConfig.js';
 import { useWishlist } from '../../../modules/wishlist/hooks/useWishlist.js';
@@ -108,6 +108,16 @@ const ProductCard = ({ product, onAddToCart, onBuyNow, user }) => {
         <div className="wholesale-badge">
           <span>Minimum Order: {minQty} {product.unit || 'units'}</span>
         </div>
+
+        {/* Feature 3: Bulk Quantity Discount Display */}
+        {qty >= 5 && (
+          <div className="bulk-discount-indicator">
+            <Sparkles size={12} className="text-primary" />
+            <span>
+              {qty >= 20 ? '20%' : qty >= 15 ? '15%' : qty >= 10 ? '10%' : '5%'} Bulk Discount Applied
+            </span>
+          </div>
+        )}
 
         <div className="product-footer">
           <div className="product-price-wrapper">
@@ -301,6 +311,32 @@ const ProductCard = ({ product, onAddToCart, onBuyNow, user }) => {
           font-weight: 600;
           margin-bottom: 1rem;
           border: 1px dashed #bfdbfe;
+        }
+
+        .wholesale-badge span {
+          color: var(--text-muted);
+          font-weight: 600;
+        }
+
+        .bulk-discount-indicator {
+          margin-top: 0.5rem;
+          padding: 0.25rem 0.75rem;
+          background: var(--primary-light);
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.75rem;
+          font-weight: 800;
+          color: var(--primary);
+          border: 1px solid var(--primary-light);
+          animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+          0% { opacity: 0.8; }
+          50% { opacity: 1; }
+          100% { opacity: 0.8; }
         }
 
         .product-footer {

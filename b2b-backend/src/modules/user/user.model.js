@@ -145,6 +145,20 @@ const userSchema = new mongoose.Schema(
     address: String,
     companyName: String,
 
+    // B2B Customer specific fields
+    gstNumber: String,
+    businessName: String,
+    businessAddress: String,
+    ownerName: String,
+
+    // Delivery Partner specific fields
+    vehicleType: {
+      type: String,
+      enum: ['TWO_WHEELER', 'THREE_WHEELER', 'FOUR_WHEELER', 'HEAVY_VEHICLE'],
+    },
+    vehicleNumber: String,
+    licenseNumber: String,
+
     activeSessions: [
       {
         deviceId: String,

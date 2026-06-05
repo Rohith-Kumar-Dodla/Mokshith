@@ -249,13 +249,17 @@ export const changePassword = asyncHandler(async (req, res) => {
 export const logout = asyncHandler(async (req, res) => {
   const { refreshToken } = req.body;
 
-  await authService.logout(refreshToken);
+  try {
+    await authService.logout(refreshToken);
 
-  if (req.user) {
-    logSecurityEvent(SECURITY_EVENTS.LOGOUT, {
-      userId: req.user._id,
-      ip: req.ip
-    });
+    if (req.user) {
+      logSecurityEvent(SECURITY_EVENTS.LOGOUT, {
+        userId: req.user._id,
+        ip: req.ip
+      });
+    }
+  } catch (error) {
+    logger.error('Logout error (handled):', error);
   }
 
   successResponse(res, { success: true }, 'Logged out successfully');

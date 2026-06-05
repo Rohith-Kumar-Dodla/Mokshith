@@ -45,11 +45,18 @@ const Sidebar = React.memo(({ isOpen, onClose, user, onLogout }) => {
     { icon: <Users size={18} />, label: "Manage Users", path: routes.ADMIN_USERS },
     { icon: <PackageIcon size={18} />, label: "Products", path: routes.ADMIN_PRODUCTS },
     { icon: <PackageIcon size={18} />, label: "Orders", path: routes.ADMIN_ORDERS },
-    { icon: <Building2 size={18} />, label: "Vendors", path: routes.ADMIN_VENDORS },
     { icon: <Boxes size={18} />, label: "Inventory", path: routes.ADMIN_INVENTORY },
     { icon: <Warehouse size={18} />, label: "Warehouse", path: routes.ADMIN_WAREHOUSE },
     { icon: <Tag size={18} />, label: "Promotions", path: routes.ADMIN_PROMOTIONS },
     { icon: <SettingsIcon size={18} />, label: "Settings", path: routes.ADMIN_SETTINGS },
+  ], []);
+
+  const superAdminLinks = React.useMemo(() => [
+    { icon: <LayoutDashboard size={18} />, label: "Dashboard", path: routes.SUPER_ADMIN },
+    { icon: <Building2 size={18} />, label: "B2B Partners", path: routes.SUPER_ADMIN_VENDORS },
+    { icon: <Truck size={18} />, label: "Logistics", path: routes.SUPER_ADMIN_DELIVERY },
+    { icon: <Shield size={18} />, label: "Approvals", path: routes.ADMIN_APPROVALS },
+    { icon: <History size={18} />, label: "Audit Logs", path: "#audit-trail" },
   ], []);
 
   const vendorLinks = React.useMemo(() => [
@@ -87,6 +94,7 @@ const Sidebar = React.memo(({ isOpen, onClose, user, onLogout }) => {
   const links = React.useMemo(() => {
     switch (user?.role) {
       case "SUPER_ADMIN":
+        return superAdminLinks;
       case "ADMIN":
         return adminLinks;
       case "VENDOR":
