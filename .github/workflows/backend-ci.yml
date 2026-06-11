@@ -10,14 +10,14 @@ on:
       - development
       - 'release/**'
     paths:
-      - 'b2b-backend/**'
+      - 'Production/b2b-backend/**'
       - '.github/workflows/backend-ci.yml'
   pull_request:
     branches:
       - main
       - development
     paths:
-      - 'b2b-backend/**'
+      - 'Production/b2b-backend/**'
       - '.github/workflows/backend-ci.yml'
 
 # Cancel in-progress runs for the same workflow
@@ -30,7 +30,7 @@ concurrency:
 # =================================================================
 env:
   NODE_VERSION: '20.x'
-  WORKING_DIRECTORY: './b2b-backend'
+  WORKING_DIRECTORY: './Production/b2b-backend'
 
 # =================================================================
 # Jobs

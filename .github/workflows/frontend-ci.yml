@@ -10,14 +10,14 @@ on:
       - development
       - 'release/**'
     paths:
-      - 'b2b-frontend/**'
+      - 'Production/ME/**'
       - '.github/workflows/frontend-ci.yml'
   pull_request:
     branches:
       - main
       - development
     paths:
-      - 'b2b-frontend/**'
+      - 'Production/ME/**'
       - '.github/workflows/frontend-ci.yml'
 
 # Cancel in-progress runs for the same workflow
@@ -30,7 +30,7 @@ concurrency:
 # =================================================================
 env:
   NODE_VERSION: '20.x'
-  WORKING_DIRECTORY: './b2b-frontend'
+  WORKING_DIRECTORY: './Production/ME'
 
 # =================================================================
 # Jobs
@@ -97,9 +97,7 @@ jobs:
         run: npm run build
         env:
           # Use placeholder values for CI build
-          VITE_API_URL: https://api.example.com
-          VITE_SOCKET_URL: https://api.example.com
-          VITE_RAZORPAY_KEY_ID: rzp_test_placeholder
+          VITE_API_BASE_URL: https://api.example.com/api/v1
 
       - name: 📊 Analyze bundle size
         working-directory: ${{ env.WORKING_DIRECTORY }}

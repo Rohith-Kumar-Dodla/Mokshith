@@ -1,0 +1,222 @@
+export const inventory = [
+  {
+    id: 'INV001',
+    productId: 'PRD001',
+    productName: 'Basmati Rice Premium',
+    category: 'Grains & Rice',
+    currentStock: 450,
+    reorderLevel: 100,
+    maxStock: 1000,
+    status: 'healthy',
+    lastUpdated: '2024-06-05'
+  },
+  {
+    id: 'INV002',
+    productId: 'PRD002',
+    productName: 'Toor Dal (Pigeon Pea)',
+    category: 'Pulses & Dal',
+    currentStock: 320,
+    reorderLevel: 100,
+    maxStock: 800,
+    status: 'healthy',
+    lastUpdated: '2024-06-05'
+  },
+  {
+    id: 'INV003',
+    productId: 'PRD003',
+    productName: 'Sunflower Oil 5L',
+    category: 'Cooking Oil',
+    currentStock: 180,
+    reorderLevel: 80,
+    maxStock: 500,
+    status: 'healthy',
+    lastUpdated: '2024-06-04'
+  },
+  {
+    id: 'INV004',
+    productId: 'PRD004',
+    productName: 'Wheat Flour (Atta) 25kg',
+    category: 'Flour & Atta',
+    currentStock: 95,
+    reorderLevel: 100,
+    maxStock: 400,
+    status: 'low_stock',
+    lastUpdated: '2024-06-04'
+  },
+  {
+    id: 'INV005',
+    productId: 'PRD005',
+    productName: 'Sugar Premium 50kg',
+    category: 'Sugar & Sweeteners',
+    currentStock: 45,
+    reorderLevel: 50,
+    maxStock: 300,
+    status: 'low_stock',
+    lastUpdated: '2024-06-03'
+  },
+  {
+    id: 'INV006',
+    productId: 'PRD006',
+    productName: 'Red Chilli Powder 1kg',
+    category: 'Spices',
+    currentStock: 280,
+    reorderLevel: 100,
+    maxStock: 600,
+    status: 'healthy',
+    lastUpdated: '2024-06-05'
+  },
+  {
+    id: 'INV007',
+    productId: 'PRD007',
+    productName: 'Turmeric Powder 500g',
+    category: 'Spices',
+    currentStock: 340,
+    reorderLevel: 100,
+    maxStock: 700,
+    status: 'healthy',
+    lastUpdated: '2024-06-05'
+  },
+  {
+    id: 'INV008',
+    productId: 'PRD008',
+    productName: 'Tea Powder Premium 1kg',
+    category: 'Beverages',
+    currentStock: 0,
+    reorderLevel: 50,
+    maxStock: 300,
+    status: 'out_of_stock',
+    lastUpdated: '2024-06-01'
+  },
+  {
+    id: 'INV009',
+    productId: 'PRD009',
+    productName: 'Urad Dal (Black Gram)',
+    category: 'Pulses & Dal',
+    currentStock: 265,
+    reorderLevel: 100,
+    maxStock: 600,
+    status: 'healthy',
+    lastUpdated: '2024-06-04'
+  },
+  {
+    id: 'INV010',
+    productId: 'PRD010',
+    productName: 'Mustard Oil 5L',
+    category: 'Cooking Oil',
+    currentStock: 155,
+    reorderLevel: 80,
+    maxStock: 400,
+    status: 'healthy',
+    lastUpdated: '2024-06-03'
+  },
+  {
+    id: 'INV011',
+    productId: 'PRD011',
+    productName: 'Moong Dal (Green Gram)',
+    category: 'Pulses & Dal',
+    currentStock: 380,
+    reorderLevel: 100,
+    maxStock: 800,
+    status: 'healthy',
+    lastUpdated: '2024-06-05'
+  },
+  {
+    id: 'INV012',
+    productId: 'PRD012',
+    productName: 'Besan (Gram Flour) 10kg',
+    category: 'Flour & Atta',
+    currentStock: 125,
+    reorderLevel: 80,
+    maxStock: 400,
+    status: 'healthy',
+    lastUpdated: '2024-06-04'
+  },
+  {
+    id: 'INV013',
+    productId: 'PRD013',
+    productName: 'Cumin Seeds (Jeera) 500g',
+    category: 'Spices',
+    currentStock: 195,
+    reorderLevel: 80,
+    maxStock: 400,
+    status: 'healthy',
+    lastUpdated: '2024-06-03'
+  },
+  {
+    id: 'INV014',
+    productId: 'PRD014',
+    productName: 'Coriander Seeds 500g',
+    category: 'Spices',
+    currentStock: 245,
+    reorderLevel: 80,
+    maxStock: 500,
+    status: 'healthy',
+    lastUpdated: '2024-06-04'
+  },
+  {
+    id: 'INV015',
+    productId: 'PRD015',
+    productName: 'Groundnut Oil 5L',
+    category: 'Cooking Oil',
+    currentStock: 85,
+    reorderLevel: 80,
+    maxStock: 300,
+    status: 'low_stock',
+    lastUpdated: '2024-06-02'
+  },
+  {
+    id: 'INV016',
+    productId: 'PRD016',
+    productName: 'Chana Dal (Bengal Gram)',
+    category: 'Pulses & Dal',
+    currentStock: 420,
+    reorderLevel: 100,
+    maxStock: 900,
+    status: 'healthy',
+    lastUpdated: '2024-06-05'
+  },
+  {
+    id: 'INV017',
+    productId: 'PRD017',
+    productName: 'Maida (Refined Flour) 25kg',
+    category: 'Flour & Atta',
+    currentStock: 75,
+    reorderLevel: 80,
+    maxStock: 350,
+    status: 'low_stock',
+    lastUpdated: '2024-06-03'
+  },
+  {
+    id: 'INV018',
+    productId: 'PRD018',
+    productName: 'Garam Masala 200g',
+    category: 'Spices',
+    currentStock: 310,
+    reorderLevel: 100,
+    maxStock: 700,
+    status: 'healthy',
+    lastUpdated: '2024-06-05'
+  },
+  {
+    id: 'INV019',
+    productId: 'PRD019',
+    productName: 'Jaggery (Gur) 5kg',
+    category: 'Sugar & Sweeteners',
+    currentStock: 165,
+    reorderLevel: 80,
+    maxStock: 400,
+    status: 'healthy',
+    lastUpdated: '2024-06-04'
+  },
+  {
+    id: 'INV020',
+    productId: 'PRD020',
+    productName: 'Rice Basmati 10kg',
+    category: 'Grains & Rice',
+    currentStock: 0,
+    reorderLevel: 50,
+    maxStock: 300,
+    status: 'out_of_stock',
+    lastUpdated: '2024-06-01'
+  }
+];

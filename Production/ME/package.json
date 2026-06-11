@@ -1,0 +1,48 @@
+{
+  "name": "mokshith-b2b-platform",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:unit": "vitest",
+    "test:integration": "vitest",
+    "test:e2e": "playwright test",
+    "test:coverage": "vitest --coverage",
+    "test:accessibility": "playwright test tests/e2e/accessibility.spec.ts"
+  },
+  "dependencies": {
+    "axios": "^1.6.7",
+    "lucide-react": "^1.17.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-icons": "^5.0.1",
+    "react-router-dom": "^6.22.0",
+    "recharts": "^3.8.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@testing-library/jest-dom": "^6.1.5",
+    "@testing-library/react": "^14.1.2",
+    "@testing-library/user-event": "^14.5.1",
+    "@types/react": "^18.2.56",
+    "@types/react-dom": "^18.2.19",
+    "@vitejs/plugin-react": "^4.2.1",
+    "@vitest/coverage-v8": "^4.1.8",
+    "autoprefixer": "^10.4.18",
+    "axe-core": "^4.8.2",
+    "eslint": "^8.56.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "jsdom": "^23.0.1",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "vite": "^8.0.16",
+    "vitest": "^4.1.8"
+  }
+}

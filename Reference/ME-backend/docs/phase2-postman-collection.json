@@ -1,0 +1,1148 @@
+{
+  "info": {
+    "name": "Mokshith B2B Platform - Phase 2 User Management",
+    "description": "Postman test collection for Phase 2: User Management (Vendor & Delivery Partner Profiles, Approval Workflows, Admin Management)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "vendorToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "deliveryToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "superadminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "vendorId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "deliveryPartnerId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register Vendor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has token\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.token).to.exist;",
+                  "    pm.environment.set(\"vendorToken\", jsonData.data.token);",
+                  "});",
+                  "",
+                  "pm.test(\"User role is vendor\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.user.role).to.eql(\"vendor\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Vendor\",\n  \"email\": \"vendor@test.com\",\n  \"phone\": \"9876543210\",\n  \"password\": \"Test@1234\",\n  \"confirmPassword\": \"Test@1234\",\n  \"role\": \"vendor\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Register Delivery Partner",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has token\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.token).to.exist;",
+                  "    pm.environment.set(\"deliveryToken\", jsonData.data.token);",
+                  "});",
+                  "",
+                  "pm.test(\"User role is delivery\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.user.role).to.eql(\"delivery\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Delivery\",\n  \"email\": \"delivery@test.com\",\n  \"phone\": \"9876543211\",\n  \"password\": \"Test@1234\",\n  \"confirmPassword\": \"Test@1234\",\n  \"role\": \"delivery\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has token\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.token).to.exist;",
+                  "    pm.environment.set(\"adminToken\", jsonData.data.token);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@mokshith.com\",\n  \"password\": \"Admin@1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vendor Profile Management",
+      "item": [
+        {
+          "name": "TEST 1: Vendor Creates Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Vendor status is pending\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.status).to.eql(\"pending\");",
+                  "});",
+                  "",
+                  "pm.test(\"Save vendorId for later tests\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"vendorId\", jsonData.data._id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessName\": \"Test Business\",\n  \"ownerName\": \"Test Owner\",\n  \"phone\": \"9876543210\",\n  \"email\": \"vendor@test.com\",\n  \"gstNumber\": \"22AAAAA0000A1Z5\",\n  \"businessType\": \"sole_proprietorship\",\n  \"address\": \"123 Test Street\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"country\": \"India\",\n  \"pincode\": \"400001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vendors/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "profile"]
+            }
+          }
+        },
+        {
+          "name": "TEST 3: Vendor Gets Own Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Profile data exists\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.businessName).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vendors/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "profile"]
+            }
+          }
+        },
+        {
+          "name": "TEST 5: Vendor Updates Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Business name updated\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.businessName).to.eql(\"Updated Business Name\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessName\": \"Updated Business Name\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vendors/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "profile"]
+            }
+          }
+        },
+        {
+          "name": "TEST 20: Invalid Profile Update (Validation Error)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success false\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(false);",
+                  "});",
+                  "",
+                  "pm.test(\"Validation error message exists\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.include(\"Validation failed\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"gstNumber\": \"INVALID_GST\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/vendors/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "profile"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delivery Partner Profile Management",
+      "item": [
+        {
+          "name": "TEST 2: Delivery Partner Creates Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Delivery partner status is pending\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.status).to.eql(\"pending\");",
+                  "});",
+                  "",
+                  "pm.test(\"Save deliveryPartnerId for later tests\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"deliveryPartnerId\", jsonData.data._id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{deliveryToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Test Delivery Partner\",\n  \"phone\": \"9876543211\",\n  \"email\": \"delivery@test.com\",\n  \"vehicleType\": \"bike\",\n  \"vehicleNumber\": \"MH12AB1234\",\n  \"drivingLicense\": \"MH1420150012345\",\n  \"address\": \"456 Delivery Street\",\n  \"city\": \"Pune\",\n  \"state\": \"Maharashtra\",\n  \"country\": \"India\",\n  \"pincode\": \"411001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/delivery-partners/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["delivery-partners", "profile"]
+            }
+          }
+        },
+        {
+          "name": "TEST 4: Delivery Gets Own Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Profile data exists\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.fullName).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{deliveryToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/delivery-partners/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["delivery-partners", "profile"]
+            }
+          }
+        },
+        {
+          "name": "TEST 6: Delivery Updates Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Full name updated\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.fullName).to.eql(\"Updated Delivery Name\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{deliveryToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Updated Delivery Name\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/delivery-partners/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["delivery-partners", "profile"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin User Management",
+      "item": [
+        {
+          "name": "TEST 7: Admin Views Pending Vendors",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Vendors array exists\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.vendors).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/pending-vendors",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "pending-vendors"]
+            }
+          }
+        },
+        {
+          "name": "TEST 8: Admin Approves Vendor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Vendor status changed to active\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.status).to.eql(\"active\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/vendors/{{vendorId}}/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "vendors", "{{vendorId}}", "approve"]
+            }
+          }
+        },
+        {
+          "name": "TEST 10: Admin Suspends Vendor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Vendor status changed to suspended\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.status).to.eql(\"suspended\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/vendors/{{vendorId}}/suspend",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "vendors", "{{vendorId}}", "suspend"]
+            }
+          }
+        },
+        {
+          "name": "Admin Views Pending Delivery Partners",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Delivery partners array exists\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.deliveryPartners).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/pending-deliveries",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "pending-deliveries"]
+            }
+          }
+        },
+        {
+          "name": "TEST 11: Admin Approves Delivery Partner",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Delivery partner status changed to active\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.status).to.eql(\"active\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/delivery/{{deliveryPartnerId}}/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "delivery", "{{deliveryPartnerId}}", "approve"]
+            }
+          }
+        },
+        {
+          "name": "TEST 13: Admin Suspends Delivery Partner",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Delivery partner status changed to suspended\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.status).to.eql(\"suspended\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/delivery/{{deliveryPartnerId}}/suspend",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "delivery", "{{deliveryPartnerId}}", "suspend"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authorization Tests",
+      "item": [
+        {
+          "name": "TEST 14: Vendor Access Admin Route (403 Forbidden)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 403\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success false\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(false);",
+                  "});",
+                  "",
+                  "pm.test(\"Permission denied message\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.include(\"permission\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/vendors",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "vendors"]
+            }
+          }
+        },
+        {
+          "name": "TEST 15: Delivery Access Vendor Route (403 Forbidden)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 403\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success false\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(false);",
+                  "});",
+                  "",
+                  "pm.test(\"Permission denied message\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.include(\"permission\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{deliveryToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/vendors",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors"]
+            }
+          }
+        },
+        {
+          "name": "TEST 18: Unauthorized Access (401 Unauthorized)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success false\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(false);",
+                  "});",
+                  "",
+                  "pm.test(\"Unauthorized message\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.include(\"token\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vendors/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["vendors", "profile"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Search & Pagination Tests",
+      "item": [
+        {
+          "name": "TEST 16: Search Vendors",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Vendors array exists\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.vendors).to.be.an(\"array\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/vendors?search=Test",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "vendors"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "Test"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "TEST 17: Pagination Works",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has pagination data\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.pagination).to.exist;",
+                  "});",
+                  "",
+                  "pm.test(\"Pagination has totalRecords\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.pagination.totalRecords).to.be.a(\"number\");",
+                  "});",
+                  "",
+                  "pm.test(\"Pagination has currentPage\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.pagination.currentPage).to.be.a(\"number\");",
+                  "});",
+                  "",
+                  "pm.test(\"Pagination has totalPages\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.pagination.totalPages).to.be.a(\"number\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/vendors?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "vendors"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Additional Admin Tests",
+      "item": [
+        {
+          "name": "TEST 9: Admin Rejects Vendor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Vendor status changed to rejected\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.status).to.eql(\"rejected\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/vendors/{{vendorId}}/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "vendors", "{{vendorId}}", "reject"]
+            }
+          }
+        },
+        {
+          "name": "TEST 12: Admin Rejects Delivery Partner",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has success true\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"Delivery partner status changed to rejected\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.status).to.eql(\"rejected\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/delivery/{{deliveryPartnerId}}/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "delivery", "{{deliveryPartnerId}}", "reject"]
+            }
+          }
+        },
+        {
+          "name": "Admin Views All Vendors",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/vendors",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "vendors"]
+            }
+          }
+        },
+        {
+          "name": "Admin Views All Delivery Partners",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/delivery-partners",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "delivery-partners"]
+            }
+          }
+        },
+        {
+          "name": "Get User Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/statistics",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "statistics"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
