@@ -54,5 +54,4 @@ const MetricCard = ({ title, value, icon, change, color = 'blue' }) => {
   );
 };
 
-export default MetricCard;
 export default React.memo(MetricCard);

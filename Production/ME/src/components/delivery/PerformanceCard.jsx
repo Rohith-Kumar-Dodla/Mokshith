@@ -1,7 +1,5 @@
 import React from 'react';
 
-import React from 'react';
-
 const PerformanceCard = ({ title, value, icon, subtitle, color = 'blue' }) => {
   const colorClasses = {
     blue: {

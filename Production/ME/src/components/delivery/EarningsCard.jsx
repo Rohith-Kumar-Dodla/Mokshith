@@ -1,8 +1,6 @@
 import React from 'react';
 import { FiTrendingUp, FiTrendingDown } from 'react-icons/fi';
 
-import React from 'react';
-
 const EarningsCard = ({ title, amount, change, icon, period }) => {
   const isPositive = change >= 0;
 

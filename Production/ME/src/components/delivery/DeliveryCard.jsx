@@ -3,8 +3,6 @@ import { Link } from 'react-router-dom';
 import { FiMapPin, FiPackage, FiClock, FiArrowRight } from 'react-icons/fi';
 import StatusBadge from './StatusBadge';
 
-import React from 'react';
-
 const DeliveryCard = ({ order }) => {
   const getPriorityColor = (priority) => {
     switch (priority?.toLowerCase()) {
