@@ -87,7 +87,7 @@ export const setupQueryTimeout = () => {
     });
   });
 
-  logger.info('✅ Global query timeout configured');
+  logger.info('Global query timeout configured');
 };
 
 /**
@@ -139,7 +139,7 @@ export const monitorQueryPerformance = () => {
           profile: 1,
           slowms: SLOW_QUERY_THRESHOLD
         });
-        logger.info('✅ MongoDB query profiling enabled');
+        logger.info('MongoDB query profiling enabled');
       } catch (error) {
         logger.warn('Failed to enable query profiling:', error.message);
       }

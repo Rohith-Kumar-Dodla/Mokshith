@@ -36,7 +36,7 @@ if (missingVars.length > 0) {
 const optionalRazorpayVars = ['RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_WEBHOOK_SECRET'];
 const missingRazorpay = optionalRazorpayVars.filter(varName => !process.env[varName]);
 
-if (missingRazorpay.length > 0) {
+  if (missingRazorpay.length > 0) {
   logger.warn(
     `Razorpay not fully configured (missing: ${missingRazorpay.join(', ')}). Online/UPI payments will be unavailable.`
   );
@@ -52,24 +52,24 @@ if (process.env.USE_S3_STORAGE === 'true') {
   }
 }
 
-if (process.env.NODE_ENV === 'production' && !process.env.SENTRY_DSN) {
-  logger.warn('⚠️ SENTRY_DSN not set in production - error tracking disabled');
+  if (process.env.NODE_ENV === 'production' && !process.env.SENTRY_DSN) {
+  logger.warn('SENTRY_DSN not set in production - error tracking disabled');
 }
 
-if (process.env.USE_SOCKET_REDIS_ADAPTER === 'true' && !process.env.REDIS_HOST) {
-  logger.error('❌ Socket.IO Redis adapter enabled but REDIS_HOST not set');
+  if (process.env.USE_SOCKET_REDIS_ADAPTER === 'true' && !process.env.REDIS_HOST) {
+  logger.error('Socket.IO Redis adapter enabled but REDIS_HOST not set');
   process.exit(1);
 }
 
 // 🔒 CRITICAL: Enforce JWT_SECRET strength (minimum 64 characters for production)
-if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 64) {
-  logger.error('❌ SECURITY ERROR: JWT_SECRET must be at least 64 characters');
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 64) {
+  logger.error('SECURITY ERROR: JWT_SECRET must be at least 64 characters');
   logger.error('Generate a strong secret: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
   if (process.env.NODE_ENV === 'production') {
     logger.error('Exiting due to weak JWT_SECRET in production');
     process.exit(1);
   } else {
-    logger.warn('⚠️ Continuing in development, but this would block production');
+    logger.warn('Continuing in development, but this would block production');
   }
 }
 
@@ -97,7 +97,7 @@ const startServer = async () => {
     logger.info('Connecting to Redis...');
     const redisConnected = await redisClient.connect();
     if (!redisConnected) {
-      logger.warn('⚠️ Redis connection failed - some features may be limited');
+      logger.warn('Redis connection failed - some features may be limited');
     }
 
     // Create HTTP server
@@ -124,7 +124,7 @@ const startServer = async () => {
 
     // Verify IO initialization
     if (io) {
-      logger.info('✅ Socket.io initialized');
+      logger.info('Socket.io initialized');
     }
 
     // Configure Redis adapter for horizontal scaling
@@ -135,7 +135,7 @@ const startServer = async () => {
     app.set('io', io);
 
     io.on('connection', (socket) => {
-      logger.info(`🔌 New socket connection: ${socket.id}`);
+      logger.info(`New socket connection: ${socket.id}`);
 
       // 🔥 Join personal room for targeted events
       socket.on('join', (userId) => {
@@ -146,7 +146,7 @@ const startServer = async () => {
       });
 
       socket.on('disconnect', () => {
-        logger.info(`🔌 Socket disconnected: ${socket.id}`);
+        logger.info(`Socket disconnected: ${socket.id}`);
       });
     });
 
@@ -157,7 +157,7 @@ const startServer = async () => {
         const { startCronJobs } = await import('./src/jobs/cron.js');
         startCronJobs();
       } else {
-        logger.info('⏸️ Cron jobs disabled in test environment');
+        logger.info('Cron jobs disabled in test environment');
       }
     } catch (err) {
       logger.warn('⚠️ Cron jobs not started:', err.message);
@@ -172,7 +172,7 @@ const startServer = async () => {
         const { startWorkers } = await import('./src/workers/index.js');
         startWorkers();
       } else {
-        logger.info('⏸️ Workers disabled in test environment');
+        logger.info('Workers disabled in test environment');
       }
     } catch (err) {
       logger.warn('⚠️ Workers not started:', err.message);
@@ -180,7 +180,7 @@ const startServer = async () => {
 
     // 🚀 Start server
     server = httpServer.listen(PORT, '0.0.0.0', () => {
-      logger.info(`🚀 Server running on http://localhost:${PORT}`);
+      logger.info(`Server running on http://localhost:${PORT}`);
     });
 
     // 🔥 Handle server errors
@@ -189,14 +189,14 @@ const startServer = async () => {
     });
 
   } catch (error) {
-    logger.error('❌ Server startup failed:', error);
+    logger.error('Server startup failed:', error);
     process.exit(1);
   }
 };
 
 // 🔥 Graceful shutdown
 const shutdown = async (signal) => {
-  logger.info(`⚠️ ${signal} received. Shutting down gracefully...`);
+  logger.info(`${signal} received. Shutting down gracefully...`);
 
   try {
     // 1. Stop accepting new connections
@@ -244,10 +244,10 @@ const shutdown = async (signal) => {
       logger.warn('Redis quit warning:', err.message);
     }
 
-    logger.info('✅ Graceful shutdown completed');
+    logger.info('Graceful shutdown completed');
     process.exit(0);
   } catch (err) {
-    logger.error('❌ Shutdown error:', err);
+    logger.error('Shutdown error:', err);
     process.exit(1);
   }
 };

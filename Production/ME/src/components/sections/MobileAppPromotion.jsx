@@ -13,16 +13,16 @@ const MobileAppPromotion = () => {
                   <div className="app-bar">Mokshith B2B</div>
                 </div>
                 <div className="screen-body">
-                  <div className="screen-card card-1">
-                    <div className="card-icon">📦</div>
+                <div className="screen-card card-1">
+                    <div className="card-icon">Package</div>
                     <div className="card-text">Order Tracking</div>
                   </div>
                   <div className="screen-card card-2">
-                    <div className="card-icon">💳</div>
+                    <div className="card-icon">Credit</div>
                     <div className="card-text">Business Credit</div>
                   </div>
                   <div className="screen-card card-3">
-                    <div className="card-icon">🛒</div>
+                    <div className="card-icon">Orders</div>
                     <div className="card-text">Quick Orders</div>
                   </div>
                 </div>
@@ -40,21 +40,21 @@ const MobileAppPromotion = () => {
 
             <div className="app-features">
               <div className="app-feature">
-                <span className="feature-icon">📱</span>
+                <span className="feature-icon">Mobile</span>
                 <div className="feature-text">
                   <div className="feature-title">Real-time Tracking</div>
                   <div className="feature-desc">Track shipments live</div>
                 </div>
               </div>
               <div className="app-feature">
-                <span className="feature-icon">🔔</span>
+                <span className="feature-icon">Notifications</span>
                 <div className="feature-text">
                   <div className="feature-title">Instant Notifications</div>
                   <div className="feature-desc">Never miss updates</div>
                 </div>
               </div>
               <div className="app-feature">
-                <span className="feature-icon">💳</span>
+                <span className="feature-icon">Payments</span>
                 <div className="feature-text">
                   <div className="feature-title">Mobile Payments</div>
                   <div className="feature-desc">Pay on the go</div>

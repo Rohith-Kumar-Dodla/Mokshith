@@ -27,7 +27,7 @@ class S3Service {
       this.bucket = process.env.S3_BUCKET_NAME;
       this.cdnUrl = process.env.S3_CDN_URL; // Optional CDN URL
       
-      logger.info('✅ S3 storage service initialized');
+      logger.info('S3 storage service initialized');
     } else {
       logger.info('S3 storage disabled - using local filesystem');
     }

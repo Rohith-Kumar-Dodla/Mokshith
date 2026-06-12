@@ -6,82 +6,82 @@ const StatusBadge = ({ status, size = 'md' }) => {
       delivered: {
         bg: 'bg-green-100',
         text: 'text-green-800',
-        icon: '✓'
+        icon: 'OK'
       },
       dispatched: {
         bg: 'bg-blue-100',
         text: 'text-blue-800',
-        icon: '🚚'
+        icon: 'Shipped'
       },
       processing: {
         bg: 'bg-yellow-100',
         text: 'text-yellow-800',
-        icon: '⚙'
+        icon: 'Processing'
       },
       confirmed: {
         bg: 'bg-indigo-100',
         text: 'text-indigo-800',
-        icon: '✓'
+        icon: 'Confirmed'
       },
       pending: {
         bg: 'bg-gray-100',
         text: 'text-gray-800',
-        icon: '⏳'
+        icon: 'Pending'
       },
       cancelled: {
         bg: 'bg-red-100',
         text: 'text-red-800',
-        icon: '✕'
+        icon: 'Canceled'
       },
       paid: {
         bg: 'bg-green-100',
         text: 'text-green-800',
-        icon: '✓'
+        icon: 'Paid'
       },
       rejected: {
         bg: 'bg-red-100',
         text: 'text-red-800',
-        icon: '✕'
+        icon: 'Rejected'
       },
       pending_verification: {
         bg: 'bg-yellow-100',
         text: 'text-yellow-800',
-        icon: '⏳'
+        icon: 'Pending'
       },
       approved: {
         bg: 'bg-green-100',
         text: 'text-green-800',
-        icon: '✓'
+        icon: 'Approved'
       },
       pending_payment: {
         bg: 'bg-yellow-100',
         text: 'text-yellow-800',
-        icon: '⏳'
+        icon: 'Pending Payment'
       },
       refunded: {
         bg: 'bg-orange-100',
         text: 'text-orange-800',
-        icon: '↩'
+        icon: 'Refunded'
       },
       active: {
         bg: 'bg-green-100',
         text: 'text-green-800',
-        icon: '✓'
+        icon: 'Active'
       },
       inactive: {
         bg: 'bg-gray-100',
         text: 'text-gray-800',
-        icon: '○'
+        icon: 'Inactive'
       },
       low_stock: {
         bg: 'bg-yellow-100',
         text: 'text-yellow-800',
-        icon: '⚠'
+        icon: 'Low stock'
       },
       out_of_stock: {
         bg: 'bg-red-100',
         text: 'text-red-800',
-        icon: '✕'
+        icon: 'Out of stock'
       }
     };
 

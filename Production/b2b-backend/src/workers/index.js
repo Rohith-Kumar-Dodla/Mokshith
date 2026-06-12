@@ -335,7 +335,7 @@ const createWorkers = () => {
   workers = newWorkers;
   workersInitialized = true;
   
-  logger.info(`✅ Created ${workers.length} BullMQ workers`);
+  logger.info(`Created ${workers.length} BullMQ workers`);
   return workers;
 };
 
@@ -346,12 +346,12 @@ const createWorkers = () => {
 export const startWorkers = () => {
   // 🔥 CRITICAL: Multiple layers of protection
   if (process.env.NODE_ENV === 'test') {
-    logger.info('🧪 Test environment detected - workers disabled');
+    logger.info('Test environment detected - workers disabled');
     return [];
   }
 
   if (process.env.ENABLE_QUEUE === 'false' || process.env.ENABLE_WORKERS === 'false') {
-    logger.info('⏸️ Workers disabled via environment flags');
+    logger.info('Workers disabled via environment flags');
     return [];
   }
 
@@ -361,12 +361,12 @@ export const startWorkers = () => {
   }
 
   try {
-    logger.info('🚀 Starting BullMQ workers...');
+    logger.info('Starting BullMQ workers...');
     const createdWorkers = createWorkers();
-    logger.info(`✅ Started ${createdWorkers.length} BullMQ workers`);
+    logger.info(`Started ${createdWorkers.length} BullMQ workers`);
     return createdWorkers;
   } catch (error) {
-    logger.error('❌ Failed to start workers:', { error: error.message, stack: error.stack });
+    logger.error('Failed to start workers:', { error: error.message, stack: error.stack });
     throw error;
   }
 };
@@ -407,7 +407,7 @@ export const shutdownWorkers = async () => {
   workers = [];
   workersInitialized = false;
   
-  logger.info('✅ All workers shut down gracefully');
+  logger.info('All workers shut down gracefully');
 };
 
 /**

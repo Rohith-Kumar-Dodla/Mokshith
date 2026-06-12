@@ -66,7 +66,10 @@ const runTests = () => {
   });
 
   console.log('Sanitizer Unit Tests:');
-  results.forEach(r => console.log(r));
+  results.forEach(r => {
+    const out = r.replace(/^✅/, 'PASS').replace(/^❌/, 'FAIL');
+    console.log(out);
+  });
   if (results.some(r => r.startsWith('❌'))) process.exit(1);
 };
 
