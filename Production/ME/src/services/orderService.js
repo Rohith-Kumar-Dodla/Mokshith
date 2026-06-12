@@ -12,7 +12,11 @@ const orderService = {
   },
 
   createOrder: async (orderData) => {
-    const response = await api.post('/orders', orderData);
+    const headers = {};
+    if (orderData?.idempotencyKey) {
+      headers['Idempotency-Key'] = orderData.idempotencyKey;
+    }
+    const response = await api.post('/orders', orderData, { headers });
     return response.data;
   },
 

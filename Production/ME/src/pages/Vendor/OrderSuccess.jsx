@@ -6,6 +6,8 @@ const OrderSuccess = () => {
   const location = useLocation();
   const order = location.state?.order;
   const paymentPending = location.state?.paymentPending;
+  const paymentMethodId = location.state?.paymentMethodId;
+  const isBankTransfer = paymentMethodId === 'bank_transfer' || order?.paymentMethod === 'BANK_TRANSFER';
   const orderNumber = order?.orderNumber || order?.id || '—';
   const estimatedDelivery = order?.estimatedDelivery || 'Processing';
 
@@ -17,12 +19,14 @@ const OrderSuccess = () => {
         </div>
 
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
-          {paymentPending ? 'Order Created' : 'Order Confirmed!'}
+          {paymentPending || isBankTransfer ? 'Order Created' : 'Order Confirmed!'}
         </h1>
         <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6">
-          {paymentPending
-            ? 'Your order has been created and is awaiting online payment.'
-            : 'Thank you for your order. Your order has been placed successfully.'}
+          {isBankTransfer
+            ? 'Your order has been created. Complete the bank transfer and submit your payment proof.'
+            : paymentPending
+              ? 'Your order has been created and is awaiting online payment.'
+              : 'Thank you for your order. Your order has been placed successfully.'}
         </p>
 
         <div className="bg-gray-50 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
@@ -45,6 +49,15 @@ const OrderSuccess = () => {
         </div>
 
         <div className="space-y-2 sm:space-y-3">
+          {order?.id && isBankTransfer && (
+            <Link
+              to={`/vendor/orders/${order.id}/payment`}
+              className="w-full py-2.5 h-10 sm:h-12 px-4 sm:px-6 bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 sm:gap-2 hover:bg-blue-700 transition-colors"
+            >
+              <FiFileText className="w-4 h-4" />
+              Submit Payment Proof
+            </Link>
+          )}
           {order?.id && (
             <Link
               to={`/vendor/orders/${order.id}`}

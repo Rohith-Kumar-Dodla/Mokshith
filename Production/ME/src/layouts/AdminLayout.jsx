@@ -17,7 +17,7 @@ import {
   FiBell,
   FiMessageSquare,
   FiChevronDown,
-  FiMapPin
+  FiDollarSign
 } from 'react-icons/fi';
 import NotificationDrawer from '../components/admin/NotificationDrawer';
 import { useLogout } from '../hooks/useLogout';
@@ -44,6 +44,7 @@ const AdminLayout = () => {
     { path: '/admin/inventory', icon: FiPackage, label: 'Inventory' },
     { path: '/admin/vendors', icon: FiShoppingBag, label: 'Vendors' },
     { path: '/admin/orders', icon: FiTruck, label: 'Orders' },
+    { path: '/admin/payment-verifications', icon: FiDollarSign, label: 'Payment Verifications' },
     { path: '/admin/delivery-assignment', icon: FiTruck, label: 'Delivery Assignment' },
     { path: '/admin/reports', icon: FiFileText, label: 'Reports' },
     { path: '/admin/analytics', icon: FiBarChart2, label: 'Analytics' },

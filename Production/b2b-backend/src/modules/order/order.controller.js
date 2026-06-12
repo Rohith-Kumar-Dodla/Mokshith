@@ -12,8 +12,8 @@ export const createOrder = asyncHandler(async (req, res) => {
 });
 
 export const getOrders = asyncHandler(async (req, res) => {
-  const orders = await service.getOrders(req.user);
-  successResponse(res, orders);
+  const result = await service.getOrders(req.user, req.query);
+  successResponse(res, result);
 });
 
 export const getOrderById = asyncHandler(async (req, res) => {
@@ -34,7 +34,9 @@ export const markOrderAsFailed = asyncHandler(async (req, res) => {
 export const updateOrderStatus = asyncHandler(async (req, res) => {
   const order = await service.updateOrderStatus(
     req.params.id,
-    req.body.status
+    req.body.status,
+    req.user,
+    req.body.note
   );
 
   successResponse(res, order, 'Order status updated');

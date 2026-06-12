@@ -7,7 +7,7 @@ const objectIdPattern = /^[0-9a-fA-F]{24}$/;
 export const createOrderSchema = Joi.object({
   body: Joi.object({
     paymentMethod: Joi.string()
-      .valid('COD', 'ONLINE', 'CREDIT', 'RAZORPAY', 'UPI', 'CARD')
+      .valid('COD', 'ONLINE', 'CREDIT', 'RAZORPAY', 'UPI', 'CARD', 'BANK_TRANSFER')
       .required(),
     items: Joi.array().items(
       Joi.object({
@@ -35,6 +35,7 @@ export const updateOrderStatusSchema = Joi.object({
     status: Joi.string()
       .valid(...Object.values(ORDER_STATUS))
       .required(),
+    note: Joi.string().trim().max(500).optional().allow(''),
   }),
   params: Joi.object({
     id: Joi.string().pattern(objectIdPattern).required(),

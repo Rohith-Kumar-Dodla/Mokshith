@@ -17,22 +17,28 @@ initializeSentry(app);
 // 🔥 Setup global query timeout
 setupQueryTimeout();
 
-// 🔥 VALIDATE REQUIRED ENVIRONMENT VARIABLES
+// VALIDATE REQUIRED ENVIRONMENT VARIABLES
 const requiredEnvVars = [
   'MONGO_URI',
   'JWT_SECRET',
   'JWT_REFRESH_SECRET',
-  'RAZORPAY_KEY_ID',
-  'RAZORPAY_KEY_SECRET',
-  'RAZORPAY_WEBHOOK_SECRET'
 ];
 
 const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
 if (missingVars.length > 0) {
-  logger.error(`❌ Missing required environment variables: ${missingVars.join(', ')}`);
+  logger.error(`Missing required environment variables: ${missingVars.join(', ')}`);
   logger.error('Please check your .env file and ensure all required variables are set.');
   process.exit(1);
+}
+
+const optionalRazorpayVars = ['RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_WEBHOOK_SECRET'];
+const missingRazorpay = optionalRazorpayVars.filter(varName => !process.env[varName]);
+
+if (missingRazorpay.length > 0) {
+  logger.warn(
+    `Razorpay not fully configured (missing: ${missingRazorpay.join(', ')}). Online/UPI payments will be unavailable.`
+  );
 }
 
 // 🔒 Conditional validation for optional features

@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FiCreditCard, FiSmartphone, FiTruck, FiCheck } from 'react-icons/fi';
+import { FiCreditCard, FiSmartphone, FiTruck, FiCheck, FiDollarSign } from 'react-icons/fi';
 import PageHeader from '../../components/vendor/PageHeader';
+import BankTransferDetails from '../../components/vendor/BankTransferDetails';
 import useCart from '../../hooks/useCart';
 import useCheckout from '../../hooks/useCheckout';
 import useCredit from '../../hooks/useCredit';
+import { useBankTransferDetails } from '../../hooks/useBankTransfer';
 import { useAuth } from '../../context/AuthContext';
 
 const PAYMENT_METHODS = [
   { id: 'cod', label: 'Cash On Delivery', icon: FiTruck, description: 'Pay when you receive the order' },
+  { id: 'bank_transfer', label: 'Bank Transfer', icon: FiDollarSign, description: 'Pay any amount via bank transfer and upload payment proof' },
   { id: 'credit', label: 'Credit Line', icon: FiCreditCard, description: 'Pay fully with available credit' },
   { id: 'hybrid', label: 'Credit + Online', icon: FiCreditCard, description: 'Use credit first, pay remainder online' },
   { id: 'upi', label: 'UPI', icon: FiSmartphone, description: 'Pay online via UPI' },
@@ -25,6 +28,7 @@ const Checkout = () => {
     },
   });
   const { credit, loading: creditLoading, validateAmount } = useCredit();
+  const { bankDetails, loading: bankDetailsLoading } = useBankTransferDetails();
   const [formData, setFormData] = useState({
     deliveryAddress: '',
     businessName: '',
@@ -290,6 +294,16 @@ const Checkout = () => {
               </div>
             )}
 
+            {selectedPayment === 'bank_transfer' && (
+              <div className="mb-4">
+                <BankTransferDetails
+                  bankDetails={bankDetails}
+                  amount={grandTotal}
+                  loading={bankDetailsLoading}
+                />
+              </div>
+            )}
+
             <div className="space-y-2 sm:space-y-3">
               {PAYMENT_METHODS.map((method) => (
                 <button
@@ -386,7 +400,7 @@ const Checkout = () => {
             >
               {submitting
                 ? (['upi', 'online', 'hybrid'].includes(selectedPayment) ? 'Processing Payment...' : 'Placing Order...')
-                : (['upi', 'online', 'hybrid'].includes(selectedPayment) ? 'Pay & Place Order' : 'Place Order')}
+                : (['upi', 'online', 'hybrid'].includes(selectedPayment) ? 'Pay & Place Order' : selectedPayment === 'bank_transfer' ? 'Place Order & Submit Payment' : 'Place Order')}
             </button>
 
             <p className="text-xs text-gray-500 text-center mt-2 sm:mt-3">

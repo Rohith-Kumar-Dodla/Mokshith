@@ -16,20 +16,7 @@ export const getActiveSessions = async (userId) => {
   const user = await repo.findById(userId);
   if (!user) throw new AppError('User not found', 404);
 
-  // If no sessions, return a mock current session for UI demo
-  if (!user.activeSessions || user.activeSessions.length === 0) {
-    return [{
-      _id: 'current',
-      deviceName: 'This Device',
-      browser: 'Chrome',
-      os: 'Windows 11',
-      lastActive: new Date(),
-      ip: '127.0.0.1',
-      location: 'Hyderabad, India'
-    }];
-  }
-
-  return user.activeSessions;
+  return user.activeSessions || [];
 };
 
 export const logoutFromAllDevices = async (userId) => {
@@ -43,7 +30,7 @@ export const logoutFromAllDevices = async (userId) => {
   });
 };
 
-// 🔥 Allowed update fields (security)
+// Allowed update fields (security)
 const ALLOWED_PROFILE_FIELDS = [
   'name',
   'email',
@@ -53,6 +40,13 @@ const ALLOWED_PROFILE_FIELDS = [
   'phone',
   'address',
   'companyName',
+  'gstNumber',
+  'businessName',
+  'businessAddress',
+  'ownerName',
+  'vehicleType',
+  'vehicleNumber',
+  'licenseNumber',
 ];
 
 export const getProfile = async (userId) => {

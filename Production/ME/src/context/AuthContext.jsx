@@ -137,13 +137,24 @@ export const AuthProvider = ({ children }) => {
       const payload = response.data;
 
       if (payload.requires2FA) {
-        throw new Error(payload.message || '2FA verification required');
+        return { requires2FA: true, userId: payload.userId, message: payload.message };
       }
 
       const { user: sessionUser, accessToken, refreshToken, csrfToken } = payload;
       return applyUserSession(sessionUser, { accessToken, refreshToken, csrfToken });
     } catch (error) {
       throw new Error(getErrorMessage(error, 'Invalid credentials'));
+    }
+  };
+
+  const verify2FALogin = async (userId, code) => {
+    try {
+      const response = await authService.verify2FALogin({ userId, code });
+      const payload = response.data;
+      const { user: sessionUser, accessToken, refreshToken, csrfToken } = payload;
+      return applyUserSession(sessionUser, { accessToken, refreshToken, csrfToken });
+    } catch (error) {
+      throw new Error(getErrorMessage(error, 'Invalid verification code'));
     }
   };
 
@@ -209,6 +220,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     loading,
     login,
+    verify2FALogin,
     logout,
     register,
   };

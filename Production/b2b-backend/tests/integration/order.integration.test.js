@@ -204,16 +204,16 @@ describe('Order Module - Integration Tests', () => {
       expect(response.body.data.totalAmount).toBe(23600);
     });
 
-    it('should enforce B2B rule (no single-item purchase)', async () => {
-      // Clear cart and add only 1 item
+    it('should allow single-line-item orders when MOQ is met', async () => {
       await Cart.deleteMany({ userId: testUser._id });
       await request
         .post('/api/v1/cart')
         .set('Authorization', `Bearer ${userToken}`)
         .send({
           productId: testProduct1._id.toString(),
-          quantity: 1,
-        });
+          quantity: 10,
+        })
+        .expect(201);
 
       const response = await request
         .post('/api/v1/orders')
@@ -222,10 +222,10 @@ describe('Order Module - Integration Tests', () => {
           paymentMethod: 'COD',
           shippingAddress: validShippingAddress,
         })
-        .expect(400);
+        .expect(201);
 
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toMatch(/B2B.*single-item/i);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.items).toHaveLength(1);
     });
 
     it('should reject order from empty cart', async () => {
