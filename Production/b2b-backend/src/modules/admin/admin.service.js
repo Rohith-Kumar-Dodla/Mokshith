@@ -37,25 +37,50 @@ export const createDeliveryPartner = async (data) => {
   return user;
 };
 
+const mapPendingUser = (user) => ({
+  id: user._id,
+  name: user.name || 'Unknown',
+  email: user.email || 'N/A',
+  mobile: user.mobile || 'N/A',
+  role: user.role || 'N/A',
+  status: user.status,
+  createdAt: user.createdAt || new Date(),
+});
+
 export const getPendingUsers = async () => {
-  const users = await User.find({ 
-    status: USER_STATUS.PENDING, 
-    isDeleted: { $ne: true } 
+  const users = await User.find({
+    status: USER_STATUS.PENDING,
+    role: { $ne: ROLES.SUPER_ADMIN },
+    isDeleted: { $ne: true },
   }).sort({ createdAt: -1 });
 
-  return users.map(user => ({
-    id: user._id,
+  return users.map((user) => ({
+    ...mapPendingUser(user),
     type: 'REGISTRATION',
-    status: 'pending',
     title: `${user.name || 'Unknown'} (${user.role || 'User'})`,
-    email: user.email || 'N/A',
-    mobile: user.mobile || 'N/A',
-    role: user.role || 'N/A',
     addresses: user.addresses || [],
     creditLimit: user.creditLimit || 0,
     availableCredit: user.availableCredit || 0,
-    createdAt: user.createdAt || new Date()
   }));
+};
+
+export const getPendingAdmins = async () => {
+  const users = await User.find({
+    status: USER_STATUS.PENDING,
+    role: ROLES.ADMIN,
+    isDeleted: { $ne: true },
+  }).sort({ createdAt: -1 });
+
+  return users.map(mapPendingUser);
+};
+
+export const getAdminApprovals = async () => {
+  const users = await User.find({
+    role: ROLES.ADMIN,
+    isDeleted: { $ne: true },
+  }).sort({ createdAt: -1 });
+
+  return users.map(mapPendingUser);
 };
 
 export const changeUserStatus = async (userId, status) => {
@@ -71,13 +96,15 @@ export const changeUserStatus = async (userId, status) => {
 export const getStats = async () => {
   const totalUsers = await User.countDocuments({ isDeleted: { $ne: true } });
   const totalOrders = await Order.countDocuments();
+  const totalAdmins = await User.countDocuments({ role: ROLES.ADMIN, isDeleted: { $ne: true } });
   const totalVendors = await User.countDocuments({ role: ROLES.B2B_CUSTOMER, isDeleted: { $ne: true } });
   const totalDeliveryPartners = await User.countDocuments({ role: ROLES.DELIVERY_PARTNER, isDeleted: { $ne: true } });
-  const pendingApprovals = await User.countDocuments({ 
-    status: USER_STATUS.PENDING, 
-    isDeleted: { $ne: true } 
+  const pendingApprovals = await User.countDocuments({
+    status: USER_STATUS.PENDING,
+    role: { $ne: ROLES.SUPER_ADMIN },
+    isDeleted: { $ne: true },
   });
-  
+
   const revenue = await Order.aggregate([
     { $match: { paymentStatus: 'PAID' } },
     { $group: { _id: null, total: { $sum: '$totalAmount' } } },
@@ -85,6 +112,7 @@ export const getStats = async () => {
 
   return {
     totalUsers,
+    totalAdmins,
     totalOrders,
     totalVendors,
     totalDeliveryPartners,

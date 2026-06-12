@@ -13,6 +13,10 @@ const productCache = {
 
 // 🔥 EVENTS
 import { onProductCreated } from './product.events.js';
+import {
+  ensureProductInventory,
+  syncProductStockToInventory,
+} from '../inventory/inventory.service.js';
 
 export const createProduct = async (data) => {
   if (data.price <= 0) {
@@ -20,9 +24,12 @@ export const createProduct = async (data) => {
   }
 
   const product = await repo.createProduct(data);
-  
+
   // 🔥 Invalidate Cache
   productCache.data = null;
+
+  // 🔥 Provision warehouse inventory (required for checkout)
+  await ensureProductInventory(product);
 
   // 🔥 EVENT (non-blocking)
   try {
@@ -87,6 +94,14 @@ export const updateProduct = async (id, data) => {
 
   const updatedProduct = await repo.updateProduct(id, data);
 
+  if (data.stock !== undefined) {
+    await syncProductStockToInventory(updatedProduct);
+  } else {
+    await ensureProductInventory(updatedProduct);
+  }
+
+  productCache.data = null;
+
   return updatedProduct;
 };
 
@@ -108,6 +123,9 @@ export const updateStock = async (id, stock) => {
   const product = await repo.updateProduct(id, { stock });
 
   if (!product) throw new AppError('Product not found', 404);
+
+  await syncProductStockToInventory(product);
+  productCache.data = null;
 
   return product;
 };

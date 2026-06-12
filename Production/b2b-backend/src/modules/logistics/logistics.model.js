@@ -22,8 +22,8 @@ const logisticsSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["ASSIGNED", "OUT_FOR_DELIVERY", "DELIVERED"],
-      default: "ASSIGNED",
+      enum: Object.values(DELIVERY_STATUS),
+      default: DELIVERY_STATUS.ASSIGNED,
     },
 
     address: {
@@ -47,6 +47,11 @@ const logisticsSchema = new mongoose.Schema(
     },
 
     estimatedDelivery: Date,
+
+    deliveredAt: Date,
+    completedAt: Date,
+    deliveryNotes: String,
+    deliveryProofImage: String,
   },
   { timestamps: true }
 );

@@ -7,3 +7,6 @@ export const findByOrderId = (orderId) =>
 
 export const findById = (id) =>
   Invoice.findById(id);
+
+export const findByUserId = (userId) =>
+  Invoice.find({ userId }).sort({ createdAt: -1 }).populate('orderId');

@@ -8,3 +8,6 @@ export const findByUser = (userId) =>
 
 export const markAsRead = (id) =>
   Notification.findByIdAndUpdate(id, { isRead: true }, { new: true });
+
+export const markAllAsRead = (userId) =>
+  Notification.updateMany({ userId, isRead: false }, { isRead: true });

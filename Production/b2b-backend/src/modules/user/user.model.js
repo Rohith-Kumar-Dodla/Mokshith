@@ -141,6 +141,7 @@ const userSchema = new mongoose.Schema(
     },
 
     profileImage: String,
+    profileImagePublicId: String,
     phone: String,
     address: String,
     companyName: String,

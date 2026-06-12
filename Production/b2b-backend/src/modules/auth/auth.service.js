@@ -1,7 +1,6 @@
 import AppError from '../../errors/AppError.js';
 import {
   findUserByEmailOrMobile,
-  findUserByMobile,
   createUser,
   updateUser,
   findUserById,
@@ -19,11 +18,14 @@ import { USER_STATUS } from '../../constants/userStatus.js';
 import { ROLES } from '../../constants/roles.js';
 import { createCreditAccount } from '../credit/credit.service.js';
 import { validatePassword, checkPasswordBreach } from '../../utils/passwordPolicy.js';
+import { isAuthStrictMode } from '../../config/authStrictMode.js';
 import { fraudDetection } from '../../services/fraudDetection.service.js';
 import { twoFactorAuth } from '../../services/twoFactorAuth.service.js';
 import RefreshToken from '../../models/RefreshToken.model.js';
+import PasswordResetToken from '../../models/PasswordResetToken.model.js';
 import crypto from 'crypto';
 import { logger } from '../../config/logger.js';
+import { sendEmail } from '../../services/email.service.js';
 
 const checkMaintenanceMode = async (user) => {
   const maintenance = await fetchSetting('maintenanceMode');
@@ -52,24 +54,30 @@ export const register = async (data, req = {}) => {
   // Validate password against security policy
   validatePassword(password, { name: data.name, email, mobile });
 
-  // Check if password has been breached
-  const breachCheck = await checkPasswordBreach(password);
-  if (breachCheck.breached && breachCheck.count > 1000) {
-    logger.warn('User attempted to register with breached password', { email, breachCount: breachCheck.count });
-    throw new AppError(
-      'This password has been exposed in data breaches. Please choose a different password',
-      400
-    );
+  // RE-ENABLE BEFORE PRODUCTION: breach check disabled when AUTH_STRICT_MODE=false
+  if (isAuthStrictMode()) {
+    const breachCheck = await checkPasswordBreach(password);
+    if (breachCheck.breached && breachCheck.count > 1000) {
+      logger.warn('User attempted to register with breached password', { email, breachCount: breachCheck.count });
+      throw new AppError(
+        'This password has been exposed in data breaches. Please choose a different password',
+        400
+      );
+    }
   }
 
   const hashedPassword = await hashPassword(password);
 
   const user = await createUser({
-    ...data,
+    name: data.name,
+    email,
+    mobile,
+    phone: mobile,
     password: hashedPassword,
+    role: data.role || ROLES.B2B_CUSTOMER,
     status: USER_STATUS.PENDING,
     lastPasswordChange: new Date(),
-    passwordHistory: [{ hash: hashedPassword, changedAt: new Date() }]
+    passwordHistory: [{ hash: hashedPassword, changedAt: new Date() }],
   });
 
   // Create default credit account
@@ -85,11 +93,16 @@ export const register = async (data, req = {}) => {
 };
 
 // PASSWORD LOGIN
-export const loginWithPassword = async ({ mobile, password }, req = {}) => {
+export const loginWithPassword = async ({ mobile, identifier, password }, req = {}) => {
+  const loginIdentifier = identifier || mobile;
   const ip = req.ip || 'unknown';
 
+  if (!loginIdentifier) {
+    throw new AppError('Login identifier is required', 400);
+  }
+
   // Check if user is temporarily blocked
-  const blockCheck = await fraudDetection.isUserBlocked(mobile);
+  const blockCheck = await fraudDetection.isUserBlocked(loginIdentifier);
   if (blockCheck.blocked) {
     throw new AppError(
       `Account temporarily locked due to ${blockCheck.reason}. Please try again later`,
@@ -97,11 +110,11 @@ export const loginWithPassword = async ({ mobile, password }, req = {}) => {
     );
   }
 
-  const user = await findUserByMobile(mobile);
+  const user = await findUserByEmailOrMobile(loginIdentifier);
 
   if (!user) {
     // Track failed attempt even if user doesn't exist (to prevent enumeration)
-    await fraudDetection.trackLoginAttempt(mobile, ip, false);
+    await fraudDetection.trackLoginAttempt(loginIdentifier, ip, false);
     throw new AppError('No account found with this mobile number.', 404);
   }
 
@@ -112,9 +125,9 @@ export const loginWithPassword = async ({ mobile, password }, req = {}) => {
   if (user.role !== ROLES.SUPER_ADMIN && user.status !== USER_STATUS.ACTIVE) {
     let message = 'Your account is inactive or suspended. Please contact support.';
     if (user.status === USER_STATUS.PENDING) {
-      message = 'Your account is awaiting administrator approval.';
+      message = 'Your account is awaiting Super Admin approval.';
     } else if (user.status === USER_STATUS.REJECTED) {
-      message = 'Your account has been rejected. Please contact support.';
+      message = 'Your registration has been rejected.';
     }
     throw new AppError(message, 403);
   }
@@ -124,13 +137,13 @@ export const loginWithPassword = async ({ mobile, password }, req = {}) => {
 
   if (!isMatch) {
     // Track failed login attempt
-    await fraudDetection.trackLoginAttempt(mobile, ip, false);
-    logger.warn('Failed login attempt', { mobile, ip });
+    await fraudDetection.trackLoginAttempt(loginIdentifier, ip, false);
+    logger.warn('Failed login attempt', { identifier: loginIdentifier, ip });
     throw new AppError('Invalid credentials', 401);
   }
 
   // Track successful login
-  await fraudDetection.trackLoginAttempt(mobile, ip, true);
+  await fraudDetection.trackLoginAttempt(loginIdentifier, ip, true);
 
   // Check if 2FA is enabled
   if (user.twoFactorEnabled) {
@@ -401,8 +414,8 @@ export const changePassword = async (userId, oldPassword, newPassword) => {
     throw new AppError('New password must be different from current password', 400);
   }
 
-  // Check password history (prevent reuse of last 5 passwords)
-  if (user.passwordHistory && user.passwordHistory.length > 0) {
+  // RE-ENABLE BEFORE PRODUCTION: password history check disabled when AUTH_STRICT_MODE=false
+  if (isAuthStrictMode() && user.passwordHistory && user.passwordHistory.length > 0) {
     for (const historyItem of user.passwordHistory.slice(-5)) {
       const isReused = await comparePassword(newPassword, historyItem.hash);
       if (isReused) {
@@ -411,13 +424,15 @@ export const changePassword = async (userId, oldPassword, newPassword) => {
     }
   }
 
-  // Check if password has been breached
-  const breachCheck = await checkPasswordBreach(newPassword);
-  if (breachCheck.breached && breachCheck.count > 1000) {
-    throw new AppError(
-      'This password has been exposed in data breaches. Please choose a different password',
-      400
-    );
+  // RE-ENABLE BEFORE PRODUCTION: breach check disabled when AUTH_STRICT_MODE=false
+  if (isAuthStrictMode()) {
+    const breachCheck = await checkPasswordBreach(newPassword);
+    if (breachCheck.breached && breachCheck.count > 1000) {
+      throw new AppError(
+        'This password has been exposed in data breaches. Please choose a different password',
+        400
+      );
+    }
   }
 
   // Hash new password
@@ -507,6 +522,84 @@ const sanitizeUser = (user) => {
   delete userObj.passwordHistory;
   delete userObj.otp;
   return userObj;
+};
+
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
+
+export const requestPasswordReset = async (identifier) => {
+  const user = await findUserByEmailOrMobile(identifier);
+
+  if (!user) {
+    return { message: 'If an account exists, a reset link has been sent' };
+  }
+
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+  await PasswordResetToken.deleteMany({ userId: user._id, usedAt: null });
+  await PasswordResetToken.create({
+    userId: user._id,
+    tokenHash,
+    expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+  });
+
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const resetUrl = `${frontendUrl}/reset-password?token=${rawToken}`;
+
+  await sendEmail({
+    to: user.email,
+    subject: 'Reset your Mokshith Enterprises password',
+    message: `Use this link to reset your password (valid for 1 hour): ${resetUrl}`,
+  });
+
+  logger.info('Password reset requested', { userId: user._id });
+
+  return {
+    message: 'If an account exists, a reset link has been sent',
+    ...(process.env.NODE_ENV === 'development' ? { resetUrl } : {}),
+  };
+};
+
+export const resetPassword = async (token, newPassword) => {
+  if (!token) {
+    throw new AppError('Reset token is required', 400);
+  }
+
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  const resetDoc = await PasswordResetToken.findOne({
+    tokenHash,
+    usedAt: null,
+    expiresAt: { $gt: new Date() },
+  });
+
+  if (!resetDoc) {
+    throw new AppError('Invalid or expired reset token', 400);
+  }
+
+  const user = await findUserById(resetDoc.userId);
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  validatePassword(newPassword, {
+    name: user.name,
+    email: user.email,
+    mobile: user.mobile,
+  });
+
+  const hashedPassword = await hashPassword(newPassword);
+
+  await updateUser(user._id, {
+    password: hashedPassword,
+    lastPasswordChange: new Date(),
+  });
+
+  resetDoc.usedAt = new Date();
+  await resetDoc.save();
+
+  await RefreshToken.revokeAllUserTokens(user._id, 'password_reset');
+
+  return { success: true };
 };
 
 /**

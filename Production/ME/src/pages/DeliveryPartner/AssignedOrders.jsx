@@ -1,16 +1,26 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
 import DeliveryCard from '../../components/delivery/DeliveryCard';
 import SearchBar from '../../components/delivery/SearchBar';
 import FilterPanel from '../../components/delivery/FilterPanel';
-import { assignedOrders } from '../../data/deliveryAssignedOrders';
+import useDelivery from '../../hooks/useDelivery';
 
 const AssignedOrders = () => {
+  const { assignments, loading, error, refreshAll } = useDelivery();
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        refreshAll();
+      }
+    }, 5000);
+
+    return () => window.clearInterval(intervalId);
+  }, [refreshAll]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
     status: 'all',
     priority: 'all',
-    date: ''
+    date: '',
   });
 
   const handleSearch = (term) => {
@@ -18,48 +28,71 @@ const AssignedOrders = () => {
   };
 
   const handleFilterChange = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleClearFilters = () => {
     setFilters({
       status: 'all',
       priority: 'all',
-      date: ''
+      date: '',
     });
     setSearchTerm('');
   };
 
-  const filteredOrders = assignedOrders.filter(order => {
-    const matchesSearch = searchTerm === '' || 
-      order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.deliveryLocation.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredOrders = assignments.filter((order) => {
+    const matchesSearch =
+      searchTerm === '' ||
+      String(order.id).toLowerCase().includes(searchTerm.toLowerCase()) ||
+      String(order.vendor).toLowerCase().includes(searchTerm.toLowerCase()) ||
+      String(order.deliveryLocation).toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = filters.status === 'all' || order.status === filters.status;
     const matchesPriority = filters.priority === 'all' || order.priority === filters.priority;
-    const matchesDate = filters.date === '' || order.assignedTime.startsWith(filters.date);
+    const matchesDate =
+      filters.date === '' ||
+      String(order.assignedTime || '').startsWith(filters.date);
 
     return matchesSearch && matchesStatus && matchesPriority && matchesDate;
   });
 
   const stats = {
-    total: assignedOrders.length,
-    assigned: assignedOrders.filter(o => o.status === 'assigned').length,
-    accepted: assignedOrders.filter(o => o.status === 'accepted').length,
-    pickedUp: assignedOrders.filter(o => o.status === 'picked_up').length,
-    outForDelivery: assignedOrders.filter(o => o.status === 'out_for_delivery').length
+    total: assignments.length,
+    assigned: assignments.filter((o) => o.status === 'assigned').length,
+    accepted: assignments.filter((o) => o.status === 'accepted').length,
+    pickedUp: assignments.filter((o) => o.status === 'picked_up').length,
+    outForDelivery: assignments.filter((o) => o.status === 'out_for_delivery').length,
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-4 sm:space-y-6">
+        <div>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Assigned Deliveries</h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">Loading assigned orders...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4 sm:space-y-6">
+        <div>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Assigned Deliveries</h1>
+          <p className="text-xs sm:text-sm text-red-600 mt-1">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Page Header */}
       <div>
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Assigned Deliveries</h1>
         <p className="text-xs sm:text-sm text-gray-600 mt-1">View and manage your assigned orders</p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-4">
         <div className="bg-white rounded-xl border border-gray-200 p-2 sm:p-4">
           <p className="text-xs sm:text-sm text-gray-600">Total</p>
@@ -83,7 +116,6 @@ const AssignedOrders = () => {
         </div>
       </div>
 
-      {/* Search and Filters */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         <div className="lg:col-span-2">
           <SearchBar
@@ -99,7 +131,6 @@ const AssignedOrders = () => {
         />
       </div>
 
-      {/* Orders Grid */}
       {filteredOrders.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-8 sm:p-12 text-center">
           <p className="text-sm sm:text-base text-gray-500">No orders found</p>

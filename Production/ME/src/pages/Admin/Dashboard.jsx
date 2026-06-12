@@ -1,45 +1,83 @@
-import React from 'react';
-import { FiBox, FiShoppingCart, FiTruck, FiUsers, FiDollarSign, FiCheckCircle, FiClock, FiPlus, FiPackage, FiTrendingUp, FiUserPlus, FiFileText, FiArrowRight, FiGrid } from 'react-icons/fi';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { FiBox, FiShoppingCart, FiTruck, FiUsers, FiDollarSign, FiCheckCircle, FiPlus, FiPackage, FiTrendingUp, FiUserPlus, FiFileText, FiArrowRight, FiGrid } from 'react-icons/fi';
 import Card from '../../components/admin/Card';
-import StatusBadge from '../../components/admin/StatusBadge';
+import adminService from '../../services/adminService';
+import analyticsService from '../../services/analyticsService';
+import useNotifications from '../../hooks/useNotifications';
+
+const formatCurrency = (value) => {
+  const amount = Number(value || 0);
+  if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
+  if (amount >= 1000) return `₹${(amount / 1000).toFixed(1)}K`;
+  return `₹${amount.toLocaleString('en-IN')}`;
+};
 
 const AdminDashboard = () => {
-  const summaryCards = [
-    { title: 'Total Products', value: '1,567', icon: FiBox, change: '+12%', color: 'blue' },
-    { title: 'Total Categories', value: '28', icon: FiPackage, change: '+5%', color: 'purple' },
-    { title: 'Total Vendors', value: '78', icon: FiUsers, change: '+8%', color: 'green' },
-    { title: 'Orders Today', value: '45', icon: FiShoppingCart, change: '+15%', color: 'orange' },
-    { title: 'Pending Deliveries', value: '12', icon: FiTruck, change: '-3%', color: 'red' },
-    { title: 'Revenue Today', value: '₹1.2L', icon: FiDollarSign, change: '+18%', color: 'green' },
-    { title: 'Monthly Revenue', value: '₹7.5L', icon: FiTrendingUp, change: '+22%', color: 'blue' },
-    { title: 'Inventory Value', value: '₹8.9L', icon: FiBox, change: '+10%', color: 'purple' },
-  ];
+  const [stats, setStats] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const { notifications } = useNotifications();
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const [statsPayload, analyticsPayload] = await Promise.all([
+          adminService.getStats(),
+          analyticsService.getDashboard(),
+        ]);
+        setStats(statsPayload?.data ?? statsPayload);
+        setAnalytics(analyticsPayload?.data ?? analyticsPayload);
+      } catch (err) {
+        setError(err?.response?.data?.message || err?.message || 'Failed to load dashboard');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDashboard();
+  }, []);
+
+  const dashboard = analytics?.dashboard || {};
+  const summaryCards = useMemo(() => [
+    { title: 'Total Orders', value: String(stats?.totalOrders ?? dashboard.totalOrders ?? '—'), icon: FiShoppingCart, change: `${dashboard.ordersGrowth >= 0 ? '+' : ''}${dashboard.ordersGrowth ?? 0}%`, color: 'orange' },
+    { title: 'Total Vendors', value: String(stats?.totalVendors ?? '—'), icon: FiUsers, change: '+0%', color: 'green' },
+    { title: 'Delivery Partners', value: String(stats?.totalDeliveryPartners ?? '—'), icon: FiTruck, change: '+0%', color: 'red' },
+    { title: 'Pending Deliveries', value: String(dashboard.pendingDeliveries ?? '—'), icon: FiTruck, change: '—', color: 'red' },
+    { title: 'Revenue', value: formatCurrency(stats?.revenue ?? dashboard.revenue), icon: FiDollarSign, change: `${dashboard.revenueGrowth >= 0 ? '+' : ''}${dashboard.revenueGrowth ?? 0}%`, color: 'green' },
+    { title: 'Pending Approvals', value: String(stats?.pendingApprovals ?? '—'), icon: FiUserPlus, change: '—', color: 'purple' },
+    { title: 'Total Admins', value: String(stats?.totalAdmins ?? '—'), icon: FiGrid, change: '—', color: 'blue' },
+    { title: 'Active Customers', value: String(dashboard.activeCustomers ?? '—'), icon: FiUsers, change: '—', color: 'blue' },
+  ], [stats, dashboard]);
 
   const quickActions = [
-    { title: 'Add Product', icon: FiPlus, description: 'Add new product to catalog', color: 'blue' },
-    { title: 'Update Inventory', icon: FiPackage, description: 'Manage stock levels', color: 'green' },
-    { title: 'Approve Vendor', icon: FiUserPlus, description: 'Review vendor applications', color: 'purple' },
-    { title: 'Assign Delivery', icon: FiTruck, description: 'Assign delivery partners', color: 'orange' },
-    { title: 'View Orders', icon: FiShoppingCart, description: 'View all orders', color: 'blue' },
-    { title: 'Generate Report', icon: FiFileText, description: 'Download reports', color: 'red' },
+    { title: 'Add Product', icon: FiPlus, description: 'Add new product to catalog', color: 'blue', path: '/admin/products' },
+    { title: 'Update Inventory', icon: FiPackage, description: 'Manage stock levels', color: 'green', path: '/admin/inventory' },
+    { title: 'Approve Vendor', icon: FiUserPlus, description: 'Review vendor applications', color: 'purple', path: '/admin/vendors' },
+    { title: 'Assign Delivery', icon: FiTruck, description: 'Assign delivery partners', color: 'orange', path: '/admin/delivery-assignment' },
+    { title: 'View Orders', icon: FiShoppingCart, description: 'View all orders', color: 'blue', path: '/admin/orders' },
+    { title: 'Generate Report', icon: FiFileText, description: 'Download reports', color: 'red', path: '/admin/reports' },
   ];
 
   const todayPerformance = [
-    { title: 'Orders Received', value: '45', icon: FiShoppingCart, trend: '+12%' },
-    { title: 'Orders Processed', value: '38', icon: FiCheckCircle, trend: '+8%' },
-    { title: 'Deliveries Completed', value: '32', icon: FiTruck, trend: '+15%' },
-    { title: 'New Vendors', value: '3', icon: FiUserPlus, trend: '+25%' },
-    { title: 'Revenue Today', value: '₹1.2L', icon: FiDollarSign, trend: '+18%' },
+    { title: 'Total Orders', value: String(stats?.totalOrders ?? '—'), icon: FiShoppingCart, trend: `${dashboard.ordersGrowth >= 0 ? '+' : ''}${dashboard.ordersGrowth ?? 0}%` },
+    { title: 'Total Users', value: String(stats?.totalUsers ?? '—'), icon: FiCheckCircle, trend: '—' },
+    { title: 'Pending Deliveries', value: String(dashboard.pendingDeliveries ?? '—'), icon: FiTruck, trend: '—' },
+    { title: 'Total Vendors', value: String(stats?.totalVendors ?? '—'), icon: FiUserPlus, trend: '—' },
+    { title: 'Revenue', value: formatCurrency(stats?.revenue ?? dashboard.revenue), icon: FiDollarSign, trend: `${dashboard.revenueGrowth >= 0 ? '+' : ''}${dashboard.revenueGrowth ?? 0}%` },
   ];
 
-  const recentActivities = [
-    { id: 1, title: 'Vendor Registered', description: 'City Supermarket registered and awaiting approval', time: '2 minutes ago', icon: FiUserPlus, color: 'green' },
-    { id: 2, title: 'Product Added', description: 'Basmati Rice Premium added to inventory', time: '15 minutes ago', icon: FiBox, color: 'blue' },
-    { id: 3, title: 'Stock Updated', description: 'Toor Dal stock replenished (+200 units)', time: '1 hour ago', icon: FiPackage, color: 'purple' },
-    { id: 4, title: 'Order Placed', description: 'Fresh Mart Grocery placed order #ORD001', time: '2 hours ago', icon: FiShoppingCart, color: 'orange' },
-    { id: 5, title: 'Delivery Assigned', description: 'Ravi Teja assigned to order #ORD001', time: '3 hours ago', icon: FiTruck, color: 'green' },
-    { id: 6, title: 'Order Delivered', description: 'Order ORD099 successfully delivered', time: '4 hours ago', icon: FiCheckCircle, color: 'green' },
-  ];
+  const recentActivities = notifications.slice(0, 6).map((notification) => ({
+    id: notification.id,
+    title: notification.title,
+    description: notification.message,
+    time: notification.time,
+    icon: FiPackage,
+    color: notification.isRead ? 'blue' : 'green',
+  }));
 
   const getColorClasses = (color) => {
     const colors = {
@@ -59,6 +97,16 @@ const AdminDashboard = () => {
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Marketplace Operations Dashboard</h1>
         <p className="text-sm sm:text-base text-gray-600 mt-1">Manage products, vendors, inventory, and deliveries across the entire marketplace.</p>
       </div>
+
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      {loading && (
+        <p className="text-sm text-gray-500">Loading dashboard...</p>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
@@ -89,7 +137,7 @@ const AdminDashboard = () => {
             const colors = getColorClasses(action.color);
             return (
               <Card key={index} className="hover:shadow-md transition-shadow cursor-pointer group p-4 sm:p-6 min-h-[88px]">
-                <div className="flex items-start gap-3 sm:gap-4">
+                <Link to={action.path} className="flex items-start gap-3 sm:gap-4">
                   <div className={`p-2 sm:p-3 rounded-lg ${colors.bg} group-hover:scale-110 transition-transform flex-shrink-0`}>
                     <action.icon size={16} sm:size={20} className={colors.icon} />
                   </div>
@@ -98,7 +146,7 @@ const AdminDashboard = () => {
                     <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1 line-clamp-2">{action.description}</p>
                   </div>
                   <FiArrowRight className="text-gray-400 group-hover:text-gray-600 transition-colors flex-shrink-0" size={16} sm:size={20} />
-                </div>
+                </Link>
               </Card>
             );
           })}
@@ -129,7 +177,9 @@ const AdminDashboard = () => {
         <Card className="p-4 sm:p-6">
           <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Recent Activities</h2>
           <div className="space-y-3 sm:space-y-4">
-            {recentActivities.map((activity) => {
+            {recentActivities.length === 0 ? (
+              <p className="text-sm text-gray-500">No recent notifications.</p>
+            ) : recentActivities.map((activity) => {
               const colors = getColorClasses(activity.color);
               return (
                 <div key={activity.id} className="flex items-start gap-3 sm:gap-4 p-3 hover:bg-gray-50 rounded-lg transition-colors">
@@ -167,7 +217,7 @@ const AdminDashboard = () => {
                 </div>
                 <span className="text-xs sm:text-sm font-medium text-gray-700">Active Vendors</span>
               </div>
-              <span className="text-xs sm:text-sm font-bold text-gray-900">78</span>
+              <span className="text-xs sm:text-sm font-bold text-gray-900">{stats?.totalVendors ?? '—'}</span>
             </div>
             <div className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-2 sm:gap-3">
@@ -176,16 +226,16 @@ const AdminDashboard = () => {
                 </div>
                 <span className="text-xs sm:text-sm font-medium text-gray-700">Delivery Partners</span>
               </div>
-              <span className="text-xs sm:text-sm font-bold text-gray-900">45</span>
+              <span className="text-xs sm:text-sm font-bold text-gray-900">{stats?.totalDeliveryPartners ?? '—'}</span>
             </div>
             <div className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="p-2 rounded-lg bg-orange-100 flex-shrink-0">
                   <FiBox size={16} sm:size={20} className="text-orange-600" />
                 </div>
-                <span className="text-xs sm:text-sm font-medium text-gray-700">Total Products</span>
+                <span className="text-xs sm:text-sm font-medium text-gray-700">Total Orders</span>
               </div>
-              <span className="text-xs sm:text-sm font-bold text-gray-900">1,567</span>
+              <span className="text-xs sm:text-sm font-bold text-gray-900">{stats?.totalOrders ?? '—'}</span>
             </div>
             <div className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-2 sm:gap-3">
@@ -194,7 +244,7 @@ const AdminDashboard = () => {
                 </div>
                 <span className="text-xs sm:text-sm font-medium text-gray-700">Pending Approvals</span>
               </div>
-              <span className="text-xs sm:text-sm font-bold text-gray-900">2</span>
+              <span className="text-xs sm:text-sm font-bold text-gray-900">{stats?.pendingApprovals ?? '—'}</span>
             </div>
           </div>
         </Card>

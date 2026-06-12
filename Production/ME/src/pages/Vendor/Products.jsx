@@ -4,117 +4,105 @@ import PageHeader from '../../components/vendor/PageHeader';
 import ProductCard from '../../components/vendor/ProductCard';
 import SearchBar from '../../components/vendor/SearchBar';
 import FilterPanel from '../../components/vendor/FilterPanel';
-import { vendorProducts, vendorCategories } from '../../data';
+import useProducts from '../../hooks/useProducts';
+import useCategories from '../../hooks/useCategories';
+import useCart from '../../hooks/useCart';
+import useWishlist from '../../hooks/useWishlist';
 
 const Products = () => {
   const [viewMode, setViewMode] = useState('grid');
   const [showFilters, setShowFilters] = useState(false);
-  const [filteredProducts, setFilteredProducts] = useState(vendorProducts);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [toast, setToast] = useState(null);
+  const { addToCart, actionLoading } = useCart({ autoLoad: false });
+  const { addToWishlist, actionLoading: wishlistLoading } = useWishlist({ autoLoad: false });
+  const {
+    products,
+    filteredProducts,
+    loading,
+    error,
+    categoryIdFromUrl,
+    brands,
+    handleSearch,
+    handleFilterChange,
+  } = useProducts();
+  const { categories } = useCategories();
 
-  const categories = vendorCategories.map(cat => cat.name);
-  const brands = [...new Set(vendorProducts.map(p => p.brand).filter(Boolean))];
-
-  const handleSearch = (term) => {
-    setSearchTerm(term);
-    applyFilters({ searchTerm: term });
+  const showToast = (type, message) => {
+    setToast({ type, message });
+    window.setTimeout(() => setToast(null), 4000);
   };
 
-  const handleFilterChange = (filters) => {
-    applyFilters(filters);
+  const handleAddToCart = async (product) => {
+    const productId = product.id || product._id;
+    const quantity = Number(product.minimumOrderQuantity ?? product.moq ?? 1);
+
+    if (quantity < 1) {
+      showToast('error', 'Invalid quantity for this product');
+      return;
+    }
+
+    if (product.status === 'out_of_stock') {
+      showToast('error', 'Product is out of stock');
+      return;
+    }
+
+    try {
+      await addToCart(productId, quantity);
+      showToast('success', `${product.name} added to cart (qty: ${quantity})`);
+    } catch (addError) {
+      showToast('error', addError.message || 'Failed to add product to cart');
+    }
   };
 
-  const applyFilters = (filters) => {
-    let result = [...vendorProducts];
+  const handleAddToWishlist = async (product) => {
+    const productId = product.id || product._id;
 
-    // Search filter
-    if (filters.searchTerm || searchTerm) {
-      const term = (filters.searchTerm || searchTerm).toLowerCase();
-      result = result.filter(product =>
-        product.name.toLowerCase().includes(term) ||
-        product.category.toLowerCase().includes(term) ||
-        (product.brand && product.brand.toLowerCase().includes(term))
-      );
+    try {
+      await addToWishlist(productId);
+      showToast('success', `${product.name} added to wishlist`);
+    } catch (wishlistError) {
+      showToast('error', wishlistError.message || 'Failed to add to wishlist');
     }
-
-    // Category filter
-    if (filters.categories && filters.categories.length > 0) {
-      result = result.filter(product =>
-        filters.categories.includes(product.category)
-      );
-    }
-
-    // Brand filter
-    if (filters.brands && filters.brands.length > 0) {
-      result = result.filter(product =>
-        filters.brands.includes(product.brand)
-      );
-    }
-
-    // Price range filter
-    if (filters.priceRange) {
-      const { min, max } = filters.priceRange;
-      if (min) {
-        result = result.filter(product => product.price >= parseFloat(min));
-      }
-      if (max) {
-        result = result.filter(product => product.price <= parseFloat(max));
-      }
-    }
-
-    // Availability filter
-    if (filters.availability && filters.availability !== 'all') {
-      if (filters.availability === 'in_stock') {
-        result = result.filter(product => product.status === 'active' || product.status === 'low_stock');
-      } else if (filters.availability === 'out_of_stock') {
-        result = result.filter(product => product.status === 'out_of_stock');
-      }
-    }
-
-    // Sort
-    if (filters.sortBy) {
-      switch (filters.sortBy) {
-        case 'price_low':
-          result.sort((a, b) => a.price - b.price);
-          break;
-        case 'price_high':
-          result.sort((a, b) => b.price - a.price);
-          break;
-        case 'rating':
-          result.sort((a, b) => b.rating - a.rating);
-          break;
-        case 'newest':
-          result.sort((a, b) => new Date(b.createdDate) - new Date(a.createdDate));
-          break;
-        case 'popularity':
-          result.sort((a, b) => b.sales - a.sales);
-          break;
-        default:
-          break;
-      }
-    }
-
-    setFilteredProducts(result);
   };
 
-  const handleAddToCart = (product) => {
-    console.log('Add to cart:', product);
-  };
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-8 sm:p-12 text-center">
+        <p className="text-sm text-gray-600">Loading products...</p>
+      </div>
+    );
+  }
 
-  const handleAddToWishlist = (product) => {
-    console.log('Add to wishlist:', product);
-  };
-
-  const handleViewDetails = (product) => {
-    console.log('View details:', product);
-  };
+  if (error) {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-8 sm:p-12 text-center">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Failed to load products</h3>
+        <p className="text-xs sm:text-sm text-gray-600">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Page Header */}
+      {toast && (
+        <div
+          className={`rounded-lg border p-3 sm:p-4 ${
+            toast.type === 'success'
+              ? 'bg-green-50 border-green-200 text-green-700'
+              : 'bg-red-50 border-red-200 text-red-700'
+          }`}
+        >
+          <p className="text-xs sm:text-sm">{toast.message}</p>
+        </div>
+      )}
+
       <PageHeader
         title="Browse Products"
-        subtitle="Explore our wide range of wholesale products for your business needs."
+        subtitle={
+          categoryIdFromUrl
+            ? 'Showing products for the selected category.'
+            : 'Explore our wide range of wholesale products for your business needs.'
+        }
         actions={
           <div className="flex items-center gap-2">
             <button
@@ -145,7 +133,6 @@ const Products = () => {
         }
       />
 
-      {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
         <div className="flex-1">
           <SearchBar
@@ -156,22 +143,20 @@ const Products = () => {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
-        {/* Filter Panel */}
         {showFilters && (
           <div className="w-full lg:w-72 flex-shrink-0">
             <FilterPanel
-              categories={vendorCategories}
+              categories={categories}
               brands={brands}
               onFilterChange={handleFilterChange}
             />
           </div>
         )}
 
-        {/* Products Grid/List */}
         <div className={`flex-1 ${showFilters ? '' : 'w-full'}`}>
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             <p className="text-xs sm:text-sm text-gray-600">
-              Showing {filteredProducts.length} of {vendorProducts.length} products
+              Showing {filteredProducts.length} of {products.length} products
             </p>
           </div>
 
@@ -189,7 +174,6 @@ const Products = () => {
                   product={product}
                   onAddToCart={handleAddToCart}
                   onAddToWishlist={handleAddToWishlist}
-                  onViewDetails={handleViewDetails}
                 />
               ))}
             </div>
@@ -199,7 +183,7 @@ const Products = () => {
                 <div key={product.id} className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4 flex flex-col sm:flex-row gap-3 sm:gap-4">
                   <div className="w-full sm:w-32 h-32 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
                     <img
-                      src={product.image}
+                      src={product.imageUrl || product.image}
                       alt={product.name}
                       className="w-full h-full object-cover"
                     />
@@ -235,14 +219,14 @@ const Products = () => {
                       </div>
                       <button
                         onClick={() => handleAddToCart(product)}
-                        disabled={product.status === 'out_of_stock'}
+                        disabled={product.status === 'out_of_stock' || actionLoading}
                         className={`px-3 sm:px-4 py-2.5 h-10 sm:h-12 rounded-lg text-xs sm:text-sm font-medium ${
-                          product.status === 'out_of_stock'
+                          product.status === 'out_of_stock' || actionLoading
                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                             : 'bg-blue-600 text-white hover:bg-blue-700'
                         }`}
                       >
-                        {product.status === 'out_of_stock' ? 'Out of Stock' : 'Add to Cart'}
+                        {product.status === 'out_of_stock' ? 'Out of Stock' : actionLoading ? 'Adding...' : 'Add to Cart'}
                       </button>
                     </div>
                   </div>

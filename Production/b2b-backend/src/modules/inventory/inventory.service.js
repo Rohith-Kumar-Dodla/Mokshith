@@ -2,7 +2,126 @@ import mongoose from 'mongoose';
 import * as repo from './inventory.repository.js';
 import AppError from '../../errors/AppError.js';
 import Warehouse from '../warehouse/warehouse.model.js';
+import Product from '../product/product.model.js';
 import { logger } from '../../config/logger.js';
+
+const DEFAULT_REORDER_LEVEL = 10;
+
+export async function getOrCreateDefaultWarehouse() {
+  let warehouse = await Warehouse.findOne({ isActive: true }).sort({ createdAt: 1 });
+
+  if (!warehouse) {
+    warehouse = await Warehouse.create({
+      name: 'Main Warehouse',
+      location: {
+        address: 'Default Distribution Center',
+        city: 'Hyderabad',
+        state: 'Telangana',
+        country: 'India',
+        pincode: '500001',
+      },
+      capacity: 10000,
+      isActive: true,
+    });
+    logger.info('Created default warehouse for inventory provisioning', {
+      warehouseId: warehouse._id,
+    });
+  }
+
+  return warehouse;
+}
+
+/**
+ * Ensure an inventory record exists for a product in the default warehouse.
+ * Called automatically when products are created or stock is updated.
+ */
+export async function ensureProductInventory(product) {
+  const productId = product?._id || product?.id;
+  if (!productId) {
+    return null;
+  }
+
+  const warehouse = await getOrCreateDefaultWarehouse();
+  const stock = Number(product.stock ?? 0);
+
+  let inventory = await repo.findInventory(productId, warehouse._id);
+  if (inventory) {
+    return inventory;
+  }
+
+  inventory = await repo.createInventory({
+    productId,
+    warehouseId: warehouse._id,
+    stock,
+    reservedStock: 0,
+    reorderLevel: DEFAULT_REORDER_LEVEL,
+  });
+
+  logger.info('Provisioned inventory for product', {
+    productId,
+    warehouseId: warehouse._id,
+    stock,
+  });
+
+  return inventory;
+}
+
+/**
+ * Sync product.stock to the default warehouse inventory record.
+ */
+export async function syncProductStockToInventory(product) {
+  const productId = product?._id || product?.id;
+  if (!productId) {
+    return null;
+  }
+
+  const warehouse = await getOrCreateDefaultWarehouse();
+  const stock = Number(product.stock ?? 0);
+
+  let inventory = await repo.findInventory(productId, warehouse._id);
+  if (!inventory) {
+    return ensureProductInventory(product);
+  }
+
+  if (inventory.stock !== stock) {
+    inventory.stock = stock;
+    await inventory.save();
+    logger.info('Synced product stock to inventory', { productId, stock });
+  }
+
+  return inventory;
+}
+
+/**
+ * Backfill inventory records for products created before auto-provisioning existed.
+ */
+export async function backfillMissingProductInventory() {
+  const warehouse = await getOrCreateDefaultWarehouse();
+  const products = await Product.find({}).select('_id name stock').lean();
+
+  let created = 0;
+  for (const product of products) {
+    const existing = await repo.findInventory(product._id, warehouse._id);
+    if (!existing) {
+      await repo.createInventory({
+        productId: product._id,
+        warehouseId: warehouse._id,
+        stock: Number(product.stock ?? 0),
+        reservedStock: 0,
+        reorderLevel: DEFAULT_REORDER_LEVEL,
+      });
+      created += 1;
+    }
+  }
+
+  if (created > 0) {
+    logger.info(`Backfilled inventory for ${created} product(s)`, {
+      totalProducts: products.length,
+    });
+  }
+
+  return { created, totalProducts: products.length };
+}
 
 // ➕ Add Stock
 export const addStock = async ({ productId, warehouseId, stock }) => {
@@ -13,7 +132,13 @@ export const addStock = async ({ productId, warehouseId, stock }) => {
   let inventory = await repo.findInventory(productId, warehouseId);
 
   if (!inventory) {
-    return repo.createInventory({ productId, warehouseId, stock });
+    return repo.createInventory({
+      productId,
+      warehouseId,
+      stock,
+      reservedStock: 0,
+      reorderLevel: DEFAULT_REORDER_LEVEL,
+    });
   }
 
   inventory.stock += stock;
@@ -43,7 +168,13 @@ export const updateStock = async ({ productId, warehouseId, stock, type = 'SET' 
 
   if (!inventory) {
     if (type === 'SET') {
-      return repo.createInventory({ productId, warehouseId, stock });
+      return repo.createInventory({
+        productId,
+        warehouseId,
+        stock,
+        reservedStock: 0,
+        reorderLevel: DEFAULT_REORDER_LEVEL,
+      });
     }
     throw new AppError('Inventory record not found', 404);
   }

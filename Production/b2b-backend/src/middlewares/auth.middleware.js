@@ -61,9 +61,12 @@ export const protect = async (req, res, next) => {
 
     // 🔥 Check User Status
     if (user.role !== ROLES.SUPER_ADMIN && user.status !== USER_STATUS.ACTIVE) {
-      const message = user.status === USER_STATUS.PENDING 
-        ? 'Your account is pending admin approval. Please wait for activation.' 
-        : 'Your account is inactive or suspended. Please contact support.';
+      let message = 'Your account is inactive or suspended. Please contact support.';
+      if (user.status === USER_STATUS.PENDING) {
+        message = 'Your account is awaiting Super Admin approval.';
+      } else if (user.status === USER_STATUS.REJECTED) {
+        message = 'Your registration has been rejected.';
+      }
       return next(new AppError(message, 403));
     }
 

@@ -1,5 +1,9 @@
+import dns from 'dns';
 import mongoose from 'mongoose';
 import { logger } from './logger.js';
+
+// Helps MongoDB Atlas connections on Windows when IPv6/SRV resolution is flaky
+dns.setDefaultResultOrder('ipv4first');
 
 let isConnected = false;
 let isReplicaSet = false;
@@ -10,13 +14,20 @@ const connectDB = async () => {
     return;
   }
 
+  const mongoUri = process.env.MONGO_URI_DIRECT || process.env.MONGO_URI;
+
+  if (!mongoUri) {
+    logger.error('❌ MONGO_URI is not set in .env');
+    process.exit(1);
+  }
+
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI, {
-      maxPoolSize: 10, // Maximum connection pool size
-      minPoolSize: 2, // Minimum connection pool size
-      serverSelectionTimeoutMS: 5000, // Timeout for server selection
-      socketTimeoutMS: 45000, // Socket timeout
-      family: 4 // Use IPv4, skip trying IPv6
+    const conn = await mongoose.connect(mongoUri, {
+      maxPoolSize: 10,
+      minPoolSize: 2,
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+      family: 4,
     });
 
     isConnected = true;
@@ -38,6 +49,13 @@ const connectDB = async () => {
     }
   } catch (error) {
     logger.error('❌ MongoDB connection failed', error);
+
+    if (error.message?.includes('querySrv ECONNREFUSED')) {
+      logger.error(
+        'DNS SRV lookup failed for mongodb+srv://. Fix: In MongoDB Atlas → Connect → Drivers, copy the STANDARD connection string (starts with mongodb://, not mongodb+srv://), set it as MONGO_URI_DIRECT in .env, then restart the server.'
+      );
+    }
+
     process.exit(1);
   }
 };

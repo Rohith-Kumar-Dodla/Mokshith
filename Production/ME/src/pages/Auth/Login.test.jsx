@@ -4,83 +4,73 @@ import { BrowserRouter } from 'react-router-dom';
 import Login from './Login';
 import { AuthProvider } from '../../context/AuthContext';
 
+const mockNavigate = vi.fn();
+
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
+
+vi.mock('../../services/authService', () => ({
+  default: {
+    login: vi.fn(),
+    logout: vi.fn(),
+    getCurrentUser: vi.fn().mockRejectedValue(new Error('No session')),
+    refreshToken: vi.fn(),
+    getCsrfToken: vi.fn(),
+  },
+}));
+
 const renderWithRouter = (ui) => {
-  const { container } = render(
+  render(
     <BrowserRouter>
-      <AuthProvider>
-        {ui}
-      </AuthProvider>
+      <AuthProvider>{ui}</AuthProvider>
     </BrowserRouter>
   );
-  return { container };
 };
 
 describe('Login Page', () => {
   beforeEach(() => {
     localStorage.clear();
+    mockNavigate.mockClear();
   });
 
-  it('renders login form with all fields', () => {
+  it('renders login form with mobile and password fields', () => {
     renderWithRouter(<Login />);
     expect(screen.getByText(/Welcome Back/i)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/Enter your email/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/10-digit mobile number/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/Enter your password/i)).toBeInTheDocument();
-    expect(screen.getByRole('combobox')).toBeInTheDocument();
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Sign In/i })).toBeInTheDocument();
   });
 
   it('updates form fields on change', () => {
     renderWithRouter(<Login />);
-    const emailInput = screen.getByPlaceholderText(/Enter your email/i);
+    const mobileInput = screen.getByPlaceholderText(/10-digit mobile number/i);
     const passwordInput = screen.getByPlaceholderText(/Enter your password/i);
-    const roleSelect = screen.getByRole('combobox');
-    
-    fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
+
+    fireEvent.change(mobileInput, { target: { value: '9876543210' } });
     fireEvent.change(passwordInput, { target: { value: 'password123' } });
-    fireEvent.change(roleSelect, { target: { value: 'vendor' } });
-    
-    expect(emailInput.value).toBe('test@example.com');
+
+    expect(mobileInput.value).toBe('9876543210');
     expect(passwordInput.value).toBe('password123');
-    expect(roleSelect.value).toBe('vendor');
   });
 
   it('shows loading state during submission', async () => {
     renderWithRouter(<Login />);
-    const emailInput = screen.getByPlaceholderText(/Enter your email/i);
+    const mobileInput = screen.getByPlaceholderText(/10-digit mobile number/i);
     const passwordInput = screen.getByPlaceholderText(/Enter your password/i);
-    const roleSelect = screen.getByRole('combobox');
     const signInButton = screen.getByRole('button', { name: /Sign In/i });
 
-    fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
+    fireEvent.change(mobileInput, { target: { value: '9876543210' } });
     fireEvent.change(passwordInput, { target: { value: 'password123' } });
-    fireEvent.change(roleSelect, { target: { value: 'admin' } });
     fireEvent.click(signInButton);
 
     await waitFor(() => {
       expect(signInButton).toBeDisabled();
     });
   });
-
-  it('shows error message on failed login', async () => {
-    const { container } = renderWithRouter(<Login />);
-
-    const emailInput = screen.getByPlaceholderText(/Enter your email/i);
-    const passwordInput = screen.getByPlaceholderText(/Enter your password/i);
-    const roleSelect = screen.getByRole('combobox');
-    const signInButton = screen.getByRole('button', { name: /Sign In/i });
-
-    // Set some values
-    fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
-    fireEvent.change(passwordInput, { target: { value: 'password123' } });
-    fireEvent.change(roleSelect, { target: { value: 'admin' } });
-    
-    // Click the sign in button
-    fireEvent.click(signInButton);
-
-    // The button should show loading state
-    await waitFor(() => {
-      expect(signInButton).toBeDisabled();
-    });
-  });
-
 });

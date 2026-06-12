@@ -16,13 +16,24 @@ export const findAll = (filter = {}) =>
   Logistics.find(filter).populate('orderId warehouseId deliveryPartnerId');
 
 export const findAllActive = () =>
-  Logistics.find({ status: { $ne: 'DELIVERED' } }).populate('orderId warehouseId deliveryPartnerId');
+  Logistics.find({ status: { $nin: ['DELIVERED', 'COMPLETED', 'CANCELLED', 'FAILED'] } })
+    .populate('orderId warehouseId deliveryPartnerId');
 
 export const findAllDelivered = () =>
-  Logistics.find({ status: 'DELIVERED' }).populate('orderId warehouseId deliveryPartnerId');
+  Logistics.find({ status: { $in: ['DELIVERED', 'COMPLETED'] } })
+    .populate('orderId warehouseId deliveryPartnerId');
 
 export const findByPartner = (partnerId, statuses) =>
   Logistics.find({
     deliveryPartnerId: partnerId,
     status: { $in: statuses }
   }).populate('orderId warehouseId deliveryPartnerId');
+
+export const countByStatus = (filter = {}) =>
+  Logistics.aggregate([
+    { $match: filter },
+    { $group: { _id: '$status', count: { $sum: 1 } } },
+  ]);
+
+export const countByPartner = (partnerId) =>
+  Logistics.countDocuments({ deliveryPartnerId: partnerId, status: 'DELIVERED' });

@@ -3,20 +3,30 @@ import { Link } from 'react-router-dom';
 import { FiPackage, FiCheckCircle, FiTruck, FiClock, FiDollarSign, FiStar, FiTrendingUp, FiArrowRight } from 'react-icons/fi';
 import MetricCard from '../../components/delivery/MetricCard';
 import StatusBadge from '../../components/delivery/StatusBadge';
-import { deliveryAnalytics, activityTimeline } from '../../data/deliveryAnalytics';
-import { assignedOrders } from '../../data/deliveryAssignedOrders';
-import { deliveryProfile } from '../../data/deliveryProfile';
+import useDelivery from '../../hooks/useDelivery';
 
 const DeliveryDashboard = () => {
+  const { assignments, analytics, loading, error } = useDelivery();
+  const deliveryAnalytics = analytics?.today ?? {
+    assignedOrders: 0,
+    pendingDeliveries: 0,
+    completedDeliveries: 0,
+    todaysEarnings: 0,
+    monthlyEarnings: 0,
+    averageRating: 0,
+    successRate: 0,
+  };
+  const activityTimeline = analytics?.activityTimeline ?? [];
+
   const summaryCards = [
-    { title: 'Assigned Orders', value: deliveryAnalytics.today.assignedOrders, icon: <FiPackage size={24} />, change: '+2', color: 'blue' },
-    { title: 'Pending Deliveries', value: deliveryAnalytics.today.pendingDeliveries, icon: <FiClock size={24} />, change: '+1', color: 'orange' },
-    { title: 'Completed Deliveries', value: deliveryAnalytics.today.completedDeliveries, icon: <FiCheckCircle size={24} />, change: '+3', color: 'green' },
-    { title: "Today's Earnings", value: `₹${deliveryAnalytics.today.todaysEarnings}`, icon: <FiDollarSign size={24} />, change: '+15%', color: 'purple' },
-    { title: 'Monthly Earnings', value: `₹${deliveryAnalytics.today.monthlyEarnings}`, icon: <FiTrendingUp size={24} />, change: '+8%', color: 'green' },
-    { title: 'Average Rating', value: deliveryAnalytics.today.averageRating, icon: <FiStar size={24} />, change: '+0.2', color: 'orange' },
-    { title: 'Success Rate', value: `${deliveryAnalytics.today.successRate}%`, icon: <FiCheckCircle size={24} />, change: '+2%', color: 'blue' },
-    { title: 'Today\'s Deliveries', value: deliveryAnalytics.today.completedDeliveries, icon: <FiTruck size={24} />, change: '+3', color: 'green' }
+    { title: 'Assigned Orders', value: deliveryAnalytics.assignedOrders, icon: <FiPackage size={24} />, change: '+2', color: 'blue' },
+    { title: 'Pending Deliveries', value: deliveryAnalytics.pendingDeliveries, icon: <FiClock size={24} />, change: '+1', color: 'orange' },
+    { title: 'Completed Deliveries', value: deliveryAnalytics.completedDeliveries, icon: <FiCheckCircle size={24} />, change: '+3', color: 'green' },
+    { title: "Today's Earnings", value: `₹${deliveryAnalytics.todaysEarnings}`, icon: <FiDollarSign size={24} />, change: '+15%', color: 'purple' },
+    { title: 'Monthly Earnings', value: `₹${deliveryAnalytics.monthlyEarnings}`, icon: <FiTrendingUp size={24} />, change: '+8%', color: 'green' },
+    { title: 'Average Rating', value: deliveryAnalytics.averageRating, icon: <FiStar size={24} />, change: '+0.2', color: 'orange' },
+    { title: 'Success Rate', value: `${deliveryAnalytics.successRate}%`, icon: <FiCheckCircle size={24} />, change: '+2%', color: 'blue' },
+    { title: 'Today\'s Deliveries', value: deliveryAnalytics.completedDeliveries, icon: <FiTruck size={24} />, change: '+3', color: 'green' },
   ];
 
   const quickActions = [
@@ -25,36 +35,55 @@ const DeliveryDashboard = () => {
     { title: 'Update Status', icon: FiCheckCircle, link: '/delivery/assigned-orders', color: 'orange' },
     { title: 'View Earnings', icon: FiDollarSign, link: '/delivery/earnings', color: 'purple' },
     { title: 'Performance Report', icon: FiTrendingUp, link: '/delivery/performance', color: 'blue' },
-    { title: 'Delivery History', icon: FiClock, link: '/delivery/history', color: 'green' }
+    { title: 'Delivery History', icon: FiClock, link: '/delivery/history', color: 'green' },
   ];
 
   const todayPerformance = [
-    { title: 'Orders Assigned', value: deliveryAnalytics.today.assignedOrders, icon: FiPackage, color: 'blue' },
-    { title: 'Orders Delivered', value: deliveryAnalytics.today.completedDeliveries, icon: FiCheckCircle, color: 'green' },
-    { title: 'Orders Pending', value: deliveryAnalytics.today.pendingDeliveries, icon: FiClock, color: 'orange' },
-    { title: 'Earnings Today', value: `₹${deliveryAnalytics.today.todaysEarnings}`, icon: FiDollarSign, color: 'purple' },
-    { title: 'Rating Today', value: deliveryAnalytics.today.averageRating, icon: FiStar, color: 'orange' },
-    { title: 'Success Rate', value: `${deliveryAnalytics.today.successRate}%`, icon: FiTrendingUp, color: 'blue' }
+    { title: 'Orders Assigned', value: deliveryAnalytics.assignedOrders, icon: FiPackage, color: 'blue' },
+    { title: 'Orders Delivered', value: deliveryAnalytics.completedDeliveries, icon: FiCheckCircle, color: 'green' },
+    { title: 'Orders Pending', value: deliveryAnalytics.pendingDeliveries, icon: FiClock, color: 'orange' },
+    { title: 'Earnings Today', value: `₹${deliveryAnalytics.todaysEarnings}`, icon: FiDollarSign, color: 'purple' },
+    { title: 'Rating Today', value: deliveryAnalytics.averageRating, icon: FiStar, color: 'orange' },
+    { title: 'Success Rate', value: `${deliveryAnalytics.successRate}%`, icon: FiTrendingUp, color: 'blue' },
   ];
 
-  const recentOrders = assignedOrders.slice(0, 4);
+  const recentOrders = assignments.slice(0, 4);
+
+  if (loading) {
+    return (
+      <div className="space-y-4 sm:space-y-8">
+        <div>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Delivery Operations Dashboard</h1>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">Loading delivery dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4 sm:space-y-8">
+        <div>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Delivery Operations Dashboard</h1>
+          <p className="text-xs sm:text-sm text-red-600 mt-1">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 sm:space-y-8">
-      {/* Page Header */}
       <div>
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Delivery Operations Dashboard</h1>
         <p className="text-xs sm:text-sm text-gray-600 mt-1">Manage assigned deliveries efficiently.</p>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         {summaryCards.slice(0, 4).map((card, index) => (
           <MetricCard key={index} {...card} />
         ))}
       </div>
 
-      {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {quickActions.map((action, index) => (
           <Link
@@ -76,7 +105,6 @@ const DeliveryDashboard = () => {
         ))}
       </div>
 
-      {/* Today's Performance */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
         <h2 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mb-4 sm:mb-6">Today's Performance</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
@@ -94,9 +122,7 @@ const DeliveryDashboard = () => {
         </div>
       </div>
 
-      {/* Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
-        {/* Recent Orders */}
         <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4 sm:mb-6">
             <h2 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900">Recent Orders</h2>
@@ -124,28 +150,24 @@ const DeliveryDashboard = () => {
           </div>
         </div>
 
-        {/* Recent Activities */}
         <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
           <h2 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mb-4 sm:mb-6">Recent Activities</h2>
           <div className="space-y-3 sm:space-y-4">
             {activityTimeline.slice(0, 6).map((activity) => (
               <div key={activity.id} className="flex items-start gap-2 sm:gap-4">
                 <div className={`p-1.5 sm:p-2 rounded-lg ${
-                  activity.type === 'order_delivered' ? 'bg-green-100 text-green-600' :
+                  activity.type === 'delivery_completed' ? 'bg-green-100 text-green-600' :
                   activity.type === 'payment_completed' ? 'bg-purple-100 text-purple-600' :
                   'bg-blue-100 text-blue-600'
                 }`}>
-                  {activity.type === 'order_assigned' && <FiPackage size={14} />}
-                  {activity.type === 'order_accepted' && <FiCheckCircle size={14} />}
-                  {activity.type === 'order_picked_up' && <FiTruck size={14} />}
-                  {activity.type === 'out_for_delivery' && <FiClock size={14} />}
-                  {activity.type === 'order_delivered' && <FiCheckCircle size={14} />}
-                  {activity.type === 'payment_completed' && <FiDollarSign size={14} />}
+                  {activity.type === 'delivery_completed' ? <FiCheckCircle size={14} /> : <FiPackage size={14} />}
                 </div>
                 <div className="flex-1">
                   <p className="text-xs sm:text-sm font-medium text-gray-900">{activity.title}</p>
                   <p className="text-xs text-gray-600">{activity.description}</p>
-                  <p className="text-xs text-gray-400 mt-0.5 sm:mt-1">{activity.time} - {activity.date}</p>
+                  <p className="text-xs text-gray-400 mt-0.5 sm:mt-1">
+                    {activity.timestamp ? new Date(activity.timestamp).toLocaleString('en-IN') : '—'}
+                  </p>
                 </div>
               </div>
             ))}
@@ -153,7 +175,6 @@ const DeliveryDashboard = () => {
         </div>
       </div>
 
-      {/* Additional Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         {summaryCards.slice(4).map((card, index) => (
           <MetricCard key={index + 4} {...card} />

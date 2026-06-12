@@ -11,7 +11,9 @@ import {
   loginSchema,
   verify2FASchema,
   changePasswordSchema,
-  enable2FAVerifySchema
+  enable2FAVerifySchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
 } from './auth.validation.js';
 
 const router = express.Router();
@@ -19,6 +21,8 @@ const router = express.Router();
 // Public routes (with rate limiting)
 router.post('/register', authLimiter, requireRegistrationsEnabled(), validate(registerSchema), controller.register);
 router.post('/login', authLimiter, validate(loginSchema), controller.login);
+router.post('/forgot-password', authLimiter, validate(forgotPasswordSchema), controller.forgotPassword);
+router.post('/reset-password', authLimiter, validate(resetPasswordSchema), controller.resetPassword);
 router.post('/refresh-token', controller.refreshToken);
 router.get('/csrf-token', controller.getCsrfTokenHandler);
 

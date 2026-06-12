@@ -31,6 +31,51 @@ export const createCreditAccount = async (userId, limit) => {
 
 import Order from '../order/order.model.js';
 
+// Deduct credit by amount (used during order creation before order exists)
+export const deductCredit = async (userId, amount, options = {}) => {
+  const creditFlag = await fetchSetting('creditSystem');
+  if (creditFlag && creditFlag.value === false) {
+    throw new AppError('Credit system is currently disabled.', 403);
+  }
+
+  if (amount <= 0) {
+    throw new AppError('Amount must be greater than 0', 400);
+  }
+
+  let credit = await repo.findByUser(userId);
+  if (!credit) {
+    credit = await repo.createCredit({
+      userId,
+      creditLimit: 50000,
+      availableCredit: 50000,
+      usedCredit: 0,
+      status: 'ACTIVE',
+    });
+  }
+
+  if (credit.status === 'BLOCKED') {
+    throw new AppError('Credit account is blocked', 403);
+  }
+
+  if (credit.availableCredit < amount) {
+    throw new AppError('Insufficient credit', 400);
+  }
+
+  const updated = await repo.updateCredit(userId, {
+    usedCredit: credit.usedCredit + amount,
+    availableCredit: credit.availableCredit - amount,
+  }, options);
+
+  await repo.addLedger({
+    userId,
+    type: 'DEBIT',
+    amount,
+    description: 'Order payment',
+  }, options);
+
+  return updated;
+};
+
 // 💳 Use Credit (ORDER INTEGRATION)
 export const useCredit = async (userId, orderId) => {
   const creditFlag = await fetchSetting('creditSystem');

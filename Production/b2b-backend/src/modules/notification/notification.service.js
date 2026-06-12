@@ -21,3 +21,8 @@ export const getNotifications = async (userId) => {
 export const markAsRead = async (id) => {
   return repo.markAsRead(id);
 };
+
+export const markAllAsRead = async (userId) => {
+  await repo.markAllAsRead(userId);
+  return repo.findByUser(userId);
+};

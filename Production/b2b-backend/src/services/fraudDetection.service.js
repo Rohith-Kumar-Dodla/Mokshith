@@ -1,6 +1,7 @@
 import { redisClient } from '../config/redis.js';
 import { logger } from '../config/logger.js';
 import AppError from '../errors/AppError.js';
+import { isAuthStrictMode } from '../config/authStrictMode.js';
 
 /**
  * Fraud Detection Service
@@ -36,6 +37,11 @@ class FraudDetectionService {
    * Track login attempt
    */
   async trackLoginAttempt(identifier, ip, success = false) {
+    // RE-ENABLE BEFORE PRODUCTION: fraud login limits disabled when AUTH_STRICT_MODE=false
+    if (!isAuthStrictMode()) {
+      return { attempts: 0, remaining: this.thresholds.maxLoginAttempts };
+    }
+
     const key = `fraud:login:${identifier}`;
     const ipKey = `fraud:login:ip:${ip}`;
 
@@ -205,6 +211,11 @@ class FraudDetectionService {
    * Track registration attempts per IP
    */
   async trackRegistration(ip, email) {
+    // RE-ENABLE BEFORE PRODUCTION: registration IP limits disabled when AUTH_STRICT_MODE=false
+    if (!isAuthStrictMode()) {
+      return { attempts: 0, remaining: this.thresholds.maxRegistrationsPerIP };
+    }
+
     const key = `fraud:register:ip:${ip}`;
 
     try {
@@ -340,6 +351,11 @@ class FraudDetectionService {
    * Check if user is blocked
    */
   async isUserBlocked(userId) {
+    // RE-ENABLE BEFORE PRODUCTION: temporary blocks ignored when AUTH_STRICT_MODE=false
+    if (!isAuthStrictMode()) {
+      return { blocked: false };
+    }
+
     const key = `fraud:blocked:${userId}`;
     const blocked = await redisClient.get(key);
 

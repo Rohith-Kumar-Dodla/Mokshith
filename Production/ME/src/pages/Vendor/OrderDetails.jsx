@@ -1,19 +1,58 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { FiArrowLeft, FiDownload, FiPrinter, FiTruck, FiMapPin, FiPhone, FiMail } from 'react-icons/fi';
+import { FiArrowLeft, FiDownload, FiPrinter, FiTruck, FiMapPin, FiPhone } from 'react-icons/fi';
 import PageHeader from '../../components/vendor/PageHeader';
 import OrderTimeline from '../../components/vendor/OrderTimeline';
 import StatusBadge from '../../components/vendor/StatusBadge';
-import { vendorOrders } from '../../data';
+import { useOrderDetails } from '../../hooks/useOrders';
+import orderService from '../../services/orderService';
 
 const OrderDetails = () => {
   const { id } = useParams();
-  const order = vendorOrders.find(o => o.id === id);
+  const { loading, error, order } = useOrderDetails(id);
+  const [invoiceError, setInvoiceError] = useState('');
 
-  if (!order) {
+  const handleDownloadInvoice = async () => {
+    if (!order?.id) return;
+
+    setInvoiceError('');
+    try {
+      const response = await orderService.downloadInvoice(order.id);
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `invoice-${order.id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (downloadError) {
+      setInvoiceError(
+        downloadError?.response?.data?.message ||
+        downloadError.message ||
+        'Failed to download invoice'
+      );
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+        <p className="text-sm text-gray-600">Loading order details...</p>
+      </div>
+    );
+  }
+
+  if (error || !order) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
         <h2 className="text-xl font-semibold text-gray-900 mb-2">Order not found</h2>
+        {error && <p className="text-sm text-gray-600 mb-4">{error}</p>}
         <Link to="/vendor/orders" className="text-blue-600 hover:text-blue-700">
           Back to Orders
         </Link>
@@ -23,7 +62,6 @@ const OrderDetails = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Back Button */}
       <Link
         to="/vendor/orders"
         className="inline-flex items-center gap-1.5 sm:gap-2 text-blue-600 hover:text-blue-700 text-xs sm:text-sm font-medium"
@@ -32,18 +70,25 @@ const OrderDetails = () => {
         Back to Orders
       </Link>
 
-      {/* Page Header */}
       <PageHeader
-        title={`Order ${order.id}`}
+        title={`Order ${order.orderNumber}`}
         subtitle={`Placed on ${order.orderDate}`}
         actions={
           <div className="flex items-center gap-2">
-            <button className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 h-10 sm:h-12 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+            <button
+              type="button"
+              onClick={handleDownloadInvoice}
+              className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 h-10 sm:h-12 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
               <FiDownload className="w-4 h-4" />
               <span className="hidden sm:inline">Download Invoice</span>
               <span className="sm:hidden">Invoice</span>
             </button>
-            <button className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 h-10 sm:h-12 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 h-10 sm:h-12 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
               <FiPrinter className="w-4 h-4" />
               <span className="hidden sm:inline">Print</span>
               <span className="sm:hidden">Print</span>
@@ -52,10 +97,14 @@ const OrderDetails = () => {
         }
       />
 
+      {invoiceError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {invoiceError}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-        {/* Main Content */}
         <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-          {/* Order Status */}
           <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <h2 className="text-base sm:text-lg font-semibold text-gray-900">Order Status</h2>
@@ -64,7 +113,6 @@ const OrderDetails = () => {
             <OrderTimeline timeline={order.timeline} />
           </div>
 
-          {/* Order Items */}
           <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
             <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Products Ordered</h2>
             <div className="overflow-x-auto">
@@ -109,7 +157,6 @@ const OrderDetails = () => {
             </div>
           </div>
 
-          {/* Delivery Information */}
           <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
             <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Delivery Information</h2>
             <div className="space-y-3 sm:space-y-4">
@@ -144,19 +191,13 @@ const OrderDetails = () => {
           </div>
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-4 sm:space-y-6">
-          {/* Order Summary */}
           <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
             <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Order Summary</h2>
             <div className="space-y-2 sm:space-y-3">
               <div className="flex justify-between text-xs sm:text-sm">
                 <span className="text-gray-600">Subtotal</span>
                 <span className="font-medium text-gray-900">₹{order.amount.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-xs sm:text-sm">
-                <span className="text-gray-600">Tax</span>
-                <span className="font-medium text-gray-900">₹0.00</span>
               </div>
               <div className="flex justify-between text-xs sm:text-sm">
                 <span className="text-gray-600">Delivery</span>
@@ -170,7 +211,6 @@ const OrderDetails = () => {
             </div>
           </div>
 
-          {/* Payment Information */}
           <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
             <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Payment Information</h2>
             <div className="space-y-2 sm:space-y-3">
@@ -185,7 +225,6 @@ const OrderDetails = () => {
             </div>
           </div>
 
-          {/* Invoice Information */}
           <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
             <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Invoice Information</h2>
             <div className="space-y-2 sm:space-y-3">

@@ -5,7 +5,7 @@ import Warehouse from '../warehouse/warehouse.model.js';
 import { successResponse } from '../../utils/responseHandler.js';
 
 export const createShipment = asyncHandler(async (req, res) => {
-  const order = await Order.findById(req.params.orderId);
+  const order = await Order.findById(req.params.orderId).populate('userId');
   const warehouses = await Warehouse.find();
 
   const shipment = await service.createShipment(order, warehouses);
@@ -52,14 +52,28 @@ export const acceptDelivery = asyncHandler(async (req, res) => {
   successResponse(res, shipment, 'Delivery accepted');
 });
 
+export const pickUpDelivery = asyncHandler(async (req, res) => {
+  const shipment = await service.updateStatus(req.params.id, 'PICKED', req.user._id);
+  successResponse(res, shipment, 'Order picked up');
+});
+
 export const startDelivery = asyncHandler(async (req, res) => {
   const shipment = await service.updateStatus(req.params.id, 'OUT_FOR_DELIVERY', req.user._id);
-  successResponse(res, shipment, 'Delivery started');
+  successResponse(res, shipment, 'Out for delivery');
 });
 
 export const markAsDelivered = asyncHandler(async (req, res) => {
   const shipment = await service.updateStatus(req.params.id, 'DELIVERED', req.user._id);
   successResponse(res, shipment, 'Order delivered successfully');
+});
+
+export const completeDelivery = asyncHandler(async (req, res) => {
+  const { notes, proofImage } = req.body || {};
+  const shipment = await service.completeDelivery(req.params.id, req.user._id, {
+    notes,
+    proofImage,
+  });
+  successResponse(res, shipment, 'Delivery confirmed and completed');
 });
 
 export const updateLocation = asyncHandler(async (req, res) => {
@@ -81,4 +95,25 @@ export const updateLocation = asyncHandler(async (req, res) => {
 export const getShipmentDetails = asyncHandler(async (req, res) => {
   const shipment = await service.getShipmentById(req.params.id);
   successResponse(res, shipment);
+});
+
+export const assignDeliveryPartner = asyncHandler(async (req, res) => {
+  const shipment = await service.assignDeliveryPartner(
+    req.params.id,
+    req.body.deliveryPartnerId
+  );
+  successResponse(res, shipment, 'Delivery partner assigned');
+});
+
+export const reassignDeliveryPartner = asyncHandler(async (req, res) => {
+  const shipment = await service.reassignDeliveryPartner(
+    req.params.id,
+    req.body.deliveryPartnerId
+  );
+  successResponse(res, shipment, 'Delivery partner reassigned');
+});
+
+export const getDeliveryAnalytics = asyncHandler(async (req, res) => {
+  const analytics = await service.getDeliveryAnalytics(req.user);
+  successResponse(res, analytics);
 });

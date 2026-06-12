@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, Link, useLocation } from 'react-router-dom';
 import {
   FiGrid,
   FiBox,
@@ -19,6 +19,11 @@ import {
   FiMapPin
 } from 'react-icons/fi';
 import NotificationDrawer from '../components/vendor/NotificationDrawer';
+import { useLogout } from '../hooks/useLogout';
+import useNotifications from '../hooks/useNotifications';
+import useCart from '../hooks/useCart';
+import useWishlist from '../hooks/useWishlist';
+import { useAuth } from '../context/AuthContext';
 
 const VendorLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -26,7 +31,19 @@ const VendorLayout = () => {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
+  const handleLogout = useLogout();
+  const { notifications, unreadCount } = useNotifications();
+  const { itemCount: cartCount } = useCart();
+  const { itemCount: wishlistCount } = useWishlist();
+  const { user } = useAuth();
+
+  const displayName = user?.businessName || user?.name || 'Vendor';
+  const initials = displayName
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'V';
 
   const menuItems = [
     { path: '/vendor/dashboard', icon: FiGrid, label: 'Dashboard' },
@@ -40,20 +57,7 @@ const VendorLayout = () => {
     { path: '/vendor/settings', icon: FiSettings, label: 'Settings' },
   ];
 
-  const notifications = [
-    { id: 1, type: 'order_confirmed', title: 'Order Confirmed', message: 'Your order ORD002 has been confirmed', time: '2 minutes ago', read: false },
-    { id: 2, type: 'order_shipped', title: 'Order Shipped', message: 'Your order ORD004 has been dispatched', time: '1 hour ago', read: false },
-    { id: 3, type: 'offer', title: 'Special Offer', message: 'Get 15% discount on bulk orders above ₹50,000', time: '3 hours ago', read: true },
-    { id: 4, type: 'order_delivered', title: 'Order Delivered', message: 'Your order ORD001 has been delivered successfully', time: '1 day ago', read: true },
-    { id: 5, type: 'new_product', title: 'New Product', message: 'Premium Basmati Rice is now available', time: '2 days ago', read: true },
-  ];
-
   const isActive = (path) => location.pathname === path;
-
-  const handleLogout = () => {
-    // Handle logout logic
-    navigate('/login');
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -154,9 +158,11 @@ const VendorLayout = () => {
                 aria-label="Cart"
               >
                 <FiShoppingCart size={20} className="text-gray-600" />
-                <span className="absolute top-1 right-1 w-5 h-5 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center">
-                  4
-                </span>
+                {cartCount > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 bg-blue-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                    {cartCount > 9 ? '9+' : cartCount}
+                  </span>
+                )}
               </Link>
 
               {/* Wishlist Icon */}
@@ -166,9 +172,11 @@ const VendorLayout = () => {
                 aria-label="Wishlist"
               >
                 <FiHeart size={20} className="text-gray-600" />
-                <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                  5
-                </span>
+                {wishlistCount > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                    {wishlistCount > 9 ? '9+' : wishlistCount}
+                  </span>
+                )}
               </Link>
 
               {/* Notifications */}
@@ -178,7 +186,11 @@ const VendorLayout = () => {
                 aria-label="Notifications"
               >
                 <FiBell size={20} className="text-gray-600" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
               </button>
 
               {/* Profile Dropdown */}
@@ -188,10 +200,10 @@ const VendorLayout = () => {
                   className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors min-h-[44px]"
                 >
                   <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
-                    FM
+                    {initials}
                   </div>
                   <div className="hidden md:block text-left min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">Fresh Mart Grocery</p>
+                    <p className="text-sm font-medium text-gray-900 truncate">{displayName}</p>
                     <p className="text-xs text-gray-500 truncate">Vendor</p>
                   </div>
                   <FiChevronDown size={16} className="text-gray-400 flex-shrink-0" />
@@ -208,18 +220,11 @@ const VendorLayout = () => {
                     </Link>
                     <Link
                       to="/vendor/settings"
-                      className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 min-h-[44px]"
+                      className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-b-lg min-h-[44px]"
                       onClick={() => setProfileDropdownOpen(false)}
                     >
                       Settings
                     </Link>
-                    <hr className="border-gray-100" />
-                    <button
-                      onClick={handleLogout}
-                      className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-gray-50 rounded-b-lg min-h-[44px]"
-                    >
-                      Logout
-                    </button>
                   </div>
                 )}
               </div>

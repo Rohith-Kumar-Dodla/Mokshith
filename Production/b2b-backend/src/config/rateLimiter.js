@@ -1,6 +1,7 @@
 import rateLimit from 'express-rate-limit';
 import { redisClient } from './redis.js';
 import { logger } from './logger.js';
+import { isAuthStrictMode } from './authStrictMode.js';
 
 // Redis-backed rate limiter store for distributed systems
 class RedisStore {
@@ -81,6 +82,8 @@ export const authLimiter = rateLimit({
     message: 'Too many authentication attempts, please try again after 15 minutes',
   },
   skipSuccessfulRequests: true,
+  // RE-ENABLE BEFORE PRODUCTION: auth rate limiting disabled when AUTH_STRICT_MODE=false
+  skip: () => !isAuthStrictMode(),
 });
 
 // 🔒 PHASE 3: Order creation rate limiter to prevent spam and inventory exhaustion

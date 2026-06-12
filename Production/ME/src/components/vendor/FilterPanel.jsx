@@ -1,25 +1,40 @@
 import React, { useState } from 'react';
-import { FiFilter, FiX, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { FiFilter, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+
+const getCategoryId = (category) => {
+  if (typeof category === 'object') {
+    return category.id || category._id || category.name;
+  }
+  return category;
+};
+
+const getCategoryName = (category) => {
+  if (typeof category === 'object') {
+    return category.name;
+  }
+  return category;
+};
 
 const FilterPanel = ({ categories, brands, onFilterChange, className = '' }) => {
   const [isExpanded, setIsExpanded] = useState(true);
-  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
   const [availability, setAvailability] = useState('all');
   const [sortBy, setSortBy] = useState('relevance');
 
   const handleCategoryToggle = (category) => {
-    const newCategories = selectedCategories.includes(category)
-      ? selectedCategories.filter(c => c !== category)
-      : [...selectedCategories, category];
-    setSelectedCategories(newCategories);
-    applyFilters({ categories: newCategories });
+    const categoryId = getCategoryId(category);
+    const newCategoryIds = selectedCategoryIds.includes(categoryId)
+      ? selectedCategoryIds.filter((id) => id !== categoryId)
+      : [...selectedCategoryIds, categoryId];
+    setSelectedCategoryIds(newCategoryIds);
+    applyFilters({ categoryIds: newCategoryIds });
   };
 
   const handleBrandToggle = (brand) => {
     const newBrands = selectedBrands.includes(brand)
-      ? selectedBrands.filter(b => b !== brand)
+      ? selectedBrands.filter((b) => b !== brand)
       : [...selectedBrands, brand];
     setSelectedBrands(newBrands);
     applyFilters({ brands: newBrands });
@@ -44,43 +59,45 @@ const FilterPanel = ({ categories, brands, onFilterChange, className = '' }) => 
   const applyFilters = (filters) => {
     if (onFilterChange) {
       onFilterChange({
-        categories: selectedCategories,
+        categoryIds: selectedCategoryIds,
+        categories: [],
         brands: selectedBrands,
         priceRange,
         availability,
         sortBy,
-        ...filters
+        ...filters,
       });
     }
   };
 
   const clearFilters = () => {
-    setSelectedCategories([]);
+    setSelectedCategoryIds([]);
     setSelectedBrands([]);
     setPriceRange({ min: '', max: '' });
     setAvailability('all');
     setSortBy('relevance');
     if (onFilterChange) {
       onFilterChange({
+        categoryIds: [],
         categories: [],
         brands: [],
         priceRange: { min: '', max: '' },
         availability: 'all',
-        sortBy: 'relevance'
+        sortBy: 'relevance',
       });
     }
   };
 
-  const hasActiveFilters = selectedCategories.length > 0 || 
-                          selectedBrands.length > 0 || 
-                          priceRange.min || 
-                          priceRange.max || 
-                          availability !== 'all' ||
-                          sortBy !== 'relevance';
+  const hasActiveFilters =
+    selectedCategoryIds.length > 0 ||
+    selectedBrands.length > 0 ||
+    priceRange.min ||
+    priceRange.max ||
+    availability !== 'all' ||
+    sortBy !== 'relevance';
 
   return (
     <div className={`bg-white rounded-lg border border-gray-200 ${className}`}>
-      {/* Header */}
       <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200">
         <div className="flex items-center gap-2">
           <FiFilter className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
@@ -110,7 +127,6 @@ const FilterPanel = ({ categories, brands, onFilterChange, className = '' }) => 
 
       {isExpanded && (
         <div className="p-3 sm:p-4 space-y-4 sm:space-y-6">
-          {/* Sort By */}
           <div>
             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Sort By</label>
             <select
@@ -127,27 +143,28 @@ const FilterPanel = ({ categories, brands, onFilterChange, className = '' }) => 
             </select>
           </div>
 
-          {/* Categories */}
           {categories && categories.length > 0 && (
             <div>
               <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Categories</label>
               <div className="space-y-2 max-h-36 sm:max-h-40 overflow-y-auto">
-                {categories.map((category) => (
-                  <label key={category.id || category} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedCategories.includes(category.name || category)}
-                      onChange={() => handleCategoryToggle(category.name || category)}
-                      className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                    />
-                    <span className="text-xs sm:text-sm text-gray-700">{category.name || category}</span>
-                  </label>
-                ))}
+                {categories.map((category) => {
+                  const categoryId = getCategoryId(category);
+                  return (
+                    <label key={categoryId} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedCategoryIds.includes(categoryId)}
+                        onChange={() => handleCategoryToggle(category)}
+                        className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                      />
+                      <span className="text-xs sm:text-sm text-gray-700">{getCategoryName(category)}</span>
+                    </label>
+                  );
+                })}
               </div>
             </div>
           )}
 
-          {/* Brands */}
           {brands && brands.length > 0 && (
             <div>
               <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Brands</label>
@@ -167,7 +184,6 @@ const FilterPanel = ({ categories, brands, onFilterChange, className = '' }) => 
             </div>
           )}
 
-          {/* Price Range */}
           <div>
             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Price Range (₹)</label>
             <div className="flex items-center gap-2">
@@ -189,7 +205,6 @@ const FilterPanel = ({ categories, brands, onFilterChange, className = '' }) => 
             </div>
           </div>
 
-          {/* Availability */}
           <div>
             <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">Availability</label>
             <select

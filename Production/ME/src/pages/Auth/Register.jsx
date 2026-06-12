@@ -5,6 +5,7 @@ import Navbar from '../../components/Navbar';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import { FaUser, FaEnvelope, FaPhone, FaLock, FaArrowRight } from 'react-icons/fa';
+import { getPasswordRequirementsText, validatePasswordLength } from '../../utils/authValidationPolicy';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -45,10 +46,9 @@ const Register = () => {
     }
 
     // Password validation
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+    const passwordError = validatePasswordLength(formData.password);
+    if (passwordError) {
+      newErrors.password = passwordError;
     }
 
     // Confirm password validation
@@ -84,7 +84,7 @@ const Register = () => {
     setLoading(true);
 
     try {
-      await register({
+      const result = await register({
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
@@ -92,17 +92,16 @@ const Register = () => {
         role: formData.role,
       });
 
-      // Redirect to login after successful registration
       navigate('/login', {
         state: {
-          message: 'Registration successful! Please login.',
+          message: 'Registration submitted successfully. Waiting for Super Admin approval.',
           email: formData.email,
         },
       });
     } catch (err) {
       setErrors({
         ...errors,
-        submit: 'Registration failed. Please try again.',
+        submit: err?.message || 'Registration failed. Please try again.',
       });
     } finally {
       setLoading(false);
@@ -214,6 +213,7 @@ const Register = () => {
                 {errors.password && (
                   <p className="text-danger text-sm mt-1">{errors.password}</p>
                 )}
+                <p className="text-gray-500 text-sm mt-1">{getPasswordRequirementsText()}</p>
               </div>
 
               {/* Confirm Password */}

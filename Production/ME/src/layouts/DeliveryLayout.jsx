@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, Link, useLocation } from 'react-router-dom';
 import {
   FiGrid,
   FiPackage,
@@ -18,8 +18,8 @@ import {
   FiTruck
 } from 'react-icons/fi';
 import NotificationDrawer from '../components/delivery/NotificationDrawer';
-import { deliveryNotifications } from '../data/deliveryNotifications';
-import { deliveryProfile } from '../data/deliveryProfile';
+import useDelivery from '../hooks/useDelivery';
+import { useLogout } from '../hooks/useLogout';
 
 const DeliveryLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -27,7 +27,8 @@ const DeliveryLayout = () => {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
+  const handleLogout = useLogout();
+  const { profile: deliveryProfile, notifications: deliveryNotifications } = useDelivery();
 
   const menuItems = [
     { path: '/delivery/dashboard', icon: FiGrid, label: 'Dashboard' },
@@ -40,10 +41,6 @@ const DeliveryLayout = () => {
   ];
 
   const isActive = (path) => location.pathname === path;
-
-  const handleLogout = () => {
-    navigate('/login');
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -154,10 +151,10 @@ const DeliveryLayout = () => {
                   className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors min-h-[44px]"
                 >
                   <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
-                    {deliveryProfile.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                    {(deliveryProfile?.name || 'DP').split(' ').map(n => n[0]).join('').toUpperCase()}
                   </div>
                   <div className="hidden md:block text-left min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{deliveryProfile.name}</p>
+                    <p className="text-sm font-medium text-gray-900 truncate">{deliveryProfile?.name || 'Delivery Partner'}</p>
                     <p className="text-xs text-gray-500 truncate">Delivery Partner</p>
                   </div>
                   <FiChevronDown size={16} className="text-gray-400 flex-shrink-0" />
@@ -174,18 +171,11 @@ const DeliveryLayout = () => {
                     </Link>
                     <Link
                       to="/delivery/settings"
-                      className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 min-h-[44px]"
+                      className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-b-lg min-h-[44px]"
                       onClick={() => setProfileDropdownOpen(false)}
                     >
                       Settings
                     </Link>
-                    <hr className="border-gray-100" />
-                    <button
-                      onClick={handleLogout}
-                      className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-gray-50 rounded-b-lg min-h-[44px]"
-                    >
-                      Logout
-                    </button>
                   </div>
                 )}
               </div>

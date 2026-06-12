@@ -1,6 +1,7 @@
 import { logger } from '../config/logger.js';
 
-export const validate = (schema) => (req, res, next) => {
+export const validate = (schemaOrFactory) => (req, res, next) => {
+  const schema = typeof schemaOrFactory === 'function' ? schemaOrFactory() : schemaOrFactory;
   // 🔥 Pre-processing: Convert common stringified values from FormData to proper types
   if (req.body) {
     Object.keys(req.body).forEach(key => {
@@ -15,8 +16,9 @@ export const validate = (schema) => (req, res, next) => {
         // Also skip Phone/Mobile numbers which should stay as strings
         const isId = key.toLowerCase().includes('id') || (val.length === 24 && /^[0-9a-fA-F]+$/.test(val));
         const isPhone = key.toLowerCase().includes('mobile') || key.toLowerCase().includes('phone') || key.toLowerCase().includes('pincode');
+        const isPassword = key.toLowerCase().includes('password');
         
-        if (!isId && !isPhone) {
+        if (!isId && !isPhone && !isPassword) {
           req.body[key] = Number(val);
         }
       }

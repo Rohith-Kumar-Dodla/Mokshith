@@ -44,7 +44,16 @@ export const logoutFromAllDevices = async (userId) => {
 };
 
 // 🔥 Allowed update fields (security)
-const ALLOWED_PROFILE_FIELDS = ['name', 'email', 'mobile', 'profileImage', 'phone', 'address', 'companyName'];
+const ALLOWED_PROFILE_FIELDS = [
+  'name',
+  'email',
+  'mobile',
+  'profileImage',
+  'profileImagePublicId',
+  'phone',
+  'address',
+  'companyName',
+];
 
 export const getProfile = async (userId) => {
   const user = await repo.findById(userId);

@@ -28,6 +28,7 @@ const StatusBadge = ({ status }) => {
           borderColor: 'border-orange-200'
         };
       case 'delivered':
+      case 'completed':
         return {
           bgColor: 'bg-green-100',
           textColor: 'text-green-700',

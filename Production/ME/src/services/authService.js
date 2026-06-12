@@ -1,34 +1,53 @@
 import api from './api';
 
-// Auth service for authentication related API calls
 const authService = {
-  // Login user
   login: async (credentials) => {
     const response = await api.post('/auth/login', credentials);
     return response.data;
   },
 
-  // Register new user
+  logout: async (refreshToken) => {
+    const response = await api.post('/auth/logout', { refreshToken });
+    return response.data;
+  },
+
+  getCurrentUser: async () => {
+    const response = await api.get('/users/me');
+    return response.data;
+  },
+
+  refreshToken: async (refreshToken) => {
+    const response = await api.post('/auth/refresh-token', { refreshToken });
+    return response.data;
+  },
+
+  getCsrfToken: async () => {
+    const response = await api.get('/auth/csrf-token');
+    return response.data;
+  },
+
   register: async (userData) => {
     const response = await api.post('/auth/register', userData);
     return response.data;
   },
 
-  // Logout user
-  logout: async () => {
-    const response = await api.post('/auth/logout');
+  updateProfile: async (profileData) => {
+    const response = await api.put('/users/me', profileData);
     return response.data;
   },
 
-  // Get current user
-  getCurrentUser: async () => {
-    const response = await api.get('/auth/me');
+  changePassword: async ({ oldPassword, newPassword }) => {
+    const response = await api.post('/auth/change-password', { oldPassword, newPassword });
     return response.data;
   },
 
-  // Refresh token
-  refreshToken: async () => {
-    const response = await api.post('/auth/refresh');
+  forgotPassword: async (identifier) => {
+    const response = await api.post('/auth/forgot-password', { identifier });
+    return response.data;
+  },
+
+  resetPassword: async (token, newPassword) => {
+    const response = await api.post('/auth/reset-password', { token, newPassword });
     return response.data;
   },
 };

@@ -7,3 +7,9 @@ export const updateStatusSchema = Joi.object({
       .required(),
   }),
 });
+
+export const assignDeliverySchema = Joi.object({
+  body: Joi.object({
+    deliveryPartnerId: Joi.string().required(),
+  }),
+});

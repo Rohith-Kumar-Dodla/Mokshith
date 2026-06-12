@@ -6,6 +6,7 @@ const StatusBadge = ({ status }) => {
       case 'active':
       case 'approved':
       case 'delivered':
+      case 'completed':
       case 'confirmed':
       case 'healthy':
         return {

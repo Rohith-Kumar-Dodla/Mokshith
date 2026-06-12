@@ -1,6 +1,7 @@
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import * as service from './user.service.js';
 import { successResponse } from '../../utils/responseHandler.js';
+import { uploadFile } from '../../services/fileUpload.service.js';
 
 export const getProfile = asyncHandler(async (req, res) => {
   const user = await service.getProfile(req.user.id);
@@ -47,11 +48,12 @@ export const updateProfileImage = asyncHandler(async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ success: false, message: 'Please upload a file' });
   }
-  
-  // In a real app, you'd upload to Cloudinary/S3 here
-  // For now, we'll use the local path
-  const imageUrl = `/uploads/temp/${req.file.filename}`;
-  const user = await service.updateProfile(req.user.id, { profileImage: imageUrl });
-  
+
+  const uploadResult = await uploadFile(req.file, 'profiles');
+  const user = await service.updateProfile(req.user.id, {
+    profileImage: uploadResult.url,
+    profileImagePublicId: uploadResult.publicId,
+  });
+
   successResponse(res, user, 'Profile image updated');
 });

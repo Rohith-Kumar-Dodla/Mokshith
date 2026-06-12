@@ -22,6 +22,18 @@ const inventorySchema = new mongoose.Schema(
       min: 0,
     },
 
+    reservedStock: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    reorderLevel: {
+      type: Number,
+      default: 10,
+      min: 0,
+    },
+
     version: {
       type: Number,
       default: 0,

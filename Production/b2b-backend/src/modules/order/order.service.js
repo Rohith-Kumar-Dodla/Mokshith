@@ -4,6 +4,7 @@ import * as creditRepo from '../credit/credit.repository.js';
 import Product from '../product/product.model.js';
 import Order from './order.model.js';
 import User from '../user/user.model.js';
+import Logistics from '../logistics/logistics.model.js';
 
 import AppError from '../../errors/AppError.js';
 import { validateTransition } from './order.workflow.js';
@@ -15,7 +16,7 @@ import { onOrderCreated } from './order.events.js';
 import { trackOrder } from '../analytics/analytics.events.js';
 
 import { checkStock, reduceStock, reserveInventory } from '../inventory/inventory.service.js';
-import { useCredit } from '../credit/credit.service.js';
+import { deductCredit } from '../credit/credit.service.js';
 import { createShipment } from '../logistics/logistics.service.js';
 import { assignDelivery } from '../../services/deliveryAssignment.service.js';
 import Warehouse from '../warehouse/warehouse.model.js';
@@ -217,7 +218,7 @@ export const createOrder = async (userId, data) => {
 
     // 🔥 Feature 4: Handle Credit Payment
     if (paymentMethod.toUpperCase() === 'CREDIT') {
-      await useCredit(userId, finalTotal, { session });
+      await deductCredit(userId, finalTotal, { session });
     }
 
     // Create order
@@ -304,22 +305,57 @@ export const createOrder = async (userId, data) => {
   return order;
 };
 
+async function enrichOrdersWithDeliveryPartner(orders) {
+  if (!orders?.length) return orders;
+
+  const orderIds = orders.map((order) => order._id);
+  const shipments = await Logistics.find({ orderId: { $in: orderIds } })
+    .populate('deliveryPartnerId', 'name email mobile')
+    .lean();
+
+  const shipmentByOrderId = new Map(
+    shipments.map((shipment) => [String(shipment.orderId), shipment])
+  );
+
+  return orders.map((order) => {
+    const shipment =
+      shipmentByOrderId.get(String(order._id)) ||
+      (typeof order.shipmentId === 'object' ? order.shipmentId : null);
+
+    const partner =
+      (typeof shipment?.deliveryPartnerId === 'object' && shipment.deliveryPartnerId) ||
+      (typeof order.shipmentId === 'object' &&
+      typeof order.shipmentId.deliveryPartnerId === 'object'
+        ? order.shipmentId.deliveryPartnerId
+        : null);
+
+    return {
+      ...order,
+      deliveryPartner: partner || null,
+      logisticsStatus: shipment?.status || order.shipmentId?.status || null,
+    };
+  });
+}
+
 export const getOrders = async (user) => {
+  let orders;
+
   if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
-    return orderRepo.findOrders({});
+    orders = await orderRepo.findOrders({});
+  } else {
+    orders = await orderRepo.findOrders({
+      userId: user.id,
+      status: {
+        $nin: [
+          ORDER_STATUS.FAILED,
+          ORDER_STATUS.CREATED,
+          ORDER_STATUS.PENDING_PAYMENT,
+        ],
+      },
+    });
   }
 
-  // Filter out FAILED, CREATED, and PENDING_PAYMENT orders for regular users
-  return orderRepo.findOrders({ 
-    userId: user.id,
-    status: { 
-      $nin: [
-        ORDER_STATUS.FAILED, 
-        ORDER_STATUS.CREATED, 
-        ORDER_STATUS.PENDING_PAYMENT
-      ] 
-    }
-  });
+  return enrichOrdersWithDeliveryPartner(orders);
 };
 
 export const getOrderById = async (id) => {
@@ -327,7 +363,8 @@ export const getOrderById = async (id) => {
 
   if (!order) throw new AppError('Order not found', 404);
 
-  return order;
+  const [enriched] = await enrichOrdersWithDeliveryPartner([order]);
+  return enriched;
 };
 
 export const downloadInvoice = async (orderId) => {

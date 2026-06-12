@@ -1,13 +1,19 @@
 import AppError from '../errors/AppError.js';
 import { logger } from '../config/logger.js';
+import {
+  isAuthStrictMode,
+  AUTH_TESTING_PASSWORD_MIN_LENGTH,
+  AUTH_STRICT_PASSWORD_MIN_LENGTH,
+} from '../config/authStrictMode.js';
 
 /**
  * Strong Password Policy Validator
  * Follows OWASP password guidelines
  */
 
+// RE-ENABLE BEFORE PRODUCTION: strict policy config used when AUTH_STRICT_MODE=true
 const PASSWORD_CONFIG = {
-  minLength: 12,
+  minLength: AUTH_STRICT_PASSWORD_MIN_LENGTH,
   maxLength: 128,
   requireUppercase: true,
   requireLowercase: true,
@@ -29,19 +35,41 @@ const COMMON_PASSWORDS = new Set([
 ]);
 
 /**
- * Validate password against security policy
+ * UAT/testing-only password validation (AUTH_STRICT_MODE=false).
+ * RE-ENABLE BEFORE PRODUCTION: set AUTH_STRICT_MODE=true to use validatePasswordStrict().
  */
-export const validatePassword = (password, userData = {}) => {
+const validatePasswordRelaxed = (password) => {
   if (!password) {
     throw new AppError('Password is required', 400);
   }
 
-  // Check type
   if (typeof password !== 'string') {
     throw new AppError('Password must be a string', 400);
   }
 
-  // Length checks
+  if (password.length < AUTH_TESTING_PASSWORD_MIN_LENGTH) {
+    throw new AppError(
+      `Password must be at least ${AUTH_TESTING_PASSWORD_MIN_LENGTH} characters long`,
+      400
+    );
+  }
+
+  return true;
+};
+
+/**
+ * Production password validation (AUTH_STRICT_MODE=true).
+ * RE-ENABLE BEFORE PRODUCTION: this is the full policy — do not remove.
+ */
+const validatePasswordStrict = (password, userData = {}) => {
+  if (!password) {
+    throw new AppError('Password is required', 400);
+  }
+
+  if (typeof password !== 'string') {
+    throw new AppError('Password must be a string', 400);
+  }
+
   if (password.length < PASSWORD_CONFIG.minLength) {
     throw new AppError(
       `Password must be at least ${PASSWORD_CONFIG.minLength} characters long`,
@@ -56,7 +84,6 @@ export const validatePassword = (password, userData = {}) => {
     );
   }
 
-  // Complexity checks
   if (PASSWORD_CONFIG.requireUppercase && !/[A-Z]/.test(password)) {
     throw new AppError('Password must contain at least one uppercase letter', 400);
   }
@@ -73,7 +100,6 @@ export const validatePassword = (password, userData = {}) => {
     throw new AppError('Password must contain at least one special character', 400);
   }
 
-  // Check for common passwords
   if (PASSWORD_CONFIG.preventCommonPasswords) {
     const lowerPassword = password.toLowerCase();
     if (COMMON_PASSWORDS.has(lowerPassword)) {
@@ -81,7 +107,6 @@ export const validatePassword = (password, userData = {}) => {
     }
   }
 
-  // Check for sequential characters (123, abc, etc.)
   if (PASSWORD_CONFIG.preventSequentialChars) {
     const sequentialPattern = /(?:abc|bcd|cde|def|efg|fgh|ghi|hij|ijk|jkl|klm|lmn|mno|nop|opq|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz|012|123|234|345|456|567|678|789)/i;
     if (sequentialPattern.test(password)) {
@@ -89,7 +114,6 @@ export const validatePassword = (password, userData = {}) => {
     }
   }
 
-  // Check for repeated characters (aaa, 111, etc.)
   if (PASSWORD_CONFIG.preventRepeatedChars) {
     const repeatedPattern = /(.)\1{2,}/;
     if (repeatedPattern.test(password)) {
@@ -97,11 +121,10 @@ export const validatePassword = (password, userData = {}) => {
     }
   }
 
-  // Check if password contains user data (name, email, etc.)
   if (userData.name) {
     const nameParts = userData.name.toLowerCase().split(' ');
     const lowerPassword = password.toLowerCase();
-    
+
     for (const part of nameParts) {
       if (part.length >= 3 && lowerPassword.includes(part)) {
         throw new AppError('Password should not contain your name', 400);
@@ -124,6 +147,17 @@ export const validatePassword = (password, userData = {}) => {
   }
 
   return true;
+};
+
+/**
+ * Validate password against security policy
+ */
+export const validatePassword = (password, userData = {}) => {
+  if (isAuthStrictMode()) {
+    return validatePasswordStrict(password, userData);
+  }
+
+  return validatePasswordRelaxed(password);
 };
 
 /**

@@ -1,15 +1,54 @@
-import React, { useState } from 'react';
-import { FiEye, FiEdit, FiXCircle } from 'react-icons/fi';
-import { deliveryPartners } from '../../data/deliveryPartners';
+import React, { useEffect, useMemo, useState } from 'react';
+import { FiEye } from 'react-icons/fi';
 import PageHeader from '../../components/superadmin/PageHeader';
 import SearchBar from '../../components/superadmin/SearchBar';
 import FilterDropdown from '../../components/superadmin/FilterDropdown';
 import DataTable from '../../components/superadmin/DataTable';
 import StatusBadge from '../../components/superadmin/StatusBadge';
+import adminService from '../../services/adminService';
+
+const mapPartnerStatus = (status) => {
+  const normalized = String(status || '').toUpperCase();
+  return normalized === 'ACTIVE' ? 'active' : 'inactive';
+};
+
+const mapPartner = (user) => ({
+  id: user._id || user.id,
+  name: user.name || '—',
+  vehicleType: user.vehicleType || '—',
+  vehicleNumber: user.vehicleNumber || '—',
+  assignedArea: user.assignedArea || user.addresses?.[0]?.city || '—',
+  completedDeliveries: user.completedDeliveries ?? '—',
+  rating: user.rating ?? '—',
+  status: mapPartnerStatus(user.status),
+});
 
 const DeliveryPartners = () => {
+  const [partners, setPartners] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+
+  useEffect(() => {
+    const loadPartners = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const response = await adminService.getUsers({ role: 'DELIVERY_PARTNER' });
+        const payload = response.data ?? response;
+        const users = Array.isArray(payload) ? payload : payload?.users || [];
+        setPartners(users.map(mapPartner));
+      } catch (err) {
+        setError(err?.response?.data?.message || err?.message || 'Failed to load delivery partners');
+        setPartners([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPartners();
+  }, []);
 
   const statusOptions = [
     { label: 'All Status', value: 'all' },
@@ -17,13 +56,13 @@ const DeliveryPartners = () => {
     { label: 'Inactive', value: 'inactive' },
   ];
 
-  const filteredPartners = deliveryPartners.filter(partner => {
-    const matchesSearch = partner.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         partner.vehicleNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         partner.id.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredPartners = useMemo(() => partners.filter((partner) => {
+    const matchesSearch = partner.name.toLowerCase().includes(searchTerm.toLowerCase())
+      || String(partner.vehicleNumber).toLowerCase().includes(searchTerm.toLowerCase())
+      || String(partner.id).toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || partner.status === statusFilter;
     return matchesSearch && matchesStatus;
-  });
+  }), [partners, searchTerm, statusFilter]);
 
   const columns = [
     { key: 'id', label: 'Partner ID' },
@@ -36,57 +75,52 @@ const DeliveryPartners = () => {
     {
       key: 'status',
       label: 'Status',
-      render: (value) => <StatusBadge status={value} />
+      render: (value) => <StatusBadge status={value} />,
     },
     {
       key: 'actions',
       label: 'Actions',
       render: () => (
-        <div className="flex items-center gap-1 sm:gap-2">
-          <button className="p-2 hover:bg-blue-50 rounded-lg transition-colors min-h-[36px] min-w-[36px] sm:min-h-[40px] sm:min-w-[40px]" title="View">
-            <FiEye className="text-blue-600" size={16} />
-          </button>
-          <button className="p-2 hover:bg-green-50 rounded-lg transition-colors min-h-[36px] min-w-[36px] sm:min-h-[40px] sm:min-w-[40px]" title="Edit">
-            <FiEdit className="text-green-600" size={16} />
-          </button>
-          <button className="p-2 hover:bg-yellow-50 rounded-lg transition-colors min-h-[36px] min-w-[36px] sm:min-h-[40px] sm:min-w-[40px]" title="Deactivate">
-            <FiXCircle className="text-yellow-600" size={16} />
-          </button>
-        </div>
-      )
-    }
+        <button className="p-2 hover:bg-blue-50 rounded-lg transition-colors min-h-[36px] min-w-[36px]" title="View">
+          <FiEye className="text-blue-600" size={16} />
+        </button>
+      ),
+    },
   ];
 
   const stats = [
-    { label: 'Total Partners', value: deliveryPartners.length, color: 'blue' },
-    { label: 'Active', value: deliveryPartners.filter(p => p.status === 'active').length, color: 'green' },
-    { label: 'Inactive', value: deliveryPartners.filter(p => p.status === 'inactive').length, color: 'red' },
-    { label: 'Total Deliveries', value: deliveryPartners.reduce((acc, p) => acc + p.completedDeliveries, 0).toLocaleString(), color: 'purple' },
+    { label: 'Total Partners', value: partners.length },
+    { label: 'Active', value: partners.filter((p) => p.status === 'active').length },
+    { label: 'Inactive', value: partners.filter((p) => p.status === 'inactive').length },
   ];
 
   return (
     <div className="space-y-4 sm:space-y-6">
       <PageHeader
         title="Delivery Partners"
-        subtitle="Manage delivery partner fleet and performance."
+        subtitle="Manage delivery partner accounts."
       />
 
-      {/* Statistics */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-        {stats.map((stat, index) => (
-          <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-6">
+        {stats.map((stat) => (
+          <div key={stat.label} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
             <p className="text-xs sm:text-sm text-gray-500 mb-1">{stat.label}</p>
             <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{stat.value}</p>
           </div>
         ))}
       </div>
 
-      {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <div className="flex-1">
             <SearchBar
-              placeholder="Search partners by name, vehicle number, or ID..."
+              placeholder="Search delivery partners..."
               value={searchTerm}
               onSearch={setSearchTerm}
             />
@@ -100,9 +134,14 @@ const DeliveryPartners = () => {
         </div>
       </div>
 
-      {/* Partners Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <DataTable columns={columns} data={filteredPartners} />
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden p-4 sm:p-6">
+        {loading ? (
+          <p className="text-sm text-gray-500">Loading delivery partners...</p>
+        ) : filteredPartners.length === 0 ? (
+          <p className="text-sm text-gray-500">No delivery partners found.</p>
+        ) : (
+          <DataTable columns={columns} data={filteredPartners} />
+        )}
       </div>
     </div>
   );

@@ -1,124 +1,93 @@
 import api from './api';
 
-// Delivery service for delivery partner API calls
 const deliveryService = {
-  // Get assigned orders for delivery partner
-  getAssignedOrders: async (partnerId, params = {}) => {
-    const response = await api.get(`/delivery-partners/${partnerId}/assigned-orders`, { params });
+  getMyAssignments: async () => {
+    const response = await api.get('/logistics/my-assignments');
     return response.data;
   },
 
-  // Get order details
-  getOrderDetails: async (orderId) => {
-    const response = await api.get(`/orders/${orderId}`);
+  getDeliveryQueue: async () => {
+    const response = await api.get('/logistics/delivery-queue');
     return response.data;
   },
 
-  // Accept order
-  acceptOrder: async (orderId) => {
-    const response = await api.post(`/orders/${orderId}/accept`);
+  getDeliveryHistory: async () => {
+    const response = await api.get('/logistics/history');
     return response.data;
   },
 
-  // Reject order
-  rejectOrder: async (orderId, reason) => {
-    const response = await api.post(`/orders/${orderId}/reject`, { reason });
+  getDeliveryAnalytics: async () => {
+    const response = await api.get('/logistics/analytics');
     return response.data;
   },
 
-  // Update delivery status
-  updateDeliveryStatus: async (orderId, status, data = {}) => {
-    const response = await api.patch(`/orders/${orderId}/status`, { status, ...data });
+  createShipment: async (orderId) => {
+    const response = await api.post(`/logistics/${orderId}`);
     return response.data;
   },
 
-  // Upload delivery proof
-  uploadDeliveryProof: async (orderId, proofData) => {
-    const response = await api.post(`/orders/${orderId}/delivery-proof`, proofData);
+  assignDeliveryPartner: async (shipmentId, deliveryPartnerId) => {
+    const response = await api.patch(`/logistics/${shipmentId}/assign`, { deliveryPartnerId });
     return response.data;
   },
 
-  // Get delivery history
-  getDeliveryHistory: async (partnerId, params = {}) => {
-    const response = await api.get(`/delivery-partners/${partnerId}/history`, { params });
+  reassignDeliveryPartner: async (shipmentId, deliveryPartnerId) => {
+    const response = await api.patch(`/logistics/${shipmentId}/reassign`, { deliveryPartnerId });
     return response.data;
   },
 
-  // Get earnings
-  getEarnings: async (partnerId, params = {}) => {
-    const response = await api.get(`/delivery-partners/${partnerId}/earnings`, { params });
+  getShipmentDetails: async (shipmentId) => {
+    const response = await api.get(`/logistics/${shipmentId}`);
     return response.data;
   },
 
-  // Get performance metrics
-  getPerformanceMetrics: async (partnerId) => {
-    const response = await api.get(`/delivery-partners/${partnerId}/performance`);
+  acceptDelivery: async (shipmentId) => {
+    const response = await api.post(`/logistics/${shipmentId}/accept`);
     return response.data;
   },
 
-  // Get performance trends
-  getPerformanceTrends: async (partnerId, params = {}) => {
-    const response = await api.get(`/delivery-partners/${partnerId}/performance/trends`, { params });
+  pickUpDelivery: async (shipmentId) => {
+    const response = await api.post(`/logistics/${shipmentId}/pick`);
     return response.data;
   },
 
-  // Get achievements
-  getAchievements: async (partnerId) => {
-    const response = await api.get(`/delivery-partners/${partnerId}/achievements`);
+  startDelivery: async (shipmentId) => {
+    const response = await api.post(`/logistics/${shipmentId}/start`);
     return response.data;
   },
 
-  // Get delivery partner profile
-  getProfile: async (partnerId) => {
-    const response = await api.get(`/delivery-partners/${partnerId}/profile`);
+  markAsDelivered: async (shipmentId) => {
+    const response = await api.post(`/logistics/${shipmentId}/delivered`);
     return response.data;
   },
 
-  // Update delivery partner profile
-  updateProfile: async (partnerId, profileData) => {
-    const response = await api.put(`/delivery-partners/${partnerId}/profile`, profileData);
+  completeDelivery: async (shipmentId, payload = {}) => {
+    const response = await api.post(`/logistics/${shipmentId}/complete`, payload);
     return response.data;
   },
 
-  // Update delivery partner settings
-  updateSettings: async (partnerId, settingsData) => {
-    const response = await api.put(`/delivery-partners/${partnerId}/settings`, settingsData);
+  updateLocation: async (shipmentId, locationData) => {
+    const response = await api.post(`/logistics/${shipmentId}/location`, locationData);
     return response.data;
   },
 
-  // Get notifications
-  getNotifications: async (partnerId, params = {}) => {
-    const response = await api.get(`/delivery-partners/${partnerId}/notifications`, { params });
+  getNotifications: async () => {
+    const response = await api.get('/notifications');
     return response.data;
   },
 
-  // Mark notification as read
   markNotificationRead: async (notificationId) => {
     const response = await api.patch(`/notifications/${notificationId}/read`);
     return response.data;
   },
 
-  // Mark all notifications as read
-  markAllNotificationsRead: async (partnerId) => {
-    const response = await api.post(`/delivery-partners/${partnerId}/notifications/mark-all-read`);
+  getProfile: async () => {
+    const response = await api.get('/users/me');
     return response.data;
   },
 
-  // Get optimized route
-  getOptimizedRoute: async (orderIds) => {
-    const response = await api.post('/delivery/route-optimize', { orderIds });
-    return response.data;
-  },
-
-  // Update location
-  updateLocation: async (partnerId, locationData) => {
-    const response = await api.post(`/delivery-partners/${partnerId}/location`, locationData);
-    return response.data;
-  },
-
-  // Go online/offline
-  updateAvailability: async (partnerId, isOnline) => {
-    const response = await api.patch(`/delivery-partners/${partnerId}/availability`, { isOnline });
+  updateProfile: async (profileData) => {
+    const response = await api.put('/users/me', profileData);
     return response.data;
   },
 };

@@ -15,9 +15,13 @@ import {
   FiSearch,
   FiBell,
   FiMessageSquare,
-  FiChevronDown
+  FiChevronDown,
+  FiUserCheck,
 } from 'react-icons/fi';
 import NotificationDrawer from '../components/superadmin/NotificationDrawer';
+import { useAuth } from '../context/AuthContext';
+import { useLogout } from '../hooks/useLogout';
+import useNotifications from '../hooks/useNotifications';
 
 const SuperAdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -25,11 +29,14 @@ const SuperAdminLayout = () => {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const location = useLocation();
+  const { user } = useAuth();
+  const handleLogout = useLogout();
+  const { notifications, unreadCount } = useNotifications();
 
   const menuItems = [
     { path: '/super-admin/dashboard', icon: FiGrid, label: 'Dashboard' },
     { path: '/super-admin/platform', icon: FiMonitor, label: 'Platform Monitoring' },
-    { path: '/super-admin/admin-performance', icon: FiBarChart2, label: 'Admin Performance' },
+    { path: '/super-admin/admin-approvals', icon: FiUserCheck, label: 'User Approvals' },
     { path: '/super-admin/vendors', icon: FiShoppingBag, label: 'Vendor Management' },
     { path: '/super-admin/delivery-partners', icon: FiTruck, label: 'Delivery Partners' },
     { path: '/super-admin/orders', icon: FiPackage, label: 'Orders' },
@@ -37,19 +44,18 @@ const SuperAdminLayout = () => {
     { path: '/super-admin/settings', icon: FiSettings, label: 'Settings' },
   ];
 
-  const notifications = [
-    { id: 1, title: 'New Vendor Registered', message: 'City Supermarket has registered and awaiting approval', time: '2 minutes ago', read: false },
-    { id: 2, title: 'Admin Activity', message: 'Admin Rajesh Kumar approved 3 vendor applications', time: '1 hour ago', read: false },
-    { id: 3, title: 'Order Completed', message: 'Order ORD001 has been successfully delivered', time: '2 hours ago', read: true },
-    { id: 4, title: 'Delivery Partner Active', message: 'Ravi Teja is now active and accepting orders', time: '3 hours ago', read: true },
-    { id: 5, title: 'Platform Alert', message: 'System performance is optimal', time: '5 hours ago', read: true },
-  ];
-
   const isActive = (path) => location.pathname === path;
+  const displayName = user?.name || 'Super Admin';
+  const displayEmail = user?.email || 'superadmin@mokshith.com';
+  const initials = displayName
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile Menu Button */}
       <button
         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         className="lg:hidden fixed top-4 left-4 z-50 p-3 bg-white rounded-lg shadow-lg"
@@ -58,7 +64,6 @@ const SuperAdminLayout = () => {
         {mobileMenuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
       </button>
 
-      {/* Mobile Overlay */}
       {mobileMenuOpen && (
         <div
           className="lg:hidden fixed inset-0 bg-black/50 z-30"
@@ -66,7 +71,6 @@ const SuperAdminLayout = () => {
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`fixed top-0 left-0 h-full bg-[#0F172A] text-white transition-all duration-300 z-40 ${
           sidebarOpen ? 'w-64' : 'w-20'
@@ -105,16 +109,18 @@ const SuperAdminLayout = () => {
         </nav>
 
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700">
-          <button className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-all min-h-[44px]">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-all min-h-[44px]"
+          >
             <FiLogOut size={20} className="flex-shrink-0" />
             {sidebarOpen && <span className="font-medium">Logout</span>}
           </button>
         </div>
       </aside>
 
-      {/* Main Content */}
       <div className={`transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}`}>
-        {/* Top Navbar */}
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
           <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4">
             <div className="flex items-center gap-4 flex-1">
@@ -142,7 +148,11 @@ const SuperAdminLayout = () => {
                 aria-label="Notifications"
               >
                 <FiBell size={20} className="text-gray-600" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
               </button>
 
               <button className="relative p-2 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors min-h-[44px] min-w-[44px]" aria-label="Messages">
@@ -156,11 +166,11 @@ const SuperAdminLayout = () => {
                   className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors min-h-[44px]"
                 >
                   <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
-                    SA
+                    {initials}
                   </div>
                   <div className="hidden md:block text-left min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">Super Admin</p>
-                    <p className="text-xs text-gray-500 truncate">superadmin@mokshith.com</p>
+                    <p className="text-sm font-medium text-gray-900 truncate">{displayName}</p>
+                    <p className="text-xs text-gray-500 truncate">{displayEmail}</p>
                   </div>
                   <FiChevronDown size={16} className="text-gray-400 flex-shrink-0" />
                 </button>
@@ -176,15 +186,11 @@ const SuperAdminLayout = () => {
                     </Link>
                     <Link
                       to="/super-admin/settings"
-                      className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 min-h-[44px]"
+                      className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-b-lg min-h-[44px]"
                       onClick={() => setProfileDropdownOpen(false)}
                     >
                       Settings
                     </Link>
-                    <hr className="border-gray-100" />
-                    <button className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-gray-50 rounded-b-lg min-h-[44px]">
-                      Logout
-                    </button>
                   </div>
                 )}
               </div>
@@ -192,13 +198,11 @@ const SuperAdminLayout = () => {
           </div>
         </header>
 
-        {/* Page Content */}
         <main className="p-4 sm:p-6">
           <Outlet />
         </main>
       </div>
 
-      {/* Notification Drawer */}
       <NotificationDrawer
         isOpen={notificationOpen}
         onClose={() => setNotificationOpen(false)}

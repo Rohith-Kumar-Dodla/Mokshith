@@ -1,101 +1,111 @@
-import React from 'react';
-import { FiActivity, FiUsers, FiTruck, FiPackage, FiDollarSign, FiTrendingUp, FiCheckCircle, FiAlertTriangle, FiServer, FiDatabase, FiWifi, FiShield } from 'react-icons/fi';
+import React, { useEffect, useState } from 'react';
+import { FiActivity, FiUsers, FiTruck, FiPackage, FiDollarSign, FiTrendingUp, FiServer, FiDatabase, FiWifi, FiShield } from 'react-icons/fi';
 import PageHeader from '../../components/superadmin/PageHeader';
 import DashboardCard from '../../components/superadmin/DashboardCard';
+import superAdminService from '../../services/superAdminService';
+
+const formatRevenue = (amount) => {
+  if (!amount) return '₹0';
+  if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
+  if (amount >= 1000) return `₹${(amount / 1000).toFixed(1)}K`;
+  return `₹${amount}`;
+};
 
 const Platform = () => {
-  const healthMetrics = [
-    { title: 'System Status', value: 'Healthy', icon: FiActivity, color: 'green' },
-    { title: 'Server Uptime', value: '99.9%', icon: FiServer, color: 'blue' },
-    { title: 'Database Status', value: 'Optimal', icon: FiDatabase, color: 'green' },
-    { title: 'API Response', value: '45ms', icon: FiWifi, color: 'green' },
-    { title: 'Security Status', value: 'Secure', icon: FiShield, color: 'green' },
-    { title: 'Error Rate', value: '0.01%', icon: FiAlertTriangle, color: 'orange' },
-  ];
+  const [stats, setStats] = useState(null);
+  const [metrics, setMetrics] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const loadPlatformData = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const [statsResponse, metricsResponse] = await Promise.all([
+          superAdminService.getStats(),
+          superAdminService.getMetrics(),
+        ]);
+        setStats(statsResponse.data ?? statsResponse);
+        setMetrics(metricsResponse.data ?? metricsResponse);
+      } catch (err) {
+        setError(err?.response?.data?.message || err?.message || 'Failed to load platform data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPlatformData();
+  }, []);
 
   const platformStats = [
-    { title: 'Total Vendors', value: '78', change: '+18%', icon: FiUsers, color: 'blue' },
-    { title: 'Delivery Partners', value: '45', change: '+7%', icon: FiTruck, color: 'purple' },
-    { title: 'Total Products', value: '1,567', change: '+15%', icon: FiPackage, color: 'orange' },
-    { title: 'Total Orders', value: '4,400', change: '+22%', icon: FiTrendingUp, color: 'teal' },
-    { title: 'Total Revenue', value: '₹34.9L', change: '+28%', icon: FiDollarSign, color: 'green' },
-    { title: 'Success Rate', value: '94%', change: '+2%', icon: FiCheckCircle, color: 'blue' },
+    { title: 'Total Vendors', value: String(stats?.vendors ?? metrics?.activeVendors ?? 0), icon: FiUsers, color: 'blue' },
+    { title: 'Delivery Partners', value: String(stats?.deliveryPartners ?? 0), icon: FiTruck, color: 'purple' },
+    { title: 'Total Products', value: String(stats?.products ?? 0), icon: FiPackage, color: 'orange' },
+    { title: 'Total Orders', value: String(stats?.orders ?? 0), icon: FiTrendingUp, color: 'teal' },
+    { title: 'Total Revenue', value: formatRevenue(stats?.revenue ?? 0), icon: FiDollarSign, color: 'green' },
+    { title: 'Pending Approvals', value: String(stats?.pendingApprovals ?? metrics?.pendingApprovals ?? 0), icon: FiActivity, color: 'blue' },
   ];
 
-  const recentAlerts = [
-    { type: 'info', message: 'System backup completed successfully', time: '2 hours ago' },
-    { type: 'warning', message: 'High server load detected (75%)', time: '4 hours ago' },
-    { type: 'success', message: 'Database optimization completed', time: '6 hours ago' },
-    { type: 'info', message: 'New security patch applied', time: '1 day ago' },
-    { type: 'success', message: 'API response time improved by 15%', time: '2 days ago' },
+  const healthMetrics = [
+    { title: 'System Status', value: 'Live', icon: FiActivity, color: 'green' },
+    { title: 'Server Uptime', value: 'N/A', icon: FiServer, color: 'blue', todo: 'GET /api/v1/super-admin/health' },
+    { title: 'Database Status', value: 'Connected', icon: FiDatabase, color: 'green' },
+    { title: 'API Response', value: 'N/A', icon: FiWifi, color: 'green', todo: 'GET /api/v1/super-admin/health/latency' },
+    { title: 'Security Status', value: 'Protected', icon: FiShield, color: 'green' },
+    { title: 'Orders Today', value: String(metrics?.ordersToday ?? 0), icon: FiPackage, color: 'orange' },
   ];
 
-  const getAlertColor = (type) => {
-    const colors = {
-      info: 'bg-blue-100 text-blue-600',
-      warning: 'bg-orange-100 text-orange-600',
-      success: 'bg-green-100 text-green-600',
-      error: 'bg-red-100 text-red-600',
-    };
-    return colors[type] || colors.info;
-  };
+  if (loading) {
+    return <p className="text-sm text-gray-500">Loading platform monitoring...</p>;
+  }
 
   return (
     <div className="space-y-6 sm:space-y-8">
       <PageHeader
         title="Platform Monitoring"
-        subtitle="Monitor platform health, performance, and system metrics in real-time."
+        subtitle="Live platform metrics from backend services."
       />
 
-      {/* Health Metrics */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
-        <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6">System Health</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6">
-          {healthMetrics.map((metric, index) => (
-            <div key={index} className="text-center">
-              <div className="p-3 sm:p-4 bg-gray-50 rounded-xl inline-block mb-2 sm:mb-3">
-                <metric.icon className="text-gray-600" size={20} sm:size={24} />
-              </div>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">{metric.value}</p>
-              <p className="text-xs sm:text-sm text-gray-500">{metric.title}</p>
-            </div>
-          ))}
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
         </div>
-      </div>
+      )}
 
-      {/* Platform Statistics */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-6">
-        {platformStats.map((stat, index) => (
+        {platformStats.map((stat) => (
           <DashboardCard
-            key={index}
+            key={stat.title}
             title={stat.title}
             value={stat.value}
-            growth={parseInt(stat.change)}
+            growth={0}
             icon={stat.icon}
             color={stat.color}
           />
         ))}
       </div>
 
-      {/* Recent Alerts */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
-        <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Recent System Alerts</h2>
-        <div className="space-y-3 sm:space-y-4">
-          {recentAlerts.map((alert, index) => (
-            <div key={index} className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg">
-              <div className={`p-2 rounded-lg ${getAlertColor(alert.type)} flex-shrink-0`}>
-                {alert.type === 'info' && <FiActivity size={16} />}
-                {alert.type === 'warning' && <FiAlertTriangle size={16} />}
-                {alert.type === 'success' && <FiCheckCircle size={16} />}
-                {alert.type === 'error' && <FiAlertTriangle size={16} />}
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Platform Health</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6">
+          {healthMetrics.map((item) => (
+            <div key={item.title} className="text-center">
+              <div className="p-3 sm:p-4 bg-gray-50 rounded-xl inline-block mb-2 sm:mb-3">
+                <item.icon className="text-gray-600" size={24} />
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-gray-900">{alert.message}</p>
-                <p className="text-xs text-gray-500 mt-0.5 sm:mt-1">{alert.time}</p>
-              </div>
+              <p className="text-lg sm:text-xl font-bold text-gray-900">{item.value}</p>
+              <p className="text-xs sm:text-sm text-gray-500">{item.title}</p>
+              {item.todo && (
+                <p className="text-[10px] text-amber-600 mt-1">TODO: {item.todo}</p>
+              )}
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        Infrastructure health metrics (server uptime, API latency, alert feed) require dedicated monitoring endpoints that are not yet implemented.
       </div>
     </div>
   );

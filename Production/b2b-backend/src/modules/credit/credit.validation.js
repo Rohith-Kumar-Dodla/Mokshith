@@ -12,3 +12,9 @@ export const creditActionSchema = Joi.object({
     amount: Joi.number().min(1).required(),
   }),
 });
+
+export const useCreditSchema = Joi.object({
+  body: Joi.object({
+    orderId: Joi.string().required(),
+  }),
+});

@@ -1,15 +1,55 @@
-import React, { useState } from 'react';
-import { FiCheck, FiX, FiEye, FiXCircle } from 'react-icons/fi';
-import { vendors } from '../../data/vendors';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { FiEye, FiCheck, FiX } from 'react-icons/fi';
 import PageHeader from '../../components/superadmin/PageHeader';
 import SearchBar from '../../components/superadmin/SearchBar';
 import FilterDropdown from '../../components/superadmin/FilterDropdown';
 import DataTable from '../../components/superadmin/DataTable';
 import StatusBadge from '../../components/superadmin/StatusBadge';
+import adminService from '../../services/adminService';
+import { mapVendorUser } from '../../utils/vendorMapper';
 
 const Vendors = () => {
+  const [vendors, setVendors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+
+  const loadVendors = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await adminService.getUsers({ role: 'B2B_CUSTOMER' });
+      const payload = response.data ?? response;
+      const users = Array.isArray(payload) ? payload : payload?.users || [];
+      setVendors(users.map(mapVendorUser));
+    } catch (err) {
+      setError(err?.response?.data?.message || err?.message || 'Failed to load vendors');
+      setVendors([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadVendors();
+  }, [loadVendors]);
+
+  const runVendorAction = async (vendorId, action) => {
+    setActionLoading(true);
+    setError('');
+    try {
+      if (action === 'approve') await adminService.approveUser(vendorId);
+      else if (action === 'reject') await adminService.rejectUser(vendorId);
+      else if (action === 'suspend') await adminService.updateUserStatus(vendorId, 'SUSPENDED');
+      await loadVendors();
+    } catch (err) {
+      setError(err?.response?.data?.message || err?.message || 'Action failed');
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const statusOptions = [
     { label: 'All Status', value: 'all' },
@@ -18,13 +58,13 @@ const Vendors = () => {
     { label: 'Rejected', value: 'rejected' },
   ];
 
-  const filteredVendors = vendors.filter(vendor => {
-    const matchesSearch = vendor.shopName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vendor.ownerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vendor.id.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredVendors = useMemo(() => vendors.filter((vendor) => {
+    const matchesSearch = vendor.shopName.toLowerCase().includes(searchTerm.toLowerCase())
+      || vendor.ownerName.toLowerCase().includes(searchTerm.toLowerCase())
+      || String(vendor.id).toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || vendor.status === statusFilter;
     return matchesSearch && matchesStatus;
-  });
+  }), [vendors, searchTerm, statusFilter]);
 
   const columns = [
     { key: 'id', label: 'Vendor ID' },
@@ -36,41 +76,56 @@ const Vendors = () => {
     {
       key: 'status',
       label: 'Status',
-      render: (value) => <StatusBadge status={value} />
+      render: (value) => <StatusBadge status={value} />,
     },
     {
       key: 'actions',
       label: 'Actions',
       render: (_, row) => (
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex items-center gap-1">
           {row.status === 'pending' && (
             <>
-              <button className="p-2 hover:bg-green-50 rounded-lg transition-colors min-h-[36px] min-w-[36px] sm:min-h-[40px] sm:min-w-[40px]" title="Approve">
+              <button
+                type="button"
+                disabled={actionLoading}
+                onClick={() => runVendorAction(row.id, 'approve')}
+                className="p-2 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
+                title="Approve"
+              >
                 <FiCheck className="text-green-600" size={16} />
               </button>
-              <button className="p-2 hover:bg-red-50 rounded-lg transition-colors min-h-[36px] min-w-[36px] sm:min-h-[40px] sm:min-w-[40px]" title="Reject">
+              <button
+                type="button"
+                disabled={actionLoading}
+                onClick={() => runVendorAction(row.id, 'reject')}
+                className="p-2 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                title="Reject"
+              >
                 <FiX className="text-red-600" size={16} />
               </button>
             </>
           )}
           {row.status === 'approved' && (
-            <button className="p-2 hover:bg-yellow-50 rounded-lg transition-colors min-h-[36px] min-w-[36px] sm:min-h-[40px] sm:min-w-[40px]" title="Suspend">
-              <FiXCircle className="text-yellow-600" size={16} />
+            <button
+              type="button"
+              disabled={actionLoading}
+              onClick={() => runVendorAction(row.id, 'suspend')}
+              className="p-2 hover:bg-orange-50 rounded-lg transition-colors disabled:opacity-50"
+              title="Suspend"
+            >
+              <FiX className="text-orange-600" size={16} />
             </button>
           )}
-          <button className="p-2 hover:bg-blue-50 rounded-lg transition-colors min-h-[36px] min-w-[36px] sm:min-h-[40px] sm:min-w-[40px]" title="View">
-            <FiEye className="text-blue-600" size={16} />
-          </button>
         </div>
-      )
-    }
+      ),
+    },
   ];
 
   const stats = [
-    { label: 'Total Vendors', value: vendors.length, color: 'blue' },
-    { label: 'Approved', value: vendors.filter(v => v.status === 'approved').length, color: 'green' },
-    { label: 'Pending', value: vendors.filter(v => v.status === 'pending').length, color: 'yellow' },
-    { label: 'Rejected', value: vendors.filter(v => v.status === 'rejected').length, color: 'red' },
+    { label: 'Total Vendors', value: vendors.length },
+    { label: 'Approved', value: vendors.filter((v) => v.status === 'approved').length },
+    { label: 'Pending', value: vendors.filter((v) => v.status === 'pending').length },
+    { label: 'Rejected', value: vendors.filter((v) => v.status === 'rejected').length },
   ];
 
   return (
@@ -80,17 +135,21 @@ const Vendors = () => {
         subtitle="Manage vendor registrations and approvals."
       />
 
-      {/* Statistics */}
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-        {stats.map((stat, index) => (
-          <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
+        {stats.map((stat) => (
+          <div key={stat.label} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
             <p className="text-xs sm:text-sm text-gray-500 mb-1">{stat.label}</p>
             <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{stat.value}</p>
           </div>
         ))}
       </div>
 
-      {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <div className="flex-1">
@@ -109,9 +168,14 @@ const Vendors = () => {
         </div>
       </div>
 
-      {/* Vendor Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <DataTable columns={columns} data={filteredVendors} />
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden p-4 sm:p-6">
+        {loading ? (
+          <p className="text-sm text-gray-500">Loading vendors...</p>
+        ) : filteredVendors.length === 0 ? (
+          <p className="text-sm text-gray-500">No vendors found.</p>
+        ) : (
+          <DataTable columns={columns} data={filteredVendors} />
+        )}
       </div>
     </div>
   );

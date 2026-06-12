@@ -4,6 +4,7 @@ import fs from 'fs';
 import AppError from '../errors/AppError.js';
 import crypto from 'crypto';
 import { s3Service } from '../services/s3.service.js';
+import { cloudinaryService } from '../services/cloudinary.service.js';
 import { logger } from '../config/logger.js';
 import { validateAndSanitizeUpload } from '../services/fileValidation.service.js';
 
@@ -91,8 +92,10 @@ export const uploadToCloud = (fieldName, options = {}) => {
   // Use memory storage for S3 uploads
   const memoryStorage = multer.memoryStorage();
   
+  const useMemoryStorage = s3Service.isEnabled() || cloudinaryService.isEnabled();
+
   const uploader = multer({
-    storage: s3Service.isEnabled() ? memoryStorage : storage,
+    storage: useMemoryStorage ? memoryStorage : storage,
     fileFilter,
     limits: {
       fileSize: MAX_FILE_SIZE,
@@ -116,18 +119,23 @@ export const uploadToCloud = (fieldName, options = {}) => {
         // Validate and sanitize uploaded files
         if (req.file) {
           // 🔒 Magic number validation for single file
-          if (req.file.path) {
+          if (!req.file.buffer && req.file.path) {
             const fs = await import('fs');
             const buffer = fs.readFileSync(req.file.path);
-            req.file.buffer = buffer; // Add buffer for validation
+            req.file.buffer = buffer;
           }
           
           // Single file validation with magic number check
           const validated = validateAndSanitizeUpload(req.file, folder);
           req.file = validated;
 
-          // If S3 is enabled, upload to S3
-          if (s3Service.isEnabled()) {
+          if (cloudinaryService.isEnabled()) {
+            const result = await cloudinaryService.upload(req.file, folder);
+            req.file.cloudinary = result;
+            req.file.url = result.url;
+            req.file.publicId = result.publicId;
+            logger.info('File uploaded to Cloudinary', { publicId: result.publicId });
+          } else if (s3Service.isEnabled()) {
             const result = await s3Service.upload(req.file, folder);
             req.file.s3 = result;
             req.file.url = result.url;

@@ -7,7 +7,8 @@ const TimelineTracker = ({ currentStatus }) => {
     { key: 'accepted', label: 'Accepted', icon: FiCheck },
     { key: 'picked_up', label: 'Picked Up', icon: FiClock },
     { key: 'out_for_delivery', label: 'Out For Delivery', icon: FiTruck },
-    { key: 'delivered', label: 'Delivered', icon: FiCheckCircle }
+    { key: 'delivered', label: 'Delivered', icon: FiCheckCircle },
+    { key: 'completed', label: 'Completed', icon: FiCheckCircle }
   ];
 
   const getCurrentStepIndex = () => {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FiUser, FiBell, FiShield, FiMoon, FiSun, FiDownload, FiCalendar, FiMapPin } from 'react-icons/fi';
 import PageHeader from '../../components/superadmin/PageHeader';
+import { getPasswordRequirementsText } from '../../utils/authValidationPolicy';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('profile');
@@ -33,7 +34,7 @@ const Settings = () => {
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
-                <tab.icon size={16} sm:size={18} />
+                <tab.icon size={18} className="shrink-0" />
                 {tab.label}
               </button>
             ))}
@@ -182,6 +183,7 @@ const Settings = () => {
                       type="password"
                       className="w-full px-4 py-2.5 h-12 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
+                    <p className="text-gray-500 text-sm mt-1">{getPasswordRequirementsText()}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">Confirm New Password</label>
@@ -215,7 +217,7 @@ const Settings = () => {
                     <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 sm:p-4 bg-gray-50 rounded-lg">
                       <div className="flex items-center gap-3 sm:gap-4">
                         <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
-                          <FiMapPin className="text-blue-600" size={18} sm:size={20} />
+                          <FiMapPin className="text-blue-600" size={20} />
                         </div>
                         <div>
                           <p className="text-sm sm:text-base font-medium text-gray-900">{login.device}</p>
@@ -247,7 +249,7 @@ const Settings = () => {
                 <h3 className="text-base sm:text-lg font-semibold text-gray-900">Appearance</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <label className="flex items-center gap-3 sm:gap-4 p-4 sm:p-6 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors border-2 border-blue-500">
-                    <FiSun className="text-yellow-500" size={24} sm:size={32} />
+                    <FiSun className="text-yellow-500" size={32} />
                     <div>
                       <p className="text-sm sm:text-base font-medium text-gray-900">Light Mode</p>
                       <p className="text-xs sm:text-sm text-gray-500">Clean and bright interface</p>
@@ -255,7 +257,7 @@ const Settings = () => {
                     <input type="radio" name="theme" defaultChecked className="ml-auto" />
                   </label>
                   <label className="flex items-center gap-3 sm:gap-4 p-4 sm:p-6 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors border-2 border-transparent">
-                    <FiMoon className="text-blue-500" size={24} sm:size={32} />
+                    <FiMoon className="text-blue-500" size={32} />
                     <div>
                       <p className="text-sm sm:text-base font-medium text-gray-900">Dark Mode</p>
                       <p className="text-xs sm:text-sm text-gray-500">Easy on the eyes</p>
@@ -280,7 +282,7 @@ const Settings = () => {
                       key={index}
                       className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors min-h-[48px]"
                     >
-                      <report.icon className={`text-${report.color}-600`} size={18} sm:size={20} />
+                      <report.icon className={`text-${report.color}-600`} size={20} />
                       <span className="text-xs sm:text-sm font-medium text-gray-700">{report.title}</span>
                     </button>
                   ))}

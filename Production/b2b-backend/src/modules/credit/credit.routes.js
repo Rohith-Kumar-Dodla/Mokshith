@@ -7,6 +7,7 @@ import { validate } from '../../middlewares/validate.middleware.js';
 import {
   createCreditSchema,
   creditActionSchema,
+  useCreditSchema,
 } from './credit.validation.js';
 
 const router = express.Router();
@@ -24,7 +25,7 @@ router.post(
 router.get('/', protect, controller.getCredit);
 router.get('/ledger', protect, controller.getLedger);
 
-router.post('/use', protect, validate(creditActionSchema), controller.useCredit);
+router.post('/use', protect, validate(useCreditSchema), controller.useCredit);
 router.post('/repay', protect, validate(creditActionSchema), controller.repayCredit);
 
 export default router;

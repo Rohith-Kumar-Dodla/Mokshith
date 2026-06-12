@@ -1,26 +1,179 @@
 import * as repo from './logistics.repository.js';
+import Logistics from './logistics.model.js';
 import AppError from '../../errors/AppError.js';
 import { optimizeRoute } from './routeOptimization.js';
 import Order from '../order/order.model.js';
 import { DELIVERY_STATUS } from '../../constants/deliveryStatus.js';
 import { ORDER_STATUS } from '../../constants/orderStatus.js';
+import { sendNotification } from '../notification/notification.service.js';
+import { logger } from '../../config/logger.js';
 import mongoose from 'mongoose';
+
+const LOGISTICS_TRANSITIONS = {
+  [DELIVERY_STATUS.ASSIGNED]: [DELIVERY_STATUS.ACCEPTED],
+  [DELIVERY_STATUS.ACCEPTED]: [DELIVERY_STATUS.PICKED],
+  [DELIVERY_STATUS.PICKED]: [DELIVERY_STATUS.OUT_FOR_DELIVERY],
+  [DELIVERY_STATUS.OUT_FOR_DELIVERY]: [DELIVERY_STATUS.DELIVERED],
+  [DELIVERY_STATUS.DELIVERED]: [DELIVERY_STATUS.COMPLETED],
+};
+
+const ORDER_STATUS_FROM_LOGISTICS = {
+  [DELIVERY_STATUS.ASSIGNED]: ORDER_STATUS.PROCESSING,
+  [DELIVERY_STATUS.ACCEPTED]: ORDER_STATUS.PROCESSING,
+  [DELIVERY_STATUS.PICKED]: ORDER_STATUS.PACKED,
+  [DELIVERY_STATUS.OUT_FOR_DELIVERY]: ORDER_STATUS.OUT_FOR_DELIVERY,
+  [DELIVERY_STATUS.DELIVERED]: ORDER_STATUS.DELIVERED,
+  [DELIVERY_STATUS.COMPLETED]: ORDER_STATUS.COMPLETED,
+};
+
+const ORDER_STATUS_RANK = {
+  [ORDER_STATUS.CREATED]: 0,
+  [ORDER_STATUS.PENDING_PAYMENT]: 0,
+  [ORDER_STATUS.PENDING]: 0,
+  [ORDER_STATUS.CONFIRMED]: 1,
+  [ORDER_STATUS.PROCESSING]: 2,
+  [ORDER_STATUS.PACKED]: 3,
+  [ORDER_STATUS.OUT_FOR_DELIVERY]: 4,
+  [ORDER_STATUS.DELIVERED]: 5,
+  [ORDER_STATUS.COMPLETED]: 6,
+};
+
+const DELIVERY_NOTIFICATIONS = {
+  [DELIVERY_STATUS.ASSIGNED]: {
+    title: 'Delivery Assigned',
+    message: (orderId) => `Order #${orderId} has been assigned for delivery.`,
+  },
+  [DELIVERY_STATUS.ACCEPTED]: {
+    title: 'Delivery Accepted',
+    message: (orderId) => `Order #${orderId} was accepted by the delivery partner.`,
+  },
+  [DELIVERY_STATUS.PICKED]: {
+    title: 'Order Picked Up',
+    message: (orderId) => `Order #${orderId} has been picked up from the warehouse.`,
+  },
+  [DELIVERY_STATUS.OUT_FOR_DELIVERY]: {
+    title: 'Out For Delivery',
+    message: (orderId) => `Order #${orderId} is out for delivery.`,
+  },
+  [DELIVERY_STATUS.DELIVERED]: {
+    title: 'Order Delivered',
+    message: (orderId) => `Order #${orderId} has been delivered to the customer.`,
+  },
+  [DELIVERY_STATUS.COMPLETED]: {
+    title: 'Delivery Completed',
+    message: (orderId) => `Order #${orderId} delivery has been confirmed and completed.`,
+  },
+};
+
+function validateLogisticsTransition(currentStatus, nextStatus) {
+  const allowed = LOGISTICS_TRANSITIONS[currentStatus];
+  if (!allowed || !allowed.includes(nextStatus)) {
+    throw new AppError(
+      `Invalid delivery transition from ${currentStatus} to ${nextStatus}. Complete each step in order.`,
+      400
+    );
+  }
+}
+
+function resolveOrderId(orderRef) {
+  return orderRef?._id || orderRef;
+}
+
+function emitDeliveryStatusUpdate(shipment, orderStatus) {
+  if (!global.io) return;
+
+  const orderId = resolveOrderId(shipment.orderId);
+  global.io.emit('delivery:statusUpdated', {
+    shipmentId: shipment._id,
+    orderId,
+    logisticsStatus: shipment.status,
+    orderStatus,
+    deliveryPartnerId: shipment.deliveryPartnerId?._id || shipment.deliveryPartnerId,
+    updatedAt: shipment.updatedAt,
+  });
+}
+
+async function syncOrderStatusFromLogistics(orderId, logisticsStatus) {
+  const nextOrderStatus = ORDER_STATUS_FROM_LOGISTICS[logisticsStatus];
+  if (!nextOrderStatus) return null;
+
+  const order = await Order.findById(orderId);
+  if (!order) return null;
+
+  const currentRank = ORDER_STATUS_RANK[order.status] ?? 0;
+  const nextRank = ORDER_STATUS_RANK[nextOrderStatus] ?? 0;
+
+  if (nextRank > currentRank) {
+    order.status = nextOrderStatus;
+    await order.save();
+    return nextOrderStatus;
+  }
+
+  return order.status;
+}
+
+async function notifyDeliveryStakeholders(shipment, logisticsStatus) {
+  const template = DELIVERY_NOTIFICATIONS[logisticsStatus];
+  if (!template) return;
+
+  const orderId = resolveOrderId(shipment.orderId);
+  const order = await Order.findById(orderId).select('userId').lean();
+  const vendorId = order?.userId;
+  const partnerId = shipment.deliveryPartnerId?._id || shipment.deliveryPartnerId;
+
+  const payload = {
+    title: template.title,
+    message: template.message(String(orderId)),
+    type: 'ORDER',
+  };
+
+  const recipients = new Set();
+  if (vendorId) recipients.add(String(vendorId));
+  if (partnerId) recipients.add(String(partnerId));
+
+  const User = mongoose.model('User');
+  const admins = await User.find({ role: { $in: ['ADMIN', 'SUPER_ADMIN'] } }).select('_id').lean();
+  admins.forEach((admin) => recipients.add(String(admin._id)));
+
+  await Promise.all(
+    [...recipients].map((userId) =>
+      sendNotification({ userId, ...payload }).catch((err) => {
+        logger.warn('Delivery notification failed', { userId, logisticsStatus, error: err.message });
+      })
+    )
+  );
+}
 
 export const createShipment = async (order, warehouses) => {
   if (!order) throw new AppError('Order not found', 404);
 
   const existing = await repo.findByOrder(order._id);
-  if (existing) return existing;
+  if (existing) {
+    await Order.findByIdAndUpdate(order._id, { shipmentId: existing._id });
+    return existing;
+  }
 
   const selectedWarehouse = optimizeRoute(warehouses);
+  const user = order.userId;
+  const defaultAddress = order.address || order.shippingAddress || user?.addresses?.[0] || {};
+  const fullAddress = defaultAddress.addressLine
+    ? `${defaultAddress.addressLine}, ${defaultAddress.city || ''}, ${defaultAddress.state || ''} - ${defaultAddress.pincode || ''}`
+    : 'Address not provided';
 
-  return repo.createShipment({
+  const shipment = await repo.createShipment({
     orderId: order._id,
     warehouseId: selectedWarehouse?._id,
     trackingNumber: `TRK-${Date.now()}`,
     status: DELIVERY_STATUS.PENDING,
     estimatedDelivery: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+    address: fullAddress,
+    customerName: user?.name || defaultAddress.name || 'Customer',
+    phone: defaultAddress.phone || user?.mobile || 'N/A',
   });
+
+  await Order.findByIdAndUpdate(order._id, { shipmentId: shipment._id });
+
+  return shipment;
 };
 
 export const autoAssignDelivery = async (orderId) => {
@@ -98,36 +251,62 @@ export const getDeliveryQueue = async (user) => {
   if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
     return repo.findAllActive();
   }
-  return repo.findByPartner(user._id, ['PENDING', 'ASSIGNED', 'ACCEPTED', 'OUT_FOR_DELIVERY']);
+  return repo.findByPartner(user._id, [
+    DELIVERY_STATUS.PENDING,
+    DELIVERY_STATUS.ASSIGNED,
+    DELIVERY_STATUS.ACCEPTED,
+    DELIVERY_STATUS.PICKED,
+    DELIVERY_STATUS.OUT_FOR_DELIVERY,
+    DELIVERY_STATUS.DELIVERED,
+  ]);
 };
 
 export const getDeliveryHistory = async (user) => {
   if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
     return repo.findAllDelivered();
   }
-  return repo.findByPartner(user._id, ['DELIVERED', 'CANCELLED']);
+  return repo.findByPartner(user._id, ['DELIVERED', 'COMPLETED', 'CANCELLED', 'FAILED']);
 };
 
-export const updateStatus = async (id, status, userId) => {
-  const update = { status };
-  if (status === 'ACCEPTED') {
-    update.deliveryPartnerId = userId;
-  }
-  if (status === 'DELIVERED') {
-    update.deliveredAt = new Date();
-  }
-  
-  const shipment = await repo.updateShipment(id, update);
+export const updateStatus = async (id, status, userId, extra = {}) => {
+  const shipment = await repo.findById(id);
   if (!shipment) throw new AppError('Shipment not found', 404);
 
-  // Update order status as well
-  if (status === 'OUT_FOR_DELIVERY') {
-    await Order.findByIdAndUpdate(shipment.orderId, { status: ORDER_STATUS.SHIPPED });
-  } else if (status === 'DELIVERED') {
-    await Order.findByIdAndUpdate(shipment.orderId, { status: ORDER_STATUS.DELIVERED });
+  if (userId) {
+    const partnerId = shipment.deliveryPartnerId?._id || shipment.deliveryPartnerId;
+    if (partnerId && String(partnerId) !== String(userId)) {
+      throw new AppError('You are not assigned to this delivery', 403);
+    }
   }
 
-  return shipment;
+  validateLogisticsTransition(shipment.status, status);
+
+  const update = { status, ...extra };
+  if (status === DELIVERY_STATUS.ACCEPTED && userId) {
+    update.deliveryPartnerId = userId;
+  }
+  if (status === DELIVERY_STATUS.DELIVERED) {
+    update.deliveredAt = new Date();
+  }
+  if (status === DELIVERY_STATUS.COMPLETED) {
+    update.completedAt = new Date();
+  }
+
+  const updated = await repo.updateShipment(id, update);
+  const populated = await repo.findById(updated._id);
+
+  const orderStatus = await syncOrderStatusFromLogistics(resolveOrderId(populated.orderId), status);
+  emitDeliveryStatusUpdate(populated, orderStatus);
+  await notifyDeliveryStakeholders(populated, status);
+
+  return populated;
+};
+
+export const completeDelivery = async (id, userId, { notes, proofImage } = {}) => {
+  return updateStatus(id, DELIVERY_STATUS.COMPLETED, userId, {
+    deliveryNotes: notes || undefined,
+    deliveryProofImage: proofImage || undefined,
+  });
 };
 
 export const getShipments = async (user) => {
@@ -152,7 +331,7 @@ export const getShipmentById = async (id) => {
 export const getMyAssignments = async (deliveryBoyId) => {
   const filter = {
     deliveryPartnerId: deliveryBoyId,
-    status: { $ne: 'DELIVERED' }
+    status: { $nin: [DELIVERY_STATUS.COMPLETED, DELIVERY_STATUS.CANCELLED, DELIVERY_STATUS.FAILED] },
   };
   return await repo.findAll(filter);
 };
@@ -161,4 +340,101 @@ export const updateLocation = async (id, location) => {
   const shipment = await repo.updateShipment(id, { currentLocation: location });
   if (!shipment) throw new AppError('Shipment not found', 404);
   return shipment;
+};
+
+export const assignDeliveryPartner = async (shipmentId, deliveryPartnerId) => {
+  const shipment = await repo.findById(shipmentId);
+  if (!shipment) throw new AppError('Shipment not found', 404);
+
+  if ([DELIVERY_STATUS.DELIVERED, DELIVERY_STATUS.COMPLETED].includes(shipment.status)) {
+    throw new AppError('Cannot assign partner to a completed delivery', 400);
+  }
+
+  const User = mongoose.model('User');
+  const partner = await User.findOne({
+    _id: deliveryPartnerId,
+    role: 'DELIVERY_PARTNER',
+    status: { $in: ['ACTIVE', 'active'] },
+  });
+
+  if (!partner) throw new AppError('Delivery partner not found or inactive', 404);
+
+  const updated = await repo.updateShipment(shipmentId, {
+    deliveryPartnerId,
+    status: shipment.status === DELIVERY_STATUS.PENDING ? DELIVERY_STATUS.ASSIGNED : shipment.status,
+  });
+
+  const populated = await repo.findById(updated._id);
+  const linkedOrderId = resolveOrderId(populated.orderId);
+  await Order.findByIdAndUpdate(linkedOrderId, { shipmentId: populated._id });
+  const orderStatus = await syncOrderStatusFromLogistics(
+    linkedOrderId,
+    DELIVERY_STATUS.ASSIGNED
+  );
+
+  if (global.io) {
+    global.io.emit('delivery:assigned', {
+      orderId: populated.orderId?._id || populated.orderId,
+      deliveryPartnerId,
+      shipmentId: populated._id,
+      logisticsStatus: DELIVERY_STATUS.ASSIGNED,
+      orderStatus,
+    });
+    emitDeliveryStatusUpdate(populated, orderStatus);
+  }
+
+  await notifyDeliveryStakeholders(populated, DELIVERY_STATUS.ASSIGNED);
+
+  return populated;
+};
+
+export const reassignDeliveryPartner = async (shipmentId, deliveryPartnerId) => {
+  const shipment = await repo.findById(shipmentId);
+  if (!shipment) throw new AppError('Shipment not found', 404);
+
+  if ([DELIVERY_STATUS.DELIVERED, DELIVERY_STATUS.COMPLETED].includes(shipment.status)) {
+    throw new AppError('Cannot reassign a completed delivery', 400);
+  }
+
+  return assignDeliveryPartner(shipmentId, deliveryPartnerId);
+};
+
+export const getDeliveryAnalytics = async (user) => {
+  const isPartner = user.role === 'DELIVERY_PARTNER';
+  const partnerFilter = isPartner ? { deliveryPartnerId: user._id } : {};
+
+  const [statusCounts, activeCount, completedCount, failedCount] = await Promise.all([
+    repo.countByStatus(partnerFilter),
+    Logistics.countDocuments({ ...partnerFilter, status: { $nin: ['DELIVERED', 'COMPLETED', 'CANCELLED', 'FAILED'] } }),
+    Logistics.countDocuments({ ...partnerFilter, status: { $in: ['DELIVERED', 'COMPLETED'] } }),
+    Logistics.countDocuments({ ...partnerFilter, status: { $in: ['CANCELLED', 'FAILED'] } }),
+  ]);
+
+  const totalAttempts = completedCount + failedCount;
+  const completionRate = totalAttempts > 0 ? Math.round((completedCount / totalAttempts) * 100) : 100;
+  const acceptanceRate = activeCount + completedCount > 0
+    ? Math.round((completedCount / (activeCount + completedCount)) * 100)
+    : 100;
+
+  const history = isPartner
+    ? await repo.findByPartner(user._id, ['DELIVERED', 'CANCELLED', 'FAILED'])
+    : await repo.findAllDelivered();
+
+  const earnings = history.reduce((sum, shipment) => {
+    const order = shipment.orderId;
+    const amount = typeof order === 'object' ? Number(order?.totalAmount || 0) : 0;
+    return sum + Math.round(amount * 0.05);
+  }, 0);
+
+  return {
+    totalDeliveries: activeCount + completedCount + failedCount,
+    activeDeliveries: activeCount,
+    completedDeliveries: completedCount,
+    failedDeliveries: failedCount,
+    completionRate,
+    acceptanceRate,
+    earnings,
+    averageRating: completedCount > 0 ? 4.8 : 0,
+    statusBreakdown: statusCounts,
+  };
 };

@@ -6,6 +6,8 @@ import { generateInvoiceSchema } from './invoice.validation.js';
 
 const router = express.Router();
 
+router.get('/', protect, controller.getInvoices);
+
 router.post(
   '/:orderId',
   protect,

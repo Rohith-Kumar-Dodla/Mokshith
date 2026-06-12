@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   LineChart,
   Line,
@@ -16,80 +16,64 @@ import {
 } from 'recharts';
 import PageHeader from '../../components/admin/PageHeader';
 import Card from '../../components/admin/Card';
+import analyticsService from '../../services/analyticsService';
+
+const COLORS = ['#2563EB', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
 
 const Analytics = () => {
-  const monthlyRevenueData = [
-    { month: 'Jan', revenue: 280000, orders: 450 },
-    { month: 'Feb', revenue: 320000, orders: 520 },
-    { month: 'Mar', revenue: 350000, orders: 580 },
-    { month: 'Apr', revenue: 380000, orders: 620 },
-    { month: 'May', revenue: 420000, orders: 680 },
-    { month: 'Jun', revenue: 456000, orders: 750 },
-  ];
+  const [analytics, setAnalytics] = useState(null);
+  const [deliveryAnalytics, setDeliveryAnalytics] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const productPerformanceData = [
-    { name: 'Basmati Rice', sales: 1250, revenue: 106250 },
-    { name: 'Toor Dal', sales: 980, revenue: 117600 },
-    { name: 'Sunflower Oil', sales: 756, revenue: 340200 },
-    { name: 'Wheat Flour', sales: 634, revenue: 412100 },
-    { name: 'Red Chilli', sales: 892, revenue: 249760 },
-  ];
+  useEffect(() => {
+    const loadAnalytics = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const [dashboardPayload, deliveryPayload] = await Promise.all([
+          analyticsService.getDashboard(),
+          analyticsService.getDeliveryAnalytics().catch(() => null),
+        ]);
+        setAnalytics(dashboardPayload?.data ?? dashboardPayload);
+        setDeliveryAnalytics(deliveryPayload?.data ?? deliveryPayload);
+      } catch (err) {
+        setError(err?.response?.data?.message || err?.message || 'Failed to load analytics');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const categoryPerformanceData = [
-    { name: 'Grains & Rice', value: 125000 },
-    { name: 'Pulses & Dal', value: 98000 },
-    { name: 'Cooking Oil', value: 156000 },
-    { name: 'Spices', value: 145000 },
-    { name: 'Flour & Atta', value: 89000 },
-  ];
+    loadAnalytics();
+  }, []);
 
-  const vendorGrowthData = [
-    { month: 'Jan', newVendors: 5, totalVendors: 65 },
-    { month: 'Feb', newVendors: 8, totalVendors: 73 },
-    { month: 'Mar', newVendors: 6, totalVendors: 79 },
-    { month: 'Apr', newVendors: 4, totalVendors: 83 },
-    { month: 'May', newVendors: 3, totalVendors: 86 },
-    { month: 'Jun', newVendors: 3, totalVendors: 89 },
-  ];
-
-  const orderTrendData = [
-    { week: 'Week 1', orders: 120, delivered: 105 },
-    { week: 'Week 2', orders: 135, delivered: 118 },
-    { week: 'Week 3', orders: 142, delivered: 128 },
-    { week: 'Week 4', orders: 155, delivered: 140 },
-  ];
-
-  const inventoryConsumptionData = [
-    { product: 'Rice', consumption: 450 },
-    { product: 'Dal', consumption: 380 },
-    { product: 'Oil', consumption: 280 },
-    { product: 'Flour', consumption: 320 },
-    { product: 'Spices', consumption: 250 },
-  ];
-
+  const dashboard = analytics?.dashboard || {};
+  const monthlyRevenueData = analytics?.salesData || analytics?.orderTrends || [];
+  const categoryPerformanceData = analytics?.categoryData || [];
+  const productPerformanceData = useMemo(
+    () => (analytics?.topProducts || []).slice(0, 5).map((product) => ({
+      name: product.name,
+      sales: product.sales,
+      revenue: product.revenue,
+    })),
+    [analytics]
+  );
+  const orderTrendData = monthlyRevenueData.map((entry) => ({
+    week: entry.name,
+    orders: entry.orders,
+    delivered: Math.round((entry.orders || 0) * ((deliveryAnalytics?.completionRate ?? 85) / 100)),
+  }));
   const deliveryEfficiencyData = [
-    { name: 'On Time', value: 85 },
-    { name: 'Delayed', value: 12 },
-    { name: 'Cancelled', value: 3 },
-  ];
-
-  const COLORS = ['#2563EB', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
-
-  const topProducts = [
-    { name: 'Basmati Rice Premium', sales: 1250, revenue: 106250, growth: '+12%' },
-    { name: 'Toor Dal (Pigeon Pea)', sales: 980, revenue: 117600, growth: '+8%' },
-    { name: 'Sunflower Oil 5L', sales: 756, revenue: 340200, growth: '+15%' },
-    { name: 'Wheat Flour 25kg', sales: 634, revenue: 412100, growth: '+10%' },
-    { name: 'Red Chilli Powder', sales: 892, revenue: 249760, growth: '+18%' },
-  ];
-
-  const topVendors = [
-    { name: 'Big Basket Plus', orders: 789, revenue: 394500, growth: '+22%' },
-    { name: 'Premium Foods', sales: 678, revenue: 339000, growth: '+15%' },
-    { name: 'Fresh Mart Grocery', orders: 456, revenue: 228000, growth: '+12%' },
-    { name: 'Metro Wholesale', orders: 567, revenue: 283500, growth: '+18%' },
-    { name: 'Daily Needs Store', orders: 312, revenue: 156000, growth: '+10%' },
-  ];
+    { name: 'Completed', value: deliveryAnalytics?.completedDeliveries ?? 0 },
+    { name: 'Active', value: deliveryAnalytics?.activeDeliveries ?? 0 },
+    { name: 'Failed', value: deliveryAnalytics?.failedDeliveries ?? 0 },
+  ].filter((item) => item.value > 0);
+  const topProducts = (analytics?.topProducts || []).map((product) => ({
+    name: product.name,
+    sales: product.sales,
+    revenue: product.revenue,
+    growth: '—',
+  }));
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -97,6 +81,35 @@ const Analytics = () => {
         title="Analytics"
         subtitle="Comprehensive business analytics and performance metrics"
       />
+
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      {loading ? (
+        <p className="text-sm text-gray-500">Loading analytics...</p>
+      ) : (
+        <>
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+        <Card className="p-4 sm:p-6">
+          <p className="text-xs sm:text-sm text-gray-500">Total Orders</p>
+          <p className="text-2xl font-bold text-gray-900">{dashboard.totalOrders ?? 0}</p>
+        </Card>
+        <Card className="p-4 sm:p-6">
+          <p className="text-xs sm:text-sm text-gray-500">Revenue</p>
+          <p className="text-2xl font-bold text-gray-900">₹{Number(dashboard.revenue ?? 0).toLocaleString('en-IN')}</p>
+        </Card>
+        <Card className="p-4 sm:p-6">
+          <p className="text-xs sm:text-sm text-gray-500">Completion Rate</p>
+          <p className="text-2xl font-bold text-gray-900">{deliveryAnalytics?.completionRate ?? 0}%</p>
+        </Card>
+        <Card className="p-4 sm:p-6">
+          <p className="text-xs sm:text-sm text-gray-500">Pending Deliveries</p>
+          <p className="text-2xl font-bold text-gray-900">{dashboard.pendingDeliveries ?? deliveryAnalytics?.activeDeliveries ?? 0}</p>
+        </Card>
+      </div>
 
       {/* Revenue Trend */}
       <Card className="p-4 sm:p-6">
@@ -155,26 +168,11 @@ const Analytics = () => {
         </Card>
       </div>
 
-      {/* Vendor Growth & Order Trend */}
+      {/* Order Trend */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <Card className="p-4 sm:p-6">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6">Vendor Growth</h2>
-          <ResponsiveContainer width="100%" height={250} smHeight={300}>
-            <LineChart data={vendorGrowthData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="newVendors" stroke="#2563EB" strokeWidth={2} name="New Vendors" />
-              <Line type="monotone" dataKey="totalVendors" stroke="#10B981" strokeWidth={2} name="Total Vendors" />
-            </LineChart>
-          </ResponsiveContainer>
-        </Card>
-
-        <Card className="p-4 sm:p-6">
           <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6">Order Trends</h2>
-          <ResponsiveContainer width="100%" height={250} smHeight={300}>
+          <ResponsiveContainer width="100%" height={250}>
             <BarChart data={orderTrendData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="week" />
@@ -186,26 +184,13 @@ const Analytics = () => {
             </BarChart>
           </ResponsiveContainer>
         </Card>
-      </div>
-
-      {/* Inventory Consumption & Delivery Efficiency */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        <Card className="p-4 sm:p-6">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6">Inventory Consumption</h2>
-          <ResponsiveContainer width="100%" height={250} smHeight={300}>
-            <BarChart data={inventoryConsumptionData} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" />
-              <YAxis dataKey="product" type="category" width={60} smWidth={80} />
-              <Tooltip />
-              <Bar dataKey="consumption" fill="#8B5CF6" />
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
 
         <Card className="p-4 sm:p-6">
           <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6">Delivery Efficiency</h2>
-          <ResponsiveContainer width="100%" height={250} smHeight={300}>
+          {deliveryEfficiencyData.length === 0 ? (
+            <p className="text-sm text-gray-500">No delivery data available yet.</p>
+          ) : (
+          <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
                 data={deliveryEfficiencyData}
@@ -213,7 +198,7 @@ const Analytics = () => {
                 cy="50%"
                 labelLine={false}
                 label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={60} smOuterRadius={80}
+                outerRadius={80}
                 fill="#8884d8"
                 dataKey="value"
               >
@@ -224,6 +209,7 @@ const Analytics = () => {
               <Tooltip />
             </PieChart>
           </ResponsiveContainer>
+          )}
         </Card>
       </div>
 
@@ -241,7 +227,11 @@ const Analytics = () => {
               </tr>
             </thead>
             <tbody>
-              {topProducts.map((product, index) => (
+              {topProducts.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-4 py-6 text-sm text-gray-500 text-center">No product analytics available.</td>
+                </tr>
+              ) : topProducts.map((product, index) => (
                 <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                   <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium text-gray-900">{product.name}</td>
                   <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-700">{product.sales}</td>
@@ -255,35 +245,8 @@ const Analytics = () => {
           </table>
         </div>
       </Card>
-
-      {/* Top Vendors */}
-      <Card className="p-4 sm:p-6">
-        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6">Top Vendors by Revenue</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[500px]">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-700 whitespace-nowrap">Vendor Name</th>
-                <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-700 whitespace-nowrap">Orders</th>
-                <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-700 whitespace-nowrap">Revenue</th>
-                <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-700 whitespace-nowrap">Growth</th>
-              </tr>
-            </thead>
-            <tbody>
-              {topVendors.map((vendor, index) => (
-                <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium text-gray-900">{vendor.name}</td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-700">{vendor.orders}</td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-700">₹{vendor.revenue.toLocaleString()}</td>
-                  <td className="px-4 sm:px-6 py-3 sm:py-4">
-                    <span className="text-xs sm:text-sm text-green-600 font-semibold">{vendor.growth}</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+        </>
+      )}
     </div>
   );
 };

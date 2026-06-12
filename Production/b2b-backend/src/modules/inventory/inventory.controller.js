@@ -8,6 +8,7 @@ export const addStock = asyncHandler(async (req, res) => {
 });
 
 export const getInventory = asyncHandler(async (req, res) => {
+  await service.backfillMissingProductInventory();
   const data = await service.getInventory();
   successResponse(res, data);
 });

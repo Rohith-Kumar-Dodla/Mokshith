@@ -40,6 +40,7 @@ export const createProduct = asyncHandler(async (req, res) => {
     logger.debug('Upload result', { url: uploadResult.url });
     data.image = uploadResult.url;
     data.imageUrl = uploadResult.url;
+    data.imagePublicId = uploadResult.publicId;
   }
 
   const product = await service.createProduct(data);
@@ -47,6 +48,7 @@ export const createProduct = asyncHandler(async (req, res) => {
 });
 
 export const getProducts = asyncHandler(async (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
   const products = await service.getProducts(req.query);
   successResponse(res, products);
 });
@@ -79,10 +81,11 @@ export const updateProduct = asyncHandler(async (req, res) => {
     // Store the URL in both fields to be safe
     data.image = uploadResult.url;
     data.imageUrl = uploadResult.url;
+    data.imagePublicId = uploadResult.publicId;
   } else {
-    // If no new file, remove image from update object to avoid overwriting existing data with undefined
     delete data.image;
     delete data.imageUrl;
+    delete data.imagePublicId;
   }
 
   console.log('FINAL DATABASE PAYLOAD:', data);

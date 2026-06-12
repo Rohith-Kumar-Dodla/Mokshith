@@ -13,5 +13,6 @@ router.get('/orders-trends', analyticsController.getDashboard);
 router.get('/categories', analyticsController.getDashboard);
 router.get('/top-products', analyticsController.getDashboard);
 router.get('/revenue', analyticsController.getDashboard);
+router.get('/delivery', analyticsController.getDeliveryAnalytics);
 
 export default router;

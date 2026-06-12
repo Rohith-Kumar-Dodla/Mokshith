@@ -12,9 +12,9 @@ import { ROLES } from '../../constants/roles.js';
 
 const router = express.Router();
 
-// PUBLIC: Get products (with caching)
-router.get('/', cacheMiddleware(300), controller.getProducts); // Cache for 5 minutes
-router.get('/:id', cacheMiddleware(600), controller.getProductById); // Cache for 10 minutes
+// List/detail — no Redis cache (admin catalog changes frequently)
+router.get('/', controller.getProducts);
+router.get('/:id', controller.getProductById);
 
 // ADMIN/VENDOR: Create product (CSRF protected)
 router.post(

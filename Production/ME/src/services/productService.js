@@ -1,46 +1,63 @@
 import api from './api';
 
-// Product service for product management API calls
+function buildProductFormData(data, imageFile) {
+  const formData = new FormData();
+  Object.entries(data).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      formData.append(key, value);
+    }
+  });
+  if (imageFile) {
+    formData.append('image', imageFile);
+  }
+  return formData;
+}
+
 const productService = {
-  // Get all products
-  getAllProducts: async (params = {}) => {
-    const response = await api.get('/products', { params });
+  getAllProducts: async (params = {}, { bustCache = false } = {}) => {
+    const response = await api.get('/products', {
+      params: {
+        ...params,
+        ...(bustCache ? { _refresh: Date.now() } : {}),
+      },
+    });
     return response.data;
   },
 
-  // Get product by ID
   getProductById: async (productId) => {
     const response = await api.get(`/products/${productId}`);
     return response.data;
   },
 
-  // Create new product
-  createProduct: async (productData) => {
+  createProduct: async (productData, imageFile = null) => {
+    if (imageFile) {
+      const formData = buildProductFormData(productData, imageFile);
+      const response = await api.post('/products', formData);
+      return response.data;
+    }
+
     const response = await api.post('/products', productData);
     return response.data;
   },
 
-  // Update product
-  updateProduct: async (productId, productData) => {
+  updateProduct: async (productId, productData, imageFile = null) => {
+    if (imageFile) {
+      const formData = buildProductFormData(productData, imageFile);
+      const response = await api.put(`/products/${productId}`, formData);
+      return response.data;
+    }
+
     const response = await api.put(`/products/${productId}`, productData);
     return response.data;
   },
 
-  // Delete product
   deleteProduct: async (productId) => {
     const response = await api.delete(`/products/${productId}`);
     return response.data;
   },
 
-  // Get products by area
-  getProductsByArea: async (areaId) => {
-    const response = await api.get(`/products/area/${areaId}`);
-    return response.data;
-  },
-
-  // Update product stock
-  updateProductStock: async (productId, stockData) => {
-    const response = await api.patch(`/products/${productId}/stock`, stockData);
+  updateProductStock: async (productId, stock) => {
+    const response = await api.patch(`/products/${productId}/stock`, { stock });
     return response.data;
   },
 };

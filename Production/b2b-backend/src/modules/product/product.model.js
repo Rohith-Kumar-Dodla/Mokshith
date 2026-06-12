@@ -88,6 +88,11 @@ const productSchema = new mongoose.Schema(
       required: false,
     },
 
+    imagePublicId: {
+      type: String,
+      required: false,
+    },
+
     bulkPricing: [
       {
         minQuantity: Number,

@@ -1,9 +1,28 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import PageHeader from '../../components/vendor/PageHeader';
-import { vendorCategories } from '../../data';
+import useCategories from '../../hooks/useCategories';
 
 const Categories = () => {
+  const { categories, loading, error } = useCategories();
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-8 sm:p-12 text-center">
+        <p className="text-sm text-gray-600">Loading categories...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-8 sm:p-12 text-center">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Failed to load categories</h3>
+        <p className="text-xs sm:text-sm text-gray-600">{error}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <PageHeader
@@ -12,10 +31,10 @@ const Categories = () => {
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
-        {vendorCategories.map((category) => (
+        {categories.map((category) => (
           <Link
             key={category.id}
-            to="/vendor/products"
+            to={`/vendor/products?categoryId=${category.id}`}
             className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow group"
           >
             <div className="aspect-video bg-gray-100 overflow-hidden">

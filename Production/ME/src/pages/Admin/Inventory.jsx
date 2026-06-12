@@ -1,46 +1,134 @@
-import React, { useState } from 'react';
-import { FiEdit, FiAlertTriangle, FiPackage, FiTrendingUp, FiSearch, FiFilter } from 'react-icons/fi';
+import React, { useEffect, useMemo, useState } from 'react';
+import { FiEdit, FiAlertTriangle, FiPackage, FiTrendingUp } from 'react-icons/fi';
 import PageHeader from '../../components/admin/PageHeader';
 import Card from '../../components/admin/Card';
 import StatusBadge from '../../components/admin/StatusBadge';
 import SearchBar from '../../components/admin/SearchBar';
 import FilterDropdown from '../../components/admin/FilterDropdown';
 import Modal from '../../components/admin/Modal';
-import { inventory } from '../../data/inventory';
+import inventoryService from '../../services/inventoryService';
+import { mapBackendInventory, mapInventoryStats } from '../../utils/inventoryMapper';
 
 const Inventory = () => {
+  const [inventory, setInventory] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [isStockModalOpen, setIsStockModalOpen] = useState(false);
   const [selectedInventory, setSelectedInventory] = useState(null);
+  const [stockQuantity, setStockQuantity] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
 
-  const summaryCards = [
-    { title: 'Total Stock', value: '3,245', icon: FiPackage, color: 'blue' },
-    { title: 'Low Stock Products', value: '4', icon: FiAlertTriangle, color: 'orange' },
-    { title: 'Out of Stock', value: '2', icon: FiAlertTriangle, color: 'red' },
-    { title: 'Inventory Value', value: '₹8,90,123', icon: FiTrendingUp, color: 'green' },
-  ];
+  const loadInventory = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const [inventoryResponse, statsResponse] = await Promise.all([
+        inventoryService.getInventory(),
+        inventoryService.getInventoryStats(),
+      ]);
+      setInventory(mapBackendInventory(inventoryResponse));
+      setStats(mapInventoryStats(statsResponse));
+    } catch (loadError) {
+      setError(loadError?.response?.data?.message || loadError.message || 'Failed to load inventory');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadInventory();
+  }, []);
+
+  const summaryCards = useMemo(() => {
+    const lowStockCount = inventory.filter(
+      (item) => item.status === 'low_stock' || item.status === 'out_of_stock'
+    ).length;
+
+    return [
+      { title: 'Total Stock', value: String(stats?.totalStock ?? 0), icon: FiPackage, color: 'blue' },
+      { title: 'Low Stock Products', value: String(stats?.lowStockProducts ?? lowStockCount), icon: FiAlertTriangle, color: 'orange' },
+      { title: 'Out of Stock', value: String(stats?.outOfStock ?? inventory.filter((item) => item.status === 'out_of_stock').length), icon: FiAlertTriangle, color: 'red' },
+      { title: 'Inventory Value', value: `₹${Number(stats?.inventoryValue ?? 0).toLocaleString('en-IN')}`, icon: FiTrendingUp, color: 'green' },
+    ];
+  }, [inventory, stats]);
 
   const statusOptions = [
     { value: 'all', label: 'All Status' },
     { value: 'healthy', label: 'Healthy Stock' },
     { value: 'low_stock', label: 'Low Stock' },
-    { value: 'out_of_stock', label: 'Out of Stock' }
+    { value: 'out_of_stock', label: 'Out of Stock' },
   ];
 
-  const filteredInventory = inventory.filter(item => {
-    const matchesSearch = item.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.productId.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredInventory = inventory.filter((item) => {
+    const matchesSearch =
+      item.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      String(item.productId).toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = selectedStatus === 'all' || item.status === selectedStatus;
     return matchesSearch && matchesStatus;
   });
 
-  const lowStockItems = inventory.filter(item => item.status === 'low_stock' || item.status === 'out_of_stock');
+  const lowStockItems = inventory.filter(
+    (item) => item.status === 'low_stock' || item.status === 'out_of_stock'
+  );
 
   const handleUpdateStock = (item) => {
     setSelectedInventory(item);
+    setStockQuantity(String(item.currentStock));
+    setSaveError(null);
     setIsStockModalOpen(true);
   };
+
+  const handleStockSubmit = async (event) => {
+    event.preventDefault();
+    if (!selectedInventory) return;
+
+    const nextStock = Number(stockQuantity);
+    if (Number.isNaN(nextStock) || nextStock < 0) {
+      setSaveError('Enter a valid stock quantity');
+      return;
+    }
+
+    setSaving(true);
+    setSaveError(null);
+
+    try {
+      await inventoryService.updateStock({
+        productId: selectedInventory.raw?.productId?._id || selectedInventory.productId,
+        warehouseId: selectedInventory.warehouseId,
+        stock: nextStock,
+        type: 'SET',
+      });
+      setIsStockModalOpen(false);
+      await loadInventory();
+    } catch (submitError) {
+      setSaveError(submitError?.response?.data?.message || submitError.message || 'Failed to update stock');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-4 sm:space-y-6">
+        <PageHeader title="Inventory Control" subtitle="Monitor and manage inventory levels within your assigned area" />
+        <Card className="p-8 text-center text-sm text-gray-600">Loading inventory...</Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4 sm:space-y-6">
+        <PageHeader title="Inventory Control" subtitle="Monitor and manage inventory levels within your assigned area" />
+        <Card className="p-8 text-center text-sm text-red-600">{error}</Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -49,7 +137,6 @@ const Inventory = () => {
         subtitle="Monitor and manage inventory levels within your assigned area"
       />
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         {summaryCards.map((card, index) => {
           const colorClasses = {
@@ -73,7 +160,6 @@ const Inventory = () => {
         })}
       </div>
 
-      {/* Low Stock Alerts */}
       {lowStockItems.length > 0 && (
         <Card className="border-l-4 border-orange-500 p-3 sm:p-4">
           <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
@@ -99,7 +185,6 @@ const Inventory = () => {
         </Card>
       )}
 
-      {/* Filters */}
       <Card className="p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <div className="flex-1">
@@ -121,7 +206,6 @@ const Inventory = () => {
         </div>
       </Card>
 
-      {/* Inventory Table */}
       <Card className="overflow-hidden p-0">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[700px]">
@@ -176,7 +260,6 @@ const Inventory = () => {
         )}
       </Card>
 
-      {/* Stock Update Modal */}
       <Modal
         isOpen={isStockModalOpen}
         onClose={() => setIsStockModalOpen(false)}
@@ -184,36 +267,24 @@ const Inventory = () => {
         size="md"
       >
         {selectedInventory && (
-          <form className="space-y-4 sm:space-y-6">
+          <form className="space-y-4 sm:space-y-6" onSubmit={handleStockSubmit}>
             <div className="p-3 sm:p-4 bg-gray-50 rounded-lg">
               <p className="text-xs sm:text-sm font-medium text-gray-900">{selectedInventory.productName}</p>
               <p className="text-xs text-gray-600">Current Stock: {selectedInventory.currentStock}</p>
             </div>
+            {saveError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {saveError}
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">Current Quantity</label>
               <input
                 type="number"
-                defaultValue={selectedInventory.currentStock}
+                value={stockQuantity}
+                onChange={(e) => setStockQuantity(e.target.value)}
                 className="w-full px-4 py-2.5 h-12 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">Add Quantity</label>
-              <input
-                type="number"
-                placeholder="Enter quantity to add"
-                className="w-full px-4 py-2.5 h-12 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">Reason</label>
-              <select className="w-full px-4 py-2.5 h-12 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">Select reason</option>
-                <option value="restock">Restock</option>
-                <option value="return">Return</option>
-                <option value="adjustment">Adjustment</option>
-                <option value="damage">Damage</option>
-              </select>
             </div>
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
               <button
@@ -225,9 +296,10 @@ const Inventory = () => {
               </button>
               <button
                 type="submit"
-                className="px-4 sm:px-6 py-2.5 h-12 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                disabled={saving}
+                className="px-4 sm:px-6 py-2.5 h-12 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
               >
-                Update Stock
+                {saving ? 'Updating...' : 'Update Stock'}
               </button>
             </div>
           </form>

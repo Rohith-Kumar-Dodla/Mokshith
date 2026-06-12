@@ -1,8 +1,22 @@
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import * as passwordPolicy from '../../src/utils/passwordPolicy.js';
 import AppError from '../../src/errors/AppError.js';
 
 describe('Password Policy Service - Unit Tests', () => {
+  const originalStrictMode = process.env.AUTH_STRICT_MODE;
+
+  beforeEach(() => {
+    process.env.AUTH_STRICT_MODE = 'true';
+  });
+
+  afterEach(() => {
+    if (originalStrictMode === undefined) {
+      delete process.env.AUTH_STRICT_MODE;
+    } else {
+      process.env.AUTH_STRICT_MODE = originalStrictMode;
+    }
+  });
+
   describe('validatePassword()', () => {
     it('should accept strong password', () => {
       const result = passwordPolicy.validatePassword('StrongP@ssw0rd985');
@@ -49,6 +63,34 @@ describe('Password Policy Service - Unit Tests', () => {
       expect(() => {
         passwordPolicy.validatePassword('Aaaa7928@test');
       }).toThrow('repeated');
+    });
+  });
+
+  describe('validatePassword() - relaxed mode (AUTH_STRICT_MODE=false)', () => {
+    beforeEach(() => {
+      process.env.AUTH_STRICT_MODE = 'false';
+    });
+
+    it('should accept 6-character password', () => {
+      expect(passwordPolicy.validatePassword('123456')).toBe(true);
+    });
+
+    it('should accept simple alphanumeric password', () => {
+      expect(passwordPolicy.validatePassword('test123')).toBe(true);
+    });
+
+    it('should reject password shorter than 6 characters', () => {
+      expect(() => {
+        passwordPolicy.validatePassword('abc');
+      }).toThrow('at least 6 characters');
+    });
+
+    it('should allow common passwords in relaxed mode', () => {
+      expect(passwordPolicy.validatePassword('123456')).toBe(true);
+    });
+
+    it('should allow sequential characters in relaxed mode', () => {
+      expect(passwordPolicy.validatePassword('abc123')).toBe(true);
     });
   });
 

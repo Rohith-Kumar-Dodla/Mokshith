@@ -40,7 +40,9 @@ import searchRoutes from '../modules/search/search.routes.js';
 
 // Admin
 import adminRoutes from '../modules/admin/admin.routes.js';
+import adminApprovalsRoutes from '../modules/adminApprovals/adminApprovals.routes.js';
 import superAdminRoutes from '../modules/superAdmin/superAdmin.routes.js';
+import uploadRoutes from '../modules/upload/upload.routes.js';
 
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { injectCsrfToken } from '../middlewares/csrf.middleware.js';
@@ -49,6 +51,7 @@ const router = express.Router();
 
 // 🔐 Auth & Users
 router.use('/auth', authRoutes);
+router.use('/upload', authenticate, injectCsrfToken, uploadRoutes);
 router.use('/users', authenticate, injectCsrfToken, userRoutes);
 
 // 🏢 Organization
@@ -57,7 +60,7 @@ router.use('/vendors', authenticate, injectCsrfToken, vendorRoutes);
 
 // 🛍️ Catalog
 router.use('/categories', authenticate, injectCsrfToken, categoryRoutes);
-router.use('/products', productRoutes); // Products list is public
+router.use('/products', authenticate, injectCsrfToken, productRoutes);
 router.use('/pricing', pricingRoutes);
 router.use('/promotions', authenticate, injectCsrfToken, promotionRoutes);
 
@@ -89,6 +92,7 @@ router.use('/search', searchRoutes);
 
 // 🛡️ Admin
 router.use('/admin', authenticate, injectCsrfToken, adminRoutes);
+router.use('/admin-approvals', authenticate, injectCsrfToken, adminApprovalsRoutes);
 router.use('/super-admin', authenticate, injectCsrfToken, superAdminRoutes);
 router.use('/superadmin', authenticate, injectCsrfToken, superAdminRoutes);
 

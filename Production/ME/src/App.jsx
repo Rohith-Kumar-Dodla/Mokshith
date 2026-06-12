@@ -6,12 +6,14 @@ import ProtectedRoute from './routes/ProtectedRoute';
 import Home from './pages/Home/Home';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
+import ForgotPassword from './pages/Auth/ForgotPassword';
+import ResetPassword from './pages/Auth/ResetPassword';
 
 // Super Admin Pages
 import SuperAdminLayout from './layouts/SuperAdminLayout';
 import SuperAdminDashboard from './pages/SuperAdmin/Dashboard';
 import Platform from './pages/SuperAdmin/Platform';
-import AdminPerformance from './pages/SuperAdmin/AdminPerformance';
+import AdminApprovals from './pages/SuperAdmin/AdminApprovals';
 import Vendors from './pages/SuperAdmin/Vendors';
 import DeliveryPartners from './pages/SuperAdmin/DeliveryPartners';
 import Orders from './pages/SuperAdmin/Orders';
@@ -67,6 +69,8 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* Protected Routes - Super Admin */}
           <Route
@@ -80,7 +84,7 @@ function App() {
             <Route index element={<Navigate to="/super-admin/dashboard" replace />} />
             <Route path="dashboard" element={<SuperAdminDashboard />} />
             <Route path="platform" element={<Platform />} />
-            <Route path="admin-performance" element={<AdminPerformance />} />
+            <Route path="admin-approvals" element={<AdminApprovals />} />
             <Route path="vendors" element={<Vendors />} />
             <Route path="delivery-partners" element={<DeliveryPartners />} />
             <Route path="orders" element={<Orders />} />

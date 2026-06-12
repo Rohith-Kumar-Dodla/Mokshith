@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FiUser, FiBell, FiShield, FiTruck, FiLock, FiSmartphone, FiMail, FiCheck, FiSave } from 'react-icons/fi';
+import { getPasswordRequirementsText } from '../../utils/authValidationPolicy';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('profile');
@@ -353,6 +354,7 @@ const Settings = () => {
                         placeholder="Enter new password"
                         className="w-full px-3 sm:px-4 py-2.5 h-10 sm:h-12 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                       />
+                      <p className="text-gray-500 text-sm mt-1">{getPasswordRequirementsText()}</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>

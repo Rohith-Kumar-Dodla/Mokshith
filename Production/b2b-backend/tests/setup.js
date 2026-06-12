@@ -25,6 +25,7 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_jwt_secret_key_for_test
 process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'test_refresh_secret_key_for_testing_minimum_64_chars_long_string';
 process.env.RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || 'test_razorpay_key';
 process.env.RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'test_razorpay_secret';
+process.env.AUTH_STRICT_MODE = process.env.AUTH_STRICT_MODE || 'true';
 
 console.log('🧪 Test environment initialized:', {
   NODE_ENV: process.env.NODE_ENV,

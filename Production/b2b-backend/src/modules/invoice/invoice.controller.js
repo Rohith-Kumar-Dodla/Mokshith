@@ -14,3 +14,8 @@ export const getInvoiceByOrderId = asyncHandler(async (req, res) => {
   if (!invoice) throw new AppError('Invoice not found', 404);
   successResponse(res, invoice, 'Invoice fetched');
 });
+
+export const getInvoices = asyncHandler(async (req, res) => {
+  const invoices = await service.getInvoicesForUser(req.user.id);
+  successResponse(res, invoices || []);
+});

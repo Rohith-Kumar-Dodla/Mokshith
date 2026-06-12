@@ -12,9 +12,6 @@ package-lock.json
 # =================================================================
 # Environment Variables (CRITICAL - DO NOT COMMIT)
 # =================================================================
-.env
-.env.*
-!.env.example
 .env.local
 .env.development
 .env.test

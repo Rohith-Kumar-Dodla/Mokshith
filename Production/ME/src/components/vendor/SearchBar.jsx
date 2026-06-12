@@ -1,21 +1,45 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FiSearch, FiX } from 'react-icons/fi';
+
+const DEBOUNCE_MS = 300;
 
 const SearchBar = ({ onSearch, placeholder = 'Search products...', className = '' }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const debounceRef = useRef(null);
+
+  useEffect(() => () => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+  }, []);
+
+  const scheduleSearch = (value, immediate = false) => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    if (!onSearch) {
+      return;
+    }
+
+    if (immediate) {
+      onSearch(value);
+      return;
+    }
+
+    debounceRef.current = setTimeout(() => {
+      onSearch(value);
+    }, DEBOUNCE_MS);
+  };
 
   const handleSearch = (value) => {
     setSearchTerm(value);
-    if (onSearch) {
-      onSearch(value);
-    }
+    scheduleSearch(value);
   };
 
   const handleClear = () => {
     setSearchTerm('');
-    if (onSearch) {
-      onSearch('');
-    }
+    scheduleSearch('', true);
   };
 
   return (

@@ -76,6 +76,16 @@ const startServer = async () => {
     // 🔥 Connect DB
     await connectDB();
 
+    // 🔥 Backfill inventory for products created before auto-provisioning
+    try {
+      const { backfillMissingProductInventory } = await import(
+        './src/modules/inventory/inventory.service.js'
+      );
+      await backfillMissingProductInventory();
+    } catch (backfillError) {
+      logger.warn('Inventory backfill skipped or failed', { error: backfillError.message });
+    }
+
     // 🔥 Connect Redis (must be before workers/socket adapters)
     logger.info('Connecting to Redis...');
     const redisConnected = await redisClient.connect();

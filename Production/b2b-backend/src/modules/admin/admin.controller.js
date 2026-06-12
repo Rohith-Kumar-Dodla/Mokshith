@@ -31,7 +31,7 @@ export const approveUser = asyncHandler(async (req, res) => {
 
 export const rejectUser = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const user = await adminService.changeUserStatus(id, 'SUSPENDED');
+  const user = await adminService.changeUserStatus(id, 'REJECTED');
   successResponse(res, user, 'User rejected successfully');
 });
 

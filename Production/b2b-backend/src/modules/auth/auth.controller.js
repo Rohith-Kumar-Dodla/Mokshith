@@ -12,29 +12,27 @@ import {
 import { getCsrfToken } from '../../middlewares/csrf.middleware.js';
 
 export const register = asyncHandler(async (req, res) => {
-  const result = await authService.register(req.body, req);
-  
-  // Log action
+  const user = await authService.register(req.body, req);
+
   await Audit.create({
-    userId: result.user._id,
-    userEmail: result.user.email,
-    role: result.user.role,
+    userId: user._id,
+    userEmail: user.email,
+    role: user.role,
     action: 'REGISTER',
     entity: 'USER',
-    entityId: result.user._id,
-    details: `User registered: ${result.user.email}`,
+    entityId: user._id,
+    details: `User registered: ${user.email}`,
     ip: req.ip,
     severity: 'INFO'
   });
 
-  trackAuthAttempt(result.user._id, true, req);
+  trackAuthAttempt(user._id, true, req);
 
-  // Include CSRF token in response
   const csrfToken = getCsrfToken(req, res);
 
-  successResponse(res, { 
-    ...result,
-    csrfToken
+  successResponse(res, {
+    user,
+    csrfToken,
   }, 'User registered successfully');
 });
 
@@ -216,6 +214,18 @@ export const disable2FA = asyncHandler(async (req, res) => {
   track2FAEvent(SECURITY_EVENTS['2FA_DISABLED'], userId, req, true);
 
   successResponse(res, { success: true }, '2FA disabled successfully');
+});
+
+export const forgotPassword = asyncHandler(async (req, res) => {
+  const { identifier } = req.body;
+  const data = await authService.requestPasswordReset(identifier);
+  successResponse(res, data, data.message);
+});
+
+export const resetPassword = asyncHandler(async (req, res) => {
+  const { token, newPassword } = req.body;
+  await authService.resetPassword(token, newPassword);
+  successResponse(res, { success: true }, 'Password reset successfully. Please log in.');
 });
 
 /**

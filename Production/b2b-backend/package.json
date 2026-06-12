@@ -16,7 +16,11 @@
     "lint": "eslint . || echo 'ESLint not configured'",
     "lint:fix": "eslint . --fix || echo 'ESLint not configured'",
     "format": "prettier --write . || echo 'Prettier not configured'",
-    "format:check": "prettier --check . || echo 'Prettier not configured'"
+    "format:check": "prettier --check . || echo 'Prettier not configured'",
+    "reset:db": "node scripts/resetDatabase.js",
+    "verify:superadmin": "node scripts/verifySuperAdmin.js",
+    "clear:auth-limits": "node scripts/clearAuthRateLimits.js",
+    "fix:user-phone": "node scripts/fixUserPhoneIndex.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1057.0",
@@ -27,6 +31,7 @@
     "@socket.io/redis-adapter": "^8.3.0",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.41.6",
+    "cloudinary": "^2.10.0",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",

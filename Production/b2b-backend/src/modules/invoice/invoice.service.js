@@ -105,3 +105,7 @@ export const generateInvoice = async (orderId, force = false) => {
 export const getInvoiceByOrderId = async (orderId) => {
   return repo.findByOrderId(orderId);
 };
+
+export const getInvoicesForUser = async (userId) => {
+  return repo.findByUserId(userId);
+};
