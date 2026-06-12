@@ -108,6 +108,7 @@ export const orderLimiter = rateLimit({
     message: 'Too many order creation attempts. Please wait a few minutes before creating more orders.',
   },
   skipSuccessfulRequests: false, // Count all attempts to prevent inventory locking abuse
+  skip: (req) => process.env.NODE_ENV === 'test',
   keyGenerator: (req) => {
     // Use user ID if authenticated, otherwise IP address
     return req.user?.id || req.ip;

@@ -10,6 +10,7 @@ import { configureSocketAdapter, cleanupSocketAdapter } from './src/config/socke
 import { setupQueryTimeout } from './src/utils/queryTimeout.js';
 import { Server } from 'socket.io';
 import http from 'http';
+import mongoose from 'mongoose';
 
 // 🔥 Initialize Sentry FIRST (before any other imports)
 initializeSentry(app);
@@ -226,9 +227,13 @@ const shutdown = async (signal) => {
     }
 
     // 4. Close database connection
-    if (connectDB.connection) {
-      await connectDB.connection.close();
-      logger.info('💤 MongoDB connection closed');
+    try {
+      if (mongoose.connection && mongoose.connection.readyState !== 0) {
+        await mongoose.connection.close(false);
+        logger.info('💤 MongoDB connection closed');
+      }
+    } catch (dbCloseErr) {
+      logger.warn('Failed to close MongoDB connection cleanly', { error: dbCloseErr.message });
     }
 
     // 5. Close Redis connection

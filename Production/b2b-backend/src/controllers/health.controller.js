@@ -164,6 +164,7 @@ async function checkRedis() {
       latencyMs: responseTime,
       connected: true,
       usedMemory,
+      circuitBreakerState: circuitBreaker.state,
       circuitBreaker: {
         state: circuitBreaker.state,
         isHealthy: circuitBreaker.isHealthy,
@@ -181,6 +182,7 @@ async function checkRedis() {
       status: 'unhealthy',
       message: error.message,
       connected: false,
+      circuitBreakerState: circuitBreaker.state,
       circuitBreaker: {
         state: circuitBreaker.state,
         fallbackActive: circuitBreaker.state === 'OPEN'
@@ -224,12 +226,15 @@ function checkMemory() {
  * 🔒 PHASE 3: Enhanced with queue depth, stuck jobs, and DLQ monitoring
  */
 async function checkQueues() {
+  const emptyDetails = { waiting: 0, active: 0, failed: 0, delayed: 0 };
+
   try {
     if (process.env.ENABLE_QUEUE !== 'true') {
       return {
         status: 'healthy',
         message: 'Queues disabled',
-        enabled: false
+        enabled: false,
+        details: emptyDetails,
       };
     }
 
@@ -335,11 +340,24 @@ async function checkQueues() {
     const overallStatus = hasUnhealthy ? 'unhealthy' : 
                           hasDegraded ? 'degraded' : 
                           'healthy';
+
+    const aggregatedDetails = workerStatuses.reduce(
+      (acc, worker) => {
+        const depth = worker.queueDepth || emptyDetails;
+        acc.waiting += depth.waiting || 0;
+        acc.active += depth.active || 0;
+        acc.failed += depth.failed || 0;
+        acc.delayed += depth.delayed || 0;
+        return acc;
+      },
+      { ...emptyDetails }
+    );
     
     return {
       status: overallStatus,
       enabled: true,
       workers: workerStatuses,
+      details: aggregatedDetails,
       totalWorkers: workers.length,
       runningWorkers: workerStatuses.filter(w => w.running).length,
       healthyWorkers: workerStatuses.filter(w => w.status === 'healthy').length,
@@ -357,7 +375,8 @@ async function checkQueues() {
     return {
       status: 'unhealthy',
       message: error.message,
-      enabled: true
+      enabled: true,
+      details: emptyDetails,
     };
   }
 }

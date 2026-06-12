@@ -104,8 +104,9 @@ export const verifyPayment = async ({ razorpay_order_id, razorpay_payment_id, ra
     // Note: Signature verification is synchronous, no timeout needed
 
     const sign = razorpay_order_id + '|' + razorpay_payment_id;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET || env.razorpay?.keySecret || env.RAZORPAY_KEY_SECRET;
     const expectedSign = crypto
-      .createHmac('sha256', env.razorpay.keySecret)
+      .createHmac('sha256', keySecret)
       .update(sign.toString())
       .digest('hex');
 

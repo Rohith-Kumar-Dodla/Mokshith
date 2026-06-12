@@ -39,7 +39,7 @@ describe('Webhook Replay Attack Tests', () => {
     testOrder = await Order.create({
       ...generateTestOrder({
         customerId: testUser._id,
-        totalAmount: 10000,
+        totalAmount: 100,
       }),
       userId: testUser._id,
       status: ORDER_STATUS.CONFIRMED,
@@ -50,7 +50,7 @@ describe('Webhook Replay Attack Tests', () => {
     testPayment = await Payment.create({
       orderId: testOrder._id,
       userId: testUser._id,
-      amount: 10000,
+      amount: 100,
       razorpayOrderId: 'order_webhook123',
       status: PAYMENT_STATUS.PENDING,
       paymentMethod: 'ONLINE',

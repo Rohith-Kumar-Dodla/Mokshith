@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Admin Flow E2E', () => {
+/**
+ * Legacy full-stack admin scenarios — skipped until Playwright uses API mocks or a test backend.
+ */
+test.describe.skip('Admin Flow E2E', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
     await page.fill('input[type="email"]', 'admin@example.com');

@@ -198,13 +198,19 @@ app.use(requestLogger);
 app.use(idempotencyMiddleware);
 
 
-// ❤️ Health check routes
+// ❤️ Health check routes (root + API versioned aliases for probes and tests)
 import { healthCheck, livenessProbe, readinessProbe, getMetrics } from './controllers/health.controller.js';
 
-app.get('/health', healthCheck);
-app.get('/health/live', livenessProbe);
-app.get('/health/ready', readinessProbe);
-app.get('/metrics', getMetrics); // System metrics for monitoring
+const mountHealthRoutes = (basePath) => {
+  app.get(`${basePath}`, healthCheck);
+  app.get(`${basePath}/live`, livenessProbe);
+  app.get(`${basePath}/ready`, readinessProbe);
+};
+
+mountHealthRoutes('/health');
+mountHealthRoutes('/api/health');
+mountHealthRoutes('/api/v1/health');
+app.get('/metrics', getMetrics);
 
 
 // 🚀 API routes

@@ -1,5 +1,6 @@
 export default {
   testEnvironment: 'node',
+  setupFiles: ['<rootDir>/tests/env.setup.js'],
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
   testMatch: [
     '**/tests/**/*.test.js',
@@ -56,8 +57,6 @@ export default {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@tests/(.*)$': '<rootDir>/tests/$1',
-    '^../config/redis\\.js$': '<rootDir>/src/config/__mocks__/redis.js',
-    '^../../src/config/redis\\.js$': '<rootDir>/src/config/__mocks__/redis.js'
   },
   transform: {},
   globals: {

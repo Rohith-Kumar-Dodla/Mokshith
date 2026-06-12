@@ -33,7 +33,7 @@ export const register = asyncHandler(async (req, res) => {
   successResponse(res, {
     user,
     csrfToken,
-  }, 'User registered successfully');
+  }, 'User registered successfully', 201);
 });
 
 export const login = asyncHandler(async (req, res) => {

@@ -69,7 +69,16 @@ export const teardownTestDB = async () => {
 };
 
 // Clear all collections with connection state validation
+export const ensureTestDbConnected = async () => {
+  if (mongoose.connection.readyState === 1) {
+    return;
+  }
+
+  await setupTestDB();
+};
+
 export const clearDatabase = async () => {
+  await ensureTestDbConnected();
   // Defensive check: only clear if connected
   if (mongoose.connection.readyState !== 1) {
     console.warn('Skipping clearDatabase - MongoDB not connected (readyState:', mongoose.connection.readyState, ')');
@@ -203,7 +212,7 @@ export const generateTestUser = (overrides = {}) => ({
   name: 'Test User',
   email: `test${Date.now()}@example.com`,
   mobile: `98765${Math.floor(Math.random() * 100000)}`,
-  password: 'Test@1234',
+  password: 'Test@12345678',
   role: 'B2B_CUSTOMER',
   status: 'ACTIVE',
   ...overrides,

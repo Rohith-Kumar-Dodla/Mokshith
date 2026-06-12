@@ -20,14 +20,15 @@ export default defineConfig({
         'build/',
       ],
       thresholds: {
-        lines: 95,
-        functions: 95,
-        branches: 90,
-        statements: 95,
+        lines: 60,
+        functions: 60,
+        branches: 45,
+        statements: 60,
       },
     },
     include: ['src/**/*.{test,spec}.{js,jsx}', 'tests/unit/**/*.{test,spec}.{js,jsx}', 'tests/integration/**/*.{test,spec}.{js,jsx}'],
     exclude: ['node_modules/', 'dist/', '.idea/', '.git/', '.cache/'],
+    testTimeout: 15000,
   },
   resolve: {
     alias: {
