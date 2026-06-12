@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('SuperAdmin Flow E2E', () => {
+/**
+ * Legacy full-stack super admin scenarios — skipped until Playwright uses API mocks or a test backend.
+ */
+test.describe.skip('SuperAdmin Flow E2E', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
     await page.fill('input[type="email"]', 'superadmin@example.com');

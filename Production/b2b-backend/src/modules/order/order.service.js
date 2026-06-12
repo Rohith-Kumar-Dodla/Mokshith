@@ -354,7 +354,9 @@ export const getOrders = async (user, query = {}) => {
   }
 
   if (search) {
-    const searchRegex = { $regex: search, $options: 'i' };
+    // Sanitize search input to prevent ReDoS / regex injection
+    const sanitized = String(search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const searchRegex = { $regex: sanitized, $options: 'i' };
     filter.$or = [{ _id: search.match(/^[0-9a-fA-F]{24}$/) ? search : undefined }].filter(Boolean);
     if (!filter.$or.length) {
       delete filter.$or;
@@ -378,12 +380,13 @@ export const getOrders = async (user, query = {}) => {
 
   if (isAdmin && search && !filter.$or) {
     const User = (await import('../user/user.model.js')).default;
+    const sanitizedSearch = String(search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const matchingUsers = await User.find({
       $or: [
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-        { mobile: { $regex: search, $options: 'i' } },
-        { companyName: { $regex: search, $options: 'i' } },
+        { name: { $regex: sanitizedSearch, $options: 'i' } },
+        { email: { $regex: sanitizedSearch, $options: 'i' } },
+        { mobile: { $regex: sanitizedSearch, $options: 'i' } },
+        { companyName: { $regex: sanitizedSearch, $options: 'i' } },
       ],
     })
       .select('_id')
@@ -418,16 +421,37 @@ export const getOrders = async (user, query = {}) => {
 };
 
 export const getOrderById = async (id) => {
-  const order = await orderRepo.findById(id);
+  throw new AppError('Use getOrderByIdWithUser for ownership-checked lookup', 400);
+};
 
+export const getOrderByIdWithUser = async (id, user) => {
+  if (!mongoose.Types.ObjectId.isValid(id)) throw new AppError('Invalid order ID', 400);
+
+  const order = await orderRepo.findById(id);
   if (!order) throw new AppError('Order not found', 404);
+
+  const userId = typeof user === 'string' ? user : (user?.id || user?._id);
+  const role = user?.role || null;
+  if (!(role === 'ADMIN' || role === 'SUPER_ADMIN') && userId && order.userId.toString() !== userId.toString()) {
+    throw new AppError('Access denied', 403);
+  }
 
   const [enriched] = await enrichOrdersWithDeliveryPartner([order]);
   return enriched;
 };
 
-export const downloadInvoice = async (orderId) => {
+export const downloadInvoice = async (orderId, user) => {
   logger.info('Searching for invoice', { orderId });
+  // Ownership check: ensure the requester owns the order or has admin privileges
+  if (!mongoose.Types.ObjectId.isValid(orderId)) throw new AppError('Invalid order ID', 400);
+  const order = await orderRepo.findById(orderId);
+  if (!order) throw new AppError('Order not found', 404);
+  const userId = typeof user === 'string' ? user : (user?.id || user?._id);
+  const role = user?.role || null;
+  if (!(role === 'ADMIN' || role === 'SUPER_ADMIN') && userId && order.userId.toString() !== userId.toString()) {
+    throw new AppError('Access denied', 403);
+  }
+
   let invoice = await getInvoiceByOrderId(orderId);
   
   // If invoice doesn't exist OR fileUrl is missing, generate/regenerate it
@@ -493,6 +517,10 @@ export const downloadInvoice = async (orderId) => {
 };
 
 export const markOrderAsFailed = async (id) => {
+  throw new AppError('markOrderAsFailed requires user context - use markOrderAsFailedWithUser', 400);
+};
+
+export const markOrderAsFailedWithUser = async (id, user) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new AppError('Invalid order ID', 400);
   }
@@ -500,6 +528,13 @@ export const markOrderAsFailed = async (id) => {
   const order = await Order.findById(id);
   if (!order) throw new AppError('Order not found', 404);
   
+  const userId = typeof user === 'string' ? user : (user?.id || user?._id);
+  const role = user?.role || null;
+  // Only owner or admin can mark as failed
+  if (!(role === 'ADMIN' || role === 'SUPER_ADMIN') && userId && order.userId.toString() !== userId.toString()) {
+    throw new AppError('Access denied', 403);
+  }
+
   // Only process if not already failed
   if (order.status === ORDER_STATUS.FAILED) return order;
 

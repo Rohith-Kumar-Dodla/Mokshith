@@ -17,17 +17,17 @@ export const getOrders = asyncHandler(async (req, res) => {
 });
 
 export const getOrderById = asyncHandler(async (req, res) => {
-  const order = await service.getOrderById(req.params.id);
+  const order = await service.getOrderByIdWithUser(req.params.id, req.user);
   successResponse(res, order);
 });
 
 export const downloadInvoice = asyncHandler(async (req, res) => {
-  const { filePath, fileName } = await service.downloadInvoice(req.params.id);
+  const { filePath, fileName } = await service.downloadInvoice(req.params.id, req.user);
   res.download(filePath, fileName);
 });
 
 export const markOrderAsFailed = asyncHandler(async (req, res) => {
-  const order = await service.markOrderAsFailed(req.params.id);
+  const order = await service.markOrderAsFailedWithUser(req.params.id, req.user);
   successResponse(res, order, 'Order marked as failed');
 });
 

@@ -5,7 +5,9 @@ import { logger } from './logger.js';
 let razorpayInstance = null;
 
 export function isRazorpayEnabled() {
-  return Boolean(env.RAZORPAY_KEY_ID && env.RAZORPAY_KEY_SECRET);
+  const keyId = process.env.RAZORPAY_KEY_ID || env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET || env.RAZORPAY_KEY_SECRET;
+  return Boolean(keyId && keySecret);
 }
 
 /**

@@ -82,7 +82,7 @@ const redisConfig = {
   password: env.REDIS_PASSWORD,
   maxRetriesPerRequest: 3,
   enableReadyCheck: true,
-  lazyConnect: true,
+  lazyConnect: env.NODE_ENV === 'test' ? false : true,
   showFriendlyErrorStack: env.NODE_ENV === 'development',
   
   // 🔒 Enhanced reconnection strategy for HA
@@ -175,6 +175,55 @@ redis.on('end', () => {
 
 // Graceful error handling wrapper with circuit breaker
 export const redisClient = {
+  circuitBreaker,
+
+  async ping() {
+    if (!circuitBreaker.canAttempt()) {
+      throw new Error('Redis circuit breaker open');
+    }
+
+    try {
+      const result = await redis.ping();
+      circuitBreaker.recordSuccess();
+      return result;
+    } catch (error) {
+      circuitBreaker.recordFailure();
+      throw error;
+    }
+  },
+
+  async info(section = 'default') {
+    if (!circuitBreaker.canAttempt()) {
+      return '';
+    }
+
+    try {
+      const result = typeof redis.info === 'function' ? await redis.info(section) : '';
+      circuitBreaker.recordSuccess();
+      return result || '';
+    } catch (error) {
+      circuitBreaker.recordFailure();
+      logger.error('Redis INFO error:', error.message);
+      return '';
+    }
+  },
+
+  async keys(pattern = '*') {
+    if (!circuitBreaker.canAttempt()) {
+      return [];
+    }
+
+    try {
+      const result = typeof redis.keys === 'function' ? await redis.keys(pattern) : [];
+      circuitBreaker.recordSuccess();
+      return result || [];
+    } catch (error) {
+      circuitBreaker.recordFailure();
+      logger.error('Redis KEYS error:', error.message);
+      return [];
+    }
+  },
+
   async get(key) {
     if (!circuitBreaker.canAttempt()) {
       logger.debug('Redis circuit breaker OPEN, skipping GET', { key });
@@ -356,7 +405,23 @@ export const redisClient = {
       return 0;
     }
   },
-  
+
+  async ttl(key) {
+    if (!circuitBreaker.canAttempt()) {
+      return -2;
+    }
+
+    try {
+      const result = typeof redis.ttl === 'function' ? await redis.ttl(key) : -2;
+      circuitBreaker.recordSuccess();
+      return result;
+    } catch (error) {
+      circuitBreaker.recordFailure();
+      logger.error(`Redis TTL error for key ${key}:`, error.message);
+      return -2;
+    }
+  },
+
   /**
    * 🔒 Acquire distributed lock with database fallback
    * @param {string} key - Lock key

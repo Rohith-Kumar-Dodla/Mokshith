@@ -83,10 +83,12 @@ export const getAllUsers = async (query) => {
   let filter = {};
 
   if (search) {
+    // Sanitize search input to prevent ReDoS / regex injection
+    const sanitized = String(search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     filter.$or = [
-      { name: { $regex: search, $options: 'i' } },
-      { email: { $regex: search, $options: 'i' } },
-      { mobile: { $regex: search, $options: 'i' } },
+      { name: { $regex: sanitized, $options: 'i' } },
+      { email: { $regex: sanitized, $options: 'i' } },
+      { mobile: { $regex: sanitized, $options: 'i' } },
     ];
   }
 
