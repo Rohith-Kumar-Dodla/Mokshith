@@ -37,4 +37,4 @@ const AnalyticsCard = ({ title, value, change, icon, color = 'blue', trend }) =>
   );
 };
 
-export default AnalyticsCard;
+export default React.memo(AnalyticsCard);

@@ -1,6 +1,8 @@
 import React from 'react';
 import { FiTrendingUp, FiTrendingDown } from 'react-icons/fi';
 
+import React from 'react';
+
 const EarningsCard = ({ title, amount, change, icon, period }) => {
   const isPositive = change >= 0;
 
@@ -28,4 +30,4 @@ const EarningsCard = ({ title, amount, change, icon, period }) => {
   );
 };
 
-export default EarningsCard;
+export default React.memo(EarningsCard);

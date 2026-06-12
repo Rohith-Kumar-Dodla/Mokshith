@@ -33,13 +33,13 @@ const circuitBreaker = {
         this.state = 'CLOSED';
         this.failureCount = 0;
         this.successCount = 0;
-        logger.info('✅ Redis circuit breaker CLOSED - connection restored');
+        logger.info('Redis circuit breaker CLOSED - connection restored');
       }
     } else if (this.state === 'OPEN') {
       // Shouldn't happen, but reset anyway
       this.state = 'CLOSED';
       this.failureCount = 0;
-      logger.info('✅ Redis circuit breaker CLOSED');
+      logger.info('Redis circuit breaker CLOSED');
     }
   },
   
@@ -49,11 +49,11 @@ const circuitBreaker = {
       this.state = 'OPEN';
       this.nextAttempt = Date.now() + this.timeout;
       this.successCount = 0;
-      logger.error('❌ Redis circuit breaker OPEN - fallback mode activated');
+      logger.error('Redis circuit breaker OPEN - fallback mode activated');
     } else if (this.failureCount >= this.failureThreshold) {
       this.state = 'OPEN';
       this.nextAttempt = Date.now() + this.timeout;
-      logger.error(`❌ Redis circuit breaker OPEN after ${this.failureCount} failures`);
+      logger.error(`Redis circuit breaker OPEN after ${this.failureCount} failures`);
     }
   },
   
@@ -63,7 +63,7 @@ const circuitBreaker = {
     if (this.state === 'OPEN' && Date.now() >= this.nextAttempt) {
       this.state = 'HALF_OPEN';
       this.successCount = 0;
-      logger.info('🔄 Redis circuit breaker HALF_OPEN - testing connection');
+      logger.info('Redis circuit breaker HALF_OPEN - testing connection');
       return true;
     }
     return false;
@@ -146,31 +146,31 @@ if (env.REDIS_CLUSTER === 'true') {
 const redis = new Redis(redisConfig);
 
 redis.on('connect', () => {
-  logger.info('✅ Redis connected', {
+  logger.info('Redis connected', {
     mode: redisConfig.sentinels ? 'sentinel' : 'standalone',
     host: redisConfig.host || 'sentinel',
   });
 });
 redis.on('ready', () => {
-  logger.info('✅ Redis ready');
+  logger.info('Redis ready');
   circuitBreaker.recordSuccess();
 });
 redis.on('error', (err) => {
   circuitBreaker.recordFailure();
   if (err.code === 'ECONNREFUSED') {
-    logger.warn('⚠️ Redis connection refused - running in degraded mode');
+    logger.warn('Redis connection refused - running in degraded mode');
     return;
   }
-  logger.error('❌ Redis error:', err.message);
+  logger.error('Redis error:', err.message);
 });
 redis.on('close', () => {
-  logger.warn('⚠️ Redis connection closed');
+  logger.warn('Redis connection closed');
 });
 redis.on('reconnecting', (delay) => {
-  logger.info(`🔄 Redis reconnecting in ${delay}ms...`);
+  logger.info(`Redis reconnecting in ${delay}ms...`);
 });
 redis.on('end', () => {
-  logger.warn('⚠️ Redis connection ended');
+  logger.warn('Redis connection ended');
 });
 
 // Graceful error handling wrapper with circuit breaker
@@ -718,6 +718,34 @@ export const redisClient = {
     } catch (error) {
       logger.error('Redis flushall error:', error.message);
       return false;
+    }
+  },
+
+  // Approximate key count (dbsize) with fallbacks for mock clients
+  async dbsize() {
+    if (!circuitBreaker.canAttempt()) {
+      return -1;
+    }
+
+    try {
+      if (typeof redis.dbsize === 'function') {
+        const result = await redis.dbsize();
+        circuitBreaker.recordSuccess();
+        return typeof result === 'number' ? result : parseInt(result, 10) || 0;
+      }
+
+      // Fallback: use keys('*') where supported (mock clients)
+      if (typeof redis.keys === 'function') {
+        const keys = await redis.keys('*');
+        circuitBreaker.recordSuccess();
+        return Array.isArray(keys) ? keys.length : 0;
+      }
+
+      return -1;
+    } catch (error) {
+      circuitBreaker.recordFailure();
+      logger.error('Redis DBSIZE error:', error.message);
+      return -1;
     }
   },
 };

@@ -5,26 +5,26 @@ import { setupTestDB, teardownTestDB } from './helpers/testUtils.js';
 
 // Setup before all tests with extended timeout
 beforeAll(async () => {
-  console.log('🚀 Starting global test setup...');
+  console.log('Starting global test setup...');
   
   try {
     await setupTestDB();
-    console.log('✅ Test database setup complete');
+    console.log('Test database setup complete');
   } catch (error) {
-    console.error('❌ Failed to setup test database:', error);
+    console.error('Failed to setup test database:', error);
     throw error;
   }
 }, 60000);
 
 // Teardown after all tests with extended timeout
 afterAll(async () => {
-  console.log('🧹 Starting global test teardown...');
+  console.log('Starting global test teardown...');
   
   try {
     await teardownTestDB();
-    console.log('✅ Test database teardown complete');
+    console.log('Test database teardown complete');
   } catch (error) {
-    console.error('❌ Failed to teardown test database:', error);
+    console.error('Failed to teardown test database:', error);
     // Don't throw - allow process to exit
   }
   
@@ -48,12 +48,12 @@ if (SUPPRESS_LOGS) {
 
 // Handle unhandled promise rejections in tests
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('🚨 Unhandled Promise Rejection in tests:', reason);
+  console.error('Unhandled Promise Rejection in tests:', reason);
   // Don't exit - let Jest handle it
 });
 
 // Handle uncaught exceptions in tests
 process.on('uncaughtException', (error) => {
-  console.error('🚨 Uncaught Exception in tests:', error);
+  console.error('Uncaught Exception in tests:', error);
   // Don't exit - let Jest handle it
 });

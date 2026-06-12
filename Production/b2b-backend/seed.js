@@ -13,7 +13,7 @@ dotenv.config();
 
 const seed = async () => {
   try {
-    console.log('🌱 Seeding database...');
+    console.log('Seeding database...');
     await mongoose.connect(process.env.MONGO_URI);
     
     // Clear existing data (optional, but good for fresh start)
@@ -34,7 +34,7 @@ const seed = async () => {
       status: USER_STATUS.ACTIVE,
       isVerified: true
     });
-    console.log('✅ Super Admin created');
+    console.log('Super Admin created');
 
     // 2. Create Company
     const company = await Company.create({
@@ -44,7 +44,7 @@ const seed = async () => {
       address: 'Industrial Area, Bangalore',
       createdBy: admin._id
     });
-    console.log('✅ Company created');
+    console.log('Company created');
 
     // 3. Create Vendor
     const vendorUser = await User.create({
@@ -66,13 +66,13 @@ const seed = async () => {
       companyId: company._id,
       status: 'APPROVED'
     });
-    console.log('✅ Vendor created');
+    console.log('Vendor created');
 
     // 4. Create Categories
     const catHardware = await Category.create({ name: 'Hardware' });
     const catElectrical = await Category.create({ name: 'Electrical' });
     const catMachinery = await Category.create({ name: 'Machinery' });
-    console.log('✅ Categories created');
+    console.log('Categories created');
 
     // 5. Create Products
     await Product.create([
@@ -110,12 +110,12 @@ const seed = async () => {
         isActive: true
       }
     ]);
-    console.log('✅ Products created');
+    console.log('Products created');
 
-    console.log('🏁 Seeding completed successfully!');
+    console.log('Seeding completed successfully!');
     process.exit(0);
   } catch (err) {
-    console.error('❌ Seeding failed:', err);
+    console.error('Seeding failed:', err);
     process.exit(1);
   }
 };
