@@ -720,6 +720,34 @@ export const redisClient = {
       return false;
     }
   },
+
+  // Approximate key count (dbsize) with fallbacks for mock clients
+  async dbsize() {
+    if (!circuitBreaker.canAttempt()) {
+      return -1;
+    }
+
+    try {
+      if (typeof redis.dbsize === 'function') {
+        const result = await redis.dbsize();
+        circuitBreaker.recordSuccess();
+        return typeof result === 'number' ? result : parseInt(result, 10) || 0;
+      }
+
+      // Fallback: use keys('*') where supported (mock clients)
+      if (typeof redis.keys === 'function') {
+        const keys = await redis.keys('*');
+        circuitBreaker.recordSuccess();
+        return Array.isArray(keys) ? keys.length : 0;
+      }
+
+      return -1;
+    } catch (error) {
+      circuitBreaker.recordFailure();
+      logger.error('Redis DBSIZE error:', error.message);
+      return -1;
+    }
+  },
 };
 
 export default redis;

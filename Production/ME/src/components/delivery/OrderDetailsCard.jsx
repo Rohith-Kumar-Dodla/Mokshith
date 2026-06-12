@@ -1,6 +1,8 @@
 import React from 'react';
 import { FiPackage, FiMapPin, FiUser, FiPhone, FiDollarSign, FiClock } from 'react-icons/fi';
 
+import React from 'react';
+
 const OrderDetailsCard = ({ order }) => {
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 space-y-4 sm:space-y-6">
@@ -127,4 +129,4 @@ const OrderDetailsCard = ({ order }) => {
   );
 };
 
-export default OrderDetailsCard;
+export default React.memo(OrderDetailsCard);

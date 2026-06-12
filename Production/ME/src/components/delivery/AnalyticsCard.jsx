@@ -45,3 +45,6 @@ const AnalyticsCard = ({ title, value, icon, trend, color = 'blue' }) => {
 };
 
 export default AnalyticsCard;
+ 
+// Memoize to avoid unnecessary re-renders when props unchanged
+export const MemoizedAnalyticsCard = React.memo(AnalyticsCard);

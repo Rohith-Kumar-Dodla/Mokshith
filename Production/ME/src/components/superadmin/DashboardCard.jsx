@@ -57,4 +57,4 @@ const DashboardCard = ({ title, value, growth, icon: Icon, color = 'blue' }) => 
   );
 };
 
-export default DashboardCard;
+export default React.memo(DashboardCard);

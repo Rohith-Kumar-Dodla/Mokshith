@@ -398,8 +398,7 @@ function checkDisk() {
  */
 export const getMetrics = async (req, res) => {
   try {
-    const metrics = await monitoringService.getSystemMetrics();
-    const alerts = monitoringService.getAlerts();
+    const { metrics, alerts } = await monitoringService.getSystemMetricsAndAlert();
 
     res.status(200).json({
       success: true,

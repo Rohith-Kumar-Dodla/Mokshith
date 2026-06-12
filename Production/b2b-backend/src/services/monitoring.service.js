@@ -60,6 +60,54 @@ class MonitoringService {
     };
   }
 
+  // Override to include alert notification after metrics retrieval
+  async getSystemMetricsAndAlert() {
+    const metrics = await this.getSystemMetrics();
+    const alerts = this.getAlerts();
+    if (alerts && alerts.length > 0) {
+      // Non-blocking notification
+      this.checkAndNotifyAlerts(alerts);
+    }
+    return { metrics, alerts };
+  }
+
+  /**
+   * Check alerts and optionally notify an external webhook (if configured)
+   * Non-blocking and best-effort.
+   */
+  async checkAndNotifyAlerts(alerts) {
+    try {
+      if (!alerts || alerts.length === 0) return;
+      const webhook = process.env.MONITORING_ALERT_WEBHOOK;
+      if (!webhook) {
+        logger.warn('Monitoring alerts:', { alerts });
+        return;
+      }
+
+      // Send a concise payload
+      const payload = {
+        timestamp: new Date().toISOString(),
+        alerts,
+        app: process.env.npm_package_name || 'backend'
+      };
+
+      // Best-effort POST
+      try {
+        await fetch(webhook, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          // short timeout via AbortSignal if available
+        });
+        logger.info('Monitoring alerts posted to webhook', { webhook, count: alerts.length });
+      } catch (err) {
+        logger.warn('Failed to send monitoring alerts to webhook', { error: err.message });
+      }
+    } catch (err) {
+      logger.error('Error in checkAndNotifyAlerts:', err);
+    }
+  }
+
   /**
    * Get MongoDB metrics
    */

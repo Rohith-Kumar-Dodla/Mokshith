@@ -11,4 +11,4 @@ const Card = ({ children, className = '', onClick }) => {
   );
 };
 
-export default Card;
+export default React.memo(Card);
