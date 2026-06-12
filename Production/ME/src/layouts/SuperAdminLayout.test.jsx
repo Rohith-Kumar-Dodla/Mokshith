@@ -31,6 +31,7 @@ describe('SuperAdminLayout', () => {
     );
 
     expect(screen.queryAllByRole('button', { name: /^Logout$/i })).toHaveLength(1);
-    expect(screen.getByRole('link', { name: /Admin Approvals/i })).toBeInTheDocument();
+    // Label updated in production to "User Approvals" — test should match visible text.
+    expect(screen.getByRole('link', { name: /User Approvals/i })).toBeInTheDocument();
   }, 10000);
 });

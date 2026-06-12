@@ -66,6 +66,20 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const requestUrl = originalRequest?.url || '';
 
+    // If backend signalled session replaced, force logout across tabs
+    const backendCode = error.response?.data?.error?.code;
+    if (backendCode === 'SESSION_REPLACED') {
+      // Clear local session storage and notify other tabs
+      localStorage.setItem('session_replaced', JSON.stringify({
+        message: error.response?.data?.message || 'Your account was logged in from another device. Please sign in again.',
+        ts: Date.now()
+      }));
+      // Also clear auth storage and redirect
+      clearAuthStorage();
+      redirectToLogin();
+      return Promise.reject(error);
+    }
+
     if (
       status !== 401 ||
       !originalRequest ||

@@ -96,6 +96,8 @@ export const errorHandler = (err, req, res, next) => {
     errorResponse.error.code = 'VALIDATION_ERROR';
   } else if (err.name === 'CastError') {
     errorResponse.error.code = 'INVALID_ID';
+  } else if (err.name === 'SESSION_REPLACED') {
+    errorResponse.error.code = 'SESSION_REPLACED';
   } else if (err.code === 11000) {
     errorResponse.error.code = 'DUPLICATE_ENTRY';
   } else if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {

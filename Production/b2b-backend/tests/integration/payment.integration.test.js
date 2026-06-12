@@ -34,7 +34,7 @@ describe('Payment Module - Comprehensive Tests', () => {
       status: USER_STATUS.ACTIVE,
     });
 
-    const loginResponse = await request.post('/api/auth/login').send({
+    const loginResponse = await request.post('/api/v1/auth/login').send({
       identifier: testUser.email,
       password: 'Test@1234',
     });

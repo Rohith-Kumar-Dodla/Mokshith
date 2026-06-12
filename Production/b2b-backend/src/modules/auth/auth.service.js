@@ -157,6 +157,20 @@ export const loginWithPassword = async ({ mobile, identifier, password }, req = 
   }
 
   // Generate tokens
+  // Create a single active session id and persist on user
+  const sessionId = crypto.randomUUID();
+  const userAgent = req.get?.('user-agent') || 'unknown';
+  const device = parseUserAgent(userAgent);
+
+  await updateUser(user._id, {
+    activeSessionId: sessionId,
+    lastLoginAt: new Date(),
+    lastLoginDevice: `${device.browser} ${device.os}`,
+    lastLoginIp: req.ip || 'unknown',
+  });
+
+  // Ensure access token contains sessionId
+  user.activeSessionId = sessionId;
   const accessToken = generateAccessToken(user);
   const refreshTokenValue = await createRefreshToken(user, req);
 
@@ -235,7 +249,8 @@ const createRefreshToken = async (user, req = {}, existingFamily = null) => {
   const ip = req.ip || 'unknown';
   const userAgent = req.get?.('user-agent') || 'unknown';
 
-  const tokenValue = generateRefreshToken(user);
+  // Ensure refresh token is unique by appending a short random suffix
+  const tokenValue = `${generateRefreshToken(user)}.${crypto.randomBytes(6).toString('hex')}`;
   const family = existingFamily || crypto.randomBytes(16).toString('hex');
 
   const deviceInfo = parseUserAgent(userAgent);
@@ -473,6 +488,12 @@ export const logout = async (refreshToken) => {
 
   if (tokenDoc) {
     await tokenDoc.revoke('user', 'manual_logout');
+    // Clear activeSessionId for the user to invalidate sessions
+    try {
+      await updateUser(tokenDoc.userId, { activeSessionId: null });
+    } catch (err) {
+      logger.warn('Failed to clear activeSessionId on logout', { userId: tokenDoc.userId });
+    }
     logger.info('User logged out', { userId: tokenDoc.userId });
   }
 

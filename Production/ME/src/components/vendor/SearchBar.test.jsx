@@ -1,4 +1,4 @@
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import SearchBar from './SearchBar';
@@ -13,13 +13,15 @@ describe('SearchBar', () => {
   });
 
   it('debounces search callbacks by 300ms', async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const onSearch = vi.fn();
 
-    render(<SearchBar onSearch={onSearch} />);
+    const { container } = render(<SearchBar onSearch={onSearch} />);
 
     const input = screen.getByPlaceholderText('Search products...');
-    await user.type(input, 'rice');
+    // Use fireEvent to trigger React change handlers.
+    await act(async () => {
+      fireEvent.input(input, { target: { value: 'rice' } });
+    });
 
     expect(onSearch).not.toHaveBeenCalled();
 
@@ -31,19 +33,25 @@ describe('SearchBar', () => {
   });
 
   it('clears search immediately', async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const onSearch = vi.fn();
 
-    render(<SearchBar onSearch={onSearch} />);
+    const { container } = render(<SearchBar onSearch={onSearch} />);
 
     const input = screen.getByPlaceholderText('Search products...');
-    await user.type(input, 'rice');
+    await act(async () => {
+      fireEvent.input(input, { target: { value: 'rice' } });
+    });
 
     act(() => {
       vi.advanceTimersByTime(300);
     });
 
-    await user.click(screen.getByRole('button'));
+    // Click the clear button within the component container (avoids other page buttons).
+    const root = container.firstChild;
+    const clearBtn = within(root).getByRole('button');
+    await act(async () => {
+      fireEvent.click(clearBtn);
+    });
 
     expect(onSearch).toHaveBeenLastCalledWith('');
   });

@@ -4,7 +4,7 @@
  */
 
 import { logger } from '../config/logger.js';
-import redis from '../config/redis.js';
+import { redisClient as redis } from '../config/redis.js';
 
 // Security events that should be logged
 const SECURITY_EVENTS = {

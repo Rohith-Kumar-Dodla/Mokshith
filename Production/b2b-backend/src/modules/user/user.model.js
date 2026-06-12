@@ -160,6 +160,22 @@ const userSchema = new mongoose.Schema(
     vehicleNumber: String,
     licenseNumber: String,
 
+    // Single active session enforcement
+    activeSessionId: {
+      type: String,
+      default: null,
+      index: true,
+    },
+    lastLoginAt: {
+      type: Date,
+    },
+    lastLoginDevice: {
+      type: String,
+    },
+    lastLoginIp: {
+      type: String,
+    },
+
     activeSessions: [
       {
         deviceId: String,
