@@ -10,8 +10,11 @@ vi.mock('../context/AuthContext', () => ({
   }),
 }));
 
-vi.mock('../hooks/useLogout', () => ({
-  useLogout: () => vi.fn(),
+vi.mock('../hooks/useLogoutConfirm', () => ({
+  useLogoutConfirm: () => ({
+    requestLogout: vi.fn(),
+    LogoutConfirmDialog: () => null,
+  }),
 }));
 
 vi.mock('../components/superadmin/NotificationDrawer', () => ({
@@ -19,6 +22,18 @@ vi.mock('../components/superadmin/NotificationDrawer', () => ({
 }));
 
 describe('SuperAdminLayout', () => {
+  beforeAll(() => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn().mockImplementation((query) => ({
+        matches: query.includes('min-width: 1024px'),
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    });
+  });
+
   it('renders only one logout button', () => {
     render(
       <MemoryRouter initialEntries={['/super-admin/dashboard']}>

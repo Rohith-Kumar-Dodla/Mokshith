@@ -18,3 +18,4 @@ export { default as creditService } from './creditService';
 export { default as notificationService } from './notificationService';
 export { default as invoiceService } from './invoiceService';
 export { default as paymentService } from './paymentService';
+export { default as settingsService } from './settingsService';

@@ -25,6 +25,36 @@ const paymentService = {
     const response = await api.post('/payments/hybrid', payload);
     return response.data;
   },
+
+  getBankTransferDetails: async () => {
+    const response = await api.get('/payments/bank-transfer/bank-details');
+    return response.data;
+  },
+
+  uploadBankTransferProof: async (formData) => {
+    const response = await api.post('/payments/bank-transfer/upload', formData);
+    return response.data;
+  },
+
+  getPendingBankTransfers: async () => {
+    const response = await api.get('/payments/bank-transfer/pending');
+    return response.data;
+  },
+
+  approveBankTransfer: async (proofId) => {
+    const response = await api.patch(`/payments/bank-transfer/${proofId}/approve`);
+    return response.data;
+  },
+
+  rejectBankTransfer: async (proofId, reason) => {
+    const response = await api.patch(`/payments/bank-transfer/${proofId}/reject`, { reason });
+    return response.data;
+  },
+
+  getBankTransferByOrder: async (orderId) => {
+    const response = await api.get(`/payments/bank-transfer/order/${orderId}`);
+    return response.data;
+  },
 };
 
 export default paymentService;

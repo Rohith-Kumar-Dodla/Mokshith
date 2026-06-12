@@ -1,16 +1,35 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { FiArrowLeft, FiDownload, FiPrinter, FiTruck, FiMapPin, FiPhone } from 'react-icons/fi';
+import { FiArrowLeft, FiDownload, FiPrinter, FiTruck, FiMapPin, FiPhone, FiDollarSign } from 'react-icons/fi';
 import PageHeader from '../../components/vendor/PageHeader';
 import OrderTimeline from '../../components/vendor/OrderTimeline';
 import StatusBadge from '../../components/vendor/StatusBadge';
+import BankTransferDetails from '../../components/vendor/BankTransferDetails';
+import PaymentProofForm from '../../components/vendor/PaymentProofForm';
 import { useOrderDetails } from '../../hooks/useOrders';
+import { useBankTransferProof } from '../../hooks/useBankTransfer';
 import orderService from '../../services/orderService';
 
 const OrderDetails = () => {
   const { id } = useParams();
   const { loading, error, order } = useOrderDetails(id);
+  const isBankTransfer =
+    order?.paymentMethod === 'BANK_TRANSFER' ||
+    (order?.backendStatus === 'PENDING_PAYMENT' && order?.paymentStatus === 'pending');
+  const {
+    proof,
+    bankDetails,
+    orderInfo,
+    loading: proofLoading,
+    reload: reloadProof,
+  } = useBankTransferProof(isBankTransfer ? id : null);
   const [invoiceError, setInvoiceError] = useState('');
+  const [toast, setToast] = useState(null);
+
+  const showToast = (type, message) => {
+    setToast({ type, message });
+    window.setTimeout(() => setToast(null), 4000);
+  };
 
   const handleDownloadInvoice = async () => {
     if (!order?.id) return;
@@ -40,6 +59,18 @@ const OrderDetails = () => {
     window.print();
   };
 
+  const getBankTransferPaymentLabel = () => {
+    if (proof?.rawStatus === 'APPROVED') return 'approved';
+    if (proof?.rawStatus === 'REJECTED' || order?.paymentStatus === 'rejected') return 'rejected';
+    if (proof?.rawStatus === 'PENDING') return 'pending_verification';
+    return order?.paymentStatus || 'pending';
+  };
+
+  const canSubmitProof =
+    isBankTransfer &&
+    order?.backendStatus === 'PENDING_PAYMENT' &&
+    (!proof || proof.rawStatus === 'REJECTED');
+
   if (loading) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
@@ -62,6 +93,14 @@ const OrderDetails = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium ${
+          toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+        }`}>
+          {toast.message}
+        </div>
+      )}
+
       <Link
         to="/vendor/orders"
         className="inline-flex items-center gap-1.5 sm:gap-2 text-blue-600 hover:text-blue-700 text-xs sm:text-sm font-medium"
@@ -112,6 +151,88 @@ const OrderDetails = () => {
             </div>
             <OrderTimeline timeline={order.timeline} />
           </div>
+
+          {isBankTransfer && (
+            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <FiDollarSign className="w-5 h-5" />
+                  Bank Transfer Payment
+                </h2>
+                {canSubmitProof && (
+                  <Link
+                    to={`/vendor/orders/${order.id}/payment`}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Submit Payment
+                  </Link>
+                )}
+              </div>
+
+              {proofLoading ? (
+                <p className="text-sm text-gray-600">Loading payment proof...</p>
+              ) : (
+                <div className="space-y-4">
+                  <BankTransferDetails bankDetails={bankDetails} amount={orderInfo?.amount ?? order.amount} />
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-500">Verification Status</p>
+                      <StatusBadge status={getBankTransferPaymentLabel()} />
+                    </div>
+                    {proof?.utrNumber && (
+                      <div>
+                        <p className="text-gray-500">UTR Number</p>
+                        <p className="font-medium text-gray-900 font-mono">{proof.utrNumber}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {proof?.rawStatus === 'REJECTED' && proof.rejectionReason && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+                      <p className="font-semibold mb-1">Rejection Reason</p>
+                      <p>{proof.rejectionReason}</p>
+                    </div>
+                  )}
+
+                  {proof?.rawStatus === 'PENDING' && (
+                    <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
+                      Your payment proof is pending admin verification.
+                    </div>
+                  )}
+
+                  {canSubmitProof && (
+                    <div className="pt-4 border-t border-gray-200">
+                      <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                        {proof?.rawStatus === 'REJECTED' ? 'Resubmit Payment Proof' : 'Submit Payment Proof'}
+                      </h3>
+                      <PaymentProofForm
+                        orderId={order.id}
+                        onSuccess={async () => {
+                          await reloadProof();
+                          showToast('success', 'Payment proof submitted successfully');
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {proof?.screenshot && (
+                    <div>
+                      <p className="text-sm text-gray-500 mb-1">Payment Screenshot</p>
+                      <a
+                        href={proof.screenshot}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 hover:text-blue-700"
+                      >
+                        View uploaded proof
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
             <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Products Ordered</h2>
@@ -216,11 +337,17 @@ const OrderDetails = () => {
             <div className="space-y-2 sm:space-y-3">
               <div>
                 <p className="text-xs sm:text-sm text-gray-500">Payment Method</p>
-                <p className="text-xs sm:text-sm font-medium text-gray-900">{order.paymentMethod}</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-900">
+                  {order.paymentMethod === 'BANK_TRANSFER' ? 'Bank Transfer' : order.paymentMethod}
+                </p>
               </div>
               <div>
                 <p className="text-xs sm:text-sm text-gray-500">Payment Status</p>
-                <StatusBadge status={order.paymentStatus} />
+                {isBankTransfer ? (
+                  <StatusBadge status={getBankTransferPaymentLabel()} />
+                ) : (
+                  <StatusBadge status={order.paymentStatus} />
+                )}
               </div>
             </div>
           </div>

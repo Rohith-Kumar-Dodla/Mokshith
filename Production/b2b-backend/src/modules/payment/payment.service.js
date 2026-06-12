@@ -333,6 +333,13 @@ export const initiatePayment = async (orderId, userId) => {
     };
   }
 
+  if (order.paymentMethod === 'BANK_TRANSFER') {
+    return {
+      message: 'Payment handled via bank transfer',
+      paymentMethod: 'BANK_TRANSFER',
+    };
+  }
+
   const paymentOrder = await gateway.createPaymentOrder({
     amount: order.totalAmount,
   });

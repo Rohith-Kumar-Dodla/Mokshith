@@ -1,4 +1,4 @@
-import { razorpay } from '../../config/razorpay.js';
+import { getRazorpay, isRazorpayEnabled } from '../../config/razorpay.js';
 import crypto from 'crypto';
 import { env } from '../../config/env.js';
 import { logger } from '../../config/logger.js';
@@ -12,6 +12,12 @@ import { logger } from '../../config/logger.js';
  * @returns {Promise<Object>} Razorpay order with required fields
  */
 export const createPaymentOrder = async ({ amount, currency = 'INR', receipt }) => {
+  if (!isRazorpayEnabled()) {
+    throw new Error('Razorpay is not configured. Online payments are currently unavailable.');
+  }
+
+  const razorpay = getRazorpay();
+
   // Validate amount
   const numericAmount = Number(amount);
   if (isNaN(numericAmount) || numericAmount < 0) {
@@ -81,6 +87,11 @@ export const createPaymentOrder = async ({ amount, currency = 'INR', receipt }) 
  */
 export const verifyPayment = async ({ razorpay_order_id, razorpay_payment_id, razorpay_signature }) => {
   try {
+    if (!isRazorpayEnabled()) {
+      logger.error('Payment verification attempted but Razorpay is not configured');
+      return false;
+    }
+
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       logger.error('Payment verification missing required fields', { 
         hasOrderId: !!razorpay_order_id, 
@@ -147,6 +158,12 @@ export const verifyWebhookSignature = (body, signature, secret) => {
  */
 export const createRefund = async ({ paymentId, amount, notes, receipt }) => {
   try {
+    if (!isRazorpayEnabled()) {
+      throw new Error('Razorpay is not configured. Refunds are currently unavailable.');
+    }
+
+    const razorpay = getRazorpay();
+
     if (!paymentId) {
       throw new Error('Payment ID is required for refund');
     }
@@ -225,6 +242,12 @@ export const createRefund = async ({ paymentId, amount, notes, receipt }) => {
  */
 export const fetchRefund = async (refundId) => {
   try {
+    if (!isRazorpayEnabled()) {
+      throw new Error('Razorpay is not configured. Refunds are currently unavailable.');
+    }
+
+    const razorpay = getRazorpay();
+
     if (!refundId) {
       throw new Error('Refund ID is required');
     }

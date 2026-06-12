@@ -63,11 +63,14 @@ export const operationIdempotency = (operationType) => {
     let autoKey;
     
     switch (operationType) {
-      case 'order:create':
-        // Use userId + hash of items for stable auto-key
-        const cartSignature = req.body.items?.map(i => `${i.productId}:${i.quantity}`).join('|') || 'empty';
-        autoKey = `order:create:${req.user?.id}:${cartSignature}`;
+      case 'order:create': {
+        // Include payment method so COD vs bank transfer vs online are not conflated
+        const cartSignature =
+          req.body.items?.map((i) => `${i.productId}:${i.quantity}`).join('|') || 'cart';
+        const paymentMethod = String(req.body.paymentMethod || 'COD').toUpperCase();
+        autoKey = `order:create:${req.user?.id}:${paymentMethod}:${cartSignature}`;
         break;
+      }
         
       case 'inventory:add':
         // Use productId + quantity + warehouseId for stock addition
@@ -91,8 +94,8 @@ export const operationIdempotency = (operationType) => {
         autoKey = `${operationType}:${req.user?.id}:${Date.now()}`;
     }
 
-    // Allow manual override via header
-    const manualKey = req.headers['idempotency-key'];
+    // Allow manual override via header or request body
+    const manualKey = req.headers['idempotency-key'] || req.body?.idempotencyKey;
     const key = manualKey || autoKey;
 
     // Validate key format

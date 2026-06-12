@@ -36,6 +36,7 @@ describe('useCheckout', () => {
     expect(mapPaymentMethodToBackend('upi')).toBe('UPI');
     expect(mapPaymentMethodToBackend('credit')).toBe('CREDIT');
     expect(mapPaymentMethodToBackend('hybrid')).toBe('ONLINE');
+    expect(mapPaymentMethodToBackend('bank_transfer')).toBe('BANK_TRANSFER');
   });
 
   it('builds shipping address payload', () => {

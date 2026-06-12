@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { 
-  ArrowRight, CheckCircle2, TrendingUp, ShieldCheck, Zap, 
-  Sparkles, Truck, ShoppingCart, CheckCircle, Clock, Package, 
-  Menu, X, Globe, Mail, Phone, MapPin 
+import {
+  ArrowRight, CheckCircle2, TrendingUp, ShieldCheck, Zap,
+  Sparkles, Truck, ShoppingCart, CheckCircle, Clock, Package,
+  Menu, X, Globe, Mail, Phone, MapPin
 } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import BusinessFeatures from '../../components/sections/BusinessFeatures';
@@ -11,33 +11,24 @@ import MobileAppPromotion from '../../components/sections/MobileAppPromotion';
 import ProductCategories from '../../components/sections/ProductCategories';
 import SocialProof from '../../components/sections/SocialProof';
 import WholesaleDeals from '../../components/sections/WholesaleDeals';
+import { useAuth } from '../../context/AuthContext';
+import { getDashboardRoute } from '../../utils/roleMap';
 
-// Note: Replace these with your actual route configuration
 const routes = {
   LANDING: '/',
-  DASHBOARD: '/dashboard',
   REGISTER: '/register',
   LOGIN: '/login',
-  PRODUCTS: '/products',
-  PRICING: '/pricing',
-  SOLUTIONS: '/solutions',
-  CONTACT: '/contact',
-  ABOUT: '/about'
+  PRODUCTS: '/vendor/products',
 };
-
-// Note: Replace with your actual auth hook or remove if not needed
-const useAuth = () => ({
-  user: null // Set to mock user object for testing
-});
 
 // ==================== HERO SECTION ====================
 const HeroSection = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, role, isAuthenticated } = useAuth();
 
   const handleGetStarted = () => {
-    if (user) {
-      navigate(routes.DASHBOARD);
+    if (isAuthenticated && role) {
+      navigate(getDashboardRoute(role));
     } else {
       navigate(routes.REGISTER);
     }
@@ -56,7 +47,7 @@ const HeroSection = () => {
         <div className="hero-content">
           <div className="hero-badge">
             <span className="badge-dot"></span>
-            <span>Trusted by 1,000+ businesses</span>
+            <span>Enterprise B2B Commerce Platform</span>
           </div>
           
           <h1 className="hero-title">
@@ -69,10 +60,10 @@ const HeroSection = () => {
           
           <div className="hero-actions">
             <button onClick={handleGetStarted} className="hero-button primary">
-              {user ? 'Go to Dashboard' : 'Get Started'} <ArrowRight size={18} />
+              {isAuthenticated ? 'Go to Dashboard' : 'Get Started'} <ArrowRight size={18} />
             </button>
-            <Link to={routes.PRODUCTS} className="hero-button secondary">
-              Browse Products
+            <Link to={routes.LOGIN} className="hero-button secondary">
+              Sign In
             </Link>
           </div>
 
