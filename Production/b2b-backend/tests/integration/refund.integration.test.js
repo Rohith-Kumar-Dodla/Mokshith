@@ -54,12 +54,12 @@ describe('Refund Integration Tests', () => {
     const userLogin = await request(app)
       .post('/api/v1/auth/login')
       .send({ email: 'refund@test.com', password: 'Test@1234' });
-    authToken = userLogin.body.data.token;
+    authToken = userLogin.body.data.accessToken;
 
     const adminLogin = await request(app)
       .post('/api/v1/auth/login')
       .send({ email: 'admin@test.com', password: 'Admin@1234' });
-    adminToken = adminLogin.body.data.token;
+    adminToken = adminLogin.body.data.accessToken;
 
     // Create product and inventory
     const Warehouse = mongoose.model('Warehouse');
@@ -241,7 +241,7 @@ describe('Refund Integration Tests', () => {
       const otherLogin = await request(app)
         .post('/api/v1/auth/login')
         .send({ email: 'other@test.com', password: 'Test@1234' });
-      const otherToken = otherLogin.body.data.token;
+      const otherToken = otherLogin.body.data.accessToken;
 
       // Try to refund order belonging to different user
       const res = await request(app)

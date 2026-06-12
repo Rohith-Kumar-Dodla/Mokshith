@@ -1,6 +1,6 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { twoFactorAuth } from '../../src/services/twoFactorAuth.service.js';
-import { authenticator } from 'otplib';
+import { authenticator } from '@otplib/preset-default';
 
 describe('Two-Factor Authentication Service - Unit Tests', () => {
   describe('generateSecret()', () => {

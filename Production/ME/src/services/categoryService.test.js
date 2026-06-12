@@ -23,7 +23,8 @@ describe('categoryService', () => {
 
     await categoryService.getCategories();
 
-    expect(api.get).toHaveBeenCalledWith('/categories');
+    // api.get is called with a second options argument (params may be undefined).
+    expect(api.get).toHaveBeenCalledWith('/categories', expect.anything());
   });
 
   it('calls category by id endpoint', async () => {

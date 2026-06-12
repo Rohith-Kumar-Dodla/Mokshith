@@ -31,7 +31,9 @@ describe('useProducts', () => {
   });
 
   it('loads and maps products from API', async () => {
+    // Return the API-shaped payload that unwrapApiData expects (success + data).
     productService.getAllProducts.mockResolvedValue({
+      success: true,
       data: {
         products: [
           {
@@ -72,9 +74,10 @@ describe('useProducts', () => {
     });
 
     await waitFor(() => {
-      expect(productService.getAllProducts).toHaveBeenCalledWith(
-        expect.objectContaining({ categoryId: 'cat-1' })
-      );
+      // getAllProducts is called with (params, options). Check first call's first arg.
+      expect(productService.getAllProducts).toHaveBeenCalled();
+      const firstCallFirstArg = productService.getAllProducts.mock.calls[0][0];
+      expect(firstCallFirstArg).toEqual(expect.objectContaining({ categoryId: 'cat-1' }));
     });
   });
 
@@ -132,6 +135,7 @@ describe('useProducts', () => {
 
   it('applies client-side filters', async () => {
     productService.getAllProducts.mockResolvedValue({
+      success: true,
       data: {
         products: [
           {
