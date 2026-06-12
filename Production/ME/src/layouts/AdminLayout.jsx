@@ -10,7 +10,6 @@ import {
   FiFileText,
   FiBarChart2,
   FiSettings,
-  FiLogOut,
   FiMenu,
   FiX,
   FiSearch,
@@ -20,17 +19,19 @@ import {
   FiDollarSign
 } from 'react-icons/fi';
 import NotificationDrawer from '../components/admin/NotificationDrawer';
-import { useLogout } from '../hooks/useLogout';
+import PortalSidebar from '../components/common/PortalSidebar';
+import { useLogoutConfirm } from '../hooks/useLogoutConfirm';
+import { useMobileSidebar } from '../hooks/useMobileSidebar';
 import useNotifications from '../hooks/useNotifications';
 import { useAuth } from '../context/AuthContext';
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const location = useLocation();
-  const handleLogout = useLogout();
+  const { requestLogout, LogoutConfirmDialog } = useLogoutConfirm();
+  const { mobileMenuOpen, toggleMobileMenu, closeMobileMenu } = useMobileSidebar();
   const { notifications, unreadCount } = useNotifications();
   const { user } = useAuth();
 
@@ -54,88 +55,41 @@ const AdminLayout = () => {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-3 bg-white rounded-lg shadow-lg"
-        aria-label="Toggle menu"
-      >
-        {mobileMenuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
-      </button>
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+      <PortalSidebar
+        id="admin-sidebar"
+        menuItems={menuItems}
+        brandSubtitle="Admin Portal"
+        sidebarOpen={sidebarOpen}
+        mobileMenuOpen={mobileMenuOpen}
+        onMobileClose={closeMobileMenu}
+        onLogoutClick={requestLogout}
+        isActive={isActive}
+      />
 
-      {/* Mobile Overlay */}
-      {mobileMenuOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-30"
-          onClick={() => setMobileMenuOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <aside
-        className={`fixed top-0 left-0 h-full bg-[#0F172A] text-white transition-all duration-300 z-40 ${
-          sidebarOpen ? 'w-64' : 'w-20'
-        } ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}
-      >
-        <div className="p-4 sm:p-6 border-b border-gray-700">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center font-bold text-xl flex-shrink-0">
-              M
-            </div>
-            {sidebarOpen && (
-              <div className="min-w-0">
-                <h1 className="font-bold text-lg truncate">Mokshith B2B</h1>
-                <p className="text-xs text-gray-400">Admin Portal</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <nav className="p-4 space-y-2 overflow-y-auto">
-          {menuItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all min-h-[44px] ${
-                isActive(item.path)
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-              }`}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <item.icon size={20} className="flex-shrink-0" />
-              {sidebarOpen && <span className="font-medium truncate">{item.label}</span>}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700">
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-all min-h-[44px]"
-          >
-            <FiLogOut size={20} className="flex-shrink-0" />
-            {sidebarOpen && <span className="font-medium">Logout</span>}
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Content */}
       <div className={`transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}`}>
-        {/* Top Navbar */}
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-          <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4">
-            <div className="flex items-center gap-4 flex-1">
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-30 pt-[env(safe-area-inset-top,0px)]">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 gap-2 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
               <button
+                type="button"
+                onClick={toggleMobileMenu}
+                className="lg:hidden flex-shrink-0 p-2 hover:bg-gray-100 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+                aria-expanded={mobileMenuOpen}
+                aria-controls="admin-sidebar"
+              >
+                {mobileMenuOpen ? <FiX size={20} className="text-gray-600" /> : <FiMenu size={20} className="text-gray-600" />}
+              </button>
+              <button
+                type="button"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="hidden lg:flex p-2 hover:bg-gray-100 rounded-lg transition-colors min-h-[44px] min-w-[44px]"
+                className="hidden lg:flex p-2 hover:bg-gray-100 rounded-lg transition-colors min-h-[44px] min-w-[44px] items-center justify-center"
                 aria-label="Toggle sidebar"
               >
                 <FiMenu size={20} className="text-gray-600" />
               </button>
-              <div className="relative w-full md:w-96">
+              <div className="relative w-full md:w-96 min-w-0">
                 <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 <input
                   type="text"
@@ -145,8 +99,9 @@ const AdminLayout = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
               <button
+                type="button"
                 onClick={() => setNotificationOpen(true)}
                 className="relative p-2 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors min-h-[44px] min-w-[44px]"
                 aria-label="Notifications"
@@ -159,13 +114,14 @@ const AdminLayout = () => {
                 )}
               </button>
 
-              <button className="relative p-2 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors min-h-[44px] min-w-[44px]" aria-label="Messages">
+              <button type="button" className="relative p-2 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors min-h-[44px] min-w-[44px]" aria-label="Messages">
                 <FiMessageSquare size={20} className="text-gray-600" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full"></span>
               </button>
 
               <div className="relative">
                 <button
+                  type="button"
                   onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                   className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors min-h-[44px]"
                 >
@@ -202,18 +158,18 @@ const AdminLayout = () => {
           </div>
         </header>
 
-        {/* Page Content */}
         <main className="p-4 sm:p-6">
           <Outlet />
         </main>
       </div>
 
-      {/* Notification Drawer */}
       <NotificationDrawer
         isOpen={notificationOpen}
         onClose={() => setNotificationOpen(false)}
         notifications={notifications}
       />
+
+      <LogoutConfirmDialog />
     </div>
   );
 };
