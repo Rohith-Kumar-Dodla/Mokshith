@@ -53,6 +53,8 @@ export const apiLimiter = rateLimit({
     message: 'Too many requests, try again later',
   },
   skip: (req) => {
+    // Always skip rate limiting in test environment
+    if (process.env.NODE_ENV === 'test') return true;
     // Skip rate limiting for health checks
     return req.path === '/health';
   },
@@ -69,6 +71,10 @@ export const paymentLimiter = rateLimit({
     message: 'Too many payment attempts, please try again after 15 minutes',
   },
   skipSuccessfulRequests: true, // Don't count successful requests
+  skip: (req) => {
+    if (process.env.NODE_ENV === 'test') return true;
+    return false;
+  },
 });
 
 export const authLimiter = rateLimit({
@@ -83,7 +89,11 @@ export const authLimiter = rateLimit({
   },
   skipSuccessfulRequests: true,
   // RE-ENABLE BEFORE PRODUCTION: auth rate limiting disabled when AUTH_STRICT_MODE=false
-  skip: () => !isAuthStrictMode(),
+  skip: (req) => {
+    // Disable auth rate limiter during tests to avoid interfering with integration tests
+    if (process.env.NODE_ENV === 'test') return true;
+    return !isAuthStrictMode();
+  },
 });
 
 // 🔒 PHASE 3: Order creation rate limiter to prevent spam and inventory exhaustion

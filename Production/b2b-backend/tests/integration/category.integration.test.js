@@ -54,16 +54,22 @@ describe('Category Module - Integration Tests', () => {
       status: USER_STATUS.ACTIVE,
     });
 
-    // Login users
+    // Login users and capture CSRF tokens
     const adminLogin = await request
       .post('/api/v1/auth/login')
       .send({ identifier: 'admin@test.com', password: 'Admin@1234' });
     adminToken = adminLogin.body.data.accessToken;
+    const adminCsrf = adminLogin.body.data.csrfToken;
 
     const customerLogin = await request
       .post('/api/v1/auth/login')
       .send({ identifier: 'customer@test.com', password: 'Admin@1234' });
     customerToken = customerLogin.body.data.accessToken;
+    const customerCsrf = customerLogin.body.data.csrfToken;
+
+    // Attach csrf helpers to tokens for convenience in tests
+    adminToken = { token: adminToken, csrf: adminCsrf };
+    customerToken = { token: customerToken, csrf: customerCsrf };
   });
 
   afterEach(async () => {
@@ -78,7 +84,9 @@ describe('Category Module - Integration Tests', () => {
 
       const response = await request
         .post('/api/v1/categories')
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Authorization', `Bearer ${adminToken.token}`)
+        .set('x-csrf-token', adminToken.csrf)
+        .set('Cookie', `csrf-token=${adminToken.csrf}`)
         .send(categoryData)
         .expect(201);
 
@@ -107,7 +115,9 @@ describe('Category Module - Integration Tests', () => {
 
       const response = await request
         .post('/api/v1/categories')
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Authorization', `Bearer ${adminToken.token}`)
+        .set('x-csrf-token', adminToken.csrf)
+        .set('Cookie', `csrf-token=${adminToken.csrf}`)
         .send(subcategoryData)
         .expect(201);
 
@@ -121,7 +131,9 @@ describe('Category Module - Integration Tests', () => {
 
       const response = await request
         .post('/api/v1/categories')
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Authorization', `Bearer ${adminToken.token}`)
+        .set('x-csrf-token', adminToken.csrf)
+        .set('Cookie', `csrf-token=${adminToken.csrf}`)
         .send(invalidData)
         .expect(400);
 
@@ -144,7 +156,9 @@ describe('Category Module - Integration Tests', () => {
 
       const response = await request
         .post('/api/v1/categories')
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Authorization', `Bearer ${adminToken.token}`)
+        .set('x-csrf-token', adminToken.csrf)
+        .set('Cookie', `csrf-token=${adminToken.csrf}`)
         .send(duplicateData)
         .expect(400);
 
@@ -160,7 +174,9 @@ describe('Category Module - Integration Tests', () => {
 
       const response = await request
         .post('/api/v1/categories')
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Authorization', `Bearer ${adminToken.token}`)
+        .set('x-csrf-token', adminToken.csrf)
+        .set('Cookie', `csrf-token=${adminToken.csrf}`)
         .send(invalidData)
         .expect(400);
 
@@ -174,7 +190,9 @@ describe('Category Module - Integration Tests', () => {
 
       const response = await request
         .post('/api/v1/categories')
-        .set('Authorization', `Bearer ${customerToken}`)
+        .set('Authorization', `Bearer ${customerToken.token}`)
+        .set('x-csrf-token', customerToken.csrf)
+        .set('Cookie', `csrf-token=${customerToken.csrf}`)
         .send(categoryData)
         .expect(403);
 
@@ -188,7 +206,9 @@ describe('Category Module - Integration Tests', () => {
 
       const response = await request
         .post('/api/v1/categories')
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Authorization', `Bearer ${adminToken.token}`)
+        .set('x-csrf-token', adminToken.csrf)
+        .set('Cookie', `csrf-token=${adminToken.csrf}`)
         .send(categoryData)
         .expect(201);
 
@@ -283,7 +303,9 @@ describe('Category Module - Integration Tests', () => {
 
       const response = await request
         .put(`/api/v1/categories/${testCategory._id}`)
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Authorization', `Bearer ${adminToken.token}`)
+        .set('x-csrf-token', adminToken.csrf)
+        .set('Cookie', `csrf-token=${adminToken.csrf}`)
         .send(updateData)
         .expect(200);
 
@@ -302,7 +324,9 @@ describe('Category Module - Integration Tests', () => {
 
       const response = await request
         .put(`/api/v1/categories/${testCategory._id}`)
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Authorization', `Bearer ${adminToken.token}`)
+        .set('x-csrf-token', adminToken.csrf)
+        .set('Cookie', `csrf-token=${adminToken.csrf}`)
         .send(updateData)
         .expect(200);
 
@@ -319,7 +343,9 @@ describe('Category Module - Integration Tests', () => {
 
       const response = await request
         .put(`/api/v1/categories/${fakeId}`)
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Authorization', `Bearer ${adminToken.token}`)
+        .set('x-csrf-token', adminToken.csrf)
+        .set('Cookie', `csrf-token=${adminToken.csrf}`)
         .send(updateData)
         .expect(404);
 
@@ -333,7 +359,9 @@ describe('Category Module - Integration Tests', () => {
 
       const response = await request
         .put(`/api/v1/categories/${testCategory._id}`)
-        .set('Authorization', `Bearer ${customerToken}`)
+        .set('Authorization', `Bearer ${customerToken.token}`)
+        .set('x-csrf-token', customerToken.csrf)
+        .set('Cookie', `csrf-token=${customerToken.csrf}`)
         .send(updateData)
         .expect(403);
 
@@ -354,7 +382,9 @@ describe('Category Module - Integration Tests', () => {
     it('should delete category by admin', async () => {
       const response = await request
         .delete(`/api/v1/categories/${testCategory._id}`)
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Authorization', `Bearer ${adminToken.token}`)
+        .set('x-csrf-token', adminToken.csrf)
+        .set('Cookie', `csrf-token=${adminToken.csrf}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -375,7 +405,9 @@ describe('Category Module - Integration Tests', () => {
       // Attempt to delete category
       const response = await request
         .delete(`/api/v1/categories/${testCategory._id}`)
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Authorization', `Bearer ${adminToken.token}`)
+        .set('x-csrf-token', adminToken.csrf)
+        .set('Cookie', `csrf-token=${adminToken.csrf}`)
         .expect(400);
 
       expect(response.body.success).toBe(false);
@@ -386,7 +418,9 @@ describe('Category Module - Integration Tests', () => {
       const fakeId = new mongoose.Types.ObjectId();
       const response = await request
         .delete(`/api/v1/categories/${fakeId}`)
-        .set('Authorization', `Bearer ${adminToken}`)
+        .set('Authorization', `Bearer ${adminToken.token}`)
+        .set('x-csrf-token', adminToken.csrf)
+        .set('Cookie', `csrf-token=${adminToken.csrf}`)
         .expect(404);
 
       expect(response.body.success).toBe(false);
@@ -395,7 +429,9 @@ describe('Category Module - Integration Tests', () => {
     it('should prevent unauthorized deletion', async () => {
       const response = await request
         .delete(`/api/v1/categories/${testCategory._id}`)
-        .set('Authorization', `Bearer ${customerToken}`)
+        .set('Authorization', `Bearer ${customerToken.token}`)
+        .set('x-csrf-token', customerToken.csrf)
+        .set('Cookie', `csrf-token=${customerToken.csrf}`)
         .expect(403);
 
       expect(response.body.success).toBe(false);

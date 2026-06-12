@@ -1,5 +1,19 @@
-import Redis from 'ioredis';
+import { createRequire } from 'module';
 import { env } from './env.js';
+
+const require = createRequire(import.meta.url);
+let Redis;
+try {
+  // Use ioredis-mock in test environment for deterministic tests
+  if (process.env.NODE_ENV === 'test') {
+    Redis = require('ioredis-mock');
+  } else {
+    Redis = require('ioredis');
+  }
+} catch (err) {
+  // Fallback to real ioredis if mock not available
+  Redis = require('ioredis');
+}
 import { logger } from './logger.js';
 
 // 🔒 Circuit Breaker State for Redis Resilience
@@ -205,7 +219,17 @@ export const redisClient = {
     }
     
     try {
-      const result = await redis.lpush(key, ...values);
+      let result;
+      if (typeof redis.lpush === 'function') {
+        result = await redis.lpush(key, ...values);
+      } else if (typeof redis.rpush === 'function') {
+        // Fallback: use rpush if lpush not available in mock
+        result = await redis.rpush(key, ...values);
+      } else if (typeof redis.call === 'function') {
+        result = await redis.call('lpush', key, ...values);
+      } else {
+        throw new Error('LPUSH not supported by redis client');
+      }
       circuitBreaker.recordSuccess();
       return result;
     } catch (error) {
@@ -598,6 +622,36 @@ export const redisClient = {
       return true;
     } catch (error) {
       logger.error('Redis quit error:', error.message);
+      return false;
+    }
+  },
+  
+  // Test helpers: flushdb / flushall for tests (maps to underlying client)
+  async flushdb() {
+    try {
+      if (typeof redis.flushdb === 'function') {
+        await redis.flushdb();
+        return true;
+      } else if (typeof redis.flushall === 'function') {
+        await redis.flushall();
+        return true;
+      }
+      return false;
+    } catch (error) {
+      logger.error('Redis flushdb error:', error.message);
+      return false;
+    }
+  },
+
+  async flushall() {
+    try {
+      if (typeof redis.flushall === 'function') {
+        await redis.flushall();
+        return true;
+      }
+      return false;
+    } catch (error) {
+      logger.error('Redis flushall error:', error.message);
       return false;
     }
   },

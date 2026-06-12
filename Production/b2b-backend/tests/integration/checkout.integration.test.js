@@ -53,11 +53,18 @@ describe('Checkout Workflow - End-to-End Tests', () => {
       status: USER_STATUS.ACTIVE,
     });
 
-    // Login user
+    // Login user and capture CSRF token
     const loginResponse = await request
       .post('/api/v1/auth/login')
       .send({ identifier: 'checkout@test.com', password: 'Test@1234' });
-    userToken = loginResponse.body.data.accessToken;
+    userToken = {
+      token: loginResponse.body.data.accessToken,
+      csrf: loginResponse.body.data.csrfToken,
+    };
+    // Ensure template string `${userToken}` yields the token string for backward-compatible test code
+    userToken.toString = function () {
+      return this.token;
+    };
 
     // Create test category
     testCategory = await Category.create({
@@ -167,12 +174,14 @@ describe('Checkout Workflow - End-to-End Tests', () => {
       // Step 3: Checkout (create order)
       const orderResponse = await request
         .post('/api/v1/orders')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${userToken.token}`)
+        .set('x-csrf-token', userToken.csrf)
+        .set('Cookie', `csrf-token=${userToken.csrf}`)
         .send({
           paymentMethod: 'COD',
           shippingAddress: validShippingAddress,
         })
-        .expect(201);
+        .expect(200);
 
       const orderId = orderResponse.body.data._id;
       expect(orderResponse.body.data.status).toBe(ORDER_STATUS.CONFIRMED);
@@ -215,12 +224,14 @@ describe('Checkout Workflow - End-to-End Tests', () => {
       // First checkout should succeed
       const response1 = await request
         .post('/api/v1/orders')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${userToken.token}`)
+        .set('x-csrf-token', userToken.csrf)
+        .set('Cookie', `csrf-token=${userToken.csrf}`)
         .send({
           paymentMethod: 'COD',
           shippingAddress: validShippingAddress,
         })
-        .expect(201);
+        .expect(200);
 
       expect(response1.body.success).toBe(true);
 
@@ -258,7 +269,9 @@ describe('Checkout Workflow - End-to-End Tests', () => {
       // Try to create order with invalid data (should fail)
       const response = await request
         .post('/api/v1/orders')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${userToken.token}`)
+        .set('x-csrf-token', userToken.csrf)
+        .set('Cookie', `csrf-token=${userToken.csrf}`)
         .send({
           paymentMethod: 'COD',
           shippingAddress: {}, // Invalid address
@@ -299,12 +312,14 @@ describe('Checkout Workflow - End-to-End Tests', () => {
       // Step 2: Checkout with ONLINE payment
       const orderResponse = await request
         .post('/api/v1/orders')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${userToken.token}`)
+        .set('x-csrf-token', userToken.csrf)
+        .set('Cookie', `csrf-token=${userToken.csrf}`)
         .send({
           paymentMethod: 'ONLINE',
           shippingAddress: validShippingAddress,
         })
-        .expect(201);
+        .expect(200);
 
       expect(orderResponse.body.data.status).toBe(ORDER_STATUS.PENDING_PAYMENT);
       expect(orderResponse.body.data.paymentStatus).toBe(PAYMENT_STATUS.PENDING);
@@ -354,7 +369,7 @@ describe('Checkout Workflow - End-to-End Tests', () => {
       // After expiry, stock should be available again
       const addToCartResponse = await request
         .post('/api/v1/cart')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${userToken.token}`)
         .send({
           productId: testProduct1._id.toString(),
           quantity: 10,

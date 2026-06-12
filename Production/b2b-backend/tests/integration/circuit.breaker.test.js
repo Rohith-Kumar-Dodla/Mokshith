@@ -8,28 +8,43 @@ import { clearDatabase } from '../helpers/testUtils.js';
  */
 
 describe('Redis Circuit Breaker Tests', () => {
-  beforeEach(async () => {
+  // Connect once for the suite and teardown after all tests to avoid duplicate connect calls.
+  beforeAll(async () => {
     await clearDatabase();
-    // Reset circuit breaker state
+    try {
+      if (typeof redisClient.connect === 'function') {
+        await redisClient.connect();
+      }
+    } catch (err) {
+      // Ignore connect errors in test environment - tests will exercise fallback behavior
+    }
+  });
+
+  afterAll(async () => {
+    // Reset circuit breaker and quit redis connection
     if (redisClient.circuitBreaker) {
       redisClient.circuitBreaker.state = 'CLOSED';
       redisClient.circuitBreaker.failureCount = 0;
       redisClient.circuitBreaker.successCount = 0;
       redisClient.circuitBreaker.nextAttempt = null;
     }
-    
-    // Ensure Redis is connected
-    if (redisClient.status !== 'ready') {
-      await redisClient.connect();
+    try {
+      if (typeof redisClient.quit === 'function') {
+        await redisClient.quit();
+      }
+    } catch (err) {
+      // ignore
     }
   });
 
-  afterEach(async () => {
-    // Reset circuit breaker
+  beforeEach(async () => {
+    await clearDatabase();
+    // Reset circuit breaker state between tests to ensure deterministic behavior
     if (redisClient.circuitBreaker) {
       redisClient.circuitBreaker.state = 'CLOSED';
       redisClient.circuitBreaker.failureCount = 0;
       redisClient.circuitBreaker.successCount = 0;
+      redisClient.circuitBreaker.nextAttempt = null;
     }
   });
 

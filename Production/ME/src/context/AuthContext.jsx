@@ -107,6 +107,30 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, [restoreSession]);
 
+  // Multi-tab synchronization: listen for logout or session replacement events
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (!e.key) return;
+      if (e.key === 'logout') {
+        clearSession();
+      } else if (e.key === 'session_replaced') {
+        // Clear session and inform user
+        clearSession();
+        try {
+          const payload = JSON.parse(localStorage.getItem('session_replaced'));
+          const message = payload?.message || 'Your account was logged in from another device. Please sign in again.';
+          // Use a simple alert to notify (no UI changes requested)
+          window.alert(message);
+        } catch {
+          window.alert('Your account was logged in from another device. Please sign in again.');
+        }
+      }
+    };
+
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [clearSession]);
+
   const login = async (mobile, password) => {
     try {
       const response = await authService.login({ mobile, password });
@@ -171,6 +195,10 @@ export const AuthProvider = ({ children }) => {
     } catch {
       // Always clear local session even if API logout fails.
     } finally {
+      // Notify other tabs
+      try {
+        localStorage.setItem('logout', Date.now().toString());
+      } catch {}
       clearSession();
     }
   };

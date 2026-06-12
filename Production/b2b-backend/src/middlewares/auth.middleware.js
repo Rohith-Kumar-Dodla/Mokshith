@@ -52,6 +52,20 @@ export const protect = async (req, res, next) => {
       return next(new AppError('User no longer exists', 401));
     }
 
+    // 🔥 Enforce single active session: token.sessionId must match user.activeSessionId
+    if (decoded.sessionId) {
+      if (!user.activeSessionId || decoded.sessionId !== user.activeSessionId) {
+        const err = new AppError('Session expired. Another login was detected.', 401);
+        err.name = 'SESSION_REPLACED';
+        return next(err);
+      }
+    } else if (user.activeSessionId) {
+      // Token does not contain session id but user has an active session -> force re-login
+      const err = new AppError('Session expired. Please log in again.', 401);
+      err.name = 'SESSION_REPLACED';
+      return next(err);
+    }
+
     // 🔥 Check Maintenance Mode (allow super admin)
     const maintenance = await fetchSetting('maintenanceMode');
     const maintenanceOld = await fetchSetting('MAINTENANCE_MODE');
