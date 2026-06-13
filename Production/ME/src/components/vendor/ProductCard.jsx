@@ -1,10 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { FiShoppingCart, FiHeart, FiEye, FiStar } from 'react-icons/fi';
+import { getProductImageKey } from '../../utils/productMapper';
 
 const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) => {
   const productId = product.id || product._id;
   const imageSrc = product.imageUrl || product.image || '';
+  const imageKey = getProductImageKey(product);
   const rating = product.rating ?? 4;
   const reviews = product.reviews ?? 0;
   const brand = product.brand || null;
@@ -46,6 +48,7 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) =
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300">
       <div className="relative h-36 sm:h-48 bg-gray-100">
         <img
+          key={imageKey}
           src={imageSrc}
           alt={product.name}
           className="w-full h-full object-cover"
@@ -149,4 +152,16 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) =
   );
 };
 
-export default React.memo(ProductCard);
+export default React.memo(ProductCard, (prev, next) => {
+  const prevProduct = prev.product;
+  const nextProduct = next.product;
+
+  return (
+    prevProduct?.id === nextProduct?.id &&
+    getProductImageKey(prevProduct) === getProductImageKey(nextProduct) &&
+    prevProduct?.name === nextProduct?.name &&
+    prevProduct?.price === nextProduct?.price &&
+    prevProduct?.status === nextProduct?.status &&
+    prevProduct?.stock === nextProduct?.stock
+  );
+});

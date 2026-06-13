@@ -1,7 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus } from 'lucide-react';
-import searchService from '../../services/searchService';
+import { ArrowRight, Package } from 'lucide-react';
+import productService from '../../services/productService';
+import { SHOWCASE_PRODUCTS } from '../../constants/catalogShowcase';
+import { unwrapApiData } from '../../utils/apiResponse';
+import { mapBackendProducts } from '../../utils/productMapper';
 
 const WholesaleDeals = () => {
   const [products, setProducts] = useState([]);
@@ -9,11 +12,13 @@ const WholesaleDeals = () => {
 
   useEffect(() => {
     let mounted = true;
-    searchService
-      .searchProducts('')
+
+    productService
+      .getAllProducts({ page: 1, limit: 4, isActive: true })
       .then((response) => {
-        const list = response?.data ?? response?.products ?? response ?? [];
-        if (mounted) setProducts(Array.isArray(list) ? list.slice(0, 4) : []);
+        const payload = unwrapApiData(response);
+        const list = Array.isArray(payload?.products) ? payload.products : [];
+        if (mounted) setProducts(mapBackendProducts(list).slice(0, 4));
       })
       .catch(() => {
         if (mounted) setProducts([]);
@@ -21,10 +26,16 @@ const WholesaleDeals = () => {
       .finally(() => {
         if (mounted) setLoading(false);
       });
+
     return () => {
       mounted = false;
     };
   }, []);
+
+  const displayProducts = useMemo(
+    () => (products.length > 0 ? products : SHOWCASE_PRODUCTS),
+    [products]
+  );
 
   return (
     <section className="wholesale-deals-section">
@@ -35,35 +46,290 @@ const WholesaleDeals = () => {
         </div>
 
         {loading ? (
-          <div className="text-center py-8 text-gray-500 text-sm">Loading deals...</div>
-        ) : products.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-gray-600 mb-4">Register to access wholesale pricing and bulk deals.</p>
-            <Link to="/register" className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm">
-              Get Started <Plus size={16} />
-            </Link>
-          </div>
-        ) : (
           <div className="deals-grid">
-            {products.map((product) => (
-              <div key={product._id || product.id} className="deal-card">
-                <div className="deal-header">
-                  <span className="deal-badge">Wholesale</span>
-                </div>
-                <h3 className="deal-name">{product.name}</h3>
-                <p className="deal-category">{product.category?.name || product.categoryName || 'General'}</p>
-                <div className="deal-pricing">
-                  <span className="deal-price">₹{Number(product.price || product.basePrice || 0).toLocaleString('en-IN')}</span>
-                  <span className="deal-unit">MOQ: {product.minOrderQty || product.moq || 1}</span>
-                </div>
-                <Link to="/register" className="deal-cta">
-                  Register to Order
-                </Link>
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="deal-card skeleton-card" aria-hidden="true">
+                <div className="skeleton-block skeleton-image" />
+                <div className="skeleton-block skeleton-title" />
+                <div className="skeleton-block skeleton-text" />
+                <div className="skeleton-block skeleton-price" />
               </div>
             ))}
           </div>
+        ) : (
+          <div className="deals-grid">
+            {displayProducts.map((product) => (
+              <article key={product.id || product._id} className="deal-card">
+                <div className="deal-image-wrap">
+                  {product.image || product.imageUrl ? (
+                    <img
+                      src={product.image || product.imageUrl}
+                      alt={product.name}
+                      className="deal-image"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="deal-image-fallback">
+                      <Package size={28} />
+                    </div>
+                  )}
+                  <span className="deal-badge">Wholesale</span>
+                </div>
+                <div className="deal-body">
+                  <p className="deal-category">
+                    {product.category || product.categoryName || 'General'}
+                  </p>
+                  <h3 className="deal-name">{product.name}</h3>
+                  <div className="deal-pricing">
+                    <span className="deal-price">
+                      ₹{Number(product.price || 0).toLocaleString('en-IN')}
+                    </span>
+                    <span className="deal-unit">
+                      MOQ: {product.minOrderQty || product.moq || 1}
+                    </span>
+                  </div>
+                  <Link to="/register" className="deal-cta">
+                    Register to Order <ArrowRight size={14} />
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+
+        {!loading && products.length === 0 && (
+          <p className="section-footnote">
+            Sample wholesale pricing shown. Create your account to place orders and unlock vendor-specific rates.
+          </p>
         )}
       </div>
+
+      <style>{`
+        .wholesale-deals-section {
+          padding: 5rem 2rem;
+          background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+        }
+
+        .section-container {
+          max-width: 1200px;
+          margin: 0 auto;
+        }
+
+        .section-header {
+          text-align: center;
+          margin-bottom: 3rem;
+        }
+
+        .section-title {
+          font-size: 2.25rem;
+          font-weight: 800;
+          color: #0f172a;
+          letter-spacing: -0.02em;
+          margin: 0 0 0.75rem 0;
+        }
+
+        .section-subtitle {
+          font-size: 1.125rem;
+          color: #64748b;
+          margin: 0;
+        }
+
+        .section-footnote {
+          margin: 2rem auto 0;
+          max-width: 640px;
+          text-align: center;
+          font-size: 0.9375rem;
+          color: #64748b;
+          line-height: 1.6;
+        }
+
+        .deals-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 1.5rem;
+        }
+
+        .deal-card {
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+
+        .deal-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+          border-color: #2563eb;
+        }
+
+        .deal-image-wrap {
+          position: relative;
+          height: 160px;
+          background: #f1f5f9;
+          overflow: hidden;
+        }
+
+        .deal-image {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+
+        .deal-image-fallback {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #64748b;
+          background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
+        }
+
+        .deal-badge {
+          position: absolute;
+          top: 0.75rem;
+          left: 0.75rem;
+          padding: 0.25rem 0.625rem;
+          background: rgba(37, 99, 235, 0.92);
+          color: #ffffff;
+          font-size: 0.75rem;
+          font-weight: 700;
+          border-radius: 999px;
+          letter-spacing: 0.02em;
+        }
+
+        .deal-body {
+          padding: 1.25rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+          flex: 1;
+        }
+
+        .deal-category {
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: #2563eb;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          margin: 0;
+        }
+
+        .deal-name {
+          font-size: 1rem;
+          font-weight: 700;
+          color: #0f172a;
+          margin: 0;
+          line-height: 1.4;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+
+        .deal-pricing {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          gap: 0.75rem;
+          margin-top: 0.25rem;
+        }
+
+        .deal-price {
+          font-size: 1.125rem;
+          font-weight: 800;
+          color: #0f172a;
+        }
+
+        .deal-unit {
+          font-size: 0.8125rem;
+          color: #64748b;
+          white-space: nowrap;
+        }
+
+        .deal-cta {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.35rem;
+          margin-top: auto;
+          padding: 0.75rem 1rem;
+          background: #2563eb;
+          color: #ffffff;
+          border-radius: 10px;
+          font-size: 0.875rem;
+          font-weight: 600;
+          text-decoration: none;
+          transition: background 0.2s ease;
+        }
+
+        .deal-cta:hover {
+          background: #1d4ed8;
+        }
+
+        .skeleton-card {
+          pointer-events: none;
+        }
+
+        .skeleton-block {
+          background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+          background-size: 200% 100%;
+          animation: shimmer 1.4s infinite;
+          border-radius: 8px;
+        }
+
+        .skeleton-image {
+          height: 160px;
+          border-radius: 0;
+        }
+
+        .skeleton-title {
+          height: 16px;
+          margin: 1.25rem 1.25rem 0.5rem;
+          width: 40%;
+        }
+
+        .skeleton-text {
+          height: 18px;
+          margin: 0 1.25rem 0.75rem;
+          width: 80%;
+        }
+
+        .skeleton-price {
+          height: 36px;
+          margin: 0 1.25rem 1.25rem;
+          width: 100%;
+        }
+
+        @keyframes shimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+
+        @media (max-width: 1024px) {
+          .deals-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media (max-width: 640px) {
+          .wholesale-deals-section {
+            padding: 3.5rem 1rem;
+          }
+
+          .section-title {
+            font-size: 1.75rem;
+          }
+
+          .deals-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
     </section>
   );
 };

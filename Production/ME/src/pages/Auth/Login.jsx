@@ -4,7 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
-import { FaMobile, FaLock, FaArrowRight, FaShieldAlt } from 'react-icons/fa';
+import { FaMobile, FaLock, FaShieldAlt } from 'react-icons/fa';
+import { ArrowRight } from 'lucide-react';
 import { getDashboardRoute } from '../../utils/roleMap';
 
 const Login = () => {
@@ -92,9 +93,16 @@ const Login = () => {
                 <div className="text-right">
                   <Link to="/forgot-password" className="text-sm text-secondary hover:text-primary font-medium">Forgot password?</Link>
                 </div>
-                <Button type="submit" className="w-full h-12" disabled={loading}>
-                  {loading ? 'Signing in...' : 'Sign In'}
-                  <FaArrowRight className="ml-2" />
+                <Button type="submit" className="w-full h-12 group" disabled={loading}>
+                  <span>{loading ? 'Signing in...' : 'Sign In'}</span>
+                  {!loading && (
+                    <ArrowRight
+                      size={18}
+                      strokeWidth={2}
+                      className="transition-transform duration-200 group-hover:translate-x-0.5"
+                      aria-hidden="true"
+                    />
+                  )}
                 </Button>
               </form>
             ) : (

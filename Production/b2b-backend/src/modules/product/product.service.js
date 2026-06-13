@@ -4,6 +4,15 @@ import { buildProductFilter } from './product.utils.js';
 import { parsePaginationParams, buildPaginationMeta } from '../../utils/pagination.js';
 import { transformProductsArray } from '../../utils/cdn.js';
 
+function serializeProduct(product) {
+  if (!product) {
+    return product;
+  }
+
+  const plain = product?.toObject ? product.toObject() : product;
+  return transformProductsArray([plain])[0];
+}
+
 // 🔥 Simple In-Memory Cache
 const productCache = {
   data: null,
@@ -25,20 +34,17 @@ export const createProduct = async (data) => {
 
   const product = await repo.createProduct(data);
 
-  // 🔥 Invalidate Cache
   productCache.data = null;
 
-  // 🔥 Provision warehouse inventory (required for checkout)
   await ensureProductInventory(product);
 
-  // 🔥 EVENT (non-blocking)
   try {
     onProductCreated(product);
   } catch (err) {
     console.error('Product event error:', err.message);
   }
 
-  return product;
+  return serializeProduct(product);
 };
 
 export const getProducts = async (query) => {
@@ -47,7 +53,12 @@ export const getProducts = async (query) => {
   const { categoryId, search } = query;
 
   // 🔥 Caching for default product list
-  const isDefaultQuery = page === 1 && limit === 20 && !categoryId && !search;
+  const isDefaultQuery =
+    page === 1 &&
+    limit === 20 &&
+    !categoryId &&
+    !search &&
+    !query._refresh;
   if (isDefaultQuery && productCache.data && (Date.now() - productCache.lastFetched < productCache.ttl)) {
     return productCache.data;
   }
@@ -84,7 +95,7 @@ export const getProductById = async (id) => {
 
   if (!product) throw new AppError('Product not found', 404);
 
-  return product;
+  return serializeProduct(product);
 };
 
 export const updateProduct = async (id, data) => {
@@ -94,6 +105,8 @@ export const updateProduct = async (id, data) => {
 
   const updatedProduct = await repo.updateProduct(id, data);
 
+  if (!updatedProduct) throw new AppError('Product not found', 404);
+
   if (data.stock !== undefined) {
     await syncProductStockToInventory(updatedProduct);
   } else {
@@ -102,7 +115,7 @@ export const updateProduct = async (id, data) => {
 
   productCache.data = null;
 
-  return updatedProduct;
+  return serializeProduct(updatedProduct);
 };
 
 export const deleteProduct = async (id) => {
@@ -111,6 +124,8 @@ export const deleteProduct = async (id) => {
   if (!product) throw new AppError('Product not found', 404);
 
   await repo.deleteProduct(id);
+
+  productCache.data = null;
 
   return { message: 'Product deleted successfully' };
 };

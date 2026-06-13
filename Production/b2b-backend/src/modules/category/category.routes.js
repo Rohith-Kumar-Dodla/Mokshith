@@ -10,6 +10,10 @@ import { csrfProtection } from '../../middlewares/csrf.middleware.js';
 
 const router = express.Router();
 
+// Public read access for landing page and catalog browsing
+router.get('/', controller.getCategories);
+router.get('/:id', controller.getCategoryById);
+
 router.post(
   '/',
   protect,
@@ -20,11 +24,6 @@ router.post(
   controller.createCategory,
   clearCacheMiddleware(['cache:*categories*', 'cache:*products*'])
 );
-
-// Admin catalog — do not cache; list changes on create/update/delete
-router.get('/', protect, controller.getCategories);
-
-router.get('/:id', protect, controller.getCategoryById);
 
 router.put(
   '/:id',

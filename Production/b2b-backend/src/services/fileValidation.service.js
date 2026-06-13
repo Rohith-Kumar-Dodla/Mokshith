@@ -200,37 +200,73 @@ export const sanitizeFilename = (filename) => {
  * Basic malware detection using pattern matching
  * Note: This is NOT a replacement for proper antivirus scanning
  */
-export const basicMalwareCheck = (buffer) => {
-  if (!buffer) return true;
+const TEXT_SUSPICIOUS_PATTERNS = [
+  '<script',
+  'javascript:',
+  'eval(',
+  'exec(',
+  '<?php',
+  '#!/bin/',
+  'xl/vbaProject.bin',
+  'word/vbaProject.bin',
+];
 
-  // Check for suspicious patterns
-  const suspiciousPatterns = [
-    // Executable headers
-    Buffer.from('MZ'),  // DOS/Windows executable
-    Buffer.from('PK'),  // ZIP archive (could contain executable)
-    
-    // Script tags and dangerous code patterns
-    Buffer.from('<script'),
-    Buffer.from('javascript:'),
-    Buffer.from('eval('),
-    Buffer.from('exec('),
-    
-    // PHP code
-    Buffer.from('<?php'),
-    
-    // Shell scripts
-    Buffer.from('#!/bin/'),
-    
-    // Macro-enabled Office files (can contain malware)
-    Buffer.from('xl/vbaProject.bin'),
-    Buffer.from('word/vbaProject.bin')
-  ];
+function bufferContainsText(buffer, text) {
+  return buffer.includes(Buffer.from(text, 'utf8'));
+}
 
-  for (const pattern of suspiciousPatterns) {
-    if (buffer.includes(pattern)) {
-      logger.error('Suspicious content detected in file upload');
+function isExecutableHeader(buffer) {
+  return buffer.length >= 2 && buffer[0] === 0x4d && buffer[1] === 0x5a;
+}
+
+function isZipHeader(buffer) {
+  return (
+    buffer.length >= 4 &&
+    buffer[0] === 0x50 &&
+    buffer[1] === 0x4b &&
+    (buffer[2] === 0x03 || buffer[2] === 0x05 || buffer[2] === 0x07)
+  );
+}
+
+export const basicMalwareCheck = (buffer, options = {}) => {
+  if (!buffer) {
+    return true;
+  }
+
+  const { category = 'images' } = options;
+
+  for (const pattern of TEXT_SUSPICIOUS_PATTERNS) {
+    if (bufferContainsText(buffer, pattern)) {
+      logger.error('Suspicious content detected in file upload', {
+        category,
+        rule: 'text_pattern',
+        pattern,
+      });
       throw new AppError('File failed security validation', 400);
     }
+  }
+
+  // Validated images already passed magic-number checks in validateFileUpload.
+  // Scanning the full binary payload for PK/MZ substrings causes false positives
+  // on normal JPEG/PNG/WebP files (common 2-byte sequences in compressed data).
+  if (category === 'images') {
+    return true;
+  }
+
+  if (isExecutableHeader(buffer)) {
+    logger.error('Suspicious content detected in file upload', {
+      category,
+      rule: 'executable_header_at_start',
+    });
+    throw new AppError('File failed security validation', 400);
+  }
+
+  if (isZipHeader(buffer)) {
+    logger.error('Suspicious content detected in file upload', {
+      category,
+      rule: 'archive_header_at_start',
+    });
+    throw new AppError('File failed security validation', 400);
   }
 
   return true;
@@ -240,21 +276,18 @@ export const basicMalwareCheck = (buffer) => {
  * Comprehensive file validation
  */
 export const validateAndSanitizeUpload = (file, category = 'images') => {
-  // Validate file
   validateFileUpload(file, category);
 
-  // Basic malware check
   if (file.buffer) {
-    basicMalwareCheck(file.buffer);
+    basicMalwareCheck(file.buffer, { category });
   }
 
-  // Sanitize filename
   const safeName = sanitizeFilename(file.originalname);
 
   return {
     ...file,
     safeName,
-    validated: true
+    validated: true,
   };
 };
 

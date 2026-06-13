@@ -1,9 +1,16 @@
 /**
  * Mirrors backend AUTH_STRICT_MODE for client-side validation messages.
- *
- * RE-ENABLE BEFORE PRODUCTION: set VITE_AUTH_STRICT_MODE=true in .env
+ * Production builds default to strict unless VITE_AUTH_STRICT_MODE=false.
  */
-export const isAuthStrictMode = () => import.meta.env.VITE_AUTH_STRICT_MODE === 'true';
+export const isAuthStrictMode = () => {
+  if (import.meta.env.VITE_AUTH_STRICT_MODE === 'true') {
+    return true;
+  }
+  if (import.meta.env.VITE_AUTH_STRICT_MODE === 'false') {
+    return false;
+  }
+  return import.meta.env.PROD;
+};
 
 export const getPasswordMinLength = () => (isAuthStrictMode() ? 12 : 6);
 

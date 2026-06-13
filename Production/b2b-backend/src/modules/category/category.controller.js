@@ -1,7 +1,7 @@
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import * as service from './category.service.js';
 import { successResponse } from '../../utils/responseHandler.js';
-import { uploadFile } from '../../services/fileUpload.service.js';
+import { replaceStoredImage, applyUploadedImage } from '../../utils/imageUpload.utils.js';
 
 function normalizeCategoryBody(body = {}) {
   const data = { ...body };
@@ -14,12 +14,11 @@ function normalizeCategoryBody(body = {}) {
 }
 
 export const createCategory = asyncHandler(async (req, res) => {
-  const data = normalizeCategoryBody(req.body);
+  let data = normalizeCategoryBody(req.body);
 
   if (req.file) {
-    const uploadResult = await uploadFile(req.file, 'categories');
-    data.image = uploadResult.url;
-    data.imagePublicId = uploadResult.publicId;
+    data = await applyUploadedImage(data, req.file, 'mokshith/categories');
+    delete data.imageUrl;
   }
 
   const category = await service.createCategory(data);
@@ -38,16 +37,14 @@ export const getCategoryById = asyncHandler(async (req, res) => {
 });
 
 export const updateCategory = asyncHandler(async (req, res) => {
-  const data = normalizeCategoryBody(req.body);
-
-  if (req.file) {
-    const uploadResult = await uploadFile(req.file, 'categories');
-    data.image = uploadResult.url;
-    data.imagePublicId = uploadResult.publicId;
-  } else {
-    delete data.image;
-    delete data.imageUrl;
-  }
+  const existingCategory = await service.getCategoryById(req.params.id);
+  const data = await replaceStoredImage(
+    existingCategory,
+    normalizeCategoryBody(req.body),
+    req.file,
+    'mokshith/categories'
+  );
+  delete data.imageUrl;
 
   const category = await service.updateCategory(req.params.id, data);
   successResponse(res, category, 'Category updated');

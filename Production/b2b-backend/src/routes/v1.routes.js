@@ -60,9 +60,9 @@ router.use('/users', authenticate, injectCsrfToken, userRoutes);
 router.use('/companies', authenticate, injectCsrfToken, companyRoutes);
 router.use('/vendors', authenticate, injectCsrfToken, vendorRoutes);
 
-// 🛍️ Catalog
-router.use('/categories', authenticate, injectCsrfToken, categoryRoutes);
-router.use('/products', authenticate, injectCsrfToken, productRoutes);
+// Catalog — public read; write routes enforce auth in module routers
+router.use('/categories', categoryRoutes);
+router.use('/products', productRoutes);
 router.use('/pricing', pricingRoutes);
 router.use('/promotions', authenticate, injectCsrfToken, promotionRoutes);
 

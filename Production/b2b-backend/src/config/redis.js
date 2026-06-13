@@ -75,49 +75,45 @@ const circuitBreaker = {
 };
 
 // 🔒 PHASE 4: Redis High-Availability configuration
-// Supports standalone, sentinel, and cluster modes
-const redisConfig = {
-  host: env.REDIS_HOST,
-  port: env.REDIS_PORT,
-  password: env.REDIS_PASSWORD,
+// Supports standalone, sentinel, cluster modes, and REDIS_URL (Render/Heroku)
+const sharedRedisOptions = {
   maxRetriesPerRequest: 3,
   enableReadyCheck: true,
   lazyConnect: env.NODE_ENV === 'test' ? false : true,
   showFriendlyErrorStack: env.NODE_ENV === 'development',
-  
-  // 🔒 Enhanced reconnection strategy for HA
   retryStrategy(times) {
     if (times > 10) {
       logger.error('Redis connection failed after 10 retries - circuit breaker will activate');
       return null;
     }
-    // Exponential backoff: 1s, 2s, 4s, 8s... up to 30s
     const delay = Math.min(times * 1000, 30000);
     logger.info(`Redis retry attempt ${times}, delay: ${delay}ms`);
     return delay;
   },
-  
   reconnectOnError(err) {
-    // Reconnect on specific errors
     const targetErrors = ['READONLY', 'ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND'];
-    if (targetErrors.some(e => err.message.includes(e))) {
+    if (targetErrors.some((e) => err.message.includes(e))) {
       logger.warn('Redis reconnecting on error', { error: err.message });
       return true;
     }
     return false;
   },
-  
-  // 🔒 Connection timeout and keep-alive
-  connectTimeout: 10000, // 10s
-  keepAlive: 30000, // 30s
-  
-  // 🔒 Command timeout to prevent hanging
-  commandTimeout: 5000, // 5s for commands
+  connectTimeout: 10000,
+  keepAlive: 30000,
+  commandTimeout: 5000,
 };
 
+let redisConfig = env.REDIS_URL
+  ? env.REDIS_URL
+  : {
+      host: env.REDIS_HOST,
+      port: env.REDIS_PORT,
+      password: env.REDIS_PASSWORD || undefined,
+      ...sharedRedisOptions,
+    };
+
 // 🔒 PHASE 4: Support for Redis Sentinel (high availability)
-// If REDIS_SENTINELS is provided, use sentinel mode
-if (env.REDIS_SENTINELS) {
+if (!env.REDIS_URL && env.REDIS_SENTINELS && typeof redisConfig === 'object') {
   try {
     const sentinels = JSON.parse(env.REDIS_SENTINELS);
     redisConfig.sentinels = sentinels;
@@ -147,8 +143,8 @@ const redis = new Redis(redisConfig);
 
 redis.on('connect', () => {
   logger.info('Redis connected', {
-    mode: redisConfig.sentinels ? 'sentinel' : 'standalone',
-    host: redisConfig.host || 'sentinel',
+    mode: typeof redisConfig === 'string' ? 'url' : redisConfig.sentinels ? 'sentinel' : 'standalone',
+    host: typeof redisConfig === 'object' ? redisConfig.host || 'sentinel' : 'url',
   });
 });
 redis.on('ready', () => {

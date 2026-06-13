@@ -4,7 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
-import { FaUser, FaEnvelope, FaPhone, FaLock, FaArrowRight } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaPhone, FaLock } from 'react-icons/fa';
+import { ArrowRight } from 'lucide-react';
 import { getPasswordRequirementsText, validatePasswordLength } from '../../utils/authValidationPolicy';
 
 const Register = () => {
@@ -262,11 +263,18 @@ const Register = () => {
               {/* Register Button */}
               <Button
                 type="submit"
-                className="w-full h-12"
+                className="w-full h-12 group"
                 disabled={loading}
               >
-                {loading ? 'Creating Account...' : 'Create Account'}
-                <FaArrowRight className="ml-2" />
+                <span>{loading ? 'Creating Account...' : 'Create Account'}</span>
+                {!loading && (
+                  <ArrowRight
+                    size={18}
+                    strokeWidth={2}
+                    className="transition-transform duration-200 group-hover:translate-x-0.5"
+                    aria-hidden="true"
+                  />
+                )}
               </Button>
             </form>
 

@@ -24,18 +24,22 @@ const backendCartItem = {
   quantity: 30,
 };
 
+function apiCart(payload) {
+  return { success: true, data: payload };
+}
+
 describe('useCart', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('loads and maps cart from API', async () => {
-    cartService.getCart.mockResolvedValue({
-      data: {
+    cartService.getCart.mockResolvedValue(
+      apiCart({
         _id: 'cart-1',
         items: [backendCartItem],
-      },
-    });
+      })
+    );
 
     const { result } = renderHook(() => useCart());
 
@@ -53,9 +57,7 @@ describe('useCart', () => {
   });
 
   it('handles empty cart response', async () => {
-    cartService.getCart.mockResolvedValue({
-      data: null,
-    });
+    cartService.getCart.mockResolvedValue(apiCart(null));
 
     const { result } = renderHook(() => useCart());
 
@@ -84,13 +86,13 @@ describe('useCart', () => {
   });
 
   it('adds item to cart and updates state', async () => {
-    cartService.getCart.mockResolvedValue({ data: null });
-    cartService.addToCart.mockResolvedValue({
-      data: {
+    cartService.getCart.mockResolvedValue(apiCart(null));
+    cartService.addToCart.mockResolvedValue(
+      apiCart({
         _id: 'cart-1',
         items: [backendCartItem],
-      },
-    });
+      })
+    );
 
     const { result } = renderHook(() => useCart());
 
@@ -108,18 +110,18 @@ describe('useCart', () => {
   });
 
   it('removes item from cart and updates state', async () => {
-    cartService.getCart.mockResolvedValue({
-      data: {
+    cartService.getCart.mockResolvedValue(
+      apiCart({
         _id: 'cart-1',
         items: [backendCartItem],
-      },
-    });
-    cartService.removeFromCart.mockResolvedValue({
-      data: {
+      })
+    );
+    cartService.removeFromCart.mockResolvedValue(
+      apiCart({
         _id: 'cart-1',
         items: [],
-      },
-    });
+      })
+    );
 
     const { result } = renderHook(() => useCart());
 
@@ -136,8 +138,8 @@ describe('useCart', () => {
   });
 
   it('calculates totals from mapped cart items', async () => {
-    cartService.getCart.mockResolvedValue({
-      data: {
+    cartService.getCart.mockResolvedValue(
+      apiCart({
         _id: 'cart-1',
         items: [
           backendCartItem,
@@ -152,8 +154,8 @@ describe('useCart', () => {
             quantity: 10,
           },
         ],
-      },
-    });
+      })
+    );
 
     const { result } = renderHook(() => useCart());
 

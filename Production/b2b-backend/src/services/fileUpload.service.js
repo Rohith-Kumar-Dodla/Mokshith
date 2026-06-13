@@ -8,13 +8,6 @@ export const uploadFile = async (file, folder = 'images') => {
     throw new Error('No file provided for upload');
   }
 
-  if (file.url) {
-    return {
-      url: file.url,
-      publicId: file.publicId || file.cloudinary?.publicId || null,
-    };
-  }
-
   if (cloudinaryService.isEnabled()) {
     const result = await cloudinaryService.upload(file, folder);
     return {
@@ -38,6 +31,10 @@ export const uploadFile = async (file, folder = 'images') => {
       url: `/uploads/${filename}`,
       publicId: null,
     };
+  }
+
+  if (file.buffer) {
+    throw new Error('Cloud storage is not configured. Set Cloudinary credentials in the backend environment.');
   }
 
   throw new Error('File upload failed: no storage backend available');

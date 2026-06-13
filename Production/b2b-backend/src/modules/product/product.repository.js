@@ -6,7 +6,7 @@ export const findProducts = (filter, options) => {
   const { skip, limit } = options;
 
   return Product.find(filter)
-    .select('name price stock description categoryId image imageUrl unit minOrderQty moq gst isActive') // 🔥 Field Optimization
+    .select('name price stock description categoryId image imageUrl imagePublicId unit minOrderQty moq gst isActive updatedAt')
     .skip(skip)
     .limit(limit)
     .sort({ createdAt: -1 })
@@ -23,7 +23,7 @@ export const findById = (id) =>
   Product.findById(id).populate('categoryId vendorId companyId');
 
 export const updateProduct = (id, data) =>
-  Product.findByIdAndUpdate(id, data, { new: true });
+  Product.findByIdAndUpdate(id, data, { new: true, runValidators: true }).lean();
 
 export const deleteProduct = (id) =>
   Product.findByIdAndDelete(id);

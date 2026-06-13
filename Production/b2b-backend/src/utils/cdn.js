@@ -88,6 +88,10 @@ export const transformProductImages = (product) => {
     transformed.image = getCdnUrl(transformed.image);
   }
 
+  if (transformed.imageUrl) {
+    transformed.imageUrl = getCdnUrl(transformed.imageUrl);
+  }
+
   // Transform images array
   if (transformed.images && Array.isArray(transformed.images)) {
     transformed.images = transformed.images.map(img => getCdnUrl(img));
