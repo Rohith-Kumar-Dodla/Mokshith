@@ -116,7 +116,7 @@ const AdminDashboard = () => {
             <Card key={index} className="hover:shadow-md transition-shadow p-4 sm:p-6">
               <div className="flex items-start justify-between">
                 <div className={`p-2 sm:p-3 rounded-lg ${colors.bg}`}>
-                  <card.icon size={18} sm:size={24} className={colors.icon} />
+                  <card.icon className={`w-4 h-4 sm:w-6 sm:h-6 ${colors.icon}`} />
                 </div>
                 <span className={`text-xs sm:text-sm font-semibold ${card.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
                   {card.change}
@@ -139,13 +139,13 @@ const AdminDashboard = () => {
               <Card key={index} className="hover:shadow-md transition-shadow cursor-pointer group p-4 sm:p-6 min-h-[88px]">
                 <Link to={action.path} className="flex items-start gap-3 sm:gap-4">
                   <div className={`p-2 sm:p-3 rounded-lg ${colors.bg} group-hover:scale-110 transition-transform flex-shrink-0`}>
-                    <action.icon size={16} sm:size={20} className={colors.icon} />
+                    <action.icon className={`w-4 h-4 sm:w-5 sm:h-5 ${colors.icon}`} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm sm:text-base font-semibold text-gray-900 truncate">{action.title}</h3>
                     <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1 line-clamp-2">{action.description}</p>
                   </div>
-                  <FiArrowRight className="text-gray-400 group-hover:text-gray-600 transition-colors flex-shrink-0" size={16} sm:size={20} />
+                  <FiArrowRight className="text-gray-400 group-hover:text-gray-600 transition-colors flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5" />
                 </Link>
               </Card>
             );
@@ -161,7 +161,7 @@ const AdminDashboard = () => {
             <Card key={index} className="text-center p-3 sm:p-4">
               <div className="flex justify-center mb-2 sm:mb-3">
                 <div className="p-2 sm:p-3 rounded-lg bg-blue-100">
-                  <perf.icon size={18} sm:size={24} className="text-blue-600" />
+                  <perf.icon className="w-4 h-4 sm:w-6 sm:h-6 text-blue-600" />
                 </div>
               </div>
               <p className="text-gray-600 text-xs sm:text-sm">{perf.title}</p>
@@ -184,7 +184,7 @@ const AdminDashboard = () => {
               return (
                 <div key={activity.id} className="flex items-start gap-3 sm:gap-4 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                   <div className={`p-2 rounded-lg ${colors.bg} flex-shrink-0`}>
-                    <activity.icon size={14} sm:size={16} className={colors.icon} />
+                    <activity.icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${colors.icon}`} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-gray-900 text-xs sm:text-sm">{activity.title}</h3>
@@ -204,7 +204,7 @@ const AdminDashboard = () => {
             <div className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="p-2 rounded-lg bg-blue-100 flex-shrink-0">
-                  <FiGrid size={16} sm:size={20} className="text-blue-600" />
+                  <FiGrid className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                 </div>
                 <span className="text-xs sm:text-sm font-medium text-gray-700">Marketplace Status</span>
               </div>
@@ -213,7 +213,7 @@ const AdminDashboard = () => {
             <div className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="p-2 rounded-lg bg-purple-100 flex-shrink-0">
-                  <FiUsers size={16} sm:size={20} className="text-purple-600" />
+                  <FiUsers className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
                 </div>
                 <span className="text-xs sm:text-sm font-medium text-gray-700">Active Vendors</span>
               </div>
@@ -222,7 +222,7 @@ const AdminDashboard = () => {
             <div className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="p-2 rounded-lg bg-green-100 flex-shrink-0">
-                  <FiTruck size={16} sm:size={20} className="text-green-600" />
+                  <FiTruck className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                 </div>
                 <span className="text-xs sm:text-sm font-medium text-gray-700">Delivery Partners</span>
               </div>
@@ -231,7 +231,7 @@ const AdminDashboard = () => {
             <div className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="p-2 rounded-lg bg-orange-100 flex-shrink-0">
-                  <FiBox size={16} sm:size={20} className="text-orange-600" />
+                  <FiBox className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
                 </div>
                 <span className="text-xs sm:text-sm font-medium text-gray-700">Total Orders</span>
               </div>
@@ -240,7 +240,7 @@ const AdminDashboard = () => {
             <div className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="p-2 rounded-lg bg-blue-100 flex-shrink-0">
-                  <FiPackage size={16} sm:size={20} className="text-blue-600" />
+                  <FiPackage className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                 </div>
                 <span className="text-xs sm:text-sm font-medium text-gray-700">Pending Approvals</span>
               </div>

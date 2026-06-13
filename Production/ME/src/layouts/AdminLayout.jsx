@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import {
   FiGrid,
   FiBox,
@@ -12,10 +12,8 @@ import {
   FiSettings,
   FiMenu,
   FiX,
-  FiSearch,
   FiBell,
   FiMessageSquare,
-  FiChevronDown,
   FiDollarSign
 } from 'react-icons/fi';
 import NotificationDrawer from '../components/admin/NotificationDrawer';
@@ -28,7 +26,6 @@ import { useAuth } from '../context/AuthContext';
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [notificationOpen, setNotificationOpen] = useState(false);
-  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const location = useLocation();
   const { requestLogout, LogoutConfirmDialog } = useLogoutConfirm();
   const { mobileMenuOpen, toggleMobileMenu, closeMobileMenu } = useMobileSidebar();
@@ -70,7 +67,7 @@ const AdminLayout = () => {
       <div className={`transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'}`}>
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30 pt-[env(safe-area-inset-top,0px)]">
           <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 gap-2 sm:gap-4">
-            <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
               <button
                 type="button"
                 onClick={toggleMobileMenu}
@@ -89,14 +86,6 @@ const AdminLayout = () => {
               >
                 <FiMenu size={20} className="text-gray-600" />
               </button>
-              <div className="relative w-full md:w-96 min-w-0">
-                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input
-                  type="text"
-                  placeholder="Search products, orders, vendors..."
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
             </div>
 
             <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
@@ -119,40 +108,14 @@ const AdminLayout = () => {
                 <span className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full"></span>
               </button>
 
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                  className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors min-h-[44px]"
-                >
-                  <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
-                    {initials}
-                  </div>
-                  <div className="hidden md:block text-left min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{displayName}</p>
-                    <p className="text-xs text-gray-500 truncate">Admin</p>
-                  </div>
-                  <FiChevronDown size={16} className="text-gray-400 flex-shrink-0" />
-                </button>
-
-                {profileDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 z-50">
-                    <Link
-                      to="/admin/settings"
-                      className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg min-h-[44px]"
-                      onClick={() => setProfileDropdownOpen(false)}
-                    >
-                      Profile
-                    </Link>
-                    <Link
-                      to="/admin/settings"
-                      className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-b-lg min-h-[44px]"
-                      onClick={() => setProfileDropdownOpen(false)}
-                    >
-                      Settings
-                    </Link>
-                  </div>
-                )}
+              <div className="flex items-center gap-3 p-2 min-h-[44px]" aria-label="Signed in user">
+                <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
+                  {initials}
+                </div>
+                <div className="hidden md:block text-left min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{displayName}</p>
+                  <p className="text-xs text-gray-500 truncate">Admin</p>
+                </div>
               </div>
             </div>
           </div>

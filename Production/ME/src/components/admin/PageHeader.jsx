@@ -16,7 +16,7 @@ const PageHeader = ({ title, subtitle, buttonText, onButtonClick, buttonIcon, ac
           onClick={onButtonClick}
           className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 h-10 sm:h-12 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-sm font-medium"
         >
-          {buttonIcon || <FiPlus size={14} sm:size={18} />}
+          {buttonIcon || <FiPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
           {buttonText}
         </button>
       )}

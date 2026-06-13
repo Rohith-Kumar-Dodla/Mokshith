@@ -24,12 +24,12 @@ const FilterDropdown = ({ label, options, selected, onSelect }) => {
         onClick={() => setIsOpen(!isOpen)}
         className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 h-10 sm:h-12 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-xs sm:text-sm"
       >
-        <FiFilter size={14} sm:size={16} className="text-gray-500" />
+        <FiFilter className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
         {label && <span className="text-gray-600 hidden sm:inline">{label}:</span>}
         <span className="font-medium text-gray-900">
           {selectedOption?.label || 'All'}
         </span>
-        <FiChevronDown size={14} sm:size={16} className="text-gray-400" />
+        <FiChevronDown className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
       </button>
 
       {isOpen && (

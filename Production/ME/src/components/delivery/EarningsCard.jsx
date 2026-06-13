@@ -14,7 +14,7 @@ const EarningsCard = ({ title, amount, change, icon, period }) => {
           <div className={`flex items-center gap-1 text-xs sm:text-sm font-semibold ${
             isPositive ? 'text-green-600' : 'text-red-600'
           }`}>
-            {isPositive ? <FiTrendingUp size={14} className="sm:size-16" /> : <FiTrendingDown size={14} className="sm:size-16" />}
+            {isPositive ? <FiTrendingUp className="w-3.5 h-3.5" /> : <FiTrendingDown className="w-3.5 h-3.5" />}
             <span>{Math.abs(change)}%</span>
           </div>
         )}

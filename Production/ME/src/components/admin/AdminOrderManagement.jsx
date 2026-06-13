@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FiEye, FiPackage, FiTruck, FiClock, FiCheck, FiRefreshCw } from 'react-icons/fi';
 import Card from './Card';
 import StatusBadge from './StatusBadge';
@@ -7,6 +7,7 @@ import FilterDropdown from './FilterDropdown';
 import Modal from './Modal';
 import orderService from '../../services/orderService';
 import { computeOrderStats, extractAdminOrdersResponse } from '../../utils/orderMapper';
+import useDebouncedValue from '../../hooks/useDebouncedValue';
 
 const ADMIN_STATUS_OPTIONS = [
   { value: 'all', label: 'All Status' },
@@ -42,7 +43,8 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
   const [pagination, setPagination] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const debouncedSearch = useDebouncedValue(searchInput, 300);
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -52,33 +54,41 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [confirmStatus, setConfirmStatus] = useState(null);
   const [statusNote, setStatusNote] = useState('');
+  const hasLoadedOnceRef = useRef(false);
 
-  const loadOrders = useCallback(async ({ silent = false } = {}) => {
+  const loadOrders = useCallback(async ({ silent = false, forceRefresh = false } = {}) => {
     if (!silent) setLoading(true);
     setError(null);
     try {
       const params = {
         page,
         limit: 20,
-        search: searchTerm || undefined,
+        search: debouncedSearch || undefined,
         status: selectedStatus !== 'all' ? selectedStatus : undefined,
         startDate: startDate || undefined,
         endDate: endDate || undefined,
-        _refresh: Date.now(),
       };
+      if (forceRefresh) {
+        params._refresh = Date.now();
+      }
       const response = await orderService.getAllOrders(params);
       const { orders: mapped, pagination: pag } = extractAdminOrdersResponse(response);
       setOrders(mapped);
       setPagination(pag);
+      hasLoadedOnceRef.current = true;
     } catch (loadError) {
       setError(loadError?.response?.data?.message || loadError.message || 'Failed to load orders');
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [page, searchTerm, selectedStatus, startDate, endDate]);
+  }, [page, debouncedSearch, selectedStatus, startDate, endDate]);
 
   useEffect(() => {
-    loadOrders();
+    setPage(1);
+  }, [debouncedSearch, selectedStatus, startDate, endDate]);
+
+  useEffect(() => {
+    loadOrders({ silent: hasLoadedOnceRef.current });
   }, [loadOrders]);
 
   const stats = useMemo(() => computeOrderStats(orders), [orders]);
@@ -152,12 +162,12 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
 
       <Card className="p-4 sm:p-6">
         <div className="flex flex-col gap-3 sm:gap-4">
-          <SearchBar placeholder="Search by order ID or vendor..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onClear={() => setSearchTerm('')} />
+          <SearchBar placeholder="Search by order ID or vendor..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} onClear={() => setSearchInput('')} />
           <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
             <FilterDropdown label="Status" options={ADMIN_STATUS_OPTIONS} selected={selectedStatus} onSelect={setSelectedStatus} />
             <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-3 py-2 border rounded-lg text-sm min-h-[44px]" aria-label="Start date" />
             <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-3 py-2 border rounded-lg text-sm min-h-[44px]" aria-label="End date" />
-            <button type="button" onClick={() => loadOrders()} className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] border rounded-lg text-sm hover:bg-gray-50">
+            <button type="button" onClick={() => loadOrders({ forceRefresh: true })} className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] border rounded-lg text-sm hover:bg-gray-50">
               <FiRefreshCw size={16} /> Refresh
             </button>
           </div>

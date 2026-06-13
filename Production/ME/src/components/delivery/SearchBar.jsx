@@ -20,7 +20,7 @@ const SearchBar = ({ placeholder, onSearch, className = '' }) => {
 
   return (
     <div className={`relative ${className}`}>
-      <FiSearch className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+      <FiSearch className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
       <input
         type="text"
         placeholder={placeholder || 'Search...'}
@@ -30,10 +30,12 @@ const SearchBar = ({ placeholder, onSearch, className = '' }) => {
       />
       {searchTerm && (
         <button
+          type="button"
           onClick={handleClear}
           className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors min-h-[32px] min-w-[32px] flex items-center justify-center"
+          aria-label="Clear search"
         >
-          <FiX size={14} className="sm:size-18" />
+          <FiX className="w-3.5 h-3.5" />
         </button>
       )}
     </div>

@@ -20,16 +20,16 @@ const Footer = () => {
             </p>
             <div className="flex space-x-3 sm:space-x-4">
               <a href="#" className="text-gray-300 hover:text-secondary transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
-                <FaFacebook size={20} className="sm:size-24" />
+                <FaFacebook className="w-5 h-5" />
               </a>
               <a href="#" className="text-gray-300 hover:text-secondary transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
-                <FaTwitter size={20} className="sm:size-24" />
+                <FaTwitter className="w-5 h-5" />
               </a>
               <a href="#" className="text-gray-300 hover:text-secondary transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
-                <FaLinkedin size={20} className="sm:size-24" />
+                <FaLinkedin className="w-5 h-5" />
               </a>
               <a href="#" className="text-gray-300 hover:text-secondary transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
-                <FaInstagram size={20} className="sm:size-24" />
+                <FaInstagram className="w-5 h-5" />
               </a>
             </div>
           </div>
