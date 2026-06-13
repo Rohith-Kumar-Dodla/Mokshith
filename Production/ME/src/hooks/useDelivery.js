@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import deliveryService from '../services/deliveryService';
 
@@ -69,15 +69,13 @@ export function useDelivery({ autoLoad = true } = {}) {
   const [profileError, setProfileError] = useState(null);
 
   const [actionLoading, setActionLoading] = useState(false);
+  const hasLoadedOnceRef = useRef(false);
 
-
-
-  const refreshAll = useCallback(async () => {
-
-    setLoading(true);
-
+  const refreshAll = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) {
+      setLoading(true);
+    }
     setError(null);
-
     setProfileError(null);
 
 
@@ -183,6 +181,7 @@ export function useDelivery({ autoLoad = true } = {}) {
       setEarningsSeries(buildEarningsSeries(mappedHistory));
 
       setPerformanceMetrics(buildPerformanceMetrics(mappedAssignments, mappedHistory));
+      hasLoadedOnceRef.current = true;
 
     } catch (loadError) {
 
@@ -190,7 +189,9 @@ export function useDelivery({ autoLoad = true } = {}) {
 
     } finally {
 
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
 
     }
 
@@ -282,7 +283,7 @@ export function useDelivery({ autoLoad = true } = {}) {
 
         await deliveryService.acceptDelivery(shipmentId);
 
-        await refreshAll();
+        await refreshAll({ silent: true });
 
       } catch (actionError) {
 
@@ -318,7 +319,7 @@ export function useDelivery({ autoLoad = true } = {}) {
 
         await deliveryService.pickUpDelivery(shipmentId);
 
-        await refreshAll();
+        await refreshAll({ silent: true });
 
       } catch (actionError) {
 
@@ -354,7 +355,7 @@ export function useDelivery({ autoLoad = true } = {}) {
 
         await deliveryService.startDelivery(shipmentId);
 
-        await refreshAll();
+        await refreshAll({ silent: true });
 
       } catch (actionError) {
 
@@ -390,7 +391,7 @@ export function useDelivery({ autoLoad = true } = {}) {
 
         await deliveryService.markAsDelivered(shipmentId);
 
-        await refreshAll();
+        await refreshAll({ silent: true });
 
       } catch (actionError) {
 
@@ -426,7 +427,7 @@ export function useDelivery({ autoLoad = true } = {}) {
 
         await deliveryService.completeDelivery(shipmentId, payload);
 
-        await refreshAll();
+        await refreshAll({ silent: true });
 
       } catch (actionError) {
 

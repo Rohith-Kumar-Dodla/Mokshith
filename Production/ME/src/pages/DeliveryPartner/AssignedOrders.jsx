@@ -10,9 +10,9 @@ const AssignedOrders = () => {
   useEffect(() => {
     const intervalId = window.setInterval(() => {
       if (document.visibilityState === 'visible') {
-        refreshAll();
+        refreshAll({ silent: true });
       }
-    }, 5000);
+    }, 30000);
 
     return () => window.clearInterval(intervalId);
   }, [refreshAll]);
@@ -64,7 +64,7 @@ const AssignedOrders = () => {
     outForDelivery: assignments.filter((o) => o.status === 'out_for_delivery').length,
   };
 
-  if (loading) {
+  if (loading && assignments.length === 0) {
     return (
       <div className="space-y-4 sm:space-y-6">
         <div>

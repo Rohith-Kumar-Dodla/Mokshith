@@ -18,14 +18,14 @@ const NotificationDrawer = ({ isOpen, onClose, notifications }) => {
           {/* Header */}
           <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
             <div className="flex items-center gap-2 sm:gap-3">
-              <FiBell size={18} sm:size-24 className="text-blue-600" />
+              <FiBell className="w-5 h-5 text-blue-600 flex-shrink-0" />
               <h2 className="text-base sm:text-xl font-bold text-gray-900">Notifications</h2>
             </div>
             <button
               onClick={onClose}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors min-h-[36px] min-w-[36px] sm:min-h-[40px] sm:min-w-[40px] flex items-center justify-center"
             >
-              <FiX size={16} sm:size-20 className="text-gray-600" />
+              <FiX className="w-4 h-4 text-gray-600" />
             </button>
           </div>
 
@@ -33,7 +33,7 @@ const NotificationDrawer = ({ isOpen, onClose, notifications }) => {
           <div className="flex-1 overflow-y-auto">
             {notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                <FiBell size={36} sm:size-48 className="mb-3 sm:mb-4 text-gray-300" />
+                <FiBell className="w-9 h-9 mb-3 sm:mb-4 text-gray-300" />
                 <p className="text-sm sm:text-base">No notifications</p>
               </div>
             ) : (

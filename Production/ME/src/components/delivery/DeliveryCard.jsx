@@ -51,11 +51,11 @@ const DeliveryCard = ({ order }) => {
 
       <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4 text-xs sm:text-sm text-gray-600">
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <FiPackage size={14} className="sm:size-16" />
+          <FiPackage className="w-3.5 h-3.5 flex-shrink-0" />
           <span>{order.itemsCount} items</span>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <FiClock size={14} className="sm:size-16" />
+          <FiClock className="w-3.5 h-3.5 flex-shrink-0" />
           <span>{order.distance} km</span>
         </div>
       </div>
@@ -70,7 +70,7 @@ const DeliveryCard = ({ order }) => {
           className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 h-10 sm:h-12 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-sm font-medium"
         >
           View Details
-          <FiArrowRight size={14} className="sm:size-16" />
+          <FiArrowRight className="w-3.5 h-3.5 flex-shrink-0" />
         </Link>
       </div>
     </div>

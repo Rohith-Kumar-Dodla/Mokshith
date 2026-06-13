@@ -14,7 +14,7 @@ const FilterPanel = ({ filters, onFilterChange, onClear }) => {
     <div className="bg-white rounded-xl border border-gray-200 p-3 sm:p-4">
       <div className="flex items-center justify-between mb-3 sm:mb-4">
         <div className="flex items-center gap-2">
-          <FiFilter size={16} className="sm:size-20 text-gray-600" />
+          <FiFilter className="w-4 h-4 text-gray-600 flex-shrink-0" />
           <h3 className="text-xs sm:text-sm font-semibold text-gray-900">Filters</h3>
         </div>
         <button
@@ -76,7 +76,7 @@ const FilterPanel = ({ filters, onFilterChange, onClear }) => {
             onClick={onClear}
             className="w-full inline-flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2.5 h-10 sm:h-12 text-xs sm:text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <FiX size={14} className="sm:size-18" />
+            <FiX className="w-3.5 h-3.5" />
             Clear All Filters
           </button>
         </div>
