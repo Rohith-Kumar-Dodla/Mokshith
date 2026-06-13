@@ -52,7 +52,7 @@ export function useCategories() {
         return [...current, mapped];
       }
       const next = [...current];
-      next[index] = { ...next[index], ...mapped };
+      next[index] = mapped;
       return next;
     });
   }, [categories.length]);

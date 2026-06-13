@@ -127,18 +127,17 @@ const Cart = () => {
                 <span className="text-lg sm:text-xl font-bold text-gray-900">₹{grandTotal.toFixed(2)}</span>
               </div>
 
-              <div className="space-y-2 sm:space-y-3">
+              <div className="flex flex-col gap-3 w-full">
                 <Link
                   to="/vendor/checkout"
-                  className="w-full py-2.5 h-10 sm:h-12 px-4 sm:px-6 bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 sm:gap-2 hover:bg-blue-700 transition-colors"
+                  className="w-full min-h-[44px] px-4 py-3 bg-blue-600 text-white rounded-lg text-sm font-medium inline-flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors whitespace-normal text-center"
                 >
-                  <span className="hidden sm:inline">Proceed to Checkout</span>
-                  <span className="sm:hidden">Checkout</span>
-                  <FiArrowRight className="w-4 h-4" />
+                  Proceed to Checkout
+                  <FiArrowRight className="w-4 h-4 flex-shrink-0" />
                 </Link>
                 <Link
                   to="/vendor/products"
-                  className="w-full py-2.5 h-10 sm:h-12 px-4 sm:px-6 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="w-full min-h-[44px] px-4 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 inline-flex items-center justify-center hover:bg-gray-50 transition-colors whitespace-normal text-center"
                 >
                   Continue Shopping
                 </Link>

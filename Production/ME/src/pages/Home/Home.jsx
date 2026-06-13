@@ -19,6 +19,8 @@ const routes = {
   REGISTER: '/register',
   LOGIN: '/login',
   PRODUCTS: '/vendor/products',
+  ABOUT: '/#features',
+  CONTACT: '/#how-it-works',
 };
 
 // ==================== HERO SECTION ====================
@@ -278,11 +280,11 @@ const PlatformShowcase = () => {
 // ==================== CTA SECTION ====================
 const CTASection = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, role, isAuthenticated } = useAuth();
 
   const handleGetStarted = () => {
-    if (user) {
-      navigate(routes.DASHBOARD);
+    if (isAuthenticated && role) {
+      navigate(getDashboardRoute(role));
     } else {
       navigate(routes.REGISTER);
     }
@@ -308,7 +310,7 @@ const CTASection = () => {
           
           <div className="cta-actions">
             <button onClick={handleGetStarted} className="cta-button primary">
-              {user ? 'Go to Dashboard' : 'Create Your Account'} <ArrowRight size={18} />
+              {isAuthenticated ? 'Go to Dashboard' : 'Create Your Account'} <ArrowRight size={18} />
             </button>
             <Link to={routes.CONTACT} className="cta-button secondary">
               Contact Sales

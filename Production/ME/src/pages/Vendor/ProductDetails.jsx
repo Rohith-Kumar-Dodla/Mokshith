@@ -7,6 +7,7 @@ import useProductDetails from '../../hooks/useProductDetails';
 import useProductPricing from '../../hooks/useProductPricing';
 import useCart from '../../hooks/useCart';
 import useWishlist from '../../hooks/useWishlist';
+import { getProductImageKey } from '../../utils/productMapper';
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -118,6 +119,7 @@ const ProductDetails = () => {
           <div>
             <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-3 sm:mb-4">
               <img
+                key={getProductImageKey(product)}
                 src={productImages[selectedImage] || product.imageUrl || product.image}
                 alt={product.name}
                 className="w-full h-full object-cover"

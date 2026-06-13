@@ -6,7 +6,7 @@ const Button = ({
   disabled = false,
   ...props
 }) => {
-  const baseStyles = 'font-semibold rounded-lg transition-all duration-300';
+  const baseStyles = 'inline-flex items-center justify-center gap-2 font-semibold rounded-lg transition-all duration-300';
   
   const variants = {
     primary: 'bg-secondary hover:bg-primary text-white shadow-lg hover:shadow-xl',

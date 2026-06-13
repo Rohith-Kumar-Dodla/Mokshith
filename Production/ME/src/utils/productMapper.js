@@ -1,3 +1,6 @@
+import { getImageVersion, withImageCacheBust } from './imageUtils';
+import { resolveUploadUrl } from './bankTransferUtils';
+
 const DEFAULT_RATING = 4;
 const DEFAULT_REVIEWS = 0;
 
@@ -77,7 +80,9 @@ export function mapBackendProduct(product) {
   const stock = Number(product.stock ?? 0);
   const moq = Number(product.moq ?? product.minOrderQty ?? 1);
   const price = Number(product.price ?? 0);
-  const imageUrl = product.imageUrl || product.image || '';
+  const rawImage = resolveUploadUrl(product.imageUrl || product.image || '') || '';
+  const imageVersion = getImageVersion(product);
+  const displayImage = withImageCacheBust(rawImage, imageVersion);
   const categoryName = getCategoryName(product.categoryId);
   const categoryRefId = getCategoryId(product.categoryId);
   const brand =
@@ -95,15 +100,22 @@ export function mapBackendProduct(product) {
     categoryId: categoryRefId,
     status: deriveProductStatus(stock, moq),
     minimumOrderQuantity: moq,
-    image: imageUrl,
-    imageUrl,
-    images: product.images?.length ? product.images : imageUrl ? [imageUrl] : [],
+    storedImage: withImageCacheBust(rawImage, imageVersion),
+    image: displayImage,
+    imageUrl: displayImage,
+    images: product.images?.length
+      ? product.images.map((img) => withImageCacheBust(img, imageVersion))
+      : displayImage
+        ? [displayImage]
+        : [],
     bulkPricing: normalizeBulkPricing(product.bulkPricing, price),
     rating: product.rating ?? DEFAULT_RATING,
     reviews: product.reviews ?? DEFAULT_REVIEWS,
     brand,
     unit: product.unit || 'unit',
     createdDate: product.createdAt || product.createdDate || null,
+    updatedAt: product.updatedAt || null,
+    imagePublicId: product.imagePublicId || null,
     sales: product.sales ?? 0,
     mrp: product.mrp ?? null,
     wholesalePrice: product.wholesalePrice ?? null,
@@ -113,6 +125,14 @@ export function mapBackendProduct(product) {
 
 export function mapBackendProducts(products = []) {
   return products.map(mapBackendProduct).filter(Boolean);
+}
+
+export function getProductImageKey(product) {
+  if (!product) {
+    return 'product-image';
+  }
+
+  return `${product.id || product._id || 'product'}-${getImageVersion(product) || product.imageUrl || product.image || 'none'}`;
 }
 
 export function getBulkPriceForQuantity(product, quantity) {

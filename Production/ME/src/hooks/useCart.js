@@ -3,8 +3,10 @@ import cartService from '../services/cartService';
 import { mapBackendCart } from '../utils/cartMapper';
 import { calculateCartTotals } from '../utils/pricingCalculator';
 
+import { unwrapApiData } from '../utils/apiResponse';
+
 function extractCartPayload(response) {
-  return response?.data ?? response ?? null;
+  return unwrapApiData(response);
 }
 
 export function useCart({ autoLoad = true } = {}) {

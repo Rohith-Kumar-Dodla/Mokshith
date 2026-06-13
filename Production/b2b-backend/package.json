@@ -4,6 +4,9 @@
   "description": "B2B + B2C E-commerce Backend",
   "main": "server.js",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
@@ -20,7 +23,8 @@
     "reset:db": "node scripts/resetDatabase.js",
     "verify:superadmin": "node scripts/verifySuperAdmin.js",
     "clear:auth-limits": "node scripts/clearAuthRateLimits.js",
-    "fix:user-phone": "node scripts/fixUserPhoneIndex.js"
+    "fix:user-phone": "node scripts/fixUserPhoneIndex.js",
+    "seed:catalog": "node src/scripts/seedCatalog.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1057.0",

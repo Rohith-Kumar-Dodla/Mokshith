@@ -3,6 +3,7 @@ import { redisClient } from '../config/redis.js';
 import { logger } from '../config/logger.js';
 import { monitoringService } from '../services/monitoring.service.js';
 import { workers } from '../workers/index.js';
+import { isRedisRequired } from '../config/env.js';
 
 /**
  * Comprehensive health check endpoint
@@ -36,7 +37,7 @@ export const healthCheck = async (req, res) => {
     health.status = 'healthy';
   }
 
-  const statusCode = hasUnhealthy ? 503 : (hasDegraded ? 200 : 200);
+  const statusCode = hasUnhealthy ? 503 : 200;
   
   res.status(statusCode).json(health);
 };
@@ -57,15 +58,19 @@ export const livenessProbe = (req, res) => {
 export const readinessProbe = async (req, res) => {
   const dbHealthy = await checkDatabase();
   const redisHealthy = await checkRedis();
+  const redisRequired = isRedisRequired();
 
-  const ready = dbHealthy.status === 'healthy' && redisHealthy.status === 'healthy';
+  const ready =
+    dbHealthy.status === 'healthy' &&
+    (!redisRequired || redisHealthy.status === 'healthy' || redisHealthy.status === 'degraded');
 
   res.status(ready ? 200 : 503).json({
     status: ready ? 'ready' : 'not ready',
     timestamp: new Date().toISOString(),
     checks: {
       database: dbHealthy,
-      redis: redisHealthy
+      redis: redisHealthy,
+      redisRequired,
     }
   });
 };
@@ -145,6 +150,16 @@ async function checkRedis() {
     // Determine status based on latency thresholds and circuit breaker
     let status = 'healthy';
     if (circuitBreaker.state === 'OPEN') {
+      if (!isRedisRequired()) {
+        return {
+          status: 'degraded',
+          responseTime: `${responseTime}ms`,
+          latencyMs: responseTime,
+          connected: false,
+          optional: true,
+          circuitBreakerState: circuitBreaker.state,
+        };
+      }
       status = 'unhealthy';
       logger.error('Redis circuit breaker OPEN - using fallback mode');
     } else if (circuitBreaker.state === 'HALF_OPEN') {
@@ -174,10 +189,19 @@ async function checkRedis() {
     };
   } catch (error) {
     logger.error('Redis health check failed:', error);
-    
-    // Check circuit breaker even on failure
+
     const circuitBreaker = redisClient.getCircuitBreakerStatus();
-    
+
+    if (!isRedisRequired()) {
+      return {
+        status: 'degraded',
+        message: error.message,
+        connected: false,
+        optional: true,
+        circuitBreakerState: circuitBreaker.state,
+      };
+    }
+
     return {
       status: 'unhealthy',
       message: error.message,

@@ -3,6 +3,9 @@ import api from './api';
 function buildCategoryFormData(data, imageFile) {
   const formData = new FormData();
   Object.entries(data).forEach(([key, value]) => {
+    if (['image', 'imageUrl', 'imagePublicId'].includes(key)) {
+      return;
+    }
     if (value !== undefined && value !== null && value !== '') {
       formData.append(key, value);
     }

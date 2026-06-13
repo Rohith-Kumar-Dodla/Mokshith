@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import productService from '../services/productService';
 import { mapBackendProduct, mapBackendProducts } from '../utils/productMapper';
+import { unwrapApiData } from '../utils/apiResponse';
 
 export function useProductDetails(productId) {
   const [product, setProduct] = useState(null);
@@ -21,7 +22,7 @@ export function useProductDetails(productId) {
 
     try {
       const response = await productService.getProductById(productId);
-      const mappedProduct = mapBackendProduct(response.data ?? response);
+      const mappedProduct = mapBackendProduct(unwrapApiData(response));
 
       if (!mappedProduct) {
         throw new Error('Product not found');
@@ -30,12 +31,15 @@ export function useProductDetails(productId) {
       setProduct(mappedProduct);
 
       if (mappedProduct.categoryId) {
-        const relatedResponse = await productService.getAllProducts({
-          categoryId: mappedProduct.categoryId,
-          limit: 8,
-        });
-        const relatedPayload = relatedResponse.data ?? relatedResponse;
-        const mappedRelated = mapBackendProducts(relatedPayload.products ?? relatedPayload).filter(
+        const relatedResponse = await productService.getAllProducts(
+          {
+            categoryId: mappedProduct.categoryId,
+            limit: 8,
+          },
+          { bustCache: true }
+        );
+        const relatedPayload = unwrapApiData(relatedResponse);
+        const mappedRelated = mapBackendProducts(relatedPayload?.products ?? relatedPayload).filter(
           (item) => item.id !== mappedProduct.id
         );
         setRelatedProducts(mappedRelated.slice(0, 4));
