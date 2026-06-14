@@ -20,11 +20,9 @@
     "lint:fix": "eslint . --fix || echo 'ESLint not configured'",
     "format": "prettier --write . || echo 'Prettier not configured'",
     "format:check": "prettier --check . || echo 'Prettier not configured'",
-    "reset:db": "node scripts/resetDatabase.js",
     "verify:superadmin": "node scripts/verifySuperAdmin.js",
     "clear:auth-limits": "node scripts/clearAuthRateLimits.js",
-    "fix:user-phone": "node scripts/fixUserPhoneIndex.js",
-    "seed:catalog": "node src/scripts/seedCatalog.js"
+    "fix:user-phone": "node scripts/fixUserPhoneIndex.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1057.0",

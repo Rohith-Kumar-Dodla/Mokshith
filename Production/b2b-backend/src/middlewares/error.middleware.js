@@ -72,6 +72,16 @@ export const errorHandler = (err, req, res, next) => {
     }
   }
 
+  // 🔥 MongoDB connectivity errors
+  if (
+    err.name === 'MongoNetworkError' ||
+    err.name === 'MongoServerSelectionError' ||
+    err.name === 'MongoNotConnectedError' ||
+    err.message?.includes('Client must be connected')
+  ) {
+    error = new AppError('Database temporarily unavailable', 503);
+  }
+
   const statusCode = error.statusCode || 500;
 
   // Don't expose internal error details in production
@@ -104,6 +114,12 @@ export const errorHandler = (err, req, res, next) => {
     errorResponse.error.code = 'AUTH_ERROR';
   } else if (err.name === 'MulterError') {
     errorResponse.error.code = 'FILE_UPLOAD_ERROR';
+  } else if (
+    err.name === 'MongoNetworkError' ||
+    err.name === 'MongoServerSelectionError' ||
+    err.name === 'MongoNotConnectedError'
+  ) {
+    errorResponse.error.code = 'DATABASE_UNAVAILABLE';
   }
 
   // Add validation details for frontend (development only)

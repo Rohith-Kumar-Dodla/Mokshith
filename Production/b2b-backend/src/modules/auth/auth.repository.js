@@ -1,13 +1,36 @@
 import User from '../user/user.model.js';
+import { normalizeLoginIdentifier } from '../../utils/loginIdentifier.js';
 
 export const findUserByEmailOrMobile = async (identifier) => {
-  return User.findOne({
-    $or: [{ email: identifier }, { mobile: identifier }],
-  }).select('+password +refreshToken');
+  const { email, mobile, raw } = normalizeLoginIdentifier(identifier);
+
+  const orConditions = [];
+  if (email) {
+    orConditions.push({ email });
+  }
+  if (mobile) {
+    orConditions.push({ mobile }, { phone: mobile });
+  }
+  if (raw && raw !== email && raw !== mobile) {
+    orConditions.push({ email: raw.toLowerCase() }, { mobile: raw }, { phone: raw });
+  }
+
+  if (orConditions.length === 0) {
+    return null;
+  }
+
+  return User.findOne({ $or: orConditions }).select('+password +refreshToken');
 };
 
 export const findUserByMobile = async (mobile) => {
-  return User.findOne({ mobile }).select('+password +refreshToken');
+  const { mobile: normalizedMobile } = normalizeLoginIdentifier(mobile);
+  if (!normalizedMobile) {
+    return null;
+  }
+
+  return User.findOne({
+    $or: [{ mobile: normalizedMobile }, { phone: normalizedMobile }],
+  }).select('+password +refreshToken');
 };
 
 export const findUserById = async (id) => {

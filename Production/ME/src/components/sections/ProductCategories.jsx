@@ -1,8 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, LayoutGrid } from 'lucide-react';
 import categoryService from '../../services/categoryService';
-import { SHOWCASE_CATEGORIES } from '../../constants/catalogShowcase';
 import { unwrapApiData, unwrapApiList } from '../../utils/apiResponse';
 import { mapBackendCategories } from '../../utils/categoryMapper';
 
@@ -32,11 +31,6 @@ const ProductCategories = () => {
     };
   }, []);
 
-  const displayCategories = useMemo(
-    () => (categories.length > 0 ? categories : SHOWCASE_CATEGORIES),
-    [categories]
-  );
-
   return (
     <section className="product-categories-section">
       <div className="section-container">
@@ -55,9 +49,9 @@ const ProductCategories = () => {
               </div>
             ))}
           </div>
-        ) : (
+        ) : categories.length > 0 ? (
           <div className="categories-grid">
-            {displayCategories.map((category) => (
+            {categories.map((category) => (
               <Link
                 key={category.id}
                 to="/register"
@@ -84,12 +78,17 @@ const ProductCategories = () => {
               </Link>
             ))}
           </div>
-        )}
-
-        {!loading && categories.length === 0 && (
-          <p className="section-footnote">
-            Register your business to access live inventory, bulk pricing, and vendor ordering.
-          </p>
+        ) : (
+          <div className="empty-state">
+            <LayoutGrid size={40} className="empty-state-icon" aria-hidden="true" />
+            <p className="empty-state-title">No categories available yet</p>
+            <p className="empty-state-text">
+              Categories will appear here once they are added through the admin panel.
+            </p>
+            <Link to="/register" className="empty-state-cta">
+              Register your business <ArrowRight size={14} />
+            </Link>
+          </div>
         )}
       </div>
 
@@ -123,13 +122,43 @@ const ProductCategories = () => {
           margin: 0;
         }
 
-        .section-footnote {
-          margin: 2rem auto 0;
-          max-width: 640px;
+        .empty-state {
+          max-width: 480px;
+          margin: 0 auto;
           text-align: center;
+          padding: 3rem 1.5rem;
+          border: 1px dashed #cbd5e1;
+          border-radius: 16px;
+          background: #f8fafc;
+        }
+
+        .empty-state-icon {
+          color: #94a3b8;
+          margin-bottom: 1rem;
+        }
+
+        .empty-state-title {
+          font-size: 1.125rem;
+          font-weight: 700;
+          color: #0f172a;
+          margin: 0 0 0.5rem 0;
+        }
+
+        .empty-state-text {
           font-size: 0.9375rem;
           color: #64748b;
           line-height: 1.6;
+          margin: 0 0 1.25rem 0;
+        }
+
+        .empty-state-cta {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: #2563eb;
+          text-decoration: none;
         }
 
         .categories-grid {
