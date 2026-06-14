@@ -46,9 +46,11 @@ describe('orderService', () => {
       },
     });
 
-    expect(api.post).toHaveBeenCalledWith('/orders', expect.objectContaining({
-      paymentMethod: 'COD',
-    }));
+    expect(api.post).toHaveBeenCalledWith(
+      '/orders',
+      expect.objectContaining({ paymentMethod: 'COD' }),
+      expect.objectContaining({ headers: {} })
+    );
   });
 
   it('calls downloadInvoice endpoint with blob response', async () => {

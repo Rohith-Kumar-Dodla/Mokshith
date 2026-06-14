@@ -1,7 +1,7 @@
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import * as service from './product.service.js';
 import { successResponse } from '../../utils/responseHandler.js';
-import { uploadFile } from '../../services/fileUpload.service.js';
+import { replaceStoredImage, applyUploadedImage } from '../../utils/imageUpload.utils.js';
 import { logger } from '../../config/logger.js';
 import AppError from '../../errors/AppError.js';
 
@@ -20,27 +20,25 @@ export const loadProduct = asyncHandler(async (req, res, next) => {
   next();
 });
 
-export const createProduct = asyncHandler(async (req, res) => {
-  logger.debug('Product creation request', { hasFile: !!req.file, bodyKeys: Object.keys(req.body) });
+function normalizeProductBody(body = {}) {
+  const data = { ...body };
 
-  const data = { ...req.body };
-  
-  // 🔥 Normalize types from FormData (multer stringifies everything)
-  if (data.price) data.price = Number(data.price);
-  if (data.stock) data.stock = Number(data.stock);
-  if (data.moq) data.moq = Number(data.moq);
-  
-  // Handle Boolean normalization
+  if (data.price !== undefined && data.price !== '') data.price = Number(data.price);
+  if (data.stock !== undefined && data.stock !== '') data.stock = Number(data.stock);
+  if (data.moq !== undefined && data.moq !== '') data.moq = Number(data.moq);
   if (data.isActive === 'true') data.isActive = true;
   if (data.isActive === 'false') data.isActive = false;
 
+  return data;
+}
+
+export const createProduct = asyncHandler(async (req, res) => {
+  logger.debug('Product creation request', { hasFile: !!req.file, bodyKeys: Object.keys(req.body) });
+
+  let data = normalizeProductBody(req.body);
+
   if (req.file) {
-    logger.debug('Processing uploaded file', { filename: req.file.originalname });
-    const uploadResult = await uploadFile(req.file);
-    logger.debug('Upload result', { url: uploadResult.url });
-    data.image = uploadResult.url;
-    data.imageUrl = uploadResult.url;
-    data.imagePublicId = uploadResult.publicId;
+    data = await applyUploadedImage(data, req.file, 'mokshith/products');
   }
 
   const product = await service.createProduct(data);
@@ -61,34 +59,13 @@ export const getProductById = asyncHandler(async (req, res) => {
 export const updateProduct = asyncHandler(async (req, res) => {
   logger.debug('Product update request', { id: req.params.id, hasFile: !!req.file });
 
-  const data = { ...req.body };
-
-  // 🔥 Normalize types from FormData (multer stringifies everything)
-  if (data.price) data.price = Number(data.price);
-  if (data.stock) data.stock = Number(data.stock);
-  if (data.moq) data.moq = Number(data.moq);
-  
-  // Handle Boolean normalization
-  if (data.isActive === 'true') data.isActive = true;
-  if (data.isActive === 'false') data.isActive = false;
-
-  // 🔥 CRITICAL FIX: Handle Image Upload
-  if (req.file) {
-    console.log('Processing uploaded file:', req.file.originalname);
-    const uploadResult = await uploadFile(req.file);
-    console.log('Upload Service Result:', uploadResult);
-    
-    // Store the URL in both fields to be safe
-    data.image = uploadResult.url;
-    data.imageUrl = uploadResult.url;
-    data.imagePublicId = uploadResult.publicId;
-  } else {
-    delete data.image;
-    delete data.imageUrl;
-    delete data.imagePublicId;
-  }
-
-  console.log('FINAL DATABASE PAYLOAD:', data);
+  const existingProduct = req.product || (await service.getProductById(req.params.id));
+  const data = await replaceStoredImage(
+    existingProduct,
+    normalizeProductBody(req.body),
+    req.file,
+    'mokshith/products'
+  );
 
   const product = await service.updateProduct(req.params.id, data);
   successResponse(res, product, 'Product updated successfully');

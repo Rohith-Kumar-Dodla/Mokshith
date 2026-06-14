@@ -1,5 +1,9 @@
-import dotenv from 'dotenv';
-import mongoose from 'mongoose';
+import { loadEnv } from '../src/config/loadEnv.js';
+import {
+  assertDestructiveOperationAllowed,
+  assertExpectedApplicationDatabase,
+  logDestructiveWarning,
+} from '../src/utils/destructiveGuard.js';
 import { hashPassword } from '../src/utils/hashPassword.js';
 import User from '../src/modules/user/user.model.js';
 import Category from '../src/modules/category/category.model.js';
@@ -11,8 +15,9 @@ import Order from '../src/modules/order/order.model.js';
 import Notification from '../src/modules/notification/notification.model.js';
 import { ROLES } from '../src/constants/roles.js';
 import { USER_STATUS } from '../src/constants/userStatus.js';
+import mongoose from 'mongoose';
 
-dotenv.config();
+loadEnv();
 
 const SUPER_ADMIN = {
   name: 'Super Admin',
@@ -51,7 +56,10 @@ async function deleteCollectionDocuments(collectionName, model = null) {
   return { collection: collectionName, deletedCount: result.deletedCount };
 }
 
-async function resetDatabase() {
+export async function resetDatabase() {
+  logDestructiveWarning('Full database reset (deleteMany on all core collections)');
+  assertDestructiveOperationAllowed('resetDatabase');
+
   if (!process.env.MONGO_URI) {
     throw new Error('MONGO_URI is not configured in .env');
   }
@@ -60,6 +68,8 @@ async function resetDatabase() {
   await mongoose.connect(process.env.MONGO_URI, {
     serverSelectionTimeoutMS: 30000,
   });
+
+  assertExpectedApplicationDatabase(mongoose.connection.name);
 
   const cleanupResults = [];
 
@@ -128,13 +138,17 @@ async function resetDatabase() {
   };
 }
 
-resetDatabase()
-  .then((summary) => {
-    console.log('\nDatabase reset complete.');
-    console.log(JSON.stringify(summary, null, 2));
-    process.exit(0);
-  })
-  .catch((error) => {
-    console.error('Database reset failed:', error);
-    process.exit(1);
-  });
+const isDirectExecution = process.argv[1]?.includes('resetDatabase');
+
+if (isDirectExecution) {
+  resetDatabase()
+    .then((summary) => {
+      console.log('\nDatabase reset complete.');
+      console.log(JSON.stringify(summary, null, 2));
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('Database reset failed:', error.message);
+      process.exit(1);
+    });
+}

@@ -36,7 +36,7 @@ export const createRazorpayOrder = async (amount, userId) => {
   }
 };
 
-export const hybridPayment = async (orderId, userId, useCredit, totalAmount, paymentMethod = 'HYBRID') => {
+export const hybridPayment = async (orderId, user, useCredit, totalAmount, paymentMethod = 'HYBRID') => {
   const supportsTransactions = getTransactionSupport();
   let session = null;
   let isTransactionStarted = false;
@@ -44,6 +44,8 @@ export const hybridPayment = async (orderId, userId, useCredit, totalAmount, pay
   // 🔒 Distributed lock to prevent race conditions
   const { redisClient } = await import('../../config/redis.js');
   const { logger } = await import('../../config/logger.js');
+  const userId = typeof user === 'string' ? user : (user?.id || user?._id);
+  const role = user?.role || null;
   const lockKey = `payment:lock:${orderId}`;
   const lockValue = `${userId}-${Date.now()}`;
   
@@ -99,6 +101,11 @@ export const hybridPayment = async (orderId, userId, useCredit, totalAmount, pay
     const order = await query;
 
     if (!order) throw new AppError('Order not found', 404);
+
+    // Ownership check: only owner or admin can perform payment
+    if (!(role === 'ADMIN' || role === 'SUPER_ADMIN') && userId && order.userId.toString() !== userId.toString()) {
+      throw new AppError('Access denied', 403);
+    }
 
     if (order.paymentStatus === 'PAID') {
       throw new AppError('Order is already paid', 400);
@@ -318,10 +325,17 @@ export const hybridPayment = async (orderId, userId, useCredit, totalAmount, pay
   }
 };
 
-export const initiatePayment = async (orderId, userId) => {
+export const initiatePayment = async (orderId, user) => {
+  const userId = typeof user === 'string' ? user : (user?.id || user?._id);
+  const role = user?.role || null;
   const order = await Order.findById(orderId);
 
   if (!order) throw new AppError('Order not found', 404);
+
+  // Ownership check
+  if (!(role === 'ADMIN' || role === 'SUPER_ADMIN') && userId && order.userId.toString() !== userId.toString()) {
+    throw new AppError('Access denied', 403);
+  }
 
   if (order.paymentStatus === 'PAID') {
     throw new AppError('Order already paid', 400);
@@ -330,6 +344,13 @@ export const initiatePayment = async (orderId, userId) => {
   if (order.paymentMethod === 'CREDIT') {
     return {
       message: 'Payment handled via credit',
+    };
+  }
+
+  if (order.paymentMethod === 'BANK_TRANSFER') {
+    return {
+      message: 'Payment handled via bank transfer',
+      paymentMethod: 'BANK_TRANSFER',
     };
   }
 
@@ -351,7 +372,7 @@ export const initiatePayment = async (orderId, userId) => {
   };
 };
 
-export const verifyPayment = async (payload) => {
+export const verifyPayment = async (payload, user = null) => {
   const { orderId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = payload;
   const { redisClient } = await import('../../config/redis.js');
   const { logger } = await import('../../config/logger.js');
@@ -375,6 +396,14 @@ export const verifyPayment = async (payload) => {
   // 3. Check if order is already paid
   const order = await Order.findById(orderId);
   if (!order) throw new AppError('Order not found', 404);
+  // Ownership check for protected verify endpoint (webhook calls pass null user)
+  if (user) {
+    const userId = typeof user === 'string' ? user : (user?.id || user?._id);
+    const role = user?.role || null;
+    if (!(role === 'ADMIN' || role === 'SUPER_ADMIN') && userId && order.userId.toString() !== userId.toString()) {
+      throw new AppError('Access denied', 403);
+    }
+  }
   if (order.paymentStatus === 'PAID') {
     logger.warn('Order already marked as paid', { orderId, razorpay_payment_id });
     return existingPayment || { status: 'SUCCESS', orderId, message: 'Order already paid' };
@@ -512,9 +541,16 @@ export const verifyPayment = async (payload) => {
   return payment;
 };
 
-export const failPayment = async (orderId, reason) => {
+export const failPayment = async (orderId, reason, user = null) => {
   const order = await Order.findById(orderId);
   if (!order) throw new AppError('Order not found', 404);
+  if (user) {
+    const userId = typeof user === 'string' ? user : (user?.id || user?._id);
+    const role = user?.role || null;
+    if (!(role === 'ADMIN' || role === 'SUPER_ADMIN') && userId && order.userId.toString() !== userId.toString()) {
+      throw new AppError('Access denied', 403);
+    }
+  }
 
   order.paymentStatus = PAYMENT_STATUS.FAILED;
   order.status = ORDER_STATUS.FAILED;
@@ -568,14 +604,12 @@ export const handleWebhook = async (rawBody, signature) => {
 
   // 3. Webhook Idempotency Check - prevent duplicate processing
   const webhookKey = `webhook:processed:${webhookId}`;
-  const alreadyProcessed = await redisClient.get(webhookKey);
-  if (alreadyProcessed) {
-    logger.info('Webhook already processed, ignoring duplicate', { webhookId, event });
-    return { status: 'ok', message: 'Already processed' };
+  // Try to acquire a short-lived processing lock to avoid duplicate concurrent runs
+  const acquired = await redisClient.set(webhookKey, 'processing', 'NX', 'EX', 60);
+  if (!acquired) {
+    logger.info('Webhook already processing or recently processed, ignoring duplicate', { webhookId, event });
+    return { status: 'ok', message: 'Already processed or processing' };
   }
-
-  // 4. Mark webhook as processed (24h TTL)
-  await redisClient.setex(webhookKey, 86400, Date.now().toString());
   logger.info('Processing webhook', { webhookId, event });
 
   if (event === 'payment.captured') {
@@ -601,13 +635,13 @@ export const handleWebhook = async (rawBody, signature) => {
 
     const order = await Order.findById(payment.orderId);
     if (order && order.paymentStatus !== 'PAID') {
-      // 🔒 PHASE 2 FIX: STRICT webhook amount validation - immediately reject on mismatch
-      const amountDifference = Math.abs(order.totalAmount - amount);
+      const expectedAmount = payment.amount ?? order.totalAmount;
+      const amountDifference = Math.abs(expectedAmount - amount);
       if (amountDifference > 1) {
         logger.error('🚨 SECURITY ALERT: Webhook amount mismatch - REJECTING payment processing', {
           orderId: order._id,
           userId: order.userId,
-          expectedAmount: order.totalAmount,
+          expectedAmount,
           receivedAmount: amount,
           difference: amountDifference,
           razorpay_payment_id,
@@ -620,7 +654,7 @@ export const handleWebhook = async (rawBody, signature) => {
         payment.metadata = {
           ...payment.metadata,
           failureReason: 'Amount mismatch detected',
-          expectedAmount: order.totalAmount,
+          expectedAmount: payment.amount ?? order.totalAmount,
           receivedAmount: amount
         };
         await payment.save();
@@ -630,7 +664,7 @@ export const handleWebhook = async (rawBody, signature) => {
         order.metadata = {
           ...order.metadata,
           securityAlert: 'Amount mismatch in webhook',
-          expectedAmount: order.totalAmount,
+          expectedAmount: payment.amount ?? order.totalAmount,
           receivedAmount: amount
         };
         await order.save();
@@ -656,6 +690,20 @@ export const handleWebhook = async (rawBody, signature) => {
           error: err.message,
           stack: err.stack
         });
+        // Enqueue a retry job to ensure reconciliation later
+        try {
+          const { queuePostPaymentJobs } = await import('../../services/queueManager.service.js');
+          await queuePostPaymentJobs({
+            orderId: order._id.toString(),
+            userId: order.userId.toString(),
+            amount: order.totalAmount,
+            paymentMethod: 'ONLINE',
+            task: 'finalizeReservation',
+          });
+          logger.info('Enqueued finalizeReservation retry job', { orderId: order._id });
+        } catch (queueErr) {
+          logger.error('Failed to enqueue finalizeReservation retry job', { orderId: order._id, error: queueErr.message });
+        }
       }
 
       // Clear Cart on successful webhook capture
@@ -694,6 +742,12 @@ export const handleWebhook = async (rawBody, signature) => {
       } catch (cartErr) {
         logger.error('Failed to clear cart via webhook', { orderId: order._id, error: cartErr.message });
       }
+    }
+    // Mark webhook as fully processed (24h TTL)
+    try {
+      await redisClient.setex(webhookKey, 86400, Date.now().toString());
+    } catch (err) {
+      logger.error('Failed to mark webhook as processed in Redis', { webhookId, error: err.message });
     }
   }
 

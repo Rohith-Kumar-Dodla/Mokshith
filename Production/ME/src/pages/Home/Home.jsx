@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { 
-  ArrowRight, CheckCircle2, TrendingUp, ShieldCheck, Zap, 
-  Sparkles, Truck, ShoppingCart, CheckCircle, Clock, Package, 
-  Menu, X, Globe, Mail, Phone, MapPin 
+import {
+  ArrowRight, CheckCircle2, TrendingUp, ShieldCheck, Zap,
+  Sparkles, Truck, ShoppingCart, CheckCircle, Clock, Package,
+  Menu, X, Globe, Mail, Phone, MapPin
 } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import BusinessFeatures from '../../components/sections/BusinessFeatures';
@@ -11,33 +11,26 @@ import MobileAppPromotion from '../../components/sections/MobileAppPromotion';
 import ProductCategories from '../../components/sections/ProductCategories';
 import SocialProof from '../../components/sections/SocialProof';
 import WholesaleDeals from '../../components/sections/WholesaleDeals';
+import { useAuth } from '../../context/AuthContext';
+import { getDashboardRoute } from '../../utils/roleMap';
 
-// Note: Replace these with your actual route configuration
 const routes = {
   LANDING: '/',
-  DASHBOARD: '/dashboard',
   REGISTER: '/register',
   LOGIN: '/login',
-  PRODUCTS: '/products',
-  PRICING: '/pricing',
-  SOLUTIONS: '/solutions',
-  CONTACT: '/contact',
-  ABOUT: '/about'
+  PRODUCTS: '/vendor/products',
+  ABOUT: '/#features',
+  CONTACT: '/#how-it-works',
 };
-
-// Note: Replace with your actual auth hook or remove if not needed
-const useAuth = () => ({
-  user: null // Set to mock user object for testing
-});
 
 // ==================== HERO SECTION ====================
 const HeroSection = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, role, isAuthenticated } = useAuth();
 
   const handleGetStarted = () => {
-    if (user) {
-      navigate(routes.DASHBOARD);
+    if (isAuthenticated && role) {
+      navigate(getDashboardRoute(role));
     } else {
       navigate(routes.REGISTER);
     }
@@ -56,7 +49,7 @@ const HeroSection = () => {
         <div className="hero-content">
           <div className="hero-badge">
             <span className="badge-dot"></span>
-            <span>Trusted by 1,000+ businesses</span>
+            <span>Enterprise B2B Commerce Platform</span>
           </div>
           
           <h1 className="hero-title">
@@ -69,10 +62,10 @@ const HeroSection = () => {
           
           <div className="hero-actions">
             <button onClick={handleGetStarted} className="hero-button primary">
-              {user ? 'Go to Dashboard' : 'Get Started'} <ArrowRight size={18} />
+              {isAuthenticated ? 'Go to Dashboard' : 'Get Started'} <ArrowRight size={18} />
             </button>
-            <Link to={routes.PRODUCTS} className="hero-button secondary">
-              Browse Products
+            <Link to={routes.LOGIN} className="hero-button secondary">
+              Sign In
             </Link>
           </div>
 
@@ -111,7 +104,7 @@ const HeroSection = () => {
               </div>
               <div className="mockup-list">
                 <div className="list-item">
-                  <div className="item-icon">📦</div>
+                  <div className="item-icon"><Package size={18} /></div>
                   <div className="item-info">
                     <div className="item-name">Bulk Rice Order</div>
                     <div className="item-status">In Transit</div>
@@ -119,7 +112,7 @@ const HeroSection = () => {
                   <div className="item-amount">₹45,000</div>
                 </div>
                 <div className="list-item">
-                  <div className="item-icon">🛢️</div>
+                  <div className="item-icon"><Package size={18} /></div>
                   <div className="item-info">
                     <div className="item-name">Edible Oil Supply</div>
                     <div className="item-status">Delivered</div>
@@ -127,7 +120,7 @@ const HeroSection = () => {
                   <div className="item-amount">₹32,000</div>
                 </div>
                 <div className="list-item">
-                  <div className="item-icon">🫘</div>
+                  <div className="item-icon"><Package size={18} /></div>
                   <div className="item-info">
                     <div className="item-name">Pulses Bulk Order</div>
                     <div className="item-status">Processing</div>
@@ -139,7 +132,7 @@ const HeroSection = () => {
           </div>
 
           <div className="floating-card card-1">
-            <div className="card-icon">💳</div>
+            <div className="card-icon"><CheckCircle size={20} /></div>
             <div className="card-content">
               <div className="card-label">Credit Line</div>
               <div className="card-value">₹25,000</div>
@@ -147,7 +140,7 @@ const HeroSection = () => {
           </div>
 
           <div className="floating-card card-2">
-            <div className="card-icon">🚚</div>
+            <div className="card-icon"><Truck size={20} /></div>
             <div className="card-content">
               <div className="card-label">Active Shipments</div>
               <div className="card-value">12</div>
@@ -155,7 +148,7 @@ const HeroSection = () => {
           </div>
 
           <div className="floating-card card-3">
-            <div className="card-icon">✓</div>
+            <div className="card-icon"><CheckCircle size={20} /></div>
             <div className="card-content">
               <div className="card-label">Orders Completed</div>
               <div className="card-value">156</div>
@@ -243,7 +236,7 @@ const PlatformShowcase = () => {
             <div className="card-body">
               <div className="checkout-items">
                 <div className="checkout-item">
-                  <div className="item-emoji">🍚</div>
+                  <div className="item-emoji"><Package size={16} /></div>
                   <div className="item-details">
                     <div className="item-name">Sona Masoori Rice</div>
                     <div className="item-qty">10 × 25kg</div>
@@ -251,7 +244,7 @@ const PlatformShowcase = () => {
                   <div className="item-price">₹11,500</div>
                 </div>
                 <div className="checkout-item">
-                  <div className="item-emoji">🧴</div>
+                  <div className="item-emoji"><Package size={16} /></div>
                   <div className="item-details">
                     <div className="item-name">Sunflower Oil</div>
                     <div className="item-qty">5 × 15L</div>
@@ -287,11 +280,11 @@ const PlatformShowcase = () => {
 // ==================== CTA SECTION ====================
 const CTASection = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, role, isAuthenticated } = useAuth();
 
   const handleGetStarted = () => {
-    if (user) {
-      navigate(routes.DASHBOARD);
+    if (isAuthenticated && role) {
+      navigate(getDashboardRoute(role));
     } else {
       navigate(routes.REGISTER);
     }
@@ -317,7 +310,7 @@ const CTASection = () => {
           
           <div className="cta-actions">
             <button onClick={handleGetStarted} className="cta-button primary">
-              {user ? 'Go to Dashboard' : 'Create Your Account'} <ArrowRight size={18} />
+              {isAuthenticated ? 'Go to Dashboard' : 'Create Your Account'} <ArrowRight size={18} />
             </button>
             <Link to={routes.CONTACT} className="cta-button secondary">
               Contact Sales
@@ -326,15 +319,15 @@ const CTASection = () => {
 
           <div className="cta-features">
             <div className="cta-feature">
-              <span className="feature-check">✓</span>
+              <span className="feature-check"><CheckCircle size={14} /></span>
               <span>Free to sign up</span>
             </div>
             <div className="cta-feature">
-              <span className="feature-check">✓</span>
+              <span className="feature-check"><CheckCircle size={14} /></span>
               <span>No credit card required</span>
             </div>
             <div className="cta-feature">
-              <span className="feature-check">✓</span>
+              <span className="feature-check"><CheckCircle size={14} /></span>
               <span>Instant business credit</span>
             </div>
           </div>
@@ -342,7 +335,7 @@ const CTASection = () => {
 
         <div className="cta-visual">
           <div className="credit-card-mockup">
-            <div className="card-chip">💳</div>
+            <div className="card-chip"><CheckCircle size={20} /></div>
             <div className="card-number">•••• •••• •••• 4532</div>
             <div className="card-holder">
               <div className="holder-label">BUSINESS CREDIT</div>
@@ -352,12 +345,12 @@ const CTASection = () => {
           </div>
 
           <div className="floating-badge badge-1">
-            <span>🎉</span>
+            <span><Sparkles size={16} /></span>
             <span>Welcome Bonus</span>
           </div>
 
           <div className="floating-badge badge-2">
-            <span>⚡</span>
+            <span><Zap size={16} /></span>
             <span>Instant Approval</span>
           </div>
         </div>

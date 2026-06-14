@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FiUpload, FiX, FiImage } from 'react-icons/fi';
 
 const ACCEPTED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
@@ -15,10 +15,33 @@ const ImageUpload = ({
   error = null,
 }) => {
   const inputRef = useRef(null);
+  const objectUrlRef = useRef(null);
   const [localPreview, setLocalPreview] = useState('');
+  const [removedExisting, setRemovedExisting] = useState(false);
   const [validationError, setValidationError] = useState('');
 
-  const displayUrl = localPreview || previewUrl;
+  useEffect(() => {
+    setLocalPreview('');
+    setRemovedExisting(false);
+    setValidationError('');
+    if (inputRef.current) {
+      inputRef.current.value = '';
+    }
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+  }, [previewUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+      }
+    };
+  }, []);
+
+  const displayUrl = localPreview || (!removedExisting ? previewUrl : '');
 
   const handleFileSelect = (event) => {
     const file = event.target.files?.[0];
@@ -36,17 +59,29 @@ const ImageUpload = ({
       return;
     }
 
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+    }
+
     const objectUrl = URL.createObjectURL(file);
+    objectUrlRef.current = objectUrl;
     setLocalPreview(objectUrl);
+    setRemovedExisting(false);
     onChange?.(file);
   };
 
   const handleClear = () => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
     setLocalPreview('');
+    setRemovedExisting(true);
     setValidationError('');
     if (inputRef.current) {
       inputRef.current.value = '';
     }
+    onChange?.(null);
     onClear?.();
   };
 
@@ -99,7 +134,7 @@ const ImageUpload = ({
             }`}
           >
             <FiUpload size={16} />
-            {value || localPreview ? 'Change Image' : 'Choose Image'}
+            {displayUrl ? 'Change Image' : 'Choose Image'}
           </label>
         </div>
       </div>

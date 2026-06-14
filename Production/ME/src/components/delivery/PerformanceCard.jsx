@@ -44,4 +44,4 @@ const PerformanceCard = ({ title, value, icon, subtitle, color = 'blue' }) => {
   );
 };
 
-export default PerformanceCard;
+export default React.memo(PerformanceCard);

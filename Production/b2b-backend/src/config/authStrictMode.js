@@ -1,7 +1,3 @@
-import dotenv from 'dotenv';
-
-dotenv.config();
-
 /**
  * AUTH_STRICT_MODE controls production vs UAT/testing password validation.
  *

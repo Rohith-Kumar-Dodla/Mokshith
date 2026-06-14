@@ -42,6 +42,7 @@ import searchRoutes from '../modules/search/search.routes.js';
 import adminRoutes from '../modules/admin/admin.routes.js';
 import adminApprovalsRoutes from '../modules/adminApprovals/adminApprovals.routes.js';
 import superAdminRoutes from '../modules/superAdmin/superAdmin.routes.js';
+import auditRoutes from '../modules/audit/audit.routes.js';
 import uploadRoutes from '../modules/upload/upload.routes.js';
 
 import { authenticate } from '../middlewares/auth.middleware.js';
@@ -51,6 +52,7 @@ const router = express.Router();
 
 // 🔐 Auth & Users
 router.use('/auth', authRoutes);
+router.use('/audit', auditRoutes);
 router.use('/upload', authenticate, injectCsrfToken, uploadRoutes);
 router.use('/users', authenticate, injectCsrfToken, userRoutes);
 
@@ -58,9 +60,9 @@ router.use('/users', authenticate, injectCsrfToken, userRoutes);
 router.use('/companies', authenticate, injectCsrfToken, companyRoutes);
 router.use('/vendors', authenticate, injectCsrfToken, vendorRoutes);
 
-// 🛍️ Catalog
-router.use('/categories', authenticate, injectCsrfToken, categoryRoutes);
-router.use('/products', authenticate, injectCsrfToken, productRoutes);
+// Catalog — public read; write routes enforce auth in module routers
+router.use('/categories', categoryRoutes);
+router.use('/products', productRoutes);
 router.use('/pricing', pricingRoutes);
 router.use('/promotions', authenticate, injectCsrfToken, promotionRoutes);
 

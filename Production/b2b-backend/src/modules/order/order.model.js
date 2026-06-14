@@ -54,7 +54,7 @@ const orderSchema = new mongoose.Schema(
 
     paymentMethod: {
       type: String,
-      enum: ['COD', 'ONLINE', 'CREDIT', 'RAZORPAY', 'UPI', 'CARD', 'HYBRID'],
+      enum: ['COD', 'ONLINE', 'CREDIT', 'RAZORPAY', 'UPI', 'CARD', 'HYBRID', 'BANK_TRANSFER'],
       default: 'COD',
       required: true,
     },
@@ -109,6 +109,15 @@ const orderSchema = new mongoose.Schema(
       type: Object,
       default: {},
     },
+
+    statusHistory: [
+      {
+        status: { type: String, required: true },
+        changedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        changedAt: { type: Date, default: Date.now },
+        note: { type: String, default: '' },
+      },
+    ],
   },
   { timestamps: true }
 );

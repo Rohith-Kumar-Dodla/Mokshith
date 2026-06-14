@@ -112,4 +112,4 @@ const OrderCard = ({ order, onViewDetails }) => {
   );
 };
 
-export default OrderCard;
+export default React.memo(OrderCard);

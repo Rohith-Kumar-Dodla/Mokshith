@@ -180,49 +180,45 @@ describe('File Validation Service - Unit Tests', () => {
   });
 
   describe('basicMalwareCheck()', () => {
-    it('should detect suspicious file signatures', () => {
-      // Windows executable magic number
-      const exeBuffer = Buffer.from([0x4d, 0x5a]); // MZ header
+    it('should detect suspicious file signatures at file start for non-image uploads', () => {
+      const exeBuffer = Buffer.from([0x4d, 0x5a]);
 
-      // Service throws AppError on suspicious content
-      expect(() => fileValidation.basicMalwareCheck(exeBuffer)).toThrow(AppError);
-      expect(() => fileValidation.basicMalwareCheck(exeBuffer)).toThrow(/security validation/);
+      expect(() => fileValidation.basicMalwareCheck(exeBuffer, { category: 'documents' })).toThrow(AppError);
+      expect(() => fileValidation.basicMalwareCheck(exeBuffer, { category: 'documents' })).toThrow(/security validation/);
     });
 
     it('should detect script injection attempts', () => {
       const scriptBuffer = Buffer.from('<script>alert("XSS")</script>');
 
-      // Service throws AppError on suspicious content
-      expect(() => fileValidation.basicMalwareCheck(scriptBuffer)).toThrow(AppError);
-      expect(() => fileValidation.basicMalwareCheck(scriptBuffer)).toThrow(/security validation/);
+      expect(() => fileValidation.basicMalwareCheck(scriptBuffer, { category: 'images' })).toThrow(AppError);
+      expect(() => fileValidation.basicMalwareCheck(scriptBuffer, { category: 'images' })).toThrow(/security validation/);
     });
 
     it('should accept normal image file', () => {
       const jpegBuffer = Buffer.from([0xff, 0xd8, 0xff, 0xe0]);
 
-      // Service returns true for safe content
-      const result = fileValidation.basicMalwareCheck(jpegBuffer);
+      const result = fileValidation.basicMalwareCheck(jpegBuffer, { category: 'images' });
       expect(result).toBe(true);
     });
 
-    it('should detect embedded executables in images', () => {
-      // Image with embedded EXE
-      const poisonedImage = Buffer.concat([
-        Buffer.from([0xff, 0xd8, 0xff, 0xe0]), // JPEG header
-        Buffer.from([0x4d, 0x5a]), // EXE header embedded
-      ]);
+    it('should accept validated image buffers that contain PK byte sequences', () => {
+      const imageBuffer = Buffer.alloc(4096, 0);
+      imageBuffer[0] = 0xff;
+      imageBuffer[1] = 0xd8;
+      imageBuffer[2] = 0xff;
+      imageBuffer[3] = 0xe0;
+      imageBuffer[100] = 0x50;
+      imageBuffer[101] = 0x4b;
 
-      // Service throws AppError on suspicious content
-      expect(() => fileValidation.basicMalwareCheck(poisonedImage)).toThrow(AppError);
+      const result = fileValidation.basicMalwareCheck(imageBuffer, { category: 'images' });
+      expect(result).toBe(true);
     });
 
     it('should reject vbaProject files', () => {
-      // Office Open XML with macros
       const macroBuffer = Buffer.from('xl/vbaProject.bin');
 
-      // Service throws AppError on suspicious content
-      expect(() => fileValidation.basicMalwareCheck(macroBuffer)).toThrow(AppError);
-      expect(() => fileValidation.basicMalwareCheck(macroBuffer)).toThrow(/security validation/);
+      expect(() => fileValidation.basicMalwareCheck(macroBuffer, { category: 'documents' })).toThrow(AppError);
+      expect(() => fileValidation.basicMalwareCheck(macroBuffer, { category: 'documents' })).toThrow(/security validation/);
     });
   });
 

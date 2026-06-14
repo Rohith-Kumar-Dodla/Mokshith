@@ -33,13 +33,13 @@ const circuitBreaker = {
         this.state = 'CLOSED';
         this.failureCount = 0;
         this.successCount = 0;
-        logger.info('✅ Redis circuit breaker CLOSED - connection restored');
+        logger.info('Redis circuit breaker CLOSED - connection restored');
       }
     } else if (this.state === 'OPEN') {
       // Shouldn't happen, but reset anyway
       this.state = 'CLOSED';
       this.failureCount = 0;
-      logger.info('✅ Redis circuit breaker CLOSED');
+      logger.info('Redis circuit breaker CLOSED');
     }
   },
   
@@ -49,11 +49,11 @@ const circuitBreaker = {
       this.state = 'OPEN';
       this.nextAttempt = Date.now() + this.timeout;
       this.successCount = 0;
-      logger.error('❌ Redis circuit breaker OPEN - fallback mode activated');
+      logger.error('Redis circuit breaker OPEN - fallback mode activated');
     } else if (this.failureCount >= this.failureThreshold) {
       this.state = 'OPEN';
       this.nextAttempt = Date.now() + this.timeout;
-      logger.error(`❌ Redis circuit breaker OPEN after ${this.failureCount} failures`);
+      logger.error(`Redis circuit breaker OPEN after ${this.failureCount} failures`);
     }
   },
   
@@ -63,7 +63,7 @@ const circuitBreaker = {
     if (this.state === 'OPEN' && Date.now() >= this.nextAttempt) {
       this.state = 'HALF_OPEN';
       this.successCount = 0;
-      logger.info('🔄 Redis circuit breaker HALF_OPEN - testing connection');
+      logger.info('Redis circuit breaker HALF_OPEN - testing connection');
       return true;
     }
     return false;
@@ -75,49 +75,45 @@ const circuitBreaker = {
 };
 
 // 🔒 PHASE 4: Redis High-Availability configuration
-// Supports standalone, sentinel, and cluster modes
-const redisConfig = {
-  host: env.REDIS_HOST,
-  port: env.REDIS_PORT,
-  password: env.REDIS_PASSWORD,
+// Supports standalone, sentinel, cluster modes, and REDIS_URL (Render/Heroku)
+const sharedRedisOptions = {
   maxRetriesPerRequest: 3,
   enableReadyCheck: true,
-  lazyConnect: true,
+  lazyConnect: env.NODE_ENV === 'test' ? false : true,
   showFriendlyErrorStack: env.NODE_ENV === 'development',
-  
-  // 🔒 Enhanced reconnection strategy for HA
   retryStrategy(times) {
     if (times > 10) {
       logger.error('Redis connection failed after 10 retries - circuit breaker will activate');
       return null;
     }
-    // Exponential backoff: 1s, 2s, 4s, 8s... up to 30s
     const delay = Math.min(times * 1000, 30000);
     logger.info(`Redis retry attempt ${times}, delay: ${delay}ms`);
     return delay;
   },
-  
   reconnectOnError(err) {
-    // Reconnect on specific errors
     const targetErrors = ['READONLY', 'ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND'];
-    if (targetErrors.some(e => err.message.includes(e))) {
+    if (targetErrors.some((e) => err.message.includes(e))) {
       logger.warn('Redis reconnecting on error', { error: err.message });
       return true;
     }
     return false;
   },
-  
-  // 🔒 Connection timeout and keep-alive
-  connectTimeout: 10000, // 10s
-  keepAlive: 30000, // 30s
-  
-  // 🔒 Command timeout to prevent hanging
-  commandTimeout: 5000, // 5s for commands
+  connectTimeout: 10000,
+  keepAlive: 30000,
+  commandTimeout: 5000,
 };
 
+let redisConfig = env.REDIS_URL
+  ? env.REDIS_URL
+  : {
+      host: env.REDIS_HOST,
+      port: env.REDIS_PORT,
+      password: env.REDIS_PASSWORD || undefined,
+      ...sharedRedisOptions,
+    };
+
 // 🔒 PHASE 4: Support for Redis Sentinel (high availability)
-// If REDIS_SENTINELS is provided, use sentinel mode
-if (env.REDIS_SENTINELS) {
+if (!env.REDIS_URL && env.REDIS_SENTINELS && typeof redisConfig === 'object') {
   try {
     const sentinels = JSON.parse(env.REDIS_SENTINELS);
     redisConfig.sentinels = sentinels;
@@ -146,35 +142,84 @@ if (env.REDIS_CLUSTER === 'true') {
 const redis = new Redis(redisConfig);
 
 redis.on('connect', () => {
-  logger.info('✅ Redis connected', {
-    mode: redisConfig.sentinels ? 'sentinel' : 'standalone',
-    host: redisConfig.host || 'sentinel',
+  logger.info('Redis connected', {
+    mode: typeof redisConfig === 'string' ? 'url' : redisConfig.sentinels ? 'sentinel' : 'standalone',
+    host: typeof redisConfig === 'object' ? redisConfig.host || 'sentinel' : 'url',
   });
 });
 redis.on('ready', () => {
-  logger.info('✅ Redis ready');
+  logger.info('Redis ready');
   circuitBreaker.recordSuccess();
 });
 redis.on('error', (err) => {
   circuitBreaker.recordFailure();
   if (err.code === 'ECONNREFUSED') {
-    logger.warn('⚠️ Redis connection refused - running in degraded mode');
+    logger.warn('Redis connection refused - running in degraded mode');
     return;
   }
-  logger.error('❌ Redis error:', err.message);
+  logger.error('Redis error:', err.message);
 });
 redis.on('close', () => {
-  logger.warn('⚠️ Redis connection closed');
+  logger.warn('Redis connection closed');
 });
 redis.on('reconnecting', (delay) => {
-  logger.info(`🔄 Redis reconnecting in ${delay}ms...`);
+  logger.info(`Redis reconnecting in ${delay}ms...`);
 });
 redis.on('end', () => {
-  logger.warn('⚠️ Redis connection ended');
+  logger.warn('Redis connection ended');
 });
 
 // Graceful error handling wrapper with circuit breaker
 export const redisClient = {
+  circuitBreaker,
+
+  async ping() {
+    if (!circuitBreaker.canAttempt()) {
+      throw new Error('Redis circuit breaker open');
+    }
+
+    try {
+      const result = await redis.ping();
+      circuitBreaker.recordSuccess();
+      return result;
+    } catch (error) {
+      circuitBreaker.recordFailure();
+      throw error;
+    }
+  },
+
+  async info(section = 'default') {
+    if (!circuitBreaker.canAttempt()) {
+      return '';
+    }
+
+    try {
+      const result = typeof redis.info === 'function' ? await redis.info(section) : '';
+      circuitBreaker.recordSuccess();
+      return result || '';
+    } catch (error) {
+      circuitBreaker.recordFailure();
+      logger.error('Redis INFO error:', error.message);
+      return '';
+    }
+  },
+
+  async keys(pattern = '*') {
+    if (!circuitBreaker.canAttempt()) {
+      return [];
+    }
+
+    try {
+      const result = typeof redis.keys === 'function' ? await redis.keys(pattern) : [];
+      circuitBreaker.recordSuccess();
+      return result || [];
+    } catch (error) {
+      circuitBreaker.recordFailure();
+      logger.error('Redis KEYS error:', error.message);
+      return [];
+    }
+  },
+
   async get(key) {
     if (!circuitBreaker.canAttempt()) {
       logger.debug('Redis circuit breaker OPEN, skipping GET', { key });
@@ -356,7 +401,23 @@ export const redisClient = {
       return 0;
     }
   },
-  
+
+  async ttl(key) {
+    if (!circuitBreaker.canAttempt()) {
+      return -2;
+    }
+
+    try {
+      const result = typeof redis.ttl === 'function' ? await redis.ttl(key) : -2;
+      circuitBreaker.recordSuccess();
+      return result;
+    } catch (error) {
+      circuitBreaker.recordFailure();
+      logger.error(`Redis TTL error for key ${key}:`, error.message);
+      return -2;
+    }
+  },
+
   /**
    * 🔒 Acquire distributed lock with database fallback
    * @param {string} key - Lock key
@@ -653,6 +714,34 @@ export const redisClient = {
     } catch (error) {
       logger.error('Redis flushall error:', error.message);
       return false;
+    }
+  },
+
+  // Approximate key count (dbsize) with fallbacks for mock clients
+  async dbsize() {
+    if (!circuitBreaker.canAttempt()) {
+      return -1;
+    }
+
+    try {
+      if (typeof redis.dbsize === 'function') {
+        const result = await redis.dbsize();
+        circuitBreaker.recordSuccess();
+        return typeof result === 'number' ? result : parseInt(result, 10) || 0;
+      }
+
+      // Fallback: use keys('*') where supported (mock clients)
+      if (typeof redis.keys === 'function') {
+        const keys = await redis.keys('*');
+        circuitBreaker.recordSuccess();
+        return Array.isArray(keys) ? keys.length : 0;
+      }
+
+      return -1;
+    } catch (error) {
+      circuitBreaker.recordFailure();
+      logger.error('Redis DBSIZE error:', error.message);
+      return -1;
     }
   },
 };

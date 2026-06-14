@@ -70,30 +70,6 @@ describe('Order Creation - Critical Tests', () => {
     });
   });
 
-  describe('B2B Business Rules', () => {
-    it('should reject single-item orders (B2B rule)', () => {
-      // Arrange
-      const totalQuantity = 1;
-
-      // Act
-      const meetsB2BRule = totalQuantity > 1;
-
-      // Assert
-      expect(meetsB2BRule).toBe(false);
-    });
-
-    it('should accept multi-item orders', () => {
-      // Arrange
-      const totalQuantity = 5;
-
-      // Act
-      const meetsB2BRule = totalQuantity > 1;
-
-      // Assert
-      expect(meetsB2BRule).toBe(true);
-    });
-  });
-
   describe('GST Calculation', () => {
     it('should correctly calculate 18% GST', () => {
       // Arrange

@@ -7,7 +7,7 @@ router.get('/health', (req, res) => {
   res.json({
     success: true,
     version: 'v2',
-    message: 'API v2 is working 🚀',
+    message: 'API v2 is working',
     timestamp: new Date(),
   });
 });

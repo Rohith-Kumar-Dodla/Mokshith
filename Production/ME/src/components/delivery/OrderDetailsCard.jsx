@@ -7,7 +7,7 @@ const OrderDetailsCard = ({ order }) => {
       {/* Order Information */}
       <div>
         <h3 className="text-xs sm:text-sm font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
-          <FiPackage size={14} className="sm:size-18 text-blue-500" />
+          <FiPackage className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
           Order Information
         </h3>
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
@@ -33,7 +33,7 @@ const OrderDetailsCard = ({ order }) => {
       {/* Vendor Information */}
       <div className="pt-3 sm:pt-4 border-t border-gray-100">
         <h3 className="text-xs sm:text-sm font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
-          <FiUser size={14} className="sm:size-18 text-blue-500" />
+          <FiUser className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
           Vendor Information
         </h3>
         <div className="space-y-2 sm:space-y-3">
@@ -51,7 +51,7 @@ const OrderDetailsCard = ({ order }) => {
       {/* Delivery Information */}
       <div className="pt-3 sm:pt-4 border-t border-gray-100">
         <h3 className="text-xs sm:text-sm font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
-          <FiMapPin size={14} className="sm:size-18 text-blue-500" />
+          <FiMapPin className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
           Delivery Information
         </h3>
         <div className="space-y-2 sm:space-y-3">
@@ -67,7 +67,7 @@ const OrderDetailsCard = ({ order }) => {
             <div>
               <p className="text-xs text-gray-500 mb-1">Customer Phone</p>
               <p className="font-medium text-xs sm:text-sm text-gray-900 flex items-center gap-2">
-                <FiPhone size={12} className="sm:size-14" />
+                <FiPhone className="w-3 h-3 text-gray-400 flex-shrink-0" />
                 {order?.customerPhone}
               </p>
             </div>
@@ -84,7 +84,7 @@ const OrderDetailsCard = ({ order }) => {
       {/* Time Information */}
       <div className="pt-3 sm:pt-4 border-t border-gray-100">
         <h3 className="text-xs sm:text-sm font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
-          <FiClock size={14} className="sm:size-18 text-blue-500" />
+          <FiClock className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
           Time Information
         </h3>
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
@@ -107,7 +107,7 @@ const OrderDetailsCard = ({ order }) => {
       {order?.products && order.products.length > 0 && (
         <div className="pt-3 sm:pt-4 border-t border-gray-100">
           <h3 className="text-xs sm:text-sm font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
-            <FiPackage size={14} className="sm:size-18 text-blue-500" />
+            <FiPackage className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
             Products
           </h3>
           <div className="space-y-2 sm:space-y-3">
@@ -127,4 +127,4 @@ const OrderDetailsCard = ({ order }) => {
   );
 };
 
-export default OrderDetailsCard;
+export default React.memo(OrderDetailsCard);

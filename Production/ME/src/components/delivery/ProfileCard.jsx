@@ -22,20 +22,20 @@ const ProfileCard = ({ profile, onEdit }) => {
         {/* Personal Information */}
         <div>
           <h3 className="text-xs sm:text-sm font-semibold text-gray-900 mb-2 sm:mb-3 flex items-center gap-2">
-            <FiUser size={14} className="sm:size-18 text-blue-500" />
+            <FiUser className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
             Personal Information
           </h3>
           <div className="space-y-2 sm:space-y-3">
             <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
-              <FiPhone size={14} className="sm:size-16 text-gray-400" />
+              <FiPhone className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
               <span className="text-gray-600">{profile?.phone}</span>
             </div>
             <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
-              <FiMail size={14} className="sm:size-16 text-gray-400" />
+              <FiMail className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
               <span className="text-gray-600">{profile?.email}</span>
             </div>
             <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
-              <FiCalendar size={14} className="sm:size-16 text-gray-400" />
+              <FiCalendar className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
               <span className="text-gray-600">Joined: {profile?.joiningDate}</span>
             </div>
           </div>
@@ -44,7 +44,7 @@ const ProfileCard = ({ profile, onEdit }) => {
         {/* Vehicle Information */}
         <div className="pt-3 sm:pt-4 border-t border-gray-100">
           <h3 className="text-xs sm:text-sm font-semibold text-gray-900 mb-2 sm:mb-3 flex items-center gap-2">
-            <FiTruck size={14} className="sm:size-18 text-blue-500" />
+            <FiTruck className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
             Vehicle Information
           </h3>
           <div className="space-y-2 sm:space-y-3">
@@ -66,7 +66,7 @@ const ProfileCard = ({ profile, onEdit }) => {
         {/* Area Information */}
         <div className="pt-3 sm:pt-4 border-t border-gray-100">
           <h3 className="text-xs sm:text-sm font-semibold text-gray-900 mb-2 sm:mb-3 flex items-center gap-2">
-            <FiMapPin size={14} className="sm:size-18 text-blue-500" />
+            <FiMapPin className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
             Area Information
           </h3>
           <div className="space-y-2 sm:space-y-3">
@@ -80,7 +80,7 @@ const ProfileCard = ({ profile, onEdit }) => {
         {/* Account Status */}
         <div className="pt-3 sm:pt-4 border-t border-gray-100">
           <h3 className="text-xs sm:text-sm font-semibold text-gray-900 mb-2 sm:mb-3 flex items-center gap-2">
-            <FiShield size={14} className="sm:size-18 text-blue-500" />
+            <FiShield className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
             Account Status
           </h3>
           <div className="flex items-center gap-2">

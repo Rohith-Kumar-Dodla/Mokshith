@@ -5,6 +5,7 @@ import { validate } from '../../middlewares/validate.middleware.js';
 import { verifyPaymentSchema } from './payment.validation.js';
 import { paymentLimiter } from '../../config/rateLimiter.js';
 import { csrfProtection } from '../../middlewares/csrf.middleware.js';
+import bankTransferRoutes from '../payment-proof/paymentProof.routes.js';
 
 import Joi from 'joi';
 
@@ -51,6 +52,9 @@ csrfProtected.post('/fail', paymentLimiter, protect, controller.failPayment);
 
 // 6. /initiate/:orderId
 csrfProtected.post('/initiate/:orderId', paymentLimiter, protect, controller.initiatePayment);
+
+// 7. Bank transfer payment proofs
+router.use('/bank-transfer', bankTransferRoutes);
 
 // Mount CSRF protected routes
 router.use(csrfProtected);

@@ -20,8 +20,10 @@ export function useDeliveryAssignment({ autoLoad = true } = {}) {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const refreshAll = useCallback(async () => {
-    setLoading(true);
+  const refreshAll = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) {
+      setLoading(true);
+    }
     setError(null);
 
     try {
@@ -71,7 +73,9 @@ export function useDeliveryAssignment({ autoLoad = true } = {}) {
     } catch (loadError) {
       setError(getErrorMessage(loadError, 'Failed to load delivery assignment data'));
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, []);
 
@@ -108,7 +112,7 @@ export function useDeliveryAssignment({ autoLoad = true } = {}) {
         } else {
           await deliveryService.assignDeliveryPartner(item.id, partnerId);
         }
-        await refreshAll();
+        await refreshAll({ silent: true });
       } catch (actionError) {
         const message = getErrorMessage(actionError, 'Failed to assign delivery partner');
         setError(message);
@@ -126,7 +130,7 @@ export function useDeliveryAssignment({ autoLoad = true } = {}) {
       setError(null);
       try {
         await deliveryService.reassignDeliveryPartner(shipmentId, partnerId);
-        await refreshAll();
+        await refreshAll({ silent: true });
       } catch (actionError) {
         const message = getErrorMessage(actionError, 'Failed to reassign delivery partner');
         setError(message);

@@ -53,10 +53,8 @@ export const apiLimiter = rateLimit({
     message: 'Too many requests, try again later',
   },
   skip: (req) => {
-    // Always skip rate limiting in test environment
     if (process.env.NODE_ENV === 'test') return true;
-    // Skip rate limiting for health checks
-    return req.path === '/health';
+    return req.path === '/health' || req.path.startsWith('/health/') || req.path.endsWith('/health/live') || req.path.endsWith('/health/ready');
   },
 });
 
@@ -108,6 +106,7 @@ export const orderLimiter = rateLimit({
     message: 'Too many order creation attempts. Please wait a few minutes before creating more orders.',
   },
   skipSuccessfulRequests: false, // Count all attempts to prevent inventory locking abuse
+  skip: (req) => process.env.NODE_ENV === 'test',
   keyGenerator: (req) => {
     // Use user ID if authenticated, otherwise IP address
     return req.user?.id || req.ip;

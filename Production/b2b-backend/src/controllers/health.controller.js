@@ -3,6 +3,7 @@ import { redisClient } from '../config/redis.js';
 import { logger } from '../config/logger.js';
 import { monitoringService } from '../services/monitoring.service.js';
 import { workers } from '../workers/index.js';
+import { isRedisRequired } from '../config/env.js';
 
 /**
  * Comprehensive health check endpoint
@@ -36,7 +37,7 @@ export const healthCheck = async (req, res) => {
     health.status = 'healthy';
   }
 
-  const statusCode = hasUnhealthy ? 503 : (hasDegraded ? 200 : 200);
+  const statusCode = hasUnhealthy ? 503 : 200;
   
   res.status(statusCode).json(health);
 };
@@ -57,15 +58,19 @@ export const livenessProbe = (req, res) => {
 export const readinessProbe = async (req, res) => {
   const dbHealthy = await checkDatabase();
   const redisHealthy = await checkRedis();
+  const redisRequired = isRedisRequired();
 
-  const ready = dbHealthy.status === 'healthy' && redisHealthy.status === 'healthy';
+  const ready =
+    dbHealthy.status === 'healthy' &&
+    (!redisRequired || redisHealthy.status === 'healthy' || redisHealthy.status === 'degraded');
 
   res.status(ready ? 200 : 503).json({
     status: ready ? 'ready' : 'not ready',
     timestamp: new Date().toISOString(),
     checks: {
       database: dbHealthy,
-      redis: redisHealthy
+      redis: redisHealthy,
+      redisRequired,
     }
   });
 };
@@ -145,6 +150,16 @@ async function checkRedis() {
     // Determine status based on latency thresholds and circuit breaker
     let status = 'healthy';
     if (circuitBreaker.state === 'OPEN') {
+      if (!isRedisRequired()) {
+        return {
+          status: 'degraded',
+          responseTime: `${responseTime}ms`,
+          latencyMs: responseTime,
+          connected: false,
+          optional: true,
+          circuitBreakerState: circuitBreaker.state,
+        };
+      }
       status = 'unhealthy';
       logger.error('Redis circuit breaker OPEN - using fallback mode');
     } else if (circuitBreaker.state === 'HALF_OPEN') {
@@ -164,6 +179,7 @@ async function checkRedis() {
       latencyMs: responseTime,
       connected: true,
       usedMemory,
+      circuitBreakerState: circuitBreaker.state,
       circuitBreaker: {
         state: circuitBreaker.state,
         isHealthy: circuitBreaker.isHealthy,
@@ -173,14 +189,24 @@ async function checkRedis() {
     };
   } catch (error) {
     logger.error('Redis health check failed:', error);
-    
-    // Check circuit breaker even on failure
+
     const circuitBreaker = redisClient.getCircuitBreakerStatus();
-    
+
+    if (!isRedisRequired()) {
+      return {
+        status: 'degraded',
+        message: error.message,
+        connected: false,
+        optional: true,
+        circuitBreakerState: circuitBreaker.state,
+      };
+    }
+
     return {
       status: 'unhealthy',
       message: error.message,
       connected: false,
+      circuitBreakerState: circuitBreaker.state,
       circuitBreaker: {
         state: circuitBreaker.state,
         fallbackActive: circuitBreaker.state === 'OPEN'
@@ -224,12 +250,15 @@ function checkMemory() {
  * 🔒 PHASE 3: Enhanced with queue depth, stuck jobs, and DLQ monitoring
  */
 async function checkQueues() {
+  const emptyDetails = { waiting: 0, active: 0, failed: 0, delayed: 0 };
+
   try {
     if (process.env.ENABLE_QUEUE !== 'true') {
       return {
         status: 'healthy',
         message: 'Queues disabled',
-        enabled: false
+        enabled: false,
+        details: emptyDetails,
       };
     }
 
@@ -335,11 +364,24 @@ async function checkQueues() {
     const overallStatus = hasUnhealthy ? 'unhealthy' : 
                           hasDegraded ? 'degraded' : 
                           'healthy';
+
+    const aggregatedDetails = workerStatuses.reduce(
+      (acc, worker) => {
+        const depth = worker.queueDepth || emptyDetails;
+        acc.waiting += depth.waiting || 0;
+        acc.active += depth.active || 0;
+        acc.failed += depth.failed || 0;
+        acc.delayed += depth.delayed || 0;
+        return acc;
+      },
+      { ...emptyDetails }
+    );
     
     return {
       status: overallStatus,
       enabled: true,
       workers: workerStatuses,
+      details: aggregatedDetails,
       totalWorkers: workers.length,
       runningWorkers: workerStatuses.filter(w => w.running).length,
       healthyWorkers: workerStatuses.filter(w => w.status === 'healthy').length,
@@ -357,7 +399,8 @@ async function checkQueues() {
     return {
       status: 'unhealthy',
       message: error.message,
-      enabled: true
+      enabled: true,
+      details: emptyDetails,
     };
   }
 }
@@ -379,8 +422,7 @@ function checkDisk() {
  */
 export const getMetrics = async (req, res) => {
   try {
-    const metrics = await monitoringService.getSystemMetrics();
-    const alerts = monitoringService.getAlerts();
+    const { metrics, alerts } = await monitoringService.getSystemMetricsAndAlert();
 
     res.status(200).json({
       success: true,

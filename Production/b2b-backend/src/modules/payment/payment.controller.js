@@ -20,7 +20,7 @@ export const hybridPayment = asyncHandler(async (req, res) => {
     throw new Error('orderId is required for hybrid payment');
   }
 
-  const data = await service.hybridPayment(finalOrderId, req.user.id, useCredit, totalAmount, paymentMethod);
+  const data = await service.hybridPayment(finalOrderId, req.user, useCredit, totalAmount, paymentMethod);
 
   successResponse(res, data, 'Hybrid payment processed');
 });
@@ -28,21 +28,21 @@ export const hybridPayment = asyncHandler(async (req, res) => {
 export const initiatePayment = asyncHandler(async (req, res) => {
   const data = await service.initiatePayment(
     req.params.orderId,
-    req.user.id
+    req.user
   );
 
   successResponse(res, data, 'Payment initiated');
 });
 
 export const verifyPayment = asyncHandler(async (req, res) => {
-  const payment = await service.verifyPayment(req.body);
+  const payment = await service.verifyPayment(req.body, req.user);
 
   successResponse(res, payment, 'Payment successful');
 });
 
 export const failPayment = asyncHandler(async (req, res) => {
   const { orderId, reason } = req.body;
-  const result = await service.failPayment(orderId, reason);
+  const result = await service.failPayment(orderId, reason, req.user);
   successResponse(res, result, 'Payment failure recorded');
 });
 

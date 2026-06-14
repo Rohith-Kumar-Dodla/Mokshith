@@ -9,6 +9,7 @@ import Modal from '../../components/admin/Modal';
 import ImageUpload from '../../components/common/ImageUpload';
 import useProducts from '../../hooks/useProducts';
 import useCategories from '../../hooks/useCategories';
+import { getProductImageKey } from '../../utils/productMapper';
 
 const EMPTY_FORM = {
   name: '',
@@ -238,6 +239,7 @@ const Products = () => {
                   <td className="px-4 sm:px-6 py-3 sm:py-4">
                     <div className="flex items-center gap-2 sm:gap-3">
                       <img
+                        key={getProductImageKey(product)}
                         src={product.imageUrl || product.image || 'https://via.placeholder.com/48'}
                         alt={product.name}
                         className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg object-cover"
@@ -373,9 +375,10 @@ const Products = () => {
             </div>
             <div className="sm:col-span-2">
               <ImageUpload
+                key={selectedProduct?.id || 'new-product'}
                 label="Product Image"
                 value={imageFile}
-                previewUrl={selectedProduct?.imageUrl || selectedProduct?.image}
+                previewUrl={selectedProduct?.storedImage || ''}
                 onChange={setImageFile}
                 onClear={() => setImageFile(null)}
                 disabled={saving}

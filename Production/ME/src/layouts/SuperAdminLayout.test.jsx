@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import SuperAdminLayout from './SuperAdminLayout';
+import { mockMatchMedia } from '../../tests/utils/testHelpers';
 
 vi.mock('../context/AuthContext', () => ({
   useAuth: () => ({
@@ -10,8 +11,8 @@ vi.mock('../context/AuthContext', () => ({
   }),
 }));
 
-vi.mock('../hooks/useLogout', () => ({
-  useLogout: () => vi.fn(),
+vi.mock('../hooks/useNotifications', () => ({
+  default: () => ({ notifications: [], unreadCount: 0 }),
 }));
 
 vi.mock('../components/superadmin/NotificationDrawer', () => ({
@@ -19,6 +20,10 @@ vi.mock('../components/superadmin/NotificationDrawer', () => ({
 }));
 
 describe('SuperAdminLayout', () => {
+  beforeEach(() => {
+    mockMatchMedia(true);
+  });
+
   it('renders only one logout button', () => {
     render(
       <MemoryRouter initialEntries={['/super-admin/dashboard']}>
@@ -31,7 +36,6 @@ describe('SuperAdminLayout', () => {
     );
 
     expect(screen.queryAllByRole('button', { name: /^Logout$/i })).toHaveLength(1);
-    // Label updated in production to "User Approvals" — test should match visible text.
     expect(screen.getByRole('link', { name: /User Approvals/i })).toBeInTheDocument();
-  }, 10000);
+  });
 });

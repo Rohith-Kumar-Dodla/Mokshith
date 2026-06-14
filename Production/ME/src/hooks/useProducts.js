@@ -123,7 +123,7 @@ export function useProducts() {
         return [mapped, ...current];
       }
       const next = [...current];
-      next[index] = { ...next[index], ...mapped };
+      next[index] = mapped;
       return next;
     });
   }, []);
@@ -155,7 +155,11 @@ export function useProducts() {
     setActionError(null);
     setSuccessMessage(null);
     try {
-      await productService.updateProduct(productId, productData, imageFile);
+      const response = await productService.updateProduct(productId, productData, imageFile);
+      const updated = unwrapApiData(response);
+      if (updated) {
+        upsertProduct(updated);
+      }
       setSuccessMessage('Product updated successfully');
       await fetchProducts({ bustCache: true, preserveOnError: true });
       return true;
@@ -166,7 +170,7 @@ export function useProducts() {
     } finally {
       setSaving(false);
     }
-  }, [fetchProducts]);
+  }, [fetchProducts, upsertProduct]);
 
   const deleteProduct = useCallback(async (productId) => {
     setSaving(true);

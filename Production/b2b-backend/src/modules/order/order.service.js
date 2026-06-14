@@ -113,7 +113,6 @@ export const createOrder = async (userId, data) => {
 
   let totalAmount = 0;
   let totalWeight = 0;
-  let totalQuantity = 0;
   const items = [];
 
   // 🔥 2. Validate + Prepare Items + Check Stock
@@ -150,7 +149,6 @@ export const createOrder = async (userId, data) => {
 
     totalAmount += itemTotal;
     totalWeight += (product.weight || 0) * item.quantity;
-    totalQuantity += item.quantity;
 
     items.push({
       productId: product._id,
@@ -161,11 +159,6 @@ export const createOrder = async (userId, data) => {
       discountAmount,
       finalPrice: itemTotal / item.quantity
     });
-  }
-
-  // 🔥 B2B Rule: No single-item purchase
-  if (totalQuantity <= 1) {
-    throw new AppError('B2B Rule: Minimum total quantity must be greater than 1. No single-item purchases allowed.', 400);
   }
 
   // Add 18% GST
@@ -337,38 +330,128 @@ async function enrichOrdersWithDeliveryPartner(orders) {
   });
 }
 
-export const getOrders = async (user) => {
-  let orders;
+export const getOrders = async (user, query = {}) => {
+  const {
+    page = 1,
+    limit = 20,
+    search = '',
+    status,
+    startDate,
+    endDate,
+  } = query;
 
-  if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
-    orders = await orderRepo.findOrders({});
-  } else {
-    orders = await orderRepo.findOrders({
-      userId: user.id,
-      status: {
-        $nin: [
-          ORDER_STATUS.FAILED,
-          ORDER_STATUS.CREATED,
-          ORDER_STATUS.PENDING_PAYMENT,
-        ],
-      },
-    });
+  const filter = {};
+
+  if (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
+    filter.userId = user.id;
+    filter.status = {
+      $nin: [ORDER_STATUS.FAILED, ORDER_STATUS.CREATED, ORDER_STATUS.PENDING_PAYMENT],
+    };
   }
 
-  return enrichOrdersWithDeliveryPartner(orders);
+  if (status && status !== 'all') {
+    filter.status = status.toUpperCase();
+  }
+
+  if (search) {
+    // Sanitize search input to prevent ReDoS / regex injection
+    const sanitized = String(search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const searchRegex = { $regex: sanitized, $options: 'i' };
+    filter.$or = [{ _id: search.match(/^[0-9a-fA-F]{24}$/) ? search : undefined }].filter(Boolean);
+    if (!filter.$or.length) {
+      delete filter.$or;
+    }
+  }
+
+  if (startDate || endDate) {
+    filter.createdAt = {};
+    if (startDate) filter.createdAt.$gte = new Date(startDate);
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      filter.createdAt.$lte = end;
+    }
+  }
+
+  const isAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
+  const pageNum = Math.max(1, Number(page) || 1);
+  const limitNum = Math.min(100, Math.max(1, Number(limit) || 20));
+  const skip = (pageNum - 1) * limitNum;
+
+  if (isAdmin && search && !filter.$or) {
+    const User = (await import('../user/user.model.js')).default;
+    const sanitizedSearch = String(search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const matchingUsers = await User.find({
+      $or: [
+        { name: { $regex: sanitizedSearch, $options: 'i' } },
+        { email: { $regex: sanitizedSearch, $options: 'i' } },
+        { mobile: { $regex: sanitizedSearch, $options: 'i' } },
+        { companyName: { $regex: sanitizedSearch, $options: 'i' } },
+      ],
+    })
+      .select('_id')
+      .lean();
+    const userIds = matchingUsers.map((u) => u._id);
+    filter.$or = [{ userId: { $in: userIds } }];
+    if (search.match(/^[0-9a-fA-F]{24}$/)) {
+      filter.$or.push({ _id: search });
+    }
+  }
+
+  const [orders, total] = await Promise.all([
+    orderRepo.findOrders(filter, { skip, limit: limitNum }),
+    orderRepo.countOrders(filter),
+  ]);
+
+  const enriched = await enrichOrdersWithDeliveryPartner(orders);
+
+  if (isAdmin) {
+    return {
+      orders: enriched,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        pages: Math.ceil(total / limitNum) || 1,
+      },
+    };
+  }
+
+  return enriched;
 };
 
 export const getOrderById = async (id) => {
-  const order = await orderRepo.findById(id);
+  throw new AppError('Use getOrderByIdWithUser for ownership-checked lookup', 400);
+};
 
+export const getOrderByIdWithUser = async (id, user) => {
+  if (!mongoose.Types.ObjectId.isValid(id)) throw new AppError('Invalid order ID', 400);
+
+  const order = await orderRepo.findById(id);
   if (!order) throw new AppError('Order not found', 404);
+
+  const userId = typeof user === 'string' ? user : (user?.id || user?._id);
+  const role = user?.role || null;
+  if (!(role === 'ADMIN' || role === 'SUPER_ADMIN') && userId && order.userId.toString() !== userId.toString()) {
+    throw new AppError('Access denied', 403);
+  }
 
   const [enriched] = await enrichOrdersWithDeliveryPartner([order]);
   return enriched;
 };
 
-export const downloadInvoice = async (orderId) => {
+export const downloadInvoice = async (orderId, user) => {
   logger.info('Searching for invoice', { orderId });
+  // Ownership check: ensure the requester owns the order or has admin privileges
+  if (!mongoose.Types.ObjectId.isValid(orderId)) throw new AppError('Invalid order ID', 400);
+  const order = await orderRepo.findById(orderId);
+  if (!order) throw new AppError('Order not found', 404);
+  const userId = typeof user === 'string' ? user : (user?.id || user?._id);
+  const role = user?.role || null;
+  if (!(role === 'ADMIN' || role === 'SUPER_ADMIN') && userId && order.userId.toString() !== userId.toString()) {
+    throw new AppError('Access denied', 403);
+  }
+
   let invoice = await getInvoiceByOrderId(orderId);
   
   // If invoice doesn't exist OR fileUrl is missing, generate/regenerate it
@@ -434,6 +517,10 @@ export const downloadInvoice = async (orderId) => {
 };
 
 export const markOrderAsFailed = async (id) => {
+  throw new AppError('markOrderAsFailed requires user context - use markOrderAsFailedWithUser', 400);
+};
+
+export const markOrderAsFailedWithUser = async (id, user) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw new AppError('Invalid order ID', 400);
   }
@@ -441,6 +528,13 @@ export const markOrderAsFailed = async (id) => {
   const order = await Order.findById(id);
   if (!order) throw new AppError('Order not found', 404);
   
+  const userId = typeof user === 'string' ? user : (user?.id || user?._id);
+  const role = user?.role || null;
+  // Only owner or admin can mark as failed
+  if (!(role === 'ADMIN' || role === 'SUPER_ADMIN') && userId && order.userId.toString() !== userId.toString()) {
+    throw new AppError('Access denied', 403);
+  }
+
   // Only process if not already failed
   if (order.status === ORDER_STATUS.FAILED) return order;
 
@@ -487,14 +581,41 @@ export const markOrderAsFailed = async (id) => {
   }
 };
 
-export const updateOrderStatus = async (orderId, newStatus) => {
+export const updateOrderStatus = async (orderId, newStatus, actor = {}, note = '') => {
   const order = await Order.findById(orderId);
 
   if (!order) throw new AppError('Order not found', 404);
 
   validateTransition(order.status, newStatus);
 
+  const previousStatus = order.status;
   order.status = newStatus;
+  order.statusHistory = order.statusHistory || [];
+  order.statusHistory.push({
+    status: newStatus,
+    changedBy: actor.id || actor._id,
+    changedAt: new Date(),
+    note: note || `Status changed from ${previousStatus} to ${newStatus}`,
+  });
 
-  return order.save();
+  await order.save();
+
+  try {
+    const Audit = (await import('../audit/audit.model.js')).default;
+    await Audit.create({
+      userId: actor.id || actor._id,
+      userEmail: actor.email,
+      role: actor.role,
+      action: 'ORDER_STATUS_UPDATED',
+      entity: 'ORDER',
+      entityId: order._id,
+      details: `Order ${order._id} status: ${previousStatus} → ${newStatus}`,
+      severity: 'INFO',
+    });
+  } catch (auditError) {
+    logger.warn('Failed to create order status audit log', { error: auditError.message });
+  }
+
+  const [enriched] = await enrichOrdersWithDeliveryPartner([order.toObject()]);
+  return enriched || order;
 };

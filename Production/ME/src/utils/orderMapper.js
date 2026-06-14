@@ -5,9 +5,13 @@ const STATUS_RANK = {
   CONFIRMED: 1,
   PROCESSING: 2,
   PACKED: 2,
-  OUT_FOR_DELIVERY: 3,
-  DELIVERED: 4,
-  COMPLETED: 5,
+  READY_TO_DISPATCH: 3,
+  SHIPPED: 3,
+  OUT_FOR_DELIVERY: 4,
+  DELIVERED: 5,
+  COMPLETED: 6,
+  RETURNED: 6,
+  REFUNDED: 6,
   CANCELLED: -1,
   FAILED: -1,
 };
@@ -20,10 +24,14 @@ export function mapBackendOrderStatus(status) {
     PENDING: 'pending',
     CONFIRMED: 'confirmed',
     PROCESSING: 'processing',
-    PACKED: 'processing',
+    PACKED: 'packed',
+    READY_TO_DISPATCH: 'ready_to_dispatch',
+    SHIPPED: 'shipped',
     OUT_FOR_DELIVERY: 'dispatched',
     DELIVERED: 'delivered',
     COMPLETED: 'completed',
+    RETURNED: 'returned',
+    REFUNDED: 'refunded',
     CANCELLED: 'cancelled',
     FAILED: 'cancelled',
   };
@@ -36,6 +44,7 @@ export function mapBackendPaymentStatus(status) {
     PENDING: 'pending',
     PAID: 'paid',
     FAILED: 'failed',
+    REJECTED: 'rejected',
   };
   return paymentMap[normalized] || String(status || 'pending').toLowerCase();
 }
@@ -187,8 +196,22 @@ export function mapAdminOrderView(order) {
 }
 
 export function mapAdminOrders(payload) {
-  const list = Array.isArray(payload) ? payload : payload?.data ?? [];
+  const list = Array.isArray(payload)
+    ? payload
+    : payload?.orders ?? payload?.data?.orders ?? payload?.data ?? [];
   return list.map((order) => mapAdminOrderView(order)).filter(Boolean);
+}
+
+export function extractAdminOrdersResponse(response) {
+  const payload = response?.data ?? response;
+  if (Array.isArray(payload)) {
+    return { orders: mapAdminOrders(payload), pagination: null };
+  }
+  const orders = mapAdminOrders(payload?.orders ?? payload);
+  return {
+    orders,
+    pagination: payload?.pagination ?? null,
+  };
 }
 
 export function computeOrderStats(orders = []) {

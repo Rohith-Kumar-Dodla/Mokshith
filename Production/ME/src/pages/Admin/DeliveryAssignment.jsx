@@ -28,6 +28,12 @@ const DeliveryAssignment = () => {
   } = useDeliveryAssignment();
 
   const availablePartners = partners.filter((partner) => partner.status === 'active');
+  const isInitialLoad =
+    loading &&
+    unassignedItems.length === 0 &&
+    activeDeliveries.length === 0 &&
+    history.length === 0 &&
+    partners.length === 0;
 
   const tabItems = {
     unassigned: unassignedItems,
@@ -75,7 +81,7 @@ const DeliveryAssignment = () => {
         actions={
           <button
             type="button"
-            onClick={refreshAll}
+            onClick={() => refreshAll({ silent: !isInitialLoad })}
             disabled={loading}
             className="inline-flex items-center gap-2 px-4 py-2 h-10 bg-white border border-gray-200 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50"
           >
@@ -134,7 +140,7 @@ const DeliveryAssignment = () => {
           />
         </div>
 
-        {loading ? (
+        {isInitialLoad ? (
           <div className="text-center py-8 sm:py-12">
             <p className="text-sm sm:text-base text-gray-500">Loading delivery data...</p>
           </div>
@@ -193,7 +199,7 @@ const DeliveryAssignment = () => {
           </div>
         )}
 
-        {!loading && currentItems.length === 0 && (
+        {!isInitialLoad && currentItems.length === 0 && (
           <div className="text-center py-8 sm:py-12">
             <FiTruck size={36} className="text-gray-300 mx-auto mb-4" />
             <p className="text-sm sm:text-base text-gray-500">
@@ -214,7 +220,7 @@ const DeliveryAssignment = () => {
           </div>
         </div>
 
-        {loading ? (
+        {loading && partners.length === 0 ? (
           <p className="text-sm text-gray-500">Loading partners...</p>
         ) : availablePartners.length === 0 ? (
           <p className="text-sm text-gray-500">No active delivery partners found.</p>

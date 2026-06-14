@@ -1,25 +1,87 @@
 import dns from 'dns';
 import mongoose from 'mongoose';
 import { logger } from './logger.js';
+import { resolveMongoUri, maskMongoUri } from './env.js';
+import { getDatabaseConnectionState } from '../utils/databaseHealth.js';
+import { APPLICATION_DATABASE_NAME } from '../utils/destructiveGuard.js';
+import { bootstrapSuperAdmin } from '../bootstrap/superAdminBootstrap.js';
 
 // Helps MongoDB Atlas connections on Windows when IPv6/SRV resolution is flaky
 dns.setDefaultResultOrder('ipv4first');
 
 let isConnected = false;
 let isReplicaSet = false;
+let memoryServer = null;
+let activeDatabaseName = null;
+
+async function resolveInMemoryUri() {
+  const { MongoMemoryServer } = await import('mongodb-memory-server');
+  memoryServer = await MongoMemoryServer.create();
+  const uri = memoryServer.getUri('b2b-ecommerce');
+  logger.warn('Using in-memory MongoDB for development (USE_IN_MEMORY_MONGO=true)');
+  return uri;
+}
+
+export async function validateDatabaseAtStartup() {
+  if (mongoose.connection.readyState !== 1) {
+    throw new Error('MongoDB connection is not ready');
+  }
+
+  await mongoose.connection.db.admin().ping();
+
+  const dbName = mongoose.connection.name;
+  activeDatabaseName = dbName;
+  const expectedDatabase = process.env.APP_DATABASE_NAME?.trim() || APPLICATION_DATABASE_NAME;
+  const usingInMemory = process.env.USE_IN_MEMORY_MONGO === 'true';
+  const isTestRuntime = process.env.NODE_ENV === 'test';
+
+  if (!usingInMemory && !isTestRuntime && dbName !== expectedDatabase) {
+    throw new Error(
+      `Connected to wrong database "${dbName}". Application requires MongoDB database "${expectedDatabase}".`
+    );
+  }
+
+  const collections = await mongoose.connection.db.listCollections({}, { nameOnly: true }).toArray();
+  const collectionNames = collections.map((entry) => entry.name);
+  const hasUsersCollection = collectionNames.includes('users');
+
+  if (!hasUsersCollection) {
+    logger.warn(
+      `Database "${dbName}" has no "users" collection yet. Create users via registration or admin workflows.`
+    );
+  }
+
+  logger.info('✓ Mongo Connected');
+  logger.info(`✓ Database: ${dbName}`);
+  logger.info(`✓ Collections Found: ${collectionNames.length}`);
+  logger.info(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
+  logger.info(`✓ Mongo URI source: ${resolveMongoUri().source || 'in-memory'}`);
+  logger.info(`✓ Users collection: ${collectionNames.includes('users') ? 'present' : 'missing'}`);
+
+  return {
+    databaseName: dbName,
+    collections: collectionNames.length,
+    hasUsersCollection,
+  };
+}
 
 const connectDB = async () => {
-  if (isConnected) {
+  if (isConnected && mongoose.connection.readyState === 1) {
     logger.info('Using existing MongoDB connection');
-    return;
+    return mongoose.connection;
   }
 
-  const mongoUri = process.env.MONGO_URI_DIRECT || process.env.MONGO_URI;
+  const mongoConfig = resolveMongoUri();
+  const mongoUri = mongoConfig.uri || (process.env.USE_IN_MEMORY_MONGO === 'true'
+    ? await resolveInMemoryUri()
+    : null);
 
   if (!mongoUri) {
-    logger.error('❌ MONGO_URI is not set in .env');
+    logger.error('❌ Missing MONGO_URI');
     process.exit(1);
   }
+
+  logger.info(`Connecting to MongoDB (${mongoConfig.source || 'in-memory'}) → ${maskMongoUri(mongoUri)}`);
 
   try {
     const conn = await mongoose.connect(mongoUri, {
@@ -31,9 +93,9 @@ const connectDB = async () => {
     });
 
     isConnected = true;
-    logger.info(`✅ MongoDB Connected: ${conn.connection.host}`);
+    activeDatabaseName = conn.connection.name;
+    logger.info(`MongoDB Connected: ${conn.connection.host}`);
 
-    // Check if connected to a replica set
     try {
       const status = await mongoose.connection.db.admin().serverStatus();
       isReplicaSet = !!status.repl;
@@ -43,16 +105,29 @@ const connectDB = async () => {
     }
 
     if (isReplicaSet) {
-      logger.info('🔄 MongoDB Transaction support enabled (Replica Set detected)');
+      logger.info('MongoDB Transaction support enabled (Replica Set detected)');
     } else {
-      logger.warn('⚠️ MongoDB Transactions disabled (Standalone mode detected)');
+      logger.warn('MongoDB Transactions disabled (Standalone mode detected)');
     }
+
+    await validateDatabaseAtStartup();
+    await bootstrapSuperAdmin();
+    return conn;
   } catch (error) {
     logger.error('❌ MongoDB connection failed', error);
 
     if (error.message?.includes('querySrv ECONNREFUSED')) {
       logger.error(
-        'DNS SRV lookup failed for mongodb+srv://. Fix: In MongoDB Atlas → Connect → Drivers, copy the STANDARD connection string (starts with mongodb://, not mongodb+srv://), set it as MONGO_URI_DIRECT in .env, then restart the server.'
+        'DNS SRV lookup failed for mongodb+srv://. Use Atlas standard connection string in MONGO_URI_DIRECT, then restart.'
+      );
+    }
+
+    if (
+      process.env.NODE_ENV !== 'production' &&
+      process.env.USE_IN_MEMORY_MONGO !== 'true'
+    ) {
+      logger.error(
+        'Local MongoDB is not running. Install MongoDB, start mongod, or set USE_IN_MEMORY_MONGO=true in .env for development.'
       );
     }
 
@@ -60,18 +135,33 @@ const connectDB = async () => {
   }
 };
 
-mongoose.connection.on("connected", () => {
-  logger.info("MongoDB connection established successfully");
+mongoose.connection.on('connected', () => {
+  isConnected = true;
+  activeDatabaseName = mongoose.connection.name;
+  logger.info('MongoDB connection established successfully');
 });
 
-mongoose.connection.on("disconnected", () => {
+mongoose.connection.on('disconnected', () => {
   isConnected = false;
-  logger.warn("MongoDB disconnected. Reconnecting...");
+  logger.warn('MongoDB disconnected. Authentication and data routes are unavailable until reconnected.');
 });
 
-mongoose.connection.on("error", (err) => {
-  logger.error(`MongoDB connection error: ${err}`);
+mongoose.connection.on('error', (err) => {
+  isConnected = false;
+  logger.error(`MongoDB connection error: ${err.message}`);
 });
+
+export function getActiveDatabaseName() {
+  return activeDatabaseName || mongoose.connection.name || null;
+}
+
+export function getMongoDiagnostics() {
+  return {
+    ...getDatabaseConnectionState(),
+    activeDatabaseName: getActiveDatabaseName(),
+    isConnectedFlag: isConnected,
+  };
+}
 
 export const getTransactionSupport = () => isReplicaSet;
 

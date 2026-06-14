@@ -7,7 +7,7 @@ const router = express.Router();
 router.get('/', (req, res) => {
   res.status(200).json({
     success: true,
-    message: 'Server is healthy ✅',
+    message: 'Server is healthy',
     uptime: process.uptime(),
     timestamp: new Date(),
   });
@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
 
   res.status(200).json({
     success: true,
-    message: 'Server is healthy ✅',
+    message: 'Server is healthy',
     uptime: process.uptime(),
     database: dbStatus,
     timestamp: new Date(),

@@ -6,6 +6,7 @@ import StatusBadge from '../../components/admin/StatusBadge';
 import Modal from '../../components/admin/Modal';
 import ImageUpload from '../../components/common/ImageUpload';
 import useCategories from '../../hooks/useCategories';
+import { getImageVersion } from '../../utils/imageUtils';
 
 const EMPTY_FORM = {
   name: '',
@@ -176,6 +177,7 @@ const Categories = () => {
           <Card key={category.id} className="hover:shadow-md transition-shadow cursor-pointer p-3 sm:p-4" onClick={() => handleViewCategory(category)}>
             <div className="flex items-start justify-between mb-3 sm:mb-4">
               <img
+                key={`${category.id}-${getImageVersion(category) || 'default'}`}
                 src={category.image}
                 alt={category.name}
                 className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg object-cover flex-shrink-0"
@@ -285,9 +287,10 @@ const Categories = () => {
           </div>
 
           <ImageUpload
+            key={selectedCategory?.id || 'new-category'}
             label="Category Image"
             value={imageFile}
-            previewUrl={selectedCategory?.image}
+            previewUrl={selectedCategory?.storedImage || ''}
             onChange={setImageFile}
             onClear={() => setImageFile(null)}
             disabled={saving}

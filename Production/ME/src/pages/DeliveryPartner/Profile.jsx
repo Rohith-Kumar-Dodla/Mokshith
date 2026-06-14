@@ -192,7 +192,7 @@ const Profile = () => {
                   />
                 ) : (
                   <p className="text-sm sm:text-base text-gray-900 font-medium flex items-center gap-2">
-                    <FiPhone size={14} className="text-gray-400" />
+                    <FiPhone className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                     {profile.phone || '—'}
                   </p>
                 )}
@@ -208,7 +208,7 @@ const Profile = () => {
                   />
                 ) : (
                   <p className="text-sm sm:text-base text-gray-900 font-medium flex items-center gap-2">
-                    <FiMail size={14} className="text-gray-400" />
+                    <FiMail className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                     {profile.email || '—'}
                   </p>
                 )}
@@ -216,7 +216,7 @@ const Profile = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Joining Date</label>
                 <p className="text-sm sm:text-base text-gray-900 font-medium flex items-center gap-2">
-                  <FiCalendar size={14} className="text-gray-400" />
+                  <FiCalendar className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                   {profile.joiningDate || '—'}
                 </p>
               </div>

@@ -67,7 +67,11 @@ const runTests = () => {
   });
 
   console.log('XSS Sanitizer Unit Tests:');
-  results.forEach(r => console.log(r));
+  results.forEach(r => {
+    // Normalize output: replace emoji markers with PASS/FAIL
+    const out = r.replace(/^✅/, 'PASS').replace(/^❌/, 'FAIL');
+    console.log(out);
+  });
   if (results.some(r => r.startsWith('❌'))) process.exit(1);
 };
 

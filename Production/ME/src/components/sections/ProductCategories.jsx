@@ -1,126 +1,119 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Wheat, Package, Droplets, LayoutGrid, Cookie, Coffee, ArrowRight } from 'lucide-react';
-
-const routes = {
-  LANDING: '/',
-  DASHBOARD: '/dashboard',
-  REGISTER: '/register',
-  LOGIN: '/login',
-  PRODUCTS: '/products',
-  PRICING: '/pricing',
-  SOLUTIONS: '/solutions',
-  CONTACT: '/contact',
-  ABOUT: '/about'
-};
+import { ArrowRight, LayoutGrid } from 'lucide-react';
+import categoryService from '../../services/categoryService';
+import { unwrapApiData, unwrapApiList } from '../../utils/apiResponse';
+import { mapBackendCategories } from '../../utils/categoryMapper';
 
 const ProductCategories = () => {
-  const categories = [
-    {
-      name: "Rice & Grains",
-      icon: <Wheat className="w-8 h-8" />,
-      slug: "rice-grains",
-      count: 150,
-      color: "#f59e0b",
-      bgGradient: "from-amber-50 to-orange-50"
-    },
-    {
-      name: "Pulses & Dals",
-      icon: <Package className="w-8 h-8" />,
-      slug: "pulses-dals",
-      count: 120,
-      color: "#8b5cf6",
-      bgGradient: "from-purple-50 to-violet-50"
-    },
-    {
-      name: "Edible Oils",
-      icon: <Droplets className="w-8 h-8" />,
-      slug: "edible-oils",
-      count: 85,
-      color: "#06b6d4",
-      bgGradient: "from-cyan-50 to-teal-50"
-    },
-    {
-      name: "FMCG",
-      icon: <LayoutGrid className="w-8 h-8" />,
-      slug: "fmcg",
-      count: 200,
-      color: "#ec4899",
-      bgGradient: "from-pink-50 to-rose-50"
-    },
-    {
-      name: "Sugar & Salt",
-      icon: <Cookie className="w-8 h-8" />,
-      slug: "sugar-salt",
-      count: 65,
-      color: "#10b981",
-      bgGradient: "from-emerald-50 to-green-50"
-    },
-    {
-      name: "Beverages",
-      icon: <Coffee className="w-8 h-8" />,
-      slug: "beverages",
-      count: 95,
-      color: "#f97316",
-      bgGradient: "from-orange-50 to-amber-50"
-    }
-  ];
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    categoryService
+      .getCategories()
+      .then((response) => {
+        const list = unwrapApiList(unwrapApiData(response));
+        const mapped = mapBackendCategories(list).filter((item) => item.status !== 'inactive');
+        if (mounted) setCategories(mapped.slice(0, 8));
+      })
+      .catch(() => {
+        if (mounted) setCategories([]);
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <section className="product-categories-section">
-      <div className="categories-container">
+      <div className="section-container">
         <div className="section-header">
-          <h2 className="section-title">Browse by Category</h2>
-          <p className="section-subtitle">Explore our wide range of product categories</p>
+          <h2 className="section-title">Product Categories</h2>
+          <p className="section-subtitle">Browse wholesale categories for your business</p>
         </div>
 
-        <div className="categories-grid">
-          {categories.map((category, index) => (
-            <Link
-              key={index}
-              to={`${routes.PRODUCTS}/${category.slug}`}
-              className="category-card"
-            >
-              <div className={`category-icon-wrapper bg-gradient-to-br ${category.bgGradient}`}>
-                <div className="category-icon" style={{ color: category.color }}>
-                  {category.icon}
+        {loading ? (
+          <div className="categories-grid">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="category-card skeleton-card" aria-hidden="true">
+                <div className="skeleton-block skeleton-image" />
+                <div className="skeleton-block skeleton-title" />
+                <div className="skeleton-block skeleton-text" />
+              </div>
+            ))}
+          </div>
+        ) : categories.length > 0 ? (
+          <div className="categories-grid">
+            {categories.map((category) => (
+              <Link
+                key={category.id}
+                to="/register"
+                className="category-card"
+              >
+                <div className="category-image-wrap">
+                  {category.image ? (
+                    <img src={category.image} alt={category.name} className="category-image" loading="lazy" />
+                  ) : (
+                    <div className="category-image-fallback">
+                      <LayoutGrid size={28} />
+                    </div>
+                  )}
                 </div>
-              </div>
-              <div className="category-content">
-                <h3 className="category-name">{category.name}</h3>
-                <p className="category-count">{category.count}+ Products</p>
-              </div>
-              <div className="category-cta">
-                <span>Explore</span>
-                <ArrowRight size={16} />
-              </div>
+                <div className="category-body">
+                  <h3 className="category-name">{category.name}</h3>
+                  <p className="category-description">
+                    {category.description || 'Wholesale category for B2B buyers'}
+                  </p>
+                  <span className="category-link">
+                    Explore category <ArrowRight size={14} />
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state">
+            <LayoutGrid size={40} className="empty-state-icon" aria-hidden="true" />
+            <p className="empty-state-title">No categories available yet</p>
+            <p className="empty-state-text">
+              Categories will appear here once they are added through the admin panel.
+            </p>
+            <Link to="/register" className="empty-state-cta">
+              Register your business <ArrowRight size={14} />
             </Link>
-          ))}
-        </div>
+          </div>
+        )}
       </div>
 
       <style>{`
         .product-categories-section {
-          padding: 6rem 2rem;
-          background: #f8fafc;
+          padding: 5rem 2rem;
+          background: #ffffff;
         }
 
-        .categories-container {
-          max-width: 1400px;
+        .section-container {
+          max-width: 1200px;
           margin: 0 auto;
         }
 
         .section-header {
           text-align: center;
-          margin-bottom: 4rem;
+          margin-bottom: 3rem;
         }
 
         .section-title {
-          font-size: 2.5rem;
+          font-size: 2.25rem;
           font-weight: 800;
           color: #0f172a;
           letter-spacing: -0.02em;
-          margin: 0 0 1rem 0;
+          margin: 0 0 0.75rem 0;
         }
 
         .section-subtitle {
@@ -129,139 +122,180 @@ const ProductCategories = () => {
           margin: 0;
         }
 
+        .empty-state {
+          max-width: 480px;
+          margin: 0 auto;
+          text-align: center;
+          padding: 3rem 1.5rem;
+          border: 1px dashed #cbd5e1;
+          border-radius: 16px;
+          background: #f8fafc;
+        }
+
+        .empty-state-icon {
+          color: #94a3b8;
+          margin-bottom: 1rem;
+        }
+
+        .empty-state-title {
+          font-size: 1.125rem;
+          font-weight: 700;
+          color: #0f172a;
+          margin: 0 0 0.5rem 0;
+        }
+
+        .empty-state-text {
+          font-size: 0.9375rem;
+          color: #64748b;
+          line-height: 1.6;
+          margin: 0 0 1.25rem 0;
+        }
+
+        .empty-state-cta {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: #2563eb;
+          text-decoration: none;
+        }
+
         .categories-grid {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 2rem;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 1.5rem;
         }
 
         .category-card {
-          background: white;
-          border: 1px solid #e2e8f0;
-          border-radius: 20px;
-          padding: 2rem;
-          text-decoration: none;
-          transition: all 0.3s ease;
           display: flex;
           flex-direction: column;
-          gap: 1.5rem;
-          position: relative;
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
           overflow: hidden;
-        }
-
-        .category-card::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 4px;
-          background: linear-gradient(90deg, #2563eb, #7c3aed);
-          opacity: 0;
-          transition: opacity 0.3s ease;
+          text-decoration: none;
+          color: inherit;
+          transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+          min-height: 100%;
         }
 
         .category-card:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+          transform: translateY(-4px);
+          box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
           border-color: #2563eb;
         }
 
-        .category-card:hover::before {
-          opacity: 1;
+        .category-image-wrap {
+          height: 140px;
+          background: #f1f5f9;
+          overflow: hidden;
         }
 
-        .category-icon-wrapper {
-          width: 80px;
-          height: 80px;
-          border-radius: 20px;
+        .category-image {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+
+        .category-image-fallback {
+          width: 100%;
+          height: 100%;
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: all 0.3s ease;
+          color: #64748b;
+          background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
         }
 
-        .category-card:hover .category-icon-wrapper {
-          transform: scale(1.1) rotate(5deg);
-        }
-
-        .category-icon {
-          transition: all 0.3s ease;
-        }
-
-        .category-content {
+        .category-body {
+          padding: 1.25rem;
           display: flex;
           flex-direction: column;
           gap: 0.5rem;
+          flex: 1;
         }
 
         .category-name {
-          font-size: 1.25rem;
+          font-size: 1.0625rem;
           font-weight: 700;
           color: #0f172a;
           margin: 0;
         }
 
-        .category-count {
-          font-size: 0.9375rem;
+        .category-description {
+          font-size: 0.875rem;
           color: #64748b;
+          line-height: 1.5;
           margin: 0;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
 
-        .category-cta {
-          display: flex;
+        .category-link {
+          display: inline-flex;
           align-items: center;
-          gap: 0.5rem;
-          font-size: 0.9375rem;
+          gap: 0.35rem;
+          margin-top: auto;
+          padding-top: 0.5rem;
+          font-size: 0.875rem;
           font-weight: 600;
           color: #2563eb;
-          margin-top: auto;
-          transition: all 0.3s ease;
         }
 
-        .category-card:hover .category-cta {
-          transform: translateX(4px);
+        .skeleton-card {
+          pointer-events: none;
+        }
+
+        .skeleton-block {
+          background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+          background-size: 200% 100%;
+          animation: shimmer 1.4s infinite;
+          border-radius: 8px;
+        }
+
+        .skeleton-image {
+          height: 140px;
+          border-radius: 0;
+        }
+
+        .skeleton-title {
+          height: 18px;
+          margin: 1.25rem 1.25rem 0.5rem;
+          width: 70%;
+        }
+
+        .skeleton-text {
+          height: 14px;
+          margin: 0 1.25rem 1.25rem;
+          width: 90%;
+        }
+
+        @keyframes shimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
         }
 
         @media (max-width: 1024px) {
           .categories-grid {
             grid-template-columns: repeat(2, 1fr);
           }
-
-          .section-title {
-            font-size: 2rem;
-          }
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 640px) {
           .product-categories-section {
-            padding: 4rem 1rem;
-          }
-
-          .categories-grid {
-            grid-template-columns: 1fr;
-            gap: 1.5rem;
+            padding: 3.5rem 1rem;
           }
 
           .section-title {
             font-size: 1.75rem;
           }
 
-          .section-subtitle {
-            font-size: 1rem;
-          }
-
-          .category-card {
-            padding: 1.5rem;
-          }
-
-          .category-icon-wrapper {
-            width: 64px;
-            height: 64px;
-          }
-
-          .category-name {
-            font-size: 1.125rem;
+          .categories-grid {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>

@@ -20,11 +20,10 @@ export const reconcilePayments = async () => {
     }).limit(100); // Process in batches
 
     if (stuckPayments.length === 0) {
-      logger.info('💳 Payment reconciliation: No stuck payments found');
+      logger.info('Payment reconciliation: No stuck payments found');
       return { processed: 0, failed: 0 };
     }
-
-    logger.info(`💳 Payment reconciliation: Found ${stuckPayments.length} stuck payments`);
+    logger.info(`Payment reconciliation: Found ${stuckPayments.length} stuck payments`);
     
     let processed = 0;
     let failed = 0;
@@ -62,7 +61,7 @@ export const reconcilePayments = async () => {
             }
           }
           
-          logger.info(`✅ Reconciled payment ${payment._id} for order ${order._id}`);
+          logger.info(`Reconciled payment ${payment._id} for order ${order._id}`);
         }
 
         processed++;
@@ -72,10 +71,10 @@ export const reconcilePayments = async () => {
       }
     }
 
-    logger.info(`💳 Payment reconciliation complete: ${processed} processed, ${failed} failed`);
+    logger.info(`Payment reconciliation complete: ${processed} processed, ${failed} failed`);
     return { processed, failed };
   } catch (error) {
-    logger.error('❌ Payment reconciliation job failed:', error);
+    logger.error('Payment reconciliation job failed:', error);
     throw error;
   }
 };

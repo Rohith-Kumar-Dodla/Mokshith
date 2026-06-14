@@ -17,6 +17,7 @@ describe('useProductDetails', () => {
 
   it('loads product details and related products', async () => {
     productService.getProductById.mockResolvedValue({
+      success: true,
       data: {
         _id: 'prod-1',
         name: 'Basmati Rice',
@@ -28,6 +29,7 @@ describe('useProductDetails', () => {
     });
 
     productService.getAllProducts.mockResolvedValue({
+      success: true,
       data: {
         products: [
           {

@@ -22,6 +22,7 @@ import { correlationMiddleware } from './middlewares/correlation.middleware.js';
 import { monitoringMiddleware, errorRateTracker } from './middlewares/monitoring.middleware.js';
 
 import { sentryRequestHandler, sentryTracingHandler, sentryErrorHandler } from './config/sentry.js';
+import { healthCheck, livenessProbe, readinessProbe, getMetrics } from './controllers/health.controller.js';
 
 import logisticsRoutes from './modules/logistics/logistics.routes.js';
 
@@ -128,6 +129,17 @@ potentialPaths.forEach(p => {
   }
 });
 
+const mountHealthRoutes = (basePath) => {
+  app.get(`${basePath}`, healthCheck);
+  app.get(`${basePath}/live`, livenessProbe);
+  app.get(`${basePath}/ready`, readinessProbe);
+};
+
+// Health probes before DB-touching middleware (Render uses /health/live)
+mountHealthRoutes('/health');
+mountHealthRoutes('/api/health');
+mountHealthRoutes('/api/v1/health');
+
 // 🔥 Trust proxy (important for Render / cloud deployments)
 app.set('trust proxy', 1);
 
@@ -198,14 +210,8 @@ app.use(requestLogger);
 app.use(idempotencyMiddleware);
 
 
-// ❤️ Health check routes
-import { healthCheck, livenessProbe, readinessProbe, getMetrics } from './controllers/health.controller.js';
-
-app.get('/health', healthCheck);
-app.get('/health/live', livenessProbe);
-app.get('/health/ready', readinessProbe);
-app.get('/metrics', getMetrics); // System metrics for monitoring
-
+// 📊 Metrics (after API setup, before not-found)
+app.get('/metrics', getMetrics);
 
 // 🚀 API routes
 app.use('/api', routes);

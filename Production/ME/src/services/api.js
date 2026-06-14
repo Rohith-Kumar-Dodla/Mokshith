@@ -4,8 +4,12 @@ import { clearAuthStorage, getAccessToken, getCsrfToken, getRefreshToken, persis
 const CSRF_HEADER = 'x-csrf-token';
 const STATE_CHANGING_METHODS = ['post', 'put', 'patch', 'delete'];
 
+const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL =
+  configuredApiBaseUrl || (import.meta.env.PROD ? '' : 'http://localhost:5000/api/v1');
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1',
+  baseURL: API_BASE_URL,
   timeout: 10000,
   withCredentials: true,
   headers: {
@@ -27,15 +31,25 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
+const PUBLIC_PATHS = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
+
+const isPublicPath = (pathname) => PUBLIC_PATHS.includes(pathname);
+
 const redirectToLogin = () => {
   clearAuthStorage();
-  if (window.location.pathname !== '/login') {
-    window.location.href = '/login';
+  const { pathname } = window.location;
+  if (isPublicPath(pathname) || pathname === '/login') {
+    return;
   }
+  window.location.href = '/login';
 };
 
 api.interceptors.request.use(
   (config) => {
+    if (import.meta.env.PROD && !configuredApiBaseUrl) {
+      return Promise.reject(new Error('VITE_API_BASE_URL is not configured for this deployment'));
+    }
+
     const token = getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -52,6 +66,10 @@ api.interceptors.request.use(
       if (csrfToken) {
         config.headers[CSRF_HEADER] = csrfToken;
       }
+    }
+
+    if (config.data instanceof FormData) {
+      config.timeout = Math.max(config.timeout || 0, 60000);
     }
 
     return config;

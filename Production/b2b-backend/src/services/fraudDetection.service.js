@@ -140,13 +140,15 @@ class FraudDetectionService {
   /**
    * Track payment attempt
    */
-  async trackPaymentAttempt(userId, amount, ip) {
+  async trackPaymentAttempt(userId, amount, ip, options = {}) {
     const key = `fraud:payment:${userId}`;
     const dailyKey = `fraud:payment:daily:${userId}`;
+    const skipAmountCheck =
+      options.skipAmountCheck === true || options.paymentMethod === 'BANK_TRANSFER';
 
     try {
-      // Check amount threshold
-      if (amount > this.thresholds.maxPaymentAmount) {
+      // Check amount threshold (skipped for bank transfer — any amount allowed)
+      if (!skipAmountCheck && amount > this.thresholds.maxPaymentAmount) {
         logger.warn('Suspicious payment amount', {
           userId,
           amount,
