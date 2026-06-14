@@ -1,16 +1,16 @@
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { loadEnv } from '../config/loadEnv.js';
+import {
+  assertDestructiveOperationAllowed,
+  assertExpectedApplicationDatabase,
+  logDestructiveWarning,
+} from '../utils/destructiveGuard.js';
 import Category from '../modules/category/category.model.js';
 import Product from '../modules/product/product.model.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+loadEnv();
 
-dotenv.config({ path: path.join(__dirname, '../../.env') });
-
-const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/mokshith-b2b';
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
 
 const slugify = (value) =>
   String(value)
@@ -149,7 +149,15 @@ async function findExistingCloudinaryUrl() {
 }
 
 async function seedCatalog() {
+  logDestructiveWarning('Catalog seed (creates categories and products automatically)');
+  assertDestructiveOperationAllowed('seedCatalog');
+
+  if (!MONGO_URI) {
+    throw new Error('MONGO_URI is required');
+  }
+
   await mongoose.connect(MONGO_URI);
+  assertExpectedApplicationDatabase(mongoose.connection.name);
 
   const placeholderImage = await findExistingCloudinaryUrl();
   let categoriesCreated = 0;
@@ -220,12 +228,18 @@ async function seedCatalog() {
   await mongoose.disconnect();
 }
 
-seedCatalog().catch(async (error) => {
-  console.error('Catalog seed failed:', error.message);
-  try {
-    await mongoose.disconnect();
-  } catch {
-    // ignore disconnect errors
-  }
-  process.exit(1);
-});
+const isDirectExecution = process.argv[1]?.includes('seedCatalog');
+
+if (isDirectExecution) {
+  seedCatalog().catch(async (error) => {
+    console.error('Catalog seed failed:', error.message);
+    try {
+      await mongoose.disconnect();
+    } catch {
+      // ignore disconnect errors
+    }
+    process.exit(1);
+  });
+}
+
+export default seedCatalog;

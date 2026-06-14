@@ -26,6 +26,11 @@ import PasswordResetToken from '../../models/PasswordResetToken.model.js';
 import crypto from 'crypto';
 import { logger } from '../../config/logger.js';
 import { sendEmail } from '../../services/email.service.js';
+import {
+  assertDatabaseReady,
+  isDatabaseConnectionError,
+} from '../../utils/databaseHealth.js';
+import { isEmailIdentifier } from '../../utils/loginIdentifier.js';
 
 const checkMaintenanceMode = async (user) => {
   const maintenance = await fetchSetting('maintenanceMode');
@@ -110,12 +115,28 @@ export const loginWithPassword = async ({ mobile, identifier, password }, req = 
     );
   }
 
-  const user = await findUserByEmailOrMobile(loginIdentifier);
+  await assertDatabaseReady();
+
+  let user;
+  try {
+    user = await findUserByEmailOrMobile(loginIdentifier);
+  } catch (lookupError) {
+    if (isDatabaseConnectionError(lookupError)) {
+      logger.error('Login failed due to database connectivity', {
+        identifier: loginIdentifier,
+        error: lookupError.message,
+      });
+      throw new AppError('Database temporarily unavailable', 503);
+    }
+    throw lookupError;
+  }
 
   if (!user) {
-    // Track failed attempt even if user doesn't exist (to prevent enumeration)
     await fraudDetection.trackLoginAttempt(loginIdentifier, ip, false);
-    throw new AppError('No account found with this mobile number.', 404);
+    const notFoundMessage = isEmailIdentifier(loginIdentifier)
+      ? 'User not found'
+      : 'User not found';
+    throw new AppError(notFoundMessage, 404);
   }
 
   // Check Maintenance Mode

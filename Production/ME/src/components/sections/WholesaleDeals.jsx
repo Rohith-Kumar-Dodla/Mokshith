@@ -1,8 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Package } from 'lucide-react';
 import productService from '../../services/productService';
-import { SHOWCASE_PRODUCTS } from '../../constants/catalogShowcase';
 import { unwrapApiData } from '../../utils/apiResponse';
 import { mapBackendProducts } from '../../utils/productMapper';
 
@@ -32,11 +31,6 @@ const WholesaleDeals = () => {
     };
   }, []);
 
-  const displayProducts = useMemo(
-    () => (products.length > 0 ? products : SHOWCASE_PRODUCTS),
-    [products]
-  );
-
   return (
     <section className="wholesale-deals-section">
       <div className="section-container">
@@ -56,9 +50,9 @@ const WholesaleDeals = () => {
               </div>
             ))}
           </div>
-        ) : (
+        ) : products.length > 0 ? (
           <div className="deals-grid">
-            {displayProducts.map((product) => (
+            {products.map((product) => (
               <article key={product.id || product._id} className="deal-card">
                 <div className="deal-image-wrap">
                   {product.image || product.imageUrl ? (
@@ -95,12 +89,17 @@ const WholesaleDeals = () => {
               </article>
             ))}
           </div>
-        )}
-
-        {!loading && products.length === 0 && (
-          <p className="section-footnote">
-            Sample wholesale pricing shown. Create your account to place orders and unlock vendor-specific rates.
-          </p>
+        ) : (
+          <div className="empty-state">
+            <Package size={40} className="empty-state-icon" aria-hidden="true" />
+            <p className="empty-state-title">No products listed yet</p>
+            <p className="empty-state-text">
+              Wholesale deals will appear here once products are added through the admin panel.
+            </p>
+            <Link to="/register" className="empty-state-cta">
+              Register to get started <ArrowRight size={14} />
+            </Link>
+          </div>
         )}
       </div>
 
@@ -134,13 +133,43 @@ const WholesaleDeals = () => {
           margin: 0;
         }
 
-        .section-footnote {
-          margin: 2rem auto 0;
-          max-width: 640px;
+        .empty-state {
+          max-width: 480px;
+          margin: 0 auto;
           text-align: center;
+          padding: 3rem 1.5rem;
+          border: 1px dashed #cbd5e1;
+          border-radius: 16px;
+          background: #ffffff;
+        }
+
+        .empty-state-icon {
+          color: #94a3b8;
+          margin-bottom: 1rem;
+        }
+
+        .empty-state-title {
+          font-size: 1.125rem;
+          font-weight: 700;
+          color: #0f172a;
+          margin: 0 0 0.5rem 0;
+        }
+
+        .empty-state-text {
           font-size: 0.9375rem;
           color: #64748b;
           line-height: 1.6;
+          margin: 0 0 1.25rem 0;
+        }
+
+        .empty-state-cta {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: #2563eb;
+          text-decoration: none;
         }
 
         .deals-grid {

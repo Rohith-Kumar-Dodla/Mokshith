@@ -5,6 +5,7 @@ import { requireRegistrationsEnabled } from '../../middlewares/featureGuard.midd
 import { authLimiter } from '../../config/rateLimiter.js';
 import { authenticate } from '../../middlewares/auth.middleware.js';
 import { csrfProtection } from '../../middlewares/csrf.middleware.js';
+import { requireDatabase } from '../../middlewares/database.middleware.js';
 
 import {
   registerSchema,
@@ -17,6 +18,8 @@ import {
 } from './auth.validation.js';
 
 const router = express.Router();
+
+router.use(requireDatabase);
 
 // Public routes (with rate limiting)
 router.post('/register', authLimiter, requireRegistrationsEnabled(), validate(registerSchema), controller.register);

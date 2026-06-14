@@ -1,18 +1,16 @@
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-dotenv.config({ path: path.join(__dirname, '../../.env') });
-
-// Models
+import { loadEnv } from '../config/loadEnv.js';
+import {
+  assertDestructiveOperationAllowed,
+  assertExpectedApplicationDatabase,
+  logDestructiveWarning,
+} from '../utils/destructiveGuard.js';
 import Product from '../modules/product/product.model.js';
 import Category from '../modules/category/category.model.js';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/mokshith-b2b';
+loadEnv();
+
+const MONGODB_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
 
 const categories = [
   { name: "Rice & Grains", slug: "rice-grains" },
@@ -115,8 +113,16 @@ const products = [
 
 const seedDB = async () => {
   try {
+    logDestructiveWarning('Wholesale seed (deleteMany on products and categories, then re-inserts demo catalog)');
+    assertDestructiveOperationAllowed('seedWholesale');
+
+    if (!MONGODB_URI) {
+      throw new Error('MONGO_URI is required');
+    }
+
     console.log('Connecting to MongoDB...');
     await mongoose.connect(MONGODB_URI);
+    assertExpectedApplicationDatabase(mongoose.connection.name);
     console.log('Connected!');
 
     console.log('Clearing existing products and categories...');
@@ -144,12 +150,19 @@ const seedDB = async () => {
     const createdProducts = await Product.insertMany(productsToInsert);
     console.log(`Seeded ${createdProducts.length} wholesale products.`);
 
-    console.log('Seeding complete! 🌱');
-    process.exit(0);
+    console.log('Seeding complete!');
+    await mongoose.disconnect();
   } catch (err) {
-    console.error('Error seeding database:', err);
+    console.error('Error seeding database:', err.message);
+    await mongoose.disconnect().catch(() => {});
     process.exit(1);
   }
 };
 
-seedDB();
+const isDirectExecution = process.argv[1]?.includes('seedWholesale');
+
+if (isDirectExecution) {
+  seedDB();
+}
+
+export default seedDB;

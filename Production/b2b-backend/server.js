@@ -1,9 +1,11 @@
-import dotenv from 'dotenv';
-dotenv.config();
+import { loadEnv } from './src/config/loadEnv.js';
+
+loadEnv();
 
 import app from './src/app.js';
 import connectDB from './src/config/db.js';
 import { logger } from './src/config/logger.js';
+import { validateEnv } from './src/config/env.js';
 import { initializeSentry } from './src/config/sentry.js';
 import { redisClient } from './src/config/redis.js';
 import { configureSocketAdapter, cleanupSocketAdapter } from './src/config/socketAdapter.js';
@@ -12,67 +14,10 @@ import { Server } from 'socket.io';
 import http from 'http';
 import mongoose from 'mongoose';
 
-// 🔥 Initialize Sentry FIRST (before any other imports)
+validateEnv({ logger });
+
 initializeSentry(app);
-
-// 🔥 Setup global query timeout
 setupQueryTimeout();
-
-// VALIDATE REQUIRED ENVIRONMENT VARIABLES
-const requiredEnvVars = [
-  'MONGO_URI',
-  'JWT_SECRET',
-  'JWT_REFRESH_SECRET',
-];
-
-const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
-
-if (missingVars.length > 0) {
-  logger.error(`Missing required environment variables: ${missingVars.join(', ')}`);
-  logger.error('Please check your .env file and ensure all required variables are set.');
-  process.exit(1);
-}
-
-const optionalRazorpayVars = ['RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_WEBHOOK_SECRET'];
-const missingRazorpay = optionalRazorpayVars.filter(varName => !process.env[varName]);
-
-  if (missingRazorpay.length > 0) {
-  logger.warn(
-    `Razorpay not fully configured (missing: ${missingRazorpay.join(', ')}). Online/UPI payments will be unavailable.`
-  );
-}
-
-// 🔒 Conditional validation for optional features
-if (process.env.USE_S3_STORAGE === 'true') {
-  const s3Vars = ['S3_REGION', 'S3_BUCKET_NAME', 'S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY'];
-  const missingS3 = s3Vars.filter(v => !process.env[v]);
-  if (missingS3.length > 0) {
-    logger.error(`❌ S3 enabled but missing: ${missingS3.join(', ')}`);
-    process.exit(1);
-  }
-}
-
-  if (process.env.NODE_ENV === 'production' && !process.env.SENTRY_DSN) {
-  logger.warn('SENTRY_DSN not set in production - error tracking disabled');
-}
-
-  if (process.env.USE_SOCKET_REDIS_ADAPTER === 'true' && !process.env.REDIS_HOST) {
-  logger.error('Socket.IO Redis adapter enabled but REDIS_HOST not set');
-  process.exit(1);
-}
-
-// 🔒 CRITICAL: Enforce JWT_SECRET strength (minimum 64 characters for production)
-  if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 64) {
-  logger.error('SECURITY ERROR: JWT_SECRET must be at least 64 characters');
-  logger.error('Generate a strong secret: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
-  if (process.env.NODE_ENV === 'production') {
-    logger.error('Exiting due to weak JWT_SECRET in production');
-    process.exit(1);
-  } else {
-    logger.warn('Continuing in development, but this would block production');
-  }
-}
-
 const PORT = process.env.PORT || 5000;
 
 let server;
@@ -82,16 +27,6 @@ const startServer = async () => {
   try {
     // 🔥 Connect DB
     await connectDB();
-
-    // 🔥 Backfill inventory for products created before auto-provisioning
-    try {
-      const { backfillMissingProductInventory } = await import(
-        './src/modules/inventory/inventory.service.js'
-      );
-      await backfillMissingProductInventory();
-    } catch (backfillError) {
-      logger.warn('Inventory backfill skipped or failed', { error: backfillError.message });
-    }
 
     // 🔥 Connect Redis (must be before workers/socket adapters)
     logger.info('Connecting to Redis...');
