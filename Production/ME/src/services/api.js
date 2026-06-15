@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { clearAuthStorage, getAccessToken, getCsrfToken, getRefreshToken, persistSession } from '../utils/authStorage';
+import { fetchCsrfToken, isCsrfError } from '../utils/csrf';
 
 const CSRF_HEADER = 'x-csrf-token';
 const STATE_CHANGING_METHODS = ['post', 'put', 'patch', 'delete'];
@@ -45,7 +46,7 @@ const redirectToLogin = () => {
 };
 
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
     if (import.meta.env.PROD && !configuredApiBaseUrl) {
       return Promise.reject(new Error('VITE_API_BASE_URL is not configured for this deployment'));
     }
@@ -55,14 +56,16 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // Let axios set multipart boundary automatically
     if (config.data instanceof FormData) {
       delete config.headers['Content-Type'];
     }
 
     const method = config.method?.toLowerCase();
-    if (method && STATE_CHANGING_METHODS.includes(method)) {
-      const csrfToken = getCsrfToken();
+    const isStateChanging = method && STATE_CHANGING_METHODS.includes(method);
+    const isCsrfEndpoint = config.url?.includes('/auth/csrf-token');
+
+    if (isStateChanging && !isCsrfEndpoint) {
+      const csrfToken = await fetchCsrfToken(api, !getCsrfToken());
       if (csrfToken) {
         config.headers[CSRF_HEADER] = csrfToken;
       }
@@ -84,18 +87,24 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const requestUrl = originalRequest?.url || '';
 
-    // If backend signalled session replaced, force logout across tabs
     const backendCode = error.response?.data?.error?.code;
     if (backendCode === 'SESSION_REPLACED') {
-      // Clear local session storage and notify other tabs
       localStorage.setItem('session_replaced', JSON.stringify({
         message: error.response?.data?.message || 'Your account was logged in from another device. Please sign in again.',
         ts: Date.now()
       }));
-      // Also clear auth storage and redirect
       clearAuthStorage();
       redirectToLogin();
       return Promise.reject(error);
+    }
+
+    if (isCsrfError(error) && originalRequest && !originalRequest._csrfRetry) {
+      originalRequest._csrfRetry = true;
+      const csrfToken = await fetchCsrfToken(api, true);
+      if (csrfToken) {
+        originalRequest.headers[CSRF_HEADER] = csrfToken;
+        return api(originalRequest);
+      }
     }
 
     if (
@@ -137,6 +146,8 @@ api.interceptors.response.use(
         accessToken,
         refreshToken: newRefreshToken,
       });
+
+      await fetchCsrfToken(api, true);
 
       processQueue(null, accessToken);
       originalRequest.headers.Authorization = `Bearer ${accessToken}`;

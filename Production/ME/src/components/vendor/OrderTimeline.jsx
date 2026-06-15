@@ -70,7 +70,7 @@ const OrderTimeline = ({ timeline }) => {
                     {step.status}
                   </h4>
                   {step.date && (
-                    <span className={`text-sm ${step.completed ? 'text-gray-600' : 'text-gray-400'}`}>
+                    <span className={`text-sm ${step.completed ? 'text-gray-600' : 'text-gray-600'}`}>
                       {step.date}
                     </span>
                   )}

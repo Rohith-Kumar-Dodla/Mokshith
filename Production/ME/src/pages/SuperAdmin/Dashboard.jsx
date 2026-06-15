@@ -13,6 +13,15 @@ const formatRevenue = (amount) => {
   return `₹${amount}`;
 };
 
+const QUICK_ACTION_COLORS = {
+  blue: 'bg-blue-100 group-hover:bg-blue-200 text-blue-600',
+  green: 'bg-green-100 group-hover:bg-green-200 text-green-600',
+  purple: 'bg-purple-100 group-hover:bg-purple-200 text-purple-600',
+  orange: 'bg-orange-100 group-hover:bg-orange-200 text-orange-600',
+  teal: 'bg-teal-100 group-hover:bg-teal-200 text-teal-600',
+  red: 'bg-red-100 group-hover:bg-red-200 text-red-600',
+};
+
 const SuperAdminDashboard = () => {
   const [stats, setStats] = useState(null);
   const [metrics, setMetrics] = useState(null);
@@ -76,7 +85,7 @@ const SuperAdminDashboard = () => {
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="space-y-6 sm:space-y-8 min-w-0 overflow-x-hidden">
       <PageHeader
         title="Super Admin Dashboard"
         subtitle="Monitor and manage the entire B2B ecosystem."
@@ -133,48 +142,46 @@ const SuperAdminDashboard = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-        <div className="lg:col-span-1 bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Recent Activity</h2>
-          {activities.length > 0 ? (
-            <ActivityFeed activities={activities} />
-          ) : (
-            <p className="text-sm text-gray-500">No recent activity recorded.</p>
-          )}
-        </div>
-
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Quick Actions</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-            {quickActions.map((action) => (
-              <Link
-                key={action.title}
-                to={action.link}
-                className="flex flex-col items-center gap-2 sm:gap-3 p-4 sm:p-6 bg-gray-50 rounded-xl hover:bg-gray-100 hover:shadow-md transition-all group min-h-[88px]"
-              >
-                <div className={`p-3 sm:p-4 rounded-xl bg-${action.color}-100 group-hover:bg-${action.color}-200 transition-colors`}>
-                  <action.icon className={`text-${action.color}-600`} size={24} />
-                </div>
-                <span className="text-xs sm:text-sm font-medium text-gray-700 text-center">{action.title}</span>
-              </Link>
-            ))}
-          </div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 min-w-0">
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Quick Actions</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+          {quickActions.map((action) => (
+            <Link
+              key={action.title}
+              to={action.link}
+              className="flex flex-col items-center gap-2 sm:gap-3 p-4 sm:p-6 bg-gray-50 rounded-xl hover:bg-gray-100 hover:shadow-md transition-all group min-h-[88px]"
+            >
+              <div className={`p-3 sm:p-4 rounded-xl transition-colors ${QUICK_ACTION_COLORS[action.color]}`}>
+                <action.icon size={24} />
+              </div>
+              <span className="text-xs sm:text-sm font-medium text-gray-700 text-center">{action.title}</span>
+            </Link>
+          ))}
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 min-w-0">
         <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Platform Health</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6">
           {platformHealth.map((item) => (
-            <div key={item.title} className="text-center">
+            <div key={item.title} className="text-center min-w-0">
               <div className="p-3 sm:p-4 bg-gray-50 rounded-xl inline-block mb-2 sm:mb-3">
                 <item.icon className="text-gray-600" size={24} />
               </div>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">{item.value}</p>
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 truncate">{item.value}</p>
               <p className="text-xs sm:text-sm text-gray-500">{item.title}</p>
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 min-w-0">
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Recent Activity</h2>
+        {activities.length > 0 ? (
+          <ActivityFeed activities={activities} />
+        ) : (
+          <p className="text-sm text-gray-500">No recent activity recorded.</p>
+        )}
       </div>
     </div>
   );

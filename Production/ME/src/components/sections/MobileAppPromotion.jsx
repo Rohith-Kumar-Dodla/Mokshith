@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 
 const MobileAppPromotion = () => {
   return (
@@ -63,18 +63,24 @@ const MobileAppPromotion = () => {
             </div>
 
             <div className="app-buttons">
-              <a href="#" className="app-button google-play">
+              <a href="#" className="app-button google-play" aria-label="Get it on Google Play">
                 <img 
-                  src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" 
+                  src="/assets/google-play-badge.svg" 
                   alt="Get it on Google Play"
                   className="app-badge-img"
+                  width="135"
+                  height="40"
+                  loading="lazy"
                 />
               </a>
-              <a href="#" className="app-button app-store">
+              <a href="#" className="app-button app-store" aria-label="Download on the App Store">
                 <img 
-                  src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" 
+                  src="/assets/app-store-badge.svg" 
                   alt="Download on the App Store"
                   className="app-badge-img"
+                  width="135"
+                  height="40"
+                  loading="lazy"
                 />
               </a>
             </div>
@@ -319,4 +325,4 @@ const MobileAppPromotion = () => {
   );
 };
 
-export default MobileAppPromotion;
+export default memo(MobileAppPromotion);
