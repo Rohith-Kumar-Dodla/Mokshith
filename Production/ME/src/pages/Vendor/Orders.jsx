@@ -1,22 +1,30 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/vendor/PageHeader';
 import OrderCard from '../../components/vendor/OrderCard';
-import AnalyticsCard from '../../components/vendor/AnalyticsCard';
+import SearchBar from '../../components/vendor/SearchBar';
 import useOrders from '../../hooks/useOrders';
+import orderService from '../../services/orderService';
+import StatsCard from '../../components/vendor/StatsCard';
+import { Package, Clock, Check, Loader2, Truck, CheckCircle, X, DollarSign } from 'lucide-react';
+
+const STATUS_OPTIONS = [
+  { value: 'all', label: 'All' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'confirmed', label: 'Confirmed' },
+  { value: 'processing', label: 'Processing' },
+  { value: 'dispatched', label: 'Dispatched' },
+  { value: 'delivered', label: 'Delivered' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
 
 const Orders = () => {
   const navigate = useNavigate();
   const [filterStatus, setFilterStatus] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const { loading, error, orders, stats } = useOrders();
 
-  const filteredOrders = useMemo(() => (
-    filterStatus === 'all'
-      ? orders
-      : orders.filter((order) => order.status === filterStatus)
-  ), [orders, filterStatus]);
-
-  const statusCounts = {
+  const statusCounts = useMemo(() => ({
     all: stats.totalOrders,
     pending: stats.pendingOrders,
     confirmed: stats.confirmedOrders,
@@ -24,7 +32,41 @@ const Orders = () => {
     dispatched: stats.dispatchedOrders,
     delivered: stats.deliveredOrders,
     cancelled: stats.cancelledOrders,
-  };
+  }), [stats]);
+
+  const filteredOrders = useMemo(() => {
+    let result = filterStatus === 'all'
+      ? orders
+      : orders.filter((order) => order.status === filterStatus);
+
+    const query = searchTerm.trim().toLowerCase();
+    if (query) {
+      result = result.filter((order) =>
+        order.id.toLowerCase().includes(query) ||
+        order.orderNumber?.toLowerCase().includes(query) ||
+        order.items.some((item) => item.productName?.toLowerCase().includes(query))
+      );
+    }
+
+    return result;
+  }, [orders, filterStatus, searchTerm]);
+
+  const handleDownloadInvoice = useCallback(async (order) => {
+    try {
+      const response = await orderService.downloadInvoice(order.id);
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `invoice-${order.id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      navigate(`/vendor/orders/${order.id}`);
+    }
+  }, [navigate]);
 
   if (loading) {
     return (
@@ -35,7 +77,7 @@ const Orders = () => {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6 min-w-0 overflow-x-hidden">
       <PageHeader
         title="My Orders"
         subtitle="Track and manage all your orders."
@@ -47,23 +89,47 @@ const Orders = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-        <AnalyticsCard title="Total Orders" value={stats.totalOrders} icon={<div className="w-5 h-5 sm:w-6 sm:h-6" />} color="blue" />
-        <AnalyticsCard title="Pending" value={stats.pendingOrders} icon={<div className="w-5 h-5 sm:w-6 sm:h-6" />} color="yellow" />
-        <AnalyticsCard title="Confirmed" value={stats.confirmedOrders} icon={<div className="w-5 h-5 sm:w-6 sm:h-6" />} color="indigo" />
-        <AnalyticsCard title="Processing" value={stats.processingOrders} icon={<div className="w-5 h-5 sm:w-6 sm:h-6" />} color="yellow" />
-        <AnalyticsCard title="Dispatched" value={stats.dispatchedOrders} icon={<div className="w-5 h-5 sm:w-6 sm:h-6" />} color="blue" />
-        <AnalyticsCard title="Delivered" value={stats.deliveredOrders} icon={<div className="w-5 h-5 sm:w-6 sm:h-6" />} color="green" />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 sm:gap-4">
+        <StatsCard title="Total Orders" value={stats.totalOrders} icon={<Package size={18} />} />
+        <StatsCard title="Pending" value={stats.pendingOrders} icon={<Clock size={18} />} />
+        <StatsCard title="Confirmed" value={stats.confirmedOrders} icon={<Check size={18} />} />
+        <StatsCard title="Processing" value={stats.processingOrders} icon={<Loader2 size={18} />} />
+        <StatsCard title="Dispatched" value={stats.dispatchedOrders} icon={<Truck size={18} />} />
+        <StatsCard title="Delivered" value={stats.deliveredOrders} icon={<CheckCircle size={18} />} />
+        <StatsCard title="Revenue" value={`₹${stats.revenue ?? 0}`} icon={<DollarSign size={18} />} />
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4">
-        <div className="flex flex-wrap gap-2">
+      <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4 space-y-3 min-w-0">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <SearchBar
+            onSearch={setSearchTerm}
+            placeholder="Search orders..."
+            className="flex-1 min-w-0"
+          />
+          <div className="flex-shrink-0 w-full sm:w-auto sm:min-w-[160px]">
+            <label htmlFor="order-status-filter" className="sr-only">Filter by status</label>
+            <select
+              id="order-status-filter"
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="w-full h-10 sm:h-12 px-3 sm:px-4 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              {STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label} ({statusCounts[option.value] ?? 0})
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="hidden md:flex flex-wrap gap-2">
           {Object.keys(statusCounts).map((status) => (
             <button
               key={status}
               type="button"
               onClick={() => setFilterStatus(status)}
-              className={`px-3 sm:px-4 py-2 h-10 sm:h-12 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-2 h-10 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                 filterStatus === status
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -81,6 +147,9 @@ const Orders = () => {
             key={order.id}
             order={order}
             onViewDetails={(selectedOrder) => navigate(`/vendor/orders/${selectedOrder.id}`)}
+            onDownloadInvoice={handleDownloadInvoice}
+            onTrack={(selectedOrder) => navigate(`/vendor/orders/${selectedOrder.id}`)}
+            onViewInvoice={(selectedOrder) => navigate(`/vendor/invoices?orderId=${selectedOrder.id}`)}
           />
         ))}
       </div>

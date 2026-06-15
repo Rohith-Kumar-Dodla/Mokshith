@@ -147,7 +147,7 @@ const VendorLayout = () => {
           </div>
         </header>
 
-        <main className="p-4 sm:p-6">
+        <main className="p-4 sm:p-6 min-w-0 overflow-x-hidden">
           <Outlet />
         </main>
       </div>

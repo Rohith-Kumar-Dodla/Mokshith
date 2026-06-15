@@ -165,8 +165,10 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
           <SearchBar placeholder="Search by order ID or vendor..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} onClear={() => setSearchInput('')} />
           <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
             <FilterDropdown label="Status" options={ADMIN_STATUS_OPTIONS} selected={selectedStatus} onSelect={setSelectedStatus} />
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-3 py-2 border rounded-lg text-sm min-h-[44px]" aria-label="Start date" />
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-3 py-2 border rounded-lg text-sm min-h-[44px]" aria-label="End date" />
+            <div className="hidden md:flex items-center gap-2 sm:gap-3">
+              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-3 py-2 border rounded-lg text-sm min-h-[44px]" aria-label="Start date" />
+              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-3 py-2 border rounded-lg text-sm min-h-[44px]" aria-label="End date" />
+            </div>
             <button type="button" onClick={() => loadOrders({ forceRefresh: true })} className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] border rounded-lg text-sm hover:bg-gray-50">
               <FiRefreshCw size={16} /> Refresh
             </button>

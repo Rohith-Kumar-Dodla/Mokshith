@@ -54,19 +54,20 @@ export const AuthProvider = ({ children }) => {
     return response.data;
   }, []);
 
-  const ensureCsrfToken = useCallback(async () => {
-    if (getCsrfToken()) {
+  const ensureCsrfToken = useCallback(async (force = false) => {
+    if (!force && getCsrfToken()) {
       return;
     }
 
     try {
       const response = await authService.getCsrfToken();
-      const token = response?.data?.csrfToken ?? response?.csrfToken;
+      const payload = response?.data ?? response;
+      const token = payload?.csrfToken ?? payload?.data?.csrfToken;
       if (token) {
         persistSession({ csrfToken: token });
       }
     } catch {
-      // CSRF will be required again on next login.
+      // CSRF will be fetched again before the next state-changing request.
     }
   }, []);
 
@@ -91,7 +92,7 @@ export const AuthProvider = ({ children }) => {
 
         const currentUser = refreshedUser || (await fetchCurrentUser());
         applyUserSession(currentUser, { accessToken, refreshToken: newRefreshToken });
-        await ensureCsrfToken();
+        await ensureCsrfToken(true);
       } catch {
         clearSession();
       }

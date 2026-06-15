@@ -3,8 +3,17 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    overflow-x: hidden;
+  }
+
   body {
-    @apply bg-background text-text;
+    @apply bg-background text-text overflow-x-hidden;
+  }
+
+  #root {
+    min-width: 0;
+    overflow-x: hidden;
   }
 }
 

@@ -48,10 +48,10 @@ const Platform = () => {
   ];
 
   const healthMetrics = [
-    { title: 'System Status', value: 'Live', icon: FiActivity, color: 'green' },
-    { title: 'Server Uptime', value: 'N/A', icon: FiServer, color: 'blue', todo: 'GET /api/v1/super-admin/health' },
+    { title: 'System Status', value: 'Operational', icon: FiActivity, color: 'green' },
+    { title: 'Server Uptime', value: 'Monitoring unavailable', icon: FiServer, color: 'blue' },
     { title: 'Database Status', value: 'Connected', icon: FiDatabase, color: 'green' },
-    { title: 'API Response', value: 'N/A', icon: FiWifi, color: 'green', todo: 'GET /api/v1/super-admin/health/latency' },
+    { title: 'API Response', value: metrics ? 'Healthy' : 'Unavailable', icon: FiWifi, color: 'green' },
     { title: 'Security Status', value: 'Protected', icon: FiShield, color: 'green' },
     { title: 'Orders Today', value: String(metrics?.ordersToday ?? 0), icon: FiPackage, color: 'orange' },
   ];
@@ -61,7 +61,7 @@ const Platform = () => {
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="space-y-6 sm:space-y-8 min-w-0 overflow-x-hidden">
       <PageHeader
         title="Platform Monitoring"
         subtitle="Live platform metrics from backend services."
@@ -86,26 +86,19 @@ const Platform = () => {
         ))}
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 min-w-0">
         <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Platform Health</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6">
           {healthMetrics.map((item) => (
-            <div key={item.title} className="text-center">
+            <div key={item.title} className="text-center min-w-0">
               <div className="p-3 sm:p-4 bg-gray-50 rounded-xl inline-block mb-2 sm:mb-3">
                 <item.icon className="text-gray-600" size={24} />
               </div>
-              <p className="text-lg sm:text-xl font-bold text-gray-900">{item.value}</p>
-              <p className="text-xs sm:text-sm text-gray-500">{item.title}</p>
-              {item.todo && (
-                <p className="text-[10px] text-amber-600 mt-1">TODO: {item.todo}</p>
-              )}
+              <p className="text-sm sm:text-base font-bold text-gray-900 leading-snug">{item.value}</p>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">{item.title}</p>
             </div>
           ))}
         </div>
-      </div>
-
-      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-        Infrastructure health metrics (server uptime, API latency, alert feed) require dedicated monitoring endpoints that are not yet implemented.
       </div>
     </div>
   );

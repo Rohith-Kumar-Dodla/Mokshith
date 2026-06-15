@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense, memo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowRight, CheckCircle2, TrendingUp, ShieldCheck, Zap,
@@ -6,11 +6,11 @@ import {
   Menu, X, Globe, Mail, Phone, MapPin
 } from 'lucide-react';
 import Navbar from '../../components/Navbar';
-import BusinessFeatures from '../../components/sections/BusinessFeatures';
-import MobileAppPromotion from '../../components/sections/MobileAppPromotion';
-import ProductCategories from '../../components/sections/ProductCategories';
-import SocialProof from '../../components/sections/SocialProof';
-import WholesaleDeals from '../../components/sections/WholesaleDeals';
+const BusinessFeatures = lazy(() => import('../../components/sections/BusinessFeatures'));
+const MobileAppPromotion = lazy(() => import('../../components/sections/MobileAppPromotion'));
+const ProductCategories = lazy(() => import('../../components/sections/ProductCategories'));
+const SocialProof = lazy(() => import('../../components/sections/SocialProof'));
+const WholesaleDeals = lazy(() => import('../../components/sections/WholesaleDeals'));
 import { useAuth } from '../../context/AuthContext';
 import { getDashboardRoute } from '../../utils/roleMap';
 
@@ -24,7 +24,7 @@ const routes = {
 };
 
 // ==================== HERO SECTION ====================
-const HeroSection = () => {
+const HeroSection = memo(() => {
   const navigate = useNavigate();
   const { user, role, isAuthenticated } = useAuth();
 
@@ -158,10 +158,10 @@ const HeroSection = () => {
       </div>
     </section>
   );
-};
+});
 
 // ==================== PLATFORM SHOWCASE ====================
-const PlatformShowcase = () => {
+const PlatformShowcase = memo(() => {
   return (
     <section className="platform-showcase-section">
       <div className="showcase-container">
@@ -275,10 +275,10 @@ const PlatformShowcase = () => {
       </div>
     </section>
   );
-};
+});
 
 // ==================== CTA SECTION ====================
-const CTASection = () => {
+const CTASection = memo(() => {
   const navigate = useNavigate();
   const { user, role, isAuthenticated } = useAuth();
 
@@ -357,10 +357,10 @@ const CTASection = () => {
       </div>
     </section>
   );
-};
+});
 
 // ==================== FOOTER ====================
-const Footer = () => {
+const Footer = memo(() => {
   const currentYear = new Date().getFullYear();
 
   return (
@@ -441,23 +441,34 @@ const Footer = () => {
       </div>
     </footer>
   );
-};
+});
 
 // ==================== MAIN HOMEPAGE COMPONENT ====================
 const Home = () => {
   return (
     <>
       <Navbar />
-      <HeroSection />
-      <SocialProof />
-      <ProductCategories />
-      <WholesaleDeals />
-      <BusinessFeatures />
-      <PlatformShowcase />
-      <MobileAppPromotion />
-      <CTASection />
-      <Footer />
-      
+      <main id="main" role="main">
+        <HeroSection />
+        <Suspense fallback={null}>
+          <SocialProof />
+        </Suspense>
+        <Suspense fallback={null}>
+          <ProductCategories />
+        </Suspense>
+        <Suspense fallback={null}>
+          <WholesaleDeals />
+        </Suspense>
+        <Suspense fallback={null}>
+          <BusinessFeatures />
+        </Suspense>
+        <PlatformShowcase />
+        <Suspense fallback={null}>
+          <MobileAppPromotion />
+        </Suspense>
+        <CTASection />
+        <Footer />
+      </main>
       <style>{`
         /* ==================== GLOBAL RESET ==================== */
         * {
@@ -478,7 +489,7 @@ const Home = () => {
         .hero-section {
           min-height: 100vh;
           background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%);
-          padding: 6rem 2rem 4rem;
+          padding: calc(5rem + env(safe-area-inset-top, 0px)) 2rem 4rem;
           position: relative;
           overflow: hidden;
         }
@@ -828,7 +839,7 @@ const Home = () => {
 
         @media (max-width: 768px) {
           .hero-section {
-            padding: 4rem 1rem 2rem;
+            padding: calc(4.5rem + env(safe-area-inset-top, 0px)) 1rem 2rem;
           }
 
           .hero-title {

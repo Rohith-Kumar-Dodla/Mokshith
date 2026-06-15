@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiShoppingBag, FiBox, FiTruck, FiDollarSign, FiClock, FiCheckCircle, FiHeart, FiTag, FiDownload, FiRefreshCw, FiTrendingUp } from 'react-icons/fi';
 import PageHeader from '../../components/vendor/PageHeader';
@@ -10,6 +10,13 @@ import useOrders from '../../hooks/useOrders';
 import useWishlist from '../../hooks/useWishlist';
 import useVendorAnalytics from '../../hooks/useVendorAnalytics';
 
+const QUICK_ACTION_COLORS = {
+  blue: 'bg-blue-500',
+  green: 'bg-green-500',
+  purple: 'bg-purple-500',
+  orange: 'bg-orange-500',
+};
+
 const VendorDashboard = () => {
   const navigate = useNavigate();
   const { products, loading: productsLoading } = useProducts();
@@ -20,8 +27,20 @@ const VendorDashboard = () => {
   const loading = ordersLoading || analyticsLoading;
   const error = ordersError || analyticsError;
   const summary = analytics.summary;
-  const recentOrders = orders.slice(0, 4);
-  const recommendedProducts = products.slice(0, 4);
+  const recentOrders = useMemo(() => orders.slice(0, 4), [orders]);
+  const recommendedProducts = useMemo(() => products.slice(0, 4), [products]);
+  const deliveredCount = useMemo(
+    () => orders.filter((order) => order.status === 'delivered').length,
+    [orders]
+  );
+  const pendingCount = useMemo(
+    () => orders.filter((order) => order.status === 'pending').length,
+    [orders]
+  );
+  const processingCount = useMemo(
+    () => orders.filter((order) => order.status === 'processing').length,
+    [orders]
+  );
 
   const quickActions = [
     { icon: FiBox, label: 'Browse Products', path: '/vendor/products', color: 'blue' },
@@ -33,7 +52,7 @@ const VendorDashboard = () => {
   ];
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6 min-w-0 overflow-x-hidden">
       <PageHeader
         title="Vendor Dashboard"
         subtitle="Manage purchases, track orders, and grow your business efficiently."
@@ -51,7 +70,7 @@ const VendorDashboard = () => {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <AnalyticsCard
               title="Total Orders"
               value={summary.totalOrders}
@@ -60,7 +79,7 @@ const VendorDashboard = () => {
             />
             <AnalyticsCard
               title="Delivered Orders"
-              value={orders.filter((order) => order.status === 'delivered').length}
+              value={deliveredCount}
               icon={<FiCheckCircle className="w-5 h-5 sm:w-6 sm:h-6" />}
               color="green"
             />
@@ -90,40 +109,40 @@ const VendorDashboard = () => {
             />
             <AnalyticsCard
               title="Pending Orders"
-              value={orders.filter((order) => order.status === 'pending').length}
+              value={pendingCount}
               icon={<FiClock className="w-5 h-5 sm:w-6 sm:h-6" />}
               color="yellow"
             />
             <AnalyticsCard
               title="Processing Orders"
-              value={orders.filter((order) => order.status === 'processing').length}
+              value={processingCount}
               icon={<FiClock className="w-5 h-5 sm:w-6 sm:h-6" />}
               color="yellow"
             />
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 min-w-0">
             <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Quick Actions</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-              {quickActions.map((action, index) => (
+              {quickActions.map((action) => (
                 <Link
-                  key={index}
+                  key={action.label}
                   to={action.path}
-                  className="flex flex-col items-center p-3 sm:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group"
+                  className="flex flex-col items-center p-3 sm:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group min-w-0"
                 >
-                  <div className={`p-2 sm:p-3 rounded-lg bg-${action.color}-500 text-white mb-2 group-hover:scale-110 transition-transform`}>
+                  <div className={`p-2 sm:p-3 rounded-lg ${QUICK_ACTION_COLORS[action.color]} text-white mb-2 group-hover:scale-110 transition-transform`}>
                     <action.icon className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
-                  <span className="text-xs sm:text-sm font-medium text-gray-700 text-center">{action.label}</span>
+                  <span className="text-xs sm:text-sm font-medium text-gray-700 text-center line-clamp-2">{action.label}</span>
                 </Link>
               ))}
             </div>
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 min-w-0">
+            <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
               <h2 className="text-base sm:text-lg font-semibold text-gray-900">Recent Orders</h2>
-              <Link to="/vendor/orders" className="text-xs sm:text-sm text-blue-600 hover:text-blue-700 font-medium">
+              <Link to="/vendor/orders" className="text-xs sm:text-sm text-blue-600 hover:text-blue-700 font-medium flex-shrink-0">
                 View All
               </Link>
             </div>
@@ -134,6 +153,7 @@ const VendorDashboard = () => {
                     key={order.id}
                     order={order}
                     onViewDetails={(selectedOrder) => navigate(`/vendor/orders/${selectedOrder.id}`)}
+                    onTrack={(selectedOrder) => navigate(`/vendor/orders/${selectedOrder.id}`)}
                   />
                 ))
               ) : (
@@ -142,10 +162,10 @@ const VendorDashboard = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 min-w-0">
+            <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
               <h2 className="text-base sm:text-lg font-semibold text-gray-900">Recommended Products</h2>
-              <Link to="/vendor/products" className="text-xs sm:text-sm text-blue-600 hover:text-blue-700 font-medium">
+              <Link to="/vendor/products" className="text-xs sm:text-sm text-blue-600 hover:text-blue-700 font-medium flex-shrink-0">
                 View All
               </Link>
             </div>
@@ -163,14 +183,14 @@ const VendorDashboard = () => {
           </div>
 
           {analytics.topCategories.length > 0 && (
-            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 min-w-0">
               <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Top Categories</h2>
               <div className="space-y-3">
                 {analytics.topCategories.slice(0, 3).map((category) => (
-                  <div key={category.category}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm text-gray-700">{category.category}</span>
-                      <span className="text-sm font-medium text-gray-900">₹{category.amount.toLocaleString('en-IN')}</span>
+                  <div key={category.category} className="min-w-0">
+                    <div className="flex items-center justify-between mb-1 gap-2">
+                      <span className="text-sm text-gray-700 truncate">{category.category}</span>
+                      <span className="text-sm font-medium text-gray-900 flex-shrink-0">₹{category.amount.toLocaleString('en-IN')}</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${category.percentage}%` }} />
