@@ -51,6 +51,8 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) =
           key={imageKey}
           src={imageSrc}
           alt={product.name}
+          loading="lazy"
+          decoding="async"
           className="w-full h-full object-cover"
         />
         <div className="absolute top-2 sm:top-3 left-2 sm:left-3">

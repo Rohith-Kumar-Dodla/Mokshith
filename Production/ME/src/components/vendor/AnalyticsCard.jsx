@@ -7,13 +7,14 @@ const AnalyticsCard = ({ title, value, change, icon, color = 'blue', trend }) =>
     yellow: 'bg-yellow-500',
     red: 'bg-red-500',
     purple: 'bg-purple-500',
-    orange: 'bg-orange-500'
+    orange: 'bg-orange-500',
+    indigo: 'bg-indigo-500',
   };
 
   const trendColor = trend && trend > 0 ? 'text-green-600' : trend && trend < 0 ? 'text-red-600' : 'text-gray-600';
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow">
+    <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-shadow min-w-0 overflow-hidden">
       <div className="flex items-start justify-between mb-3 sm:mb-4">
         <div className={`p-2 sm:p-3 rounded-lg ${colorClasses[color]} text-white`}>
           {icon}

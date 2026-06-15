@@ -11,7 +11,6 @@ import {
   FiMenu,
   FiX,
   FiBell,
-  FiMessageSquare,
   FiUserCheck,
 } from 'react-icons/fi';
 import NotificationDrawer from '../components/superadmin/NotificationDrawer';
@@ -103,11 +102,6 @@ const SuperAdminLayout = () => {
                 )}
               </button>
 
-              <button type="button" className="relative p-2 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors min-h-[44px] min-w-[44px]" aria-label="Messages">
-                <FiMessageSquare size={20} className="text-gray-600" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-blue-500 rounded-full"></span>
-              </button>
-
               <div className="flex items-center gap-3 p-2 min-h-[44px]" aria-label="Signed in user">
                 <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
                   {initials}
@@ -121,7 +115,7 @@ const SuperAdminLayout = () => {
           </div>
         </header>
 
-        <main className="p-4 sm:p-6">
+        <main className="p-4 sm:p-6 min-w-0 overflow-x-hidden">
           <Outlet />
         </main>
       </div>
