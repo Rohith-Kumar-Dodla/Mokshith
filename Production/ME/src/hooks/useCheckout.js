@@ -124,10 +124,14 @@ export function useCheckout({ onSuccess } = {}) {
 
       try {
         const shippingAddress = buildShippingAddress(formData);
+        const idempotencyKey = `order-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+        // TEMP LOG: help debug duplicate submissions
+        console.debug('Placing order - generated idempotencyKey', { idempotencyKey, user: formData?.email || 'unknown' });
+
         const payload = {
           paymentMethod: mapPaymentMethodToBackend(paymentMethodId),
           shippingAddress,
-          idempotencyKey: `order-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+          idempotencyKey,
         };
 
         const response = await orderService.createOrder(payload);

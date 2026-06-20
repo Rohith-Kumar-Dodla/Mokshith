@@ -64,9 +64,14 @@ const Checkout = () => {
   };
 
   const handlePlaceOrder = async () => {
+    // Prevent rapid double-invocation before submitting state updates propagate
+    if (handlePlaceOrder._running) return;
+    handlePlaceOrder._running = true;
+
     const validationMessage = validateForm();
     if (validationMessage) {
       setValidationError(validationMessage);
+      handlePlaceOrder._running = false;
       return;
     }
 
@@ -76,6 +81,7 @@ const Checkout = () => {
       const creditError = validateAmount(grandTotal);
       if (creditError) {
         setValidationError(creditError);
+        handlePlaceOrder._running = false;
         return;
       }
     }
@@ -83,10 +89,12 @@ const Checkout = () => {
     if (selectedPayment === 'hybrid') {
       if (!credit || credit.availableCredit <= 0) {
         setValidationError('No credit available for hybrid payment');
+        handlePlaceOrder._running = false;
         return;
       }
       if (credit.availableCredit >= grandTotal) {
         setValidationError('Sufficient credit available. Use Credit Line instead.');
+        handlePlaceOrder._running = false;
         return;
       }
     }
@@ -99,6 +107,8 @@ const Checkout = () => {
       });
     } catch {
       // Error surfaced via checkoutError state.
+    } finally {
+      handlePlaceOrder._running = false;
     }
   };
 
