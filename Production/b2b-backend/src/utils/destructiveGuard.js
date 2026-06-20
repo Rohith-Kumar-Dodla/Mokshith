@@ -54,10 +54,33 @@ export function logDestructiveWarning(operationLabel) {
   console.error('');
 }
 
+/**
+ * Additional production-safety guard.
+ *
+ * Usage:
+ *  - Call before any operation that may remove many documents or drop databases/collections.
+ *  - When running in production this will refuse:
+ *     - seed/reset scripts
+ *     - dropDatabase / dropCollection
+ *     - deleteMany without a non-empty filter
+ */
+export function assertProductionSafe(operationLabel, { filter } = {}) {
+  if (process.env.NODE_ENV !== 'production') {
+    return;
+  }
+
+  // Never allow seed/reset/drop operations in production
+  throw new Error(
+    `Destructive database operation blocked in production: "${operationLabel}". ` +
+      'Manual administrative actions only.'
+  );
+}
+
 export default {
   REQUIRED_DESTRUCTIVE_CONFIRM,
   APPLICATION_DATABASE_NAME,
   assertDestructiveOperationAllowed,
   assertExpectedApplicationDatabase,
   logDestructiveWarning,
+  assertProductionSafe,
 };
