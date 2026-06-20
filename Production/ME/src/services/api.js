@@ -75,6 +75,20 @@ api.interceptors.request.use(
       config.timeout = Math.max(config.timeout || 0, 60000);
     }
 
+    // TEMP LOG: trace outgoing requests for duplicate detection (only in non-production)
+    if (import.meta.env.DEV) {
+      try {
+        console.debug('API request', {
+          url: config.url,
+          method: config.method,
+          headers: config.headers,
+          data: config.data,
+        });
+      } catch (e) {
+        // ignore
+      }
+    }
+
     return config;
   },
   (error) => Promise.reject(error)

@@ -11,7 +11,10 @@ export const idempotencyMiddleware = async (req, res, next) => {
   const key = req.headers['idempotency-key'];
 
   // Skip if no idempotency key provided
-  if (!key) return next();
+  if (!key) {
+    logger.debug('Global idempotency middleware: no idempotency key present on request', { method: req.method, path: req.path });
+    return next();
+  }
 
   // Validate key format (prevent injection)
   if (!/^[a-zA-Z0-9_-]{1,255}$/.test(key)) {
@@ -98,6 +101,9 @@ export const operationIdempotency = (operationType) => {
     const manualKey = req.headers['idempotency-key'] || req.body?.idempotencyKey;
     const key = manualKey || autoKey;
 
+    // --- TEMP LOGGING: record the keys used for idempotency to aid debugging ---
+    logger.debug('operationIdempotency - computed keys', { operationType, manualKey, autoKey, finalKey: key, path: req.path, method: req.method });
+
     // Validate key format
     if (!/^[a-zA-Z0-9_:-]{1,255}$/.test(key)) {
       return res.status(400).json({
@@ -113,8 +119,10 @@ export const operationIdempotency = (operationType) => {
       const lockKey = `${redisKey}:lock`;
       const locked = await redisClient.set(lockKey, '1', 'EX', 10, 'NX');
       
+      logger.debug('operationIdempotency - lock attempt', { lockKey, locked });
+
       if (!locked) {
-        logger.warn(`Concurrent ${operationType} detected, rejecting duplicate`, { key });
+        logger.warn(`Concurrent ${operationType} detected, rejecting duplicate`, { key, lockKey });
         return res.status(409).json({
           success: false,
           message: 'Duplicate operation in progress, please retry after a moment',
