@@ -3,6 +3,21 @@ import * as service from './order.service.js';
 import { successResponse } from '../../utils/responseHandler.js';
 
 export const createOrder = asyncHandler(async (req, res) => {
+  // TEMP LOG: trace incoming order creation attempts (for debug)
+  try {
+    const incomingKeyHeader = req.headers['idempotency-key'] || null;
+    console.debug('Order.create - incoming', {
+      userId: req.user?.id,
+      path: req.path,
+      idempotencyHeader: incomingKeyHeader,
+      bodyIdempotency: req.body?.idempotencyKey || null,
+      paymentMethod: req.body?.paymentMethod,
+      items: Array.isArray(req.body?.items) ? req.body.items.length : undefined,
+    });
+  } catch (e) {
+    // ignore logging errors
+  }
+
   const order = await service.createOrder(
     req.user.id,
     req.body
