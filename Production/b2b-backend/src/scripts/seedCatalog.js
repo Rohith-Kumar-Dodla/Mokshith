@@ -5,6 +5,7 @@ import {
   assertExpectedApplicationDatabase,
   logDestructiveWarning,
 } from '../utils/destructiveGuard.js';
+import { assertProductionSafe } from '../utils/destructiveGuard.js';
 import Category from '../modules/category/category.model.js';
 import Product from '../modules/product/product.model.js';
 
@@ -151,6 +152,8 @@ async function findExistingCloudinaryUrl() {
 async function seedCatalog() {
   logDestructiveWarning('Catalog seed (creates categories and products automatically)');
   assertDestructiveOperationAllowed('seedCatalog');
+  // Extra hard guard: never allow catalog seeding in production.
+  assertProductionSafe('seedCatalog');
 
   if (!MONGO_URI) {
     throw new Error('MONGO_URI is required');

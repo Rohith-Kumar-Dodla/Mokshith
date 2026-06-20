@@ -1,3 +1,45 @@
+import { jest } from '@jest/globals';
+import { mongoSanitizeMiddleware } from '../../src/middlewares/mongoSanitize.middleware.js';
+
+describe('mongoSanitizeMiddleware', () => {
+  let req;
+  const res = {};
+  const next = jest.fn();
+
+  beforeEach(() => {
+    next.mockClear();
+    req = { body: {}, query: {}, params: {}, ip: '127.0.0.1', originalUrl: '/test' };
+  });
+
+  it('removes keys starting with $ from req.body', () => {
+    req.body = { username: 'test', password: { $ne: null } };
+    mongoSanitizeMiddleware(req, res, next);
+    expect(req.body.username).toBe('test');
+    expect(req.body.password.$ne).toBeUndefined();
+    expect(next).toHaveBeenCalled();
+  });
+
+  it('removes keys containing . from req.query', () => {
+    req.query = { 'user.email': 'test@example.com', sort: 'name' };
+    mongoSanitizeMiddleware(req, res, next);
+    expect(req.query.sort).toBe('name');
+    expect(req.query['user.email']).toBeUndefined();
+    expect(next).toHaveBeenCalled();
+  });
+
+  it('handles nested objects and arrays', () => {
+    req.body = {
+      filters: [{ field: 'name', op: { $regex: '.*' } }],
+      nested: { attack: { $where: '1 == 1' }, safe: 'data' }
+    };
+    mongoSanitizeMiddleware(req, res, next);
+    expect(req.body.filters[0].op.$regex).toBeUndefined();
+    expect(req.body.nested.attack.$where).toBeUndefined();
+    expect(req.body.nested.safe).toBe('data');
+    expect(next).toHaveBeenCalled();
+  });
+});
+
 import { mongoSanitizeMiddleware } from '../../src/middlewares/mongoSanitize.middleware.js';
 import { jest } from '@jest/globals';
 

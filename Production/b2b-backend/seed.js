@@ -5,6 +5,7 @@ import {
   assertExpectedApplicationDatabase,
   logDestructiveWarning,
 } from './src/utils/destructiveGuard.js';
+import { assertProductionSafe } from './src/utils/destructiveGuard.js';
 import { hashPassword } from './src/utils/hashPassword.js';
 import User from './src/modules/user/user.model.js';
 import Category from './src/modules/category/category.model.js';
@@ -19,11 +20,14 @@ loadEnv();
 export const seed = async () => {
   logDestructiveWarning('Legacy seed (wipes users, categories, products, companies, vendors)');
   assertDestructiveOperationAllowed('seed.js');
+  // Extra hard guard: never allow seed to run in production under any circumstance.
+  assertProductionSafe('seed.js');
 
   console.log('Seeding database...');
   await mongoose.connect(process.env.MONGO_URI);
   assertExpectedApplicationDatabase(mongoose.connection.name);
 
+  // Explicit destructive operations - guarded above.
   await User.deleteMany({});
   await Category.deleteMany({});
   await Product.deleteMany({});
