@@ -4,6 +4,7 @@ import {
   assertExpectedApplicationDatabase,
   logDestructiveWarning,
 } from '../src/utils/destructiveGuard.js';
+import { assertProductionSafe } from '../src/utils/destructiveGuard.js';
 import { hashPassword } from '../src/utils/hashPassword.js';
 import User from '../src/modules/user/user.model.js';
 import Category from '../src/modules/category/category.model.js';
@@ -59,6 +60,8 @@ async function deleteCollectionDocuments(collectionName, model = null) {
 export async function resetDatabase() {
   logDestructiveWarning('Full database reset (deleteMany on all core collections)');
   assertDestructiveOperationAllowed('resetDatabase');
+  // Extra hard guard: never allow full resets in production.
+  assertProductionSafe('resetDatabase');
 
   if (!process.env.MONGO_URI) {
     throw new Error('MONGO_URI is not configured in .env');

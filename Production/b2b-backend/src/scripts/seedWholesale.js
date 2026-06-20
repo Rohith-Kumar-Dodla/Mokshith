@@ -5,6 +5,7 @@ import {
   assertExpectedApplicationDatabase,
   logDestructiveWarning,
 } from '../utils/destructiveGuard.js';
+import { assertProductionSafe } from '../utils/destructiveGuard.js';
 import Product from '../modules/product/product.model.js';
 import Category from '../modules/category/category.model.js';
 
@@ -115,6 +116,8 @@ const seedDB = async () => {
   try {
     logDestructiveWarning('Wholesale seed (deleteMany on products and categories, then re-inserts demo catalog)');
     assertDestructiveOperationAllowed('seedWholesale');
+    // Extra hard guard: never allow wholesale seed execution in production.
+    assertProductionSafe('seedWholesale');
 
     if (!MONGODB_URI) {
       throw new Error('MONGO_URI is required');
