@@ -96,6 +96,39 @@ const connectDB = async () => {
     activeDatabaseName = conn.connection.name;
     logger.info(`MongoDB Connected: ${conn.connection.host}`);
 
+    // Additional runtime safety: patch the concrete db handle to block drops in production
+    try {
+      if (conn && conn.connection && conn.connection.db) {
+        const db = conn.connection.db;
+        if (typeof db.dropDatabase === 'function') {
+          const origDropDatabase = db.dropDatabase.bind(db);
+          db.dropDatabase = async function patchedDropDatabase(...args) {
+            if (process.env.NODE_ENV === 'production') {
+              throw new Error('Blocked dropDatabase() in production');
+            }
+            return origDropDatabase(...args);
+          };
+        }
+
+        const origCollectionFn = db.collection.bind(db);
+        db.collection = function patchedCollection(name, ...rest) {
+          const coll = origCollectionFn(name, ...rest);
+          if (coll && typeof coll.drop === 'function') {
+            const origDrop = coll.drop.bind(coll);
+            coll.drop = function patchedCollDrop(...args) {
+              if (process.env.NODE_ENV === 'production') {
+                throw new Error(`Blocked collection.drop(${name}) in production`);
+              }
+              return origDrop(...args);
+            };
+          }
+          return coll;
+        };
+      }
+    } catch (err) {
+      logger.warn('Failed to apply concrete DB drop guards', { error: err.message });
+    }
+
     try {
       const status = await mongoose.connection.db.admin().serverStatus();
       isReplicaSet = !!status.repl;
@@ -111,6 +144,14 @@ const connectDB = async () => {
     }
 
     await validateDatabaseAtStartup();
+    // Apply mongoose safety patches to prevent mass-deletion/drop in production
+    try {
+      const { applyMongoSafetyPatches } = await import('../utils/mongoSafetyPatch.js');
+      applyMongoSafetyPatches({ logger });
+    } catch (err) {
+      logger.warn('Failed to apply Mongo safety patches', { error: err.message });
+    }
+
     await bootstrapSuperAdmin();
     return conn;
   } catch (error) {
