@@ -6,6 +6,7 @@ import Card from '../../components/Card';
 import Button from '../../components/Button';
 import { FaUser, FaEnvelope, FaPhone, FaLock } from 'react-icons/fa';
 import { ArrowRight } from 'lucide-react';
+import PasswordInput from '../../components/common/PasswordInput';
 import { getPasswordRequirementsText, validatePasswordLength } from '../../utils/authValidationPolicy';
 
 const Register = () => {
@@ -201,8 +202,7 @@ const Register = () => {
                 </label>
                 <div className="relative">
                   <FaLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="password"
+                  <PasswordInput
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
@@ -224,8 +224,7 @@ const Register = () => {
                 </label>
                 <div className="relative">
                   <FaLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="password"
+                  <PasswordInput
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleChange}

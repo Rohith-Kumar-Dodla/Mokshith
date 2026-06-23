@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import authService from '../services/authService';
+import { mapLoginError } from '../utils/loginErrorMapper';
 import { clearAuthStorage, getCsrfToken, getRefreshToken, persistSession } from '../utils/authStorage';
 import { mapBackendRoleToFrontend, mapFrontendRoleToBackend } from '../utils/roleMap';
 
@@ -13,8 +14,11 @@ export const useAuth = () => {
   return context;
 };
 
-const getErrorMessage = (error, fallback) =>
-  error?.response?.data?.message || error?.message || fallback;
+  // Generic getter preserved for other flows
+  const getErrorMessage = (error, fallback) =>
+    error?.response?.data?.message || error?.message || fallback;
+
+  // Use centralized mapper so login errors are consistent across the app
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -144,7 +148,8 @@ export const AuthProvider = ({ children }) => {
       const { user: sessionUser, accessToken, refreshToken, csrfToken } = payload;
       return applyUserSession(sessionUser, { accessToken, refreshToken, csrfToken });
     } catch (error) {
-      throw new Error(getErrorMessage(error, 'Invalid credentials'));
+      // Map to one of the two user-friendly messages
+      throw new Error(mapLoginError(error));
     }
   };
 
