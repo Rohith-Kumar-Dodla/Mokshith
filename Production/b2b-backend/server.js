@@ -30,6 +30,8 @@ const startServer = async () => {
 
     // 🔥 Connect Redis (must be before workers/socket adapters)
     logger.info('Connecting to Redis...');
+    // Startup trace for payment redis fixes
+    logger.info(`PAYMENT_REDIS_FIX_VERSION=${process.env.PAYMENT_REDIS_FIX_VERSION || 'unset'}`);
     const redisConnected = await redisClient.connect();
     if (!redisConnected) {
       logger.warn('Redis connection failed - some features may be limited');

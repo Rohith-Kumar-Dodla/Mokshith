@@ -1,15 +1,55 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import orderService from '../../services/orderService';
 import { FiCheckCircle, FiShoppingBag, FiTruck, FiFileText } from 'react-icons/fi';
 
 const OrderSuccess = () => {
   const location = useLocation();
-  const order = location.state?.order;
-  const paymentPending = location.state?.paymentPending;
-  const paymentMethodId = location.state?.paymentMethodId;
-  const isBankTransfer = paymentMethodId === 'bank_transfer' || order?.paymentMethod === 'BANK_TRANSFER';
+  const stateOrder = location.state?.order;
+  const statePaymentPending = location.state?.paymentPending;
+  const statePaymentMethodId = location.state?.paymentMethodId;
+  const [searchParams] = useSearchParams();
+  const orderIdFromQuery = searchParams.get('orderId');
+
+  const [order, setOrder] = useState(stateOrder || null);
+  const [loading, setLoading] = useState(!stateOrder && !!orderIdFromQuery);
+  const [error, setError] = useState('');
+
+  const paymentPending = statePaymentPending;
+  const paymentMethodId = statePaymentMethodId || (order && order.paymentMethod);
+  const isBankTransfer = paymentMethodId === 'bank_transfer' || paymentMethodId === 'BANK_TRANSFER';
   const orderNumber = order?.orderNumber || order?.id || '—';
   const estimatedDelivery = order?.estimatedDelivery || 'Processing';
+
+  useEffect(() => {
+    let mounted = true;
+    async function fetchOrder() {
+      if (!order && orderIdFromQuery) {
+        setLoading(true);
+        try {
+          const resp = await orderService.getOrderById(orderIdFromQuery);
+          const payload = resp?.data ?? resp;
+          if (mounted) setOrder(payload);
+        } catch (err) {
+          if (mounted) setError('Unable to load order details');
+        } finally {
+          if (mounted) setLoading(false);
+        }
+      }
+    }
+    fetchOrder();
+    return () => {
+      mounted = false;
+    };
+  }, [order, orderIdFromQuery]);
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center p-4">
+        <div className="text-sm text-gray-600">Loading order details...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[60vh] flex items-center justify-center p-4">
