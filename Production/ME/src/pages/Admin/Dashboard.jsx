@@ -92,7 +92,7 @@ const AdminDashboard = () => {
     <div className="space-y-6 sm:space-y-8">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Marketplace Operations Dashboard</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Marketplace Operations Dashboard.</h1>
         <p className="text-sm sm:text-base text-gray-600 mt-1">Manage products, vendors, inventory, and deliveries across the entire marketplace.</p>
       </div>
 
