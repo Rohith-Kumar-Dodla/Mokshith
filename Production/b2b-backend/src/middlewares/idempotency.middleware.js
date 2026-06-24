@@ -115,14 +115,59 @@ export const operationIdempotency = (operationType) => {
     const redisKey = `idempotency:${key}`;
 
     try {
-      // Check for in-progress operation (concurrent request detection)
+    // Check for in-progress operation (concurrent request detection)
       const lockKey = `${redisKey}:lock`;
-      const locked = await redisClient.set(lockKey, '1', 'EX', 10, 'NX');
-      
-      logger.debug('operationIdempotency - lock attempt', { lockKey, locked });
+      // Use a unique lock value so release can verify ownership
+      const lockValue = `${req.user?.id || 'anon'}-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+      let lockAcquired = false;
+      try {
+        // Prefer redisClient.acquireLock (with DB fallback) for robustness
+        logger.debug('operationIdempotency - attempting lock acquisition', { lockKey });
+        lockAcquired = await redisClient.acquireLock(lockKey, lockValue, 15); // 15s TTL
+        logger.debug('operationIdempotency - lock acquisition result', { lockKey, lockValue, lockAcquired });
+      } catch (err) {
+        logger.error('operationIdempotency - lock acquisition threw', { lockKey, error: err?.message || String(err) });
+        lockAcquired = false;
+      }
 
-      if (!locked) {
-        logger.warn(`Concurrent ${operationType} detected, rejecting duplicate`, { key, lockKey });
+      if (!lockAcquired) {
+        logger.warn(`Concurrent ${operationType} detected, lock busy`, { key, lockKey });
+        // Attempt best-effort completion check for known operations before rejecting
+        try {
+          if (operationType === 'order:create') {
+            // If an order with this idempotency key already exists, return it (don't block user)
+            const mongoose = await import('mongoose');
+            const OrderModel = mongoose.default.models.Order || mongoose.default.model('Order');
+            const userId = req.user?.id;
+            if (userId) {
+              const existingOrder = await OrderModel.findOne({ idempotencyKey: key, userId }).lean();
+              if (existingOrder) {
+                logger.info('operationIdempotency - found existing order for idempotency key', { key, orderId: existingOrder._id });
+                return res.json(existingOrder);
+              }
+            }
+          }
+        } catch (checkErr) {
+          logger.error('operationIdempotency - fallback completion check failed', { error: checkErr?.message || String(checkErr) });
+        }
+
+        // Short polling window: wait up to 1s for the lock to be released (helps transient races)
+        const start = Date.now();
+        const waitTimeout = 1000;
+        const pollInterval = 150;
+        let waited = 0;
+        while (Date.now() - start < waitTimeout) {
+          // If cached response appears while waiting, return it
+          const cachedNow = await redisClient.get(redisKey);
+          if (cachedNow) {
+            logger.info('operationIdempotency - cached response found during short wait', { key });
+            return res.json(JSON.parse(cachedNow));
+          }
+          await new Promise((r) => setTimeout(r, pollInterval));
+          waited += pollInterval;
+        }
+
+        // Still locked — reject as duplicate in progress
         return res.status(409).json({
           success: false,
           message: 'Duplicate operation in progress, please retry after a moment',
@@ -147,15 +192,19 @@ export const operationIdempotency = (operationType) => {
 
       // 🔒 CRITICAL FIX: Release lock ONLY after response fully completes
       // This prevents race conditions where duplicate requests slip through
-      const releaseLockSafely = () => {
+      const releaseLockSafely = async () => {
         if (responseSent) return; // Already released
         responseSent = true;
-        
-        redisClient.del(lockKey).catch(err => 
-          logger.error('Failed to release idempotency lock:', err)
-        );
-        
-        logger.debug('Idempotency lock released after response completion', { operationType, key });
+        try {
+          const released = await redisClient.releaseLock(lockKey, lockValue);
+          if (!released) {
+            logger.warn('operationIdempotency - lock release returned false', { lockKey, lockValue, operationType, key });
+          } else {
+            logger.debug('operationIdempotency - lock released after response completion', { lockKey, lockValue, operationType, key });
+          }
+        } catch (err) {
+          logger.error('Failed to release idempotency lock safely:', { lockKey, lockValue, error: err?.message || String(err) });
+        }
       };
       
       // Listen to response lifecycle events
