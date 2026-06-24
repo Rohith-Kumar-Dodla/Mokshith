@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FiEye } from 'react-icons/fi';
+import { FiEye, FiCheck, FiX } from 'react-icons/fi';
 import PageHeader from '../../components/superadmin/PageHeader';
 import SearchBar from '../../components/superadmin/SearchBar';
 import FilterDropdown from '../../components/superadmin/FilterDropdown';
@@ -80,13 +80,66 @@ const DeliveryPartners = () => {
     {
       key: 'actions',
       label: 'Actions',
-      render: () => (
-        <button className="p-2 hover:bg-blue-50 rounded-lg transition-colors min-h-[36px] min-w-[36px]" title="View">
-          <FiEye className="text-blue-600" size={16} />
-        </button>
+      render: (_, row) => (
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); /* view details - implement as needed */ }}
+            className="p-2 hover:bg-blue-50 rounded-lg transition-colors min-h-[36px] min-w-[36px]"
+            title="View"
+          >
+            <FiEye className="text-blue-600" size={16} />
+          </button>
+          {row.status !== 'active' ? (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); runStatusAction(row.id, 'activate'); }}
+              className="p-2 hover:bg-green-50 rounded-lg transition-colors min-h-[36px] min-w-[36px]"
+              title="Activate"
+            >
+              <FiCheck className="text-green-600" size={16} />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); runStatusAction(row.id, 'deactivate'); }}
+              className="p-2 hover:bg-orange-50 rounded-lg transition-colors min-h-[36px] min-w-[36px]"
+              title="Deactivate"
+            >
+              <FiX className="text-orange-600" size={16} />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); /* edit placeholder */ window.alert('Edit partner - not implemented'); }}
+            className="p-2 hover:bg-gray-50 rounded-lg transition-colors min-h-[36px] min-w-[36px]"
+            title="Edit"
+          >
+            ✎
+          </button>
+        </div>
       ),
     },
   ];
+
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const runStatusAction = async (id, action) => {
+    setActionLoading(true);
+    try {
+      if (action === 'activate') await adminService.updateUserStatus(id, 'ACTIVE');
+      if (action === 'deactivate') await adminService.updateUserStatus(id, 'INACTIVE');
+      // reload partners
+      const response = await adminService.getUsers({ role: 'DELIVERY_PARTNER' });
+      const payload = response.data ?? response;
+      const users = Array.isArray(payload) ? payload : payload?.users || [];
+      setPartners(users.map(mapPartner));
+    } catch (err) {
+      // ignore UI-only error handling here
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const stats = [
     { label: 'Total Partners', value: partners.length },

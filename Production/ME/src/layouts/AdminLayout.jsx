@@ -13,7 +13,6 @@ import {
   FiMenu,
   FiX,
   FiBell,
-  FiDollarSign
 } from 'react-icons/fi';
 import NotificationDrawer from '../components/admin/NotificationDrawer';
 import PortalSidebar from '../components/common/PortalSidebar';
@@ -41,7 +40,7 @@ const AdminLayout = () => {
     { path: '/admin/inventory', icon: FiPackage, label: 'Inventory' },
     { path: '/admin/vendors', icon: FiShoppingBag, label: 'Vendors' },
     { path: '/admin/orders', icon: FiTruck, label: 'Orders' },
-    { path: '/admin/payment-verifications', icon: FiDollarSign, label: 'Payment Verifications' },
+    // Payment Verifications moved to Super Admin
     { path: '/admin/delivery-assignment', icon: FiTruck, label: 'Delivery Assignment' },
     { path: '/admin/reports', icon: FiFileText, label: 'Reports' },
     { path: '/admin/analytics', icon: FiBarChart2, label: 'Analytics' },

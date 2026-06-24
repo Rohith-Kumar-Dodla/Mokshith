@@ -105,11 +105,6 @@ export const getStats = async () => {
     isDeleted: { $ne: true },
   });
 
-  const revenue = await Order.aggregate([
-    { $match: { paymentStatus: 'PAID' } },
-    { $group: { _id: null, total: { $sum: '$totalAmount' } } },
-  ]);
-
   return {
     totalUsers,
     totalAdmins,
@@ -117,7 +112,7 @@ export const getStats = async () => {
     totalVendors,
     totalDeliveryPartners,
     pendingApprovals,
-    revenue: revenue[0]?.total || 0,
+    // revenue intentionally omitted for Admins; financials are Super Admin-only
   };
 };
 

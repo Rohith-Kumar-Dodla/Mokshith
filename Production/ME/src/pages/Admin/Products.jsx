@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { FiEye, FiEdit, FiTrash2, FiSearch } from 'react-icons/fi';
 import PageHeader from '../../components/admin/PageHeader';
 import Card from '../../components/admin/Card';
+import TableResponsive from '../../components/common/TableResponsive';
 import StatusBadge from '../../components/admin/StatusBadge';
 import SearchBar from '../../components/admin/SearchBar';
 import FilterDropdown from '../../components/admin/FilterDropdown';
@@ -221,7 +222,7 @@ const Products = () => {
       </Card>
 
       <Card className="overflow-hidden p-0">
-        <div className="overflow-x-auto">
+        <TableResponsive>
           <table className="w-full min-w-[800px]">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
@@ -242,7 +243,7 @@ const Products = () => {
                         key={getProductImageKey(product)}
                         src={product.imageUrl || product.image || 'https://via.placeholder.com/48'}
                         alt={product.name}
-                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg object-cover"
+                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg img-responsive object-cover"
                       />
                       <div>
                         <p className="text-xs sm:text-sm font-medium text-gray-900">{product.name}</p>
@@ -273,7 +274,7 @@ const Products = () => {
               ))}
             </tbody>
           </table>
-        </div>
+        </TableResponsive>
         {filteredProducts.length === 0 && (
           <div className="text-center py-8 sm:py-12">
             <p className="text-sm sm:text-base text-gray-500">No products found</p>
