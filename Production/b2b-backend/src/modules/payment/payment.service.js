@@ -3,6 +3,7 @@ import * as gateway from './payment.gateway.js';
 import AppError from '../../errors/AppError.js';
 import mongoose from 'mongoose';
 import { getTransactionSupport } from '../../config/db.js';
+import { logger } from '../../config/logger.js';
 
 import Order from '../order/order.model.js';
 import * as creditRepo from '../credit/credit.repository.js';
@@ -376,10 +377,16 @@ export const verifyPayment = async (payload, user = null) => {
   const { orderId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = payload;
   const { redisClient } = await import('../../config/redis.js');
   const { logger } = await import('../../config/logger.js');
+  const DISABLE_REDIS = process.env.PAYMENT_DISABLE_REDIS === 'true';
 
   // 🔒 1. Replay Protection: Check if this payment_id was already processed
   const replayKey = `payment:processed:${razorpay_payment_id}`;
-  const alreadyProcessed = await redisClient.get(replayKey);
+  let alreadyProcessed = null;
+  if (!DISABLE_REDIS) {
+    alreadyProcessed = await redisClient.get(replayKey);
+  } else {
+    logger.info('PAYMENT_DISABLE_REDIS=true - skipping redis replay protection');
+  }
   if (alreadyProcessed) {
     logger.warn('Payment replay attempt detected', { razorpay_payment_id, orderId });
     const existingPayment = await repo.findByRazorpayPaymentId(razorpay_payment_id);
@@ -422,7 +429,11 @@ export const verifyPayment = async (payload, user = null) => {
   }
 
   // 5. Mark as processed in Redis (24h TTL)
-  await redisClient.setex(replayKey, 86400, Date.now().toString());
+  if (!DISABLE_REDIS) {
+    await redisClient.setex(replayKey, 86400, Date.now().toString());
+  } else {
+    logger.info('PAYMENT_DISABLE_REDIS=true - skipping setex for replayKey');
+  }
 
   // 6. Find payment record (using transactionId which stores RZP order ID initially)
   let payment = await repo.findByTransactionId(razorpay_order_id);
@@ -477,66 +488,88 @@ export const verifyPayment = async (payload, user = null) => {
   }
 
   // 8. Update order record
+  // Prefer the orderId stored on the payment record to avoid mismatches from the frontend payload.
+  const targetOrderId = (payment?.orderId && (typeof payment.orderId === 'string' ? payment.orderId : payment.orderId.toString())) || orderId;
+  const orderToUpdate = await Order.findById(targetOrderId);
 
-  if (order.paymentStatus !== 'PAID') {
-    order.paymentStatus = 'PAID';
-    order.status = 'CONFIRMED';
-    await order.save();
+  if (!orderToUpdate) {
+    logger.error('Order referenced by payment not found', { paymentId: payment._id, targetOrderId });
+    throw new AppError('Order referenced by payment not found', 404);
+  }
+
+  if (orderToUpdate.paymentStatus !== 'PAID') {
+    orderToUpdate.paymentStatus = 'PAID';
+    orderToUpdate.status = 'CONFIRMED';
+    await orderToUpdate.save();
     
-    // 🔒 CRITICAL FIX: Finalize inventory reservation after successful payment
-    // This actually deducts the stock that was previously only reserved
+    // Finalize inventory reservation after successful payment (best-effort)
     try {
       const { finalizeReservation } = await import('../inventory/inventory.service.js');
-      await finalizeReservation(order._id.toString());
-      logger.info('Inventory reservation finalized', { orderId: order._id });
+      await finalizeReservation(orderToUpdate._id.toString());
+      logger.info('Inventory reservation finalized', { orderId: orderToUpdate._id });
     } catch (err) {
       logger.error('CRITICAL: Failed to finalize inventory reservation', {
-        orderId: order._id,
+        orderId: orderToUpdate._id,
         error: err.message,
         stack: err.stack
       });
-      // This is critical - payment succeeded but inventory not deducted
-      // Manual intervention may be required
+      // Continue — do not revert DB changes
     }
 
-    // Emit socket event
-    if (global.io) {
-      global.io.emit('payment:success', { 
-        orderId: order._id, 
-        userId: order.userId,
-        amount: order.totalAmount,
-        method: payment.paymentMethod 
-      });
+    // Emit socket event (best-effort)
+    try {
+      if (global.io) {
+        global.io.emit('payment:success', { 
+          orderId: orderToUpdate._id, 
+          userId: orderToUpdate.userId,
+          amount: orderToUpdate.totalAmount,
+          method: payment.paymentMethod 
+        });
+      }
+    } catch (emitErr) {
+      logger.warn('Socket emission failed', { error: emitErr?.message || String(emitErr) });
     }
 
-    // 6. 🔒 PHASE 4: Queue-based post-payment triggers (replaces setImmediate)
-    // Ensures invoice generation and delivery assignment survive crashes
-    const { queuePostPaymentJobs } = await import('../../services/queueManager.service.js');
-    await queuePostPaymentJobs({
-      orderId: order._id.toString(),
-      userId: order.userId.toString(),
-      amount: order.totalAmount,
-      paymentMethod: payment.paymentMethod,
-    });
+    // Enqueue post-payment jobs but do not fail the request if the queue is down
+    if (!DISABLE_REDIS) {
+      try {
+        const { queuePostPaymentJobs } = await import('../../services/queueManager.service.js');
+        await queuePostPaymentJobs({
+          orderId: orderToUpdate._id.toString(),
+          userId: orderToUpdate.userId.toString(),
+          amount: orderToUpdate.totalAmount,
+          paymentMethod: payment.paymentMethod,
+        });
+      } catch (queueErr) {
+        logger.error('Post-payment queue job failed', { error: queueErr?.message || String(queueErr), orderId: orderToUpdate._id });
+        // Do not throw — we've already committed DB changes
+      }
+    } else {
+      logger.info('PAYMENT_DISABLE_REDIS=true - skipping queuePostPaymentJobs (post-payment jobs)');
+    }
     
-    // Clear User Cart immediately (critical for UX)
+    // Clear User Cart immediately (best-effort)
     try {
       const CartModel = mongoose.model('Cart');
       await CartModel.findOneAndUpdate(
-        { userId: order.userId },
+        { userId: orderToUpdate.userId },
         { $set: { items: [] } }
       );
     } catch (cartErr) {
-      logger.error('Failed to clear cart after payment', { orderId: order._id, error: cartErr.message });
+      logger.error('Failed to clear cart after payment', { orderId: orderToUpdate._id, error: cartErr.message });
       // Don't fail payment verification if cart clear fails
     }
   }
 
-  // 7. Send notification
-  await sendNotification({
-    userId: order.userId,
-    ...TEMPLATES.PAYMENT_SUCCESS(order.totalAmount),
-  });
+  // 7. Send notification (best-effort)
+  try {
+    await sendNotification({
+      userId: orderToUpdate.userId,
+      ...TEMPLATES.PAYMENT_SUCCESS(orderToUpdate.totalAmount),
+    });
+  } catch (notifyErr) {
+    logger.error('Failed to send payment notification', { orderId: orderToUpdate._id, error: notifyErr?.message || String(notifyErr) });
+  }
 
   return payment;
 };

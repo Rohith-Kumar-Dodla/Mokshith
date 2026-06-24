@@ -53,7 +53,7 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) =
           alt={product.name}
           loading="lazy"
           decoding="async"
-          className="w-full h-full object-cover"
+          className="w-full h-full img-responsive object-cover"
         />
         <div className="absolute top-2 sm:top-3 left-2 sm:left-3">
           <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(product.status)}`}>

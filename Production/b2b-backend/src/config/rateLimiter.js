@@ -70,8 +70,11 @@ export const paymentLimiter = rateLimit({
   },
   skipSuccessfulRequests: true, // Don't count successful requests
   skip: (req) => {
+    // Always skip during automated tests
     if (process.env.NODE_ENV === 'test') return true;
-    return false;
+    // In development/testing, bypass payment rate-limiting when AUTH_STRICT_MODE=false.
+    // In production (AUTH_STRICT_MODE=true) the limiter remains active.
+    return !isAuthStrictMode();
   },
 });
 

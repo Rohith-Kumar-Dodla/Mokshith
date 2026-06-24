@@ -1,7 +1,9 @@
 import Order from '../order/order.model.js';
 
 export const getOrderStats = async () => {
+  // Only consider paid orders for revenue-related aggregates
   return Order.aggregate([
+    { $match: { paymentStatus: 'PAID', status: { $nin: ['CANCELLED', 'REFUNDED', 'FAILED'] } } },
     {
       $group: {
         _id: '$status',
@@ -20,7 +22,8 @@ export const getSalesByMonth = async () => {
     {
       $match: {
         createdAt: { $gte: sixMonthsAgo },
-        status: { $ne: 'CANCELLED' }
+        paymentStatus: 'PAID',
+        status: { $nin: ['CANCELLED', 'REFUNDED', 'FAILED'] }
       }
     },
     {
@@ -40,6 +43,7 @@ export const getSalesByMonth = async () => {
 export const getTopCategories = async () => {
   return Order.aggregate([
     { $unwind: '$items' },
+    { $match: { paymentStatus: 'PAID', status: { $nin: ['CANCELLED', 'REFUNDED', 'FAILED'] } } },
     {
       $lookup: {
         from: 'products',
@@ -78,6 +82,7 @@ export const getTopCategories = async () => {
 export const getTopProducts = async () => {
   return Order.aggregate([
     { $unwind: '$items' },
+    { $match: { paymentStatus: 'PAID', status: { $nin: ['CANCELLED', 'REFUNDED', 'FAILED'] } } },
     {
       $lookup: {
         from: 'products',
@@ -107,7 +112,9 @@ export const getActiveCustomersCount = async () => {
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   
   const result = await Order.distinct('userId', {
-    createdAt: { $gte: thirtyDaysAgo }
+    createdAt: { $gte: thirtyDaysAgo },
+    paymentStatus: 'PAID',
+    status: { $nin: ['CANCELLED', 'REFUNDED', 'FAILED'] }
   });
   return result.length;
 };
@@ -121,6 +128,7 @@ export const getPendingDeliveriesCount = async () => {
 export const getTopProductsDetailed = async () => {
   return Order.aggregate([
     { $unwind: '$items' },
+    { $match: { paymentStatus: 'PAID', status: { $nin: ['CANCELLED', 'REFUNDED', 'FAILED'] } } },
     {
       $lookup: {
         from: 'products',

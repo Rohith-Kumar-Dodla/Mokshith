@@ -12,7 +12,8 @@ const PAYMENT_METHOD_MAP = {
   online: 'ONLINE',
   hybrid: 'ONLINE',
   card: 'CARD',
-  razorpay: 'RAZORPAY',
+  // Map frontend Razorpay selection to backend 'ONLINE' enum to match payment model
+  razorpay: 'ONLINE',
   bank_transfer: 'BANK_TRANSFER',
 };
 
@@ -20,7 +21,7 @@ export function mapPaymentMethodToBackend(paymentId) {
   return PAYMENT_METHOD_MAP[paymentId] || 'COD';
 }
 
-const ONLINE_PAYMENT_METHODS = new Set(['upi', 'online']);
+const ONLINE_PAYMENT_METHODS = new Set(['razorpay', 'online', 'upi']);
 const HYBRID_PAYMENT_METHODS = new Set(['hybrid']);
 const BANK_TRANSFER_METHODS = new Set(['bank_transfer']);
 
@@ -174,7 +175,8 @@ export function useCheckout({ onSuccess } = {}) {
           await onSuccess(mappedOrder);
         }
 
-        navigate('/vendor/order-success', {
+        // Navigate to order success and include orderId in query string so page can be refreshed
+        navigate(`/vendor/order-success?orderId=${orderId}`, {
           replace: true,
           state: {
             order: mappedOrder,

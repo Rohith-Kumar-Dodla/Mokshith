@@ -11,11 +11,8 @@ import { useAuth } from '../../context/AuthContext';
 
 const PAYMENT_METHODS = [
   { id: 'cod', label: 'Cash On Delivery', icon: FiTruck, description: 'Pay when you receive the order' },
-  { id: 'bank_transfer', label: 'Bank Transfer', icon: FiDollarSign, description: 'Pay any amount via bank transfer and upload payment proof' },
-  { id: 'credit', label: 'Credit Line', icon: FiCreditCard, description: 'Pay fully with available credit' },
-  { id: 'hybrid', label: 'Credit + Online', icon: FiCreditCard, description: 'Use credit first, pay remainder online' },
-  { id: 'upi', label: 'UPI', icon: FiSmartphone, description: 'Pay online via UPI' },
-  { id: 'online', label: 'Online Payment', icon: FiSmartphone, description: 'Pay the full amount online' },
+  // Razorpay (online) only — keep label clear for users
+  { id: 'razorpay', label: 'Razorpay (Online Payment)', icon: FiSmartphone, description: 'Pay securely via Razorpay (Test Mode)' },
 ];
 
 const Checkout = () => {

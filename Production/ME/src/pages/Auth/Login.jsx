@@ -6,6 +6,7 @@ import Card from '../../components/Card';
 import Button from '../../components/Button';
 import { FaMobile, FaLock, FaShieldAlt } from 'react-icons/fa';
 import { ArrowRight } from 'lucide-react';
+import PasswordInput from '../../components/common/PasswordInput';
 import { getDashboardRoute } from '../../utils/roleMap';
 
 const Login = () => {
@@ -87,7 +88,14 @@ const Login = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
                   <div className="relative">
                     <FaLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <input type="password" name="password" value={formData.password} onChange={handleChange} className="input-field pl-10 h-12" placeholder="Enter your password" required />
+                    <PasswordInput
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      className="input-field pl-10 h-12"
+                      placeholder="Enter your password"
+                      required
+                    />
                   </div>
                 </div>
                 <div className="text-right">

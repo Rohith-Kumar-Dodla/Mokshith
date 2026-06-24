@@ -22,6 +22,7 @@ const Platform = lazy(() => import('./pages/SuperAdmin/Platform'));
 const AdminApprovals = lazy(() => import('./pages/SuperAdmin/AdminApprovals'));
 const SuperAdminVendors = lazy(() => import('./pages/SuperAdmin/Vendors'));
 const DeliveryPartners = lazy(() => import('./pages/SuperAdmin/DeliveryPartners'));
+const UserManagement = lazy(() => import('./pages/SuperAdmin/UserManagement'));
 const SuperAdminOrders = lazy(() => import('./pages/SuperAdmin/Orders'));
 const SuperAdminAnalytics = lazy(() => import('./pages/SuperAdmin/Analytics'));
 const SuperAdminSettings = lazy(() => import('./pages/SuperAdmin/Settings'));
@@ -82,9 +83,10 @@ function App() {
                 <Route index element={<Navigate to="/super-admin/dashboard" replace />} />
                 <Route path="dashboard" element={<SuperAdminDashboard />} />
                 <Route path="platform" element={<Platform />} />
-                <Route path="admin-approvals" element={<AdminApprovals />} />
-                <Route path="vendors" element={<SuperAdminVendors />} />
-                <Route path="delivery-partners" element={<DeliveryPartners />} />
+                <Route path="admin-approvals" element={<Navigate to="/super-admin/user-management" replace />} />
+                <Route path="vendors" element={<Navigate to="/super-admin/user-management" replace />} />
+                <Route path="delivery-partners" element={<Navigate to="/super-admin/user-management" replace />} />
+                <Route path="user-management" element={<UserManagement />} />
                 <Route path="orders" element={<SuperAdminOrders />} />
                 <Route path="analytics" element={<SuperAdminAnalytics />} />
                 <Route path="settings" element={<SuperAdminSettings />} />

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { memo, useState, useEffect, useCallback } from 'react';
+import { memo, useState, useEffect, useCallback, useRef } from 'react';
 import { Menu, X } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
@@ -12,6 +12,7 @@ const Navbar = () => {
 
   const closeMenu = useCallback(() => setIsOpen(false), []);
   const toggleMenu = useCallback(() => setIsOpen((open) => !open), []);
+  const firstMobileLinkRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -39,6 +40,12 @@ const Navbar = () => {
 
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    // Focus first link for accessibility when mobile menu opens
+    setTimeout(() => {
+      try {
+        firstMobileLinkRef.current?.focus();
+      } catch {}
+    }, 0);
 
     return () => {
       document.body.style.overflow = originalOverflow;
@@ -122,11 +129,15 @@ const Navbar = () => {
           />
           <div
             id="mobile-nav-panel"
+            role="dialog"
+            aria-modal="true"
+            tabIndex={-1}
             className="md:hidden fixed left-0 right-0 top-[calc(4rem+env(safe-area-inset-top,0px))] sm:top-[calc(4.5rem+env(safe-area-inset-top,0px))] z-[100] bg-white shadow-xl border-b border-gray-100 max-h-[calc(100dvh-4rem-env(safe-area-inset-top,0px))] overflow-y-auto overscroll-contain"
           >
             <div className="px-4 py-4 space-y-2">
               <Link
                 to="/login"
+                ref={firstMobileLinkRef}
                 className="block text-text hover:text-secondary hover:bg-gray-50 transition-colors duration-200 font-medium py-3 px-3 rounded-lg text-base min-h-[44px]"
                 onClick={closeMenu}
               >
