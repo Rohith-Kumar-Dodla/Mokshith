@@ -102,7 +102,12 @@ export const login = asyncHandler(async (req, res) => {
 });
 
 export const refreshToken = asyncHandler(async (req, res) => {
-  const { refreshToken: token } = req.body;
+  // Accept refresh token from body or cookie (cookie fallback for production)
+  const bodyToken = req.body?.refreshToken;
+  const cookieToken = req.cookies?.refreshToken;
+  const token = bodyToken || cookieToken;
+
+  logger.debug('Auth.refreshToken called', { hasBodyToken: !!bodyToken, hasCookieToken: !!cookieToken, ip: req.ip, origin: req.headers.origin });
 
   const data = await authService.refreshAuthToken(token, req);
 

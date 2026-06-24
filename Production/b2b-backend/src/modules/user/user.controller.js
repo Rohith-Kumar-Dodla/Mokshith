@@ -4,6 +4,7 @@ import { successResponse } from '../../utils/responseHandler.js';
 import { uploadFile } from '../../services/fileUpload.service.js';
 
 export const getProfile = asyncHandler(async (req, res) => {
+  logger.debug('User.getProfile - incoming', { userId: req.user?.id, ip: req.ip, path: req.path, origin: req.headers.origin });
   const user = await service.getProfile(req.user.id);
   successResponse(res, user);
 });
