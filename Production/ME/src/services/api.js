@@ -6,8 +6,10 @@ const CSRF_HEADER = 'x-csrf-token';
 const STATE_CHANGING_METHODS = ['post', 'put', 'patch', 'delete'];
 
 const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+// Support runtime-injected global (window.__BACKEND_URL__) for platforms where build-time env is unavailable
+const runtimeBackendUrl = typeof window !== 'undefined' ? window.__BACKEND_URL__ : undefined;
 const API_BASE_URL =
-  configuredApiBaseUrl || (import.meta.env.PROD ? '' : 'http://localhost:5000/api/v1');
+  configuredApiBaseUrl || runtimeBackendUrl || (import.meta.env.PROD ? '' : 'http://localhost:5000/api/v1');
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -47,7 +49,9 @@ const redirectToLogin = () => {
 
 api.interceptors.request.use(
   async (config) => {
-    if (import.meta.env.PROD && !configuredApiBaseUrl) {
+    if (import.meta.env.PROD && !configuredApiBaseUrl && !runtimeBackendUrl) {
+      // Provide a clearer runtime error to help ops/debugging in production
+      console.error('API base URL not configured. Set VITE_API_BASE_URL at build-time or window.__BACKEND_URL__ at runtime.');
       return Promise.reject(new Error('VITE_API_BASE_URL is not configured for this deployment'));
     }
 

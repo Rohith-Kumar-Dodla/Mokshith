@@ -8,16 +8,31 @@ import { logger } from '../config/logger.js';
 
 export const protect = async (req, res, next) => {
   try {
-    // Extract token from Authorization header
+    // Extract token from Authorization header or fallback to cookie
     const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    let token = null;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else if (req.cookies && req.cookies.accessToken) {
+      // Accept accessToken cookie as a safe fallback for production deployments
+      token = req.cookies.accessToken;
+      logger.debug('Auth middleware - using accessToken from cookie fallback', { ip: req.ip, path: req.path, host: req.headers.host, origin: req.headers.origin });
+    } else {
+      // Log headers & cookie presence for production debugging
+      logger.warn('Auth middleware - missing Authorization header and accessToken cookie', {
+        path: req.path,
+        method: req.method,
+        host: req.headers.host,
+        origin: req.headers.origin,
+        cookies: Object.keys(req.cookies || {}),
+        hasAuthHeader: !!authHeader,
+      });
       return next(new AppError('Not authorized - No token provided', 401));
     }
 
-    const token = authHeader.split(' ')[1];
-
     if (!token || token === 'null' || token === 'undefined') {
+      logger.warn('Auth middleware - invalid token value', { tokenPresent: !!token, path: req.path, origin: req.headers.origin });
       return next(new AppError('Not authorized - Invalid token', 401));
     }
 
