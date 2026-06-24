@@ -438,3 +438,29 @@ export const getMetrics = async (req, res) => {
     });
   }
 };
+
+/**
+ * Redis-only health endpoint (simple, low-overhead)
+ */
+export const redisOnlyProbe = async (req, res) => {
+  try {
+    const start = Date.now();
+    await redisClient.ping();
+    const latency = Date.now() - start;
+    const provider = process.env.REDIS_URL && process.env.REDIS_URL.includes('upstash') ? 'upstash' : (process.env.REDIS_URL ? 'url' : 'standalone');
+    const tlsEnabled = !!(process.env.REDIS_URL && String(process.env.REDIS_URL).startsWith('rediss://'));
+
+    res.status(200).json({
+      connected: true,
+      provider,
+      tlsEnabled,
+      latency: `${latency} ms`
+    });
+  } catch (error) {
+    logger.error('Redis-only health check failed:', error);
+    res.status(503).json({
+      connected: false,
+      error: error.message
+    });
+  }
+};
