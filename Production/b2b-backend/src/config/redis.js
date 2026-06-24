@@ -458,6 +458,8 @@ export const redisClient = {
    * @returns {Promise<boolean>} true if lock acquired, false if already locked
    */
   async acquireLock(key, value, ttlSeconds = 30) {
+    const start = Date.now();
+    logger.debug('START acquireLock', { key, ttlSeconds });
     // Try Redis first if circuit breaker allows
     if (circuitBreaker.canAttempt()) {
       try {
@@ -465,8 +467,12 @@ export const redisClient = {
         const result = await redis.set(String(key), String(value), 'NX', 'EX', ttlSeconds);
         if (result === 'OK') {
           circuitBreaker.recordSuccess();
+          const duration = Date.now() - start;
+          logger.debug('END acquireLock', { key, ttlSeconds, durationMs: duration, result: 'OK' });
           return true;
         }
+        const duration = Date.now() - start;
+        logger.debug('END acquireLock', { key, ttlSeconds, durationMs: duration, result: 'NO_LOCK' });
         return false; // Lock already held by someone else
       } catch (error) {
         circuitBreaker.recordFailure();
@@ -490,9 +496,12 @@ export const redisClient = {
       const lock = await LockModel.create({ key, value, expiresAt });
       
       if (lock) {
-        logger.info('Database lock acquired', { key });
+        const duration = Date.now() - start;
+        logger.info('Database lock acquired', { key, durationMs: duration });
         return true;
       }
+      const duration = Date.now() - start;
+      logger.debug('Database lock not acquired', { key, durationMs: duration });
       return false;
     } catch (error) {
       // E11000 duplicate key error means lock already exists
@@ -512,6 +521,8 @@ export const redisClient = {
    * @returns {Promise<boolean>} true if lock released, false otherwise
    */
   async releaseLock(key, value) {
+    const start = Date.now();
+    logger.debug('START releaseLock', { key });
     let redisReleased = false;
     
     // Try Redis first if circuit breaker allows
@@ -528,6 +539,8 @@ export const redisClient = {
         const result = await redis.eval(script, 1, String(key), String(value));
         circuitBreaker.recordSuccess();
         redisReleased = result === 1;
+        const duration = Date.now() - start;
+        logger.debug('END releaseLock (redis eval)', { key, value, redisReleased, durationMs: duration });
         if (redisReleased) return true;
       } catch (error) {
         circuitBreaker.recordFailure();
@@ -550,9 +563,12 @@ export const redisClient = {
       const dbReleased = result.deletedCount > 0;
       
       if (dbReleased) {
-        logger.info('Database lock released', { key });
+        const duration = Date.now() - start;
+        logger.info('Database lock released', { key, durationMs: duration });
       }
       
+      const totalDuration = Date.now() - start;
+      logger.debug('END releaseLock', { key, redisReleased, dbReleased, durationMs: totalDuration });
       return redisReleased || dbReleased;
     } catch (error) {
       logger.error('Database lock release failed', { key, error: error.message });
