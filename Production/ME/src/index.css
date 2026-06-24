@@ -33,4 +33,37 @@
   .input-field {
     @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent transition-all duration-300;
   }
+  /* Page container helper: center content and prevent horizontal overflow */
+  .page-container {
+    @apply mx-auto px-4 sm:px-6 lg:px-8;
+    max-width: 1200px;
+    box-sizing: border-box;
+  }
+
+  /* Modal safe area */
+  .modal {
+    max-height: calc(100vh - 4rem);
+    overflow: auto;
+  }
+
+  /* Responsive tables wrapper */
+  .table-responsive {
+    @apply w-full overflow-x-auto px-2;
+  }
+
+  /* Sticky header background and elevation for tables */
+  .table-responsive table thead th {
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+  }
+
+  /* Bottom sheet styles */
+  .bottom-sheet {
+    @apply fixed left-0 right-0 bottom-0 z-50 bg-white border-t border-gray-200 p-3 rounded-t-xl max-h-[60vh] overflow-auto;
+  }
+
+  /* Ensure images scale within cards and do not stretch */
+  .img-responsive {
+    @apply w-full h-auto object-contain;
+  }
 }

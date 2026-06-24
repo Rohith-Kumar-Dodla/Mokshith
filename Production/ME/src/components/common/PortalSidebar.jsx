@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { FiLogOut } from 'react-icons/fi';
 
@@ -15,6 +15,7 @@ const PortalSidebar = ({
   const [isDesktop, setIsDesktop] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(min-width: 1024px)').matches : true
   );
+  const firstMenuLinkRef = useRef(null);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(min-width: 1024px)');
@@ -22,6 +23,16 @@ const PortalSidebar = ({
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
+
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      setTimeout(() => {
+        try {
+          firstMenuLinkRef.current?.focus();
+        } catch {}
+      }, 0);
+    }
+  }, [mobileMenuOpen]);
 
   const showLabels = mobileMenuOpen || sidebarOpen;
   const isHiddenFromAssistiveTech = !isDesktop && !mobileMenuOpen;
@@ -64,10 +75,11 @@ const PortalSidebar = ({
         </div>
 
         <nav className="flex-1 min-h-0 p-4 space-y-2 overflow-y-auto overscroll-contain">
-          {menuItems.map((item) => (
+          {menuItems.map((item, idx) => (
             <Link
               key={item.path}
               to={item.path}
+              ref={idx === 0 ? firstMenuLinkRef : undefined}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all min-h-[44px] ${
                 isActive(item.path)
                   ? 'bg-blue-600 text-white'

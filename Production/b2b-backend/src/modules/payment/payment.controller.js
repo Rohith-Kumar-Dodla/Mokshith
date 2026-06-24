@@ -1,6 +1,7 @@
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import * as service from './payment.service.js';
 import { successResponse } from '../../utils/responseHandler.js';
+import { logger } from '../../config/logger.js';
 
 export const createRazorpayOrder = asyncHandler(async (req, res) => {
   const { amount } = req.body;

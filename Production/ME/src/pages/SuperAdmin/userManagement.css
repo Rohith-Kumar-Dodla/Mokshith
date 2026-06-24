@@ -1,0 +1,99 @@
+.user-management .table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide horizontal overflow on the page while allowing inner scroll */
+.user-management .table-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+.user-management .table-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.12);
+  border-radius: 9999px;
+}
+
+/* Make sure tables inside the management page are readable on small screens by allowing inner scroll */
+@media (max-width: 767px) {
+  .user-management .table-wrapper {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  /* Improve touch targets for nav buttons */
+  .user-management button {
+    min-height: 44px;
+  }
+  /* Page heading responsive sizing to avoid excessive wrapping */
+  .user-management h1 {
+    font-size: 1.125rem; /* text-lg */
+    line-height: 1.3;
+  }
+  /* PageHeader actions stack under title on mobile */
+  .user-management .mb-6 .flex {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .user-management .mb-6 .flex > div + div {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+    margin-top: 0.5rem;
+  }
+  .user-management .mb-6 .flex > div + div .inline-flex {
+    width: 100%;
+    justify-content: center;
+  }
+  /* Reduce padding for compact mobile density */
+  .user-management .p-4 {
+    padding: 0.5rem;
+  }
+  .user-management .p-6 {
+    padding: 0.75rem;
+  }
+  /* Ensure rounded cards are full width and don't overflow */
+  .user-management .rounded-xl,
+  .user-management .rounded-lg {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+/* Tablet: allow collapsing sidebar visual hint */
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* Tablet stats grid: 2 columns */
+  .user-management .grid.grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Desktop: ensure no unexpected overflow */
+@media (min-width: 1024px) {
+  .user-management .table-wrapper {
+    overflow-x: visible;
+  }
+  /* Laptop stats grid: 3 columns; desktop: 4 handled by existing classes */
+  .user-management .grid.grid-cols-2 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Top tabs: ensure no horizontal overflow and equal-width grid items */
+.user-management .min-w-max {
+  -webkit-overflow-scrolling: touch;
+}
+.user-management .tabs-equal > button {
+  /* ensures buttons inside the grid share equal width when used with grid layout */
+  width: 100%;
+}
+.user-management .tabs-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Accessibility: focus visible */
+.user-management button:focus {
+  outline: 3px solid rgba(59,130,246,0.25);
+  outline-offset: 2px;
+}
+

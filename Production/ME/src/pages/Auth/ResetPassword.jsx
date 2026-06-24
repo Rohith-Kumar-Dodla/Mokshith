@@ -6,6 +6,7 @@ import Button from '../../components/Button';
 import authService from '../../services/authService';
 import { getPasswordRequirementsText } from '../../utils/authValidationPolicy';
 import { FaLock } from 'react-icons/fa';
+import PasswordInput from '../../components/common/PasswordInput';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -73,8 +74,7 @@ const ResetPassword = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
                 <div className="relative">
                   <FaLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="password"
+                  <PasswordInput
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     className="input-field pl-10 h-12"
@@ -89,8 +89,7 @@ const ResetPassword = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
                 <div className="relative">
                   <FaLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="password"
+                  <PasswordInput
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="input-field pl-10 h-12"

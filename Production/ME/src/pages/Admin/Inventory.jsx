@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { FiEdit, FiAlertTriangle, FiPackage, FiTrendingUp } from 'react-icons/fi';
 import PageHeader from '../../components/admin/PageHeader';
 import Card from '../../components/admin/Card';
+import TableResponsive from '../../components/common/TableResponsive';
 import StatusBadge from '../../components/admin/StatusBadge';
 import SearchBar from '../../components/admin/SearchBar';
 import FilterDropdown from '../../components/admin/FilterDropdown';
@@ -207,7 +208,7 @@ const Inventory = () => {
       </Card>
 
       <Card className="overflow-hidden p-0">
-        <div className="overflow-x-auto">
+        <TableResponsive>
           <table className="w-full min-w-[700px]">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
@@ -252,7 +253,7 @@ const Inventory = () => {
               ))}
             </tbody>
           </table>
-        </div>
+        </TableResponsive>
         {filteredInventory.length === 0 && (
           <div className="text-center py-8 sm:py-12">
             <p className="text-sm sm:text-base text-gray-500">No inventory items found</p>

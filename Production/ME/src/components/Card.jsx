@@ -1,7 +1,7 @@
 const Card = ({ children, className = '', hover = true }) => {
   return (
     <div
-      className={`bg-white rounded-xl shadow-lg p-4 sm:p-6 transition-all duration-300 ${
+      className={`bg-white rounded-xl shadow-lg p-4 sm:p-6 transition-all duration-300 w-full overflow-hidden ${
         hover ? 'hover:shadow-xl hover:-translate-y-1' : ''
       } ${className}`}
     >

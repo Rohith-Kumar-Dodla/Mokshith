@@ -147,6 +147,12 @@ class FraudDetectionService {
       options.skipAmountCheck === true || options.paymentMethod === 'BANK_TRANSFER';
 
     try {
+      // Respect AUTH_STRICT_MODE toggle used elsewhere in the app.
+      // When strict mode is disabled (e.g. local/dev/testing) do not enforce payment limits.
+      if (!isAuthStrictMode()) {
+        return { hourlyAttempts: 0, dailyPayments: 0 };
+      }
+
       // Check amount threshold (skipped for bank transfer — any amount allowed)
       if (!skipAmountCheck && amount > this.thresholds.maxPaymentAmount) {
         logger.warn('Suspicious payment amount', {

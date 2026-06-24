@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FiEye, FiCheck, FiX, FiMapPin, FiPhone, FiMail, FiCalendar, FiUsers, FiClock } from 'react-icons/fi';
 import PageHeader from '../../components/admin/PageHeader';
 import Card from '../../components/admin/Card';
+import TableResponsive from '../../components/common/TableResponsive';
 import StatusBadge from '../../components/admin/StatusBadge';
 import SearchBar from '../../components/admin/SearchBar';
 import FilterDropdown from '../../components/admin/FilterDropdown';
@@ -143,7 +144,7 @@ const Vendors = () => {
             <p className="text-sm sm:text-base text-gray-500">Loading vendors...</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <TableResponsive>
             <table className="w-full min-w-[800px]">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
@@ -216,7 +217,7 @@ const Vendors = () => {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableResponsive>
         )}
         {!loading && filteredVendors.length === 0 && (
           <div className="text-center py-8 sm:py-12">

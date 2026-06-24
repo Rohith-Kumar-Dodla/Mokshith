@@ -122,6 +122,11 @@ export const errorHandler = (err, req, res, next) => {
     errorResponse.error.code = 'DATABASE_UNAVAILABLE';
   }
 
+  // If an AppError provided a machine-readable code, forward it for frontend mapping
+  if (err.code && typeof err.code === 'string') {
+    errorResponse.error.code = err.code;
+  }
+
   // Add validation details for frontend (development only)
   if (process.env.NODE_ENV === 'development' && err.name === 'ValidationError') {
     errorResponse.error.details = err.errors;

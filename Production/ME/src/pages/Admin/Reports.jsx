@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { FiFileText, FiDownload, FiTrendingUp, FiPackage, FiUsers, FiTruck, FiDollarSign } from 'react-icons/fi';
+import { FiFileText, FiDownload, FiPackage, FiUsers, FiTruck } from 'react-icons/fi';
 import PageHeader from '../../components/admin/PageHeader';
 import Card from '../../components/admin/Card';
 import analyticsService from '../../services/analyticsService';
@@ -21,12 +21,14 @@ const Reports = () => {
       setLoading(true);
       setError('');
       try {
-        const [analyticsPayload, statsPayload] = await Promise.all([
-          analyticsService.getDashboard(),
+        // Do not fetch financial analytics here. Admin should not receive revenue data.
+        const [deliveryPayload, statsPayload] = await Promise.all([
+          analyticsService.getDeliveryAnalytics().catch(() => null),
           adminService.getStats(),
         ]);
-        setAnalytics(analyticsPayload?.data ?? analyticsPayload);
+        setAnalytics(null);
         setStats(statsPayload?.data ?? statsPayload);
+        setAnalytics((prev) => prev); // keep analytics null for Admin
       } catch (err) {
         setError(err?.response?.data?.message || err?.message || 'Failed to load report data');
       } finally {
@@ -45,19 +47,18 @@ const Reports = () => {
   const buildSalesRows = useCallback(() => salesData.map((entry) => [
     entry.name,
     entry.orders ?? 0,
-    entry.revenue ?? 0,
+    // revenue removed for Admin exports
   ]), [salesData]);
 
   const buildProductRows = useCallback(() => topProducts.map((product) => [
     product.name,
     product.category || 'Uncategorized',
     product.sales ?? 0,
-    product.revenue ?? 0,
+    // revenue removed for Admin exports
   ]), [topProducts]);
 
   const buildSummaryRows = useCallback(() => ([
     ['Total Orders', dashboard.totalOrders ?? stats?.totalOrders ?? 0],
-    ['Revenue', dashboard.revenue ?? stats?.revenue ?? 0],
     ['Active Customers', dashboard.activeCustomers ?? 0],
     ['Pending Deliveries', dashboard.pendingDeliveries ?? 0],
     ['Total Vendors', stats?.totalVendors ?? 0],
@@ -74,10 +75,10 @@ const Reports = () => {
     setError('');
 
     try {
-      if (type === 'sales' || type === 'revenue') {
+      if (type === 'sales') {
         downloadCsv(
           `${type}-report-${dateRange}.csv`,
-          ['Period', 'Orders', 'Revenue'],
+          ['Period', 'Orders'],
           buildSalesRows()
         );
       } else if (type === 'order') {
@@ -134,8 +135,8 @@ const Reports = () => {
     {
       id: 'sales',
       title: 'Sales Report',
-      description: 'Sales data and revenue analysis',
-      icon: FiDollarSign,
+      description: 'Sales data and operational analysis',
+      icon: FiFileText,
       color: 'green',
     },
     {
@@ -166,13 +167,7 @@ const Reports = () => {
       icon: FiTruck,
       color: 'blue',
     },
-    {
-      id: 'revenue',
-      title: 'Revenue Report',
-      description: 'Financial performance from analytics API',
-      icon: FiTrendingUp,
-      color: 'green',
-    },
+    // Revenue reports moved to Super Admin
   ];
 
   const colorClasses = {
@@ -270,7 +265,7 @@ const Reports = () => {
               <option value="vendor">Vendor Report</option>
               <option value="order">Order Report</option>
               <option value="delivery">Delivery Report</option>
-              <option value="revenue">Revenue Report</option>
+              {/* Revenue report moved to Super Admin */}
             </select>
           </div>
           <div>

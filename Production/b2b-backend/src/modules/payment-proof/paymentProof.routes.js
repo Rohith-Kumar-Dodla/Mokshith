@@ -65,7 +65,7 @@ router.post(
 router.get(
   '/pending',
   protect,
-  authorize('ADMIN', 'SUPER_ADMIN'),
+  authorize('SUPER_ADMIN'),
   controller.getPendingPaymentProofs
 );
 
@@ -79,7 +79,7 @@ router.get(
 router.patch(
   '/:id/approve',
   protect,
-  authorize('ADMIN', 'SUPER_ADMIN'),
+  authorize('SUPER_ADMIN'),
   csrfProtection,
   validate(paymentProofIdSchema),
   controller.approvePaymentProof
@@ -88,7 +88,7 @@ router.patch(
 router.patch(
   '/:id/reject',
   protect,
-  authorize('ADMIN', 'SUPER_ADMIN'),
+  authorize('SUPER_ADMIN'),
   csrfProtection,
   validate(rejectPaymentProofSchema),
   controller.rejectPaymentProof
