@@ -1,19 +1,14 @@
 import { Queue } from 'bullmq';
 import { logger } from '../config/logger.js';
+import { getBullConnection } from '../config/redis.js';
 
 /**
  * 🔒 PHASE 4: Centralized queue management for durable post-payment processing
  * Replaces setImmediate with reliable BullMQ jobs that survive server crashes
  */
 
-// Redis connection config for BullMQ
-const connection = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT) || 6379,
-  password: process.env.REDIS_PASSWORD,
-  maxRetriesPerRequest: null,
-  enableReadyCheck: false,
-};
+// Use BullMQ-compatible connection factory (prefers REDIS_URL)
+const connection = getBullConnection();
 
 // Initialize queues
 const postPaymentQueue = new Queue('post-payment', { connection });

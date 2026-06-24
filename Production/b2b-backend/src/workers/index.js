@@ -1,5 +1,6 @@
 import { Worker } from 'bullmq';
 import { logger } from '../config/logger.js';
+import { getBullConnection } from '../config/redis.js';
 
 /**
  * BullMQ Worker Manager for background job processing
@@ -11,14 +12,8 @@ import { logger } from '../config/logger.js';
 let workers = [];
 let workersInitialized = false;
 
-// Redis connection config for BullMQ
-const getRedisConnection = () => ({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT) || 6379,
-  password: process.env.REDIS_PASSWORD,
-  maxRetriesPerRequest: null, // Required for BullMQ
-  enableReadyCheck: false
-});
+// Use BullMQ-compatible connection factory
+const getRedisConnection = () => getBullConnection();
 
 /**
  * Create all worker instances
@@ -361,7 +356,12 @@ export const startWorkers = () => {
   }
 
   try {
-    logger.info('Starting BullMQ workers...');
+    // Log Redis usage for workers
+    logger.info('Starting BullMQ workers...', {
+      usingRedisUrl: !!process.env.REDIS_URL,
+      redisUrlRedacted: process.env.REDIS_URL ? '[REDACTED]' : undefined,
+      tlsEnabled: !!(process.env.REDIS_URL && String(process.env.REDIS_URL).startsWith('rediss://'))
+    });
     const createdWorkers = createWorkers();
     logger.info(`Started ${createdWorkers.length} BullMQ workers`);
     return createdWorkers;
