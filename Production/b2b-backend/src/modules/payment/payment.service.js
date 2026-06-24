@@ -428,6 +428,26 @@ export const verifyPayment = async (payload, user = null) => {
     throw new AppError('Payment verification failed', 400);
   }
 
+  // 🔒 Acquire a payment-specific lock to prevent concurrent verification/webhook races
+  const lockKey = `payment:lock:${orderId}`;
+  const lockValue = `${razorpay_payment_id}-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+  let lockHeld = false;
+  try {
+    lockHeld = await redisClient.acquireLock(lockKey, lockValue, 60);
+    logger.debug('verifyPayment - payment lock acquisition', { lockKey, lockValue, lockHeld, orderId, razorpay_payment_id });
+    if (!lockHeld) {
+      logger.warn('verifyPayment - could not acquire payment lock, checking payment state', { lockKey, orderId, razorpay_payment_id });
+      const dbPayment = await repo.findByRazorpayPaymentId(razorpay_payment_id);
+      if (dbPayment && dbPayment.status === 'SUCCESS') {
+        logger.info('verifyPayment - payment already processed while lock busy', { razorpay_payment_id, orderId });
+        return dbPayment;
+      }
+      // If not processed, proceed cautiously (could be webhook in flight); continue without lock but log
+      logger.warn('verifyPayment - proceeding without lock (race condition possible)', { orderId, razorpay_payment_id });
+    }
+  } catch (lockErr) {
+    logger.error('verifyPayment - lock acquisition error', { lockKey, error: lockErr?.message || String(lockErr) });
+  }
   // 5. Mark as processed in Redis (24h TTL)
   if (!DISABLE_REDIS) {
     await redisClient.setex(replayKey, 86400, Date.now().toString());
@@ -447,15 +467,36 @@ export const verifyPayment = async (payload, user = null) => {
 
   if (payment.status === 'SUCCESS') {
     logger.info('Payment already marked as success', { razorpay_payment_id });
+    // Ensure lock is released before returning
+    try {
+      if (lockHeld) {
+        const releasedEarly = await redisClient.releaseLock(lockKey, lockValue);
+        logger.debug('verifyPayment - early release of payment lock', { lockKey, lockValue, releasedEarly, orderId, razorpay_payment_id });
+      }
+    } catch (releaseErr) {
+      logger.error('verifyPayment - failed to release payment lock (early)', { lockKey, error: releaseErr?.message || String(releaseErr), orderId, razorpay_payment_id });
+    }
     return payment;
   }
 
   // 7. Update payment record atomically
-  payment.status = 'SUCCESS';
-  payment.razorpayPaymentId = razorpay_payment_id;
-  await payment.save();
+  try {
+    payment.status = 'SUCCESS';
+    payment.razorpayPaymentId = razorpay_payment_id;
+    await payment.save();
 
-  logger.info('Payment verified successfully', { orderId, razorpay_payment_id });
+    logger.info('Payment verified successfully', { orderId, razorpay_payment_id });
+  } finally {
+    // Release payment lock if held
+    try {
+      if (lockHeld) {
+        const released = await redisClient.releaseLock(lockKey, lockValue);
+        logger.debug('verifyPayment - payment lock released (finally)', { lockKey, lockValue, released, orderId, razorpay_payment_id });
+      }
+    } catch (releaseErr) {
+      logger.error('verifyPayment - failed to release payment lock', { lockKey, error: releaseErr?.message || String(releaseErr), orderId, razorpay_payment_id });
+    }
+  }
   
   // 🔒 PHASE 2 FIX: Additional amount validation if available in payload
   if (payload.amount !== undefined) {
@@ -662,6 +703,27 @@ export const handleWebhook = async (rawBody, signature) => {
     let payment = await repo.findByTransactionId(razorpay_order_id);
     if (!payment) return { status: 'ok' };
 
+    // 🔒 Acquire payment lock to avoid concurrent verify vs webhook updates
+    const paymentLockKey = `payment:lock:${payment.orderId}`;
+    const paymentLockValue = `${razorpay_payment_id}-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+    let paymentLockHeld = false;
+    try {
+      paymentLockHeld = await redisClient.acquireLock(paymentLockKey, paymentLockValue, 60);
+      logger.debug('handleWebhook - payment lock acquisition', { paymentLockKey, paymentLockValue, paymentLockHeld, razorpay_payment_id, orderId: payment.orderId });
+      if (!paymentLockHeld) {
+        logger.warn('handleWebhook - payment lock busy', { paymentLockKey, razorpay_payment_id, orderId: payment.orderId });
+        // Re-check payment state and return if already processed
+        const freshPayment = await repo.findByRazorpayPaymentId(razorpay_payment_id);
+        if (freshPayment && freshPayment.status === 'SUCCESS') {
+          logger.info('handleWebhook - payment processed while lock busy, skipping', { razorpay_payment_id });
+          return { status: 'ok', message: 'Already processed' };
+        }
+        // Otherwise continue cautiously (race possible)
+      }
+    } catch (lockErr) {
+      logger.error('handleWebhook - lock acquisition error', { error: lockErr?.message || String(lockErr), razorpay_payment_id });
+    }
+
     payment.status = 'SUCCESS';
     payment.razorpayPaymentId = razorpay_payment_id;
     await payment.save();
@@ -781,6 +843,16 @@ export const handleWebhook = async (rawBody, signature) => {
       await redisClient.setex(webhookKey, 86400, Date.now().toString());
     } catch (err) {
       logger.error('Failed to mark webhook as processed in Redis', { webhookId, error: err.message });
+    }
+    
+    // Release payment lock if we acquired it
+    try {
+      if (paymentLockHeld) {
+        const released = await redisClient.releaseLock(paymentLockKey, paymentLockValue);
+        logger.debug('handleWebhook - payment lock released', { paymentLockKey, paymentLockValue, released, razorpay_payment_id });
+      }
+    } catch (releaseErr) {
+      logger.error('handleWebhook - failed to release payment lock', { paymentLockKey, error: releaseErr?.message || String(releaseErr), razorpay_payment_id });
     }
   }
 
