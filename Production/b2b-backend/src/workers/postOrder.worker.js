@@ -1,19 +1,13 @@
 import { Worker } from 'bullmq';
 import { logger } from '../config/logger.js';
-
+import { getBullConnection } from '../config/redis.js';
 /**
  * 🔒 PHASE 4: Post-order worker
  * Processes shipment creation and delivery partner assignment
  * Survives server crashes and has automatic retry logic
  */
 
-const connection = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT) || 6379,
-  password: process.env.REDIS_PASSWORD,
-  maxRetriesPerRequest: null,
-  enableReadyCheck: false,
-};
+const connection = getBullConnection();
 
 const postOrderWorker = new Worker(
   'post-order',

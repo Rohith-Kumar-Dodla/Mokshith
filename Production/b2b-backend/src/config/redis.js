@@ -138,6 +138,33 @@ let redisConfig = env.REDIS_URL
       ...sharedRedisOptions,
     };
 
+// Startup diagnostics: centralized Redis configuration
+try {
+  const usingUrl = Boolean(env.REDIS_URL);
+  const provider = usingUrl && env.REDIS_URL.includes('upstash') ? 'upstash' : (usingUrl ? 'url' : 'standalone');
+  const tlsEnabled = usingUrl && String(env.REDIS_URL).startsWith('rediss://');
+  const redactedHost = (() => {
+    try {
+      if (usingUrl) {
+        const u = new URL(env.REDIS_URL);
+        return u.hostname ? `[redacted] ${u.hostname}` : '[redacted]';
+      }
+      return env.REDIS_HOST || '[unset]';
+    } catch {
+      return '[redacted]';
+    }
+  })();
+
+  logger.info('Redis startup diagnostics', {
+    provider,
+    usingUrl,
+    redisHost: redactedHost,
+    tlsEnabled
+  });
+} catch (diagErr) {
+  // swallow
+}
+
 // 🔒 PHASE 4: Support for Redis Sentinel (high availability)
 if (!env.REDIS_URL && env.REDIS_SENTINELS && typeof redisConfig === 'object') {
   try {
@@ -165,7 +192,18 @@ if (env.REDIS_CLUSTER === 'true') {
   logger.info('Redis Cluster mode requested');
 }
 
-const redis = new Redis(redisConfig);
+let redis;
+if (typeof redisConfig === 'string') {
+  // URL form (supports rediss://)
+  const tlsEnabled = String(redisConfig).startsWith('rediss://');
+  const opts = { ...sharedRedisOptions };
+  if (tlsEnabled) {
+    opts.tls = opts.tls || { rejectUnauthorized: true };
+  }
+  redis = new Redis(redisConfig, opts);
+} else {
+  redis = new Redis(redisConfig);
+}
 
 redis.on('connect', () => {
   logger.info('Redis connected', {
@@ -796,5 +834,23 @@ export const redisClient = {
     }
   },
 };
+
+/**
+ * Returns a BullMQ-compatible connection object.
+ * Prefer URL form when REDIS_URL is configured so BullMQ can honor rediss://
+ */
+export function getBullConnection() {
+  if (typeof redisConfig === 'string') {
+    return { url: redisConfig };
+  }
+  const conn = {};
+  if (redisConfig && typeof redisConfig === 'object') {
+    if (redisConfig.host) conn.host = redisConfig.host;
+    if (redisConfig.port) conn.port = redisConfig.port;
+    if (redisConfig.password) conn.password = redisConfig.password;
+    if (redisConfig.tls) conn.tls = redisConfig.tls;
+  }
+  return conn;
+}
 
 export default redis;

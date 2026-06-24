@@ -22,7 +22,7 @@ import { correlationMiddleware } from './middlewares/correlation.middleware.js';
 import { monitoringMiddleware, errorRateTracker } from './middlewares/monitoring.middleware.js';
 
 import { sentryRequestHandler, sentryTracingHandler, sentryErrorHandler } from './config/sentry.js';
-import { healthCheck, livenessProbe, readinessProbe, getMetrics } from './controllers/health.controller.js';
+import { healthCheck, livenessProbe, readinessProbe, getMetrics, redisOnlyProbe } from './controllers/health.controller.js';
 
 import logisticsRoutes from './modules/logistics/logistics.routes.js';
 
@@ -139,6 +139,9 @@ const mountHealthRoutes = (basePath) => {
 mountHealthRoutes('/health');
 mountHealthRoutes('/api/health');
 mountHealthRoutes('/api/v1/health');
+
+// Lightweight redis health endpoint
+app.get('/api/v1/health/redis', redisOnlyProbe);
 
 // 🔥 Trust proxy (important for Render / cloud deployments)
 app.set('trust proxy', 1);

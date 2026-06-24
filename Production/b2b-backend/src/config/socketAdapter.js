@@ -1,5 +1,5 @@
 import { createAdapter } from '@socket.io/redis-adapter';
-import { createClient } from 'redis';
+import redis from './redis.js';
 import { logger } from './logger.js';
 
 /**
@@ -14,36 +14,21 @@ export const configureSocketAdapter = async (io) => {
   }
 
   try {
-    const redisUrl = process.env.REDIS_URL || `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || 6379}`;
-    
-    // Create two Redis clients for Socket.IO adapter (pub/sub pattern)
-    const pubClient = createClient({ 
-      url: redisUrl,
-      password: process.env.REDIS_PASSWORD,
-      socket: {
-        reconnectStrategy: (retries) => {
-          if (retries > 10) {
-            logger.error('Socket.IO Redis adapter: Max reconnection attempts reached');
-            return new Error('Max reconnection attempts reached');
-          }
-          return Math.min(retries * 100, 3000);
-        }
-      }
-    });
-    
-    const subClient = pubClient.duplicate();
+    // Use centralized ioredis client and duplicate for pub/sub
+    const pubClient = redis.duplicate();
+    const subClient = redis.duplicate();
 
     // Error handlers
     pubClient.on('error', (err) => logger.error('Socket.IO Redis Pub Client Error:', err));
     subClient.on('error', (err) => logger.error('Socket.IO Redis Sub Client Error:', err));
 
-    // Connect both clients
+    // Connect both clients (ioredis duplicate instances need connect)
     await Promise.all([pubClient.connect(), subClient.connect()]);
 
     // Create and attach adapter
     io.adapter(createAdapter(pubClient, subClient));
 
-    logger.info('✅ Socket.IO Redis adapter configured for horizontal scaling');
+    logger.info('✅ Socket.IO Redis adapter configured for horizontal scaling (using centralized redis client)');
 
     // Store clients for cleanup
     io.socketRedisClients = { pubClient, subClient };
