@@ -11,7 +11,8 @@ export const securityMiddleware = (app) => {
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"],
+        // Allow Razorpay checkout script explicitly and secure CDNs
+        scriptSrc: ["'self'", "'unsafe-inline'", "https://checkout.razorpay.com"],
         styleSrc: ["'self'", "'unsafe-inline'", "https:"],
         imgSrc: ["'self'", "data:", "https:", "blob:", "*.razorpay.com"],
         connectSrc: ["'self'", "https:", "wss:", "*.razorpay.com"],
