@@ -21,10 +21,17 @@ export const createRazorpayOrder = async (amount, userId) => {
   }
 
   try {
+    const start = Date.now();
+    logger.debug('START createRazorpayOrder', { amount, userId });
     const order = await gateway.createPaymentOrder({ 
       amount: amount,
       receipt: `rcpt_${userId.toString().slice(-6)}_${Date.now()}` // Shortened to fit Razorpay's 40-char limit
     });
+    const duration = Date.now() - start;
+    logger.debug('END createRazorpayOrder', { amount, userId, durationMs: duration });
+    if (duration > 1000) {
+      logger.warn('Slow operation: createRazorpayOrder took >1s', { amount, userId, durationMs: duration });
+    }
     return order;
   } catch (error) {
     logger.error('Razorpay order creation failed', {
@@ -379,6 +386,9 @@ export const verifyPayment = async (payload, user = null) => {
   const { logger } = await import('../../config/logger.js');
   const DISABLE_REDIS = process.env.PAYMENT_DISABLE_REDIS === 'true';
 
+  const startVerify = Date.now();
+  logger.debug('START verifyPayment', { orderId, razorpay_order_id, razorpay_payment_id });
+
   // 🔒 1. Replay Protection: Check if this payment_id was already processed
   const replayKey = `payment:processed:${razorpay_payment_id}`;
   let alreadyProcessed = null;
@@ -612,6 +622,11 @@ export const verifyPayment = async (payload, user = null) => {
     logger.error('Failed to send payment notification', { orderId: orderToUpdate._id, error: notifyErr?.message || String(notifyErr) });
   }
 
+  const totalVerifyDuration = Date.now() - startVerify;
+  logger.debug('END verifyPayment', { orderId, razorpay_payment_id, durationMs: totalVerifyDuration });
+  if (totalVerifyDuration > 1000) {
+    logger.warn('Slow operation: verifyPayment took >1s', { orderId, razorpay_payment_id, durationMs: totalVerifyDuration });
+  }
   return payment;
 };
 
@@ -720,19 +735,16 @@ export const handleWebhook = async (rawBody, signature) => {
         }
         // Otherwise continue cautiously (race possible)
       }
-    } catch (lockErr) {
-      logger.error('handleWebhook - lock acquisition error', { error: lockErr?.message || String(lockErr), razorpay_payment_id });
-    }
 
-    payment.status = 'SUCCESS';
-    payment.razorpayPaymentId = razorpay_payment_id;
-    await payment.save();
+      payment.status = 'SUCCESS';
+      payment.razorpayPaymentId = razorpay_payment_id;
+      await payment.save();
 
-    const order = await Order.findById(payment.orderId);
-    if (order && order.paymentStatus !== 'PAID') {
-      const expectedAmount = payment.amount ?? order.totalAmount;
-      const amountDifference = Math.abs(expectedAmount - amount);
-      if (amountDifference > 1) {
+      const order = await Order.findById(payment.orderId);
+      if (order && order.paymentStatus !== 'PAID') {
+        const expectedAmount = payment.amount ?? order.totalAmount;
+        const amountDifference = Math.abs(expectedAmount - amount);
+        if (amountDifference > 1) {
         logger.error('🚨 SECURITY ALERT: Webhook amount mismatch - REJECTING payment processing', {
           orderId: order._id,
           userId: order.userId,
@@ -766,8 +778,19 @@ export const handleWebhook = async (rawBody, signature) => {
         
         // 🔒 STOP entire payment processing immediately
         throw new AppError('Payment amount mismatch detected - transaction rejected for security', 400);
+        }
       }
-      
+    } finally {
+      // Ensure payment lock released even on exceptions for this critical section
+      try {
+        if (paymentLockHeld) {
+          const released = await redisClient.releaseLock(paymentLockKey, paymentLockValue);
+          logger.debug('handleWebhook - payment lock released (finally)', { paymentLockKey, paymentLockValue, released, razorpay_payment_id });
+        }
+      } catch (releaseErr) {
+        logger.error('handleWebhook - failed to release payment lock (finally)', { paymentLockKey, error: releaseErr?.message || String(releaseErr), razorpay_payment_id });
+      }
+    }
       order.paymentStatus = 'PAID';
       order.status = 'CONFIRMED';
       await order.save();
@@ -854,7 +877,6 @@ export const handleWebhook = async (rawBody, signature) => {
     } catch (releaseErr) {
       logger.error('handleWebhook - failed to release payment lock', { paymentLockKey, error: releaseErr?.message || String(releaseErr), razorpay_payment_id });
     }
-  }
 
   return { status: 'ok' };
 };
