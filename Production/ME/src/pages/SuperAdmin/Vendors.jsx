@@ -141,9 +141,9 @@ const Vendors = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 items-stretch">
         {stats.map((stat) => (
-          <div key={stat.label} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
+          <div key={stat.label} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 h-full flex flex-col justify-between">
             <p className="text-xs sm:text-sm text-gray-500 mb-1">{stat.label}</p>
             <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{stat.value}</p>
           </div>

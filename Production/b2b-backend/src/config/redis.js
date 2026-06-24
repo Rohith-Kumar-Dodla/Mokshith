@@ -16,6 +16,32 @@ try {
 }
 import { logger } from './logger.js';
 
+// Verbose tracing for redis calls during payment debug
+const VERBOSE_REDIS_TRACING = process.env.PAYMENT_REDIS_FIX_VERSION === '1';
+
+function traceRedisCall(command, args) {
+  if (!VERBOSE_REDIS_TRACING) return;
+  try {
+    const argsPreview = args.map((a) => {
+      // Avoid printing huge buffers
+      if (Buffer.isBuffer(a)) return `<Buffer length=${a.length}>`;
+      try {
+        return typeof a === 'object' && a !== null ? JSON.stringify(a) : String(a);
+      } catch {
+        return String(a);
+      }
+    });
+    logger.info('[REDIS TRACE]', {
+      command,
+      args: argsPreview,
+      types: args.map((a) => (a === null ? 'null' : typeof a)),
+      stack: new Error().stack.split('\n').slice(2, 8).join('\n'),
+    });
+  } catch (err) {
+    // swallow tracing errors
+  }
+}
+
 // 🔒 Circuit Breaker State for Redis Resilience
 const circuitBreaker = {
   state: 'CLOSED', // CLOSED (working), OPEN (failing), HALF_OPEN (testing)
@@ -227,6 +253,7 @@ export const redisClient = {
     }
     
     try {
+      traceRedisCall('get', [key]);
       const result = await redis.get(key);
       circuitBreaker.recordSuccess();
       return result;
@@ -244,6 +271,7 @@ export const redisClient = {
     }
     
     try {
+      traceRedisCall('set', args);
       const result = await redis.set(...args);
       circuitBreaker.recordSuccess();
       return result;
@@ -264,6 +292,7 @@ export const redisClient = {
     }
     
     try {
+      traceRedisCall('lpush', [key, ...values]);
       let result;
       if (typeof redis.lpush === 'function') {
         result = await redis.lpush(key, ...values);
@@ -291,6 +320,7 @@ export const redisClient = {
     }
     
     try {
+      traceRedisCall('rpush', [key, ...values]);
       const result = await redis.rpush(key, ...values);
       circuitBreaker.recordSuccess();
       return result;
@@ -342,6 +372,7 @@ export const redisClient = {
     }
     
     try {
+      traceRedisCall('setex', [key, ttl, value]);
       const result = await redis.setex(key, ttl, value);
       circuitBreaker.recordSuccess();
       return result;
@@ -376,6 +407,7 @@ export const redisClient = {
     }
     
     try {
+      traceRedisCall('incr', [key]);
       const result = await redis.incr(key);
       circuitBreaker.recordSuccess();
       return result;
@@ -429,7 +461,8 @@ export const redisClient = {
     // Try Redis first if circuit breaker allows
     if (circuitBreaker.canAttempt()) {
       try {
-        const result = await redis.set(key, value, 'NX', 'EX', ttlSeconds);
+        traceRedisCall('set', [String(key), String(value), 'NX', 'EX', ttlSeconds]);
+        const result = await redis.set(String(key), String(value), 'NX', 'EX', ttlSeconds);
         if (result === 'OK') {
           circuitBreaker.recordSuccess();
           return true;
@@ -491,7 +524,8 @@ export const redisClient = {
             return 0
           end
         `;
-        const result = await redis.eval(script, 1, key, value);
+        traceRedisCall('eval', [script, 1, String(key), String(value)]);
+        const result = await redis.eval(script, 1, String(key), String(value));
         circuitBreaker.recordSuccess();
         redisReleased = result === 1;
         if (redisReleased) return true;
@@ -512,7 +546,7 @@ export const redisClient = {
         return false;
       }
       
-      const result = await LockModel.deleteOne({ key, value });
+        const result = await LockModel.deleteOne({ key, value });
       const dbReleased = result.deletedCount > 0;
       
       if (dbReleased) {
@@ -588,7 +622,8 @@ export const redisClient = {
             return 0
           end
         `;
-        const result = await redis.eval(script, 1, key, value, additionalSeconds);
+        traceRedisCall('eval', [script, 1, String(key), String(value), parseInt(additionalSeconds, 10)]);
+        const result = await redis.eval(script, 1, String(key), String(value), parseInt(additionalSeconds, 10));
         
         if (result === 1) {
           logger.debug('Lock TTL extended', { key, additionalSeconds });

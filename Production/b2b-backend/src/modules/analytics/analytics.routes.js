@@ -5,14 +5,18 @@ import { authorize } from '../../middlewares/role.middleware.js';
 
 const router = express.Router();
 
-router.use(protect, authorize('ADMIN', 'SUPER_ADMIN'));
+// All routes require authentication; finance routes require SUPER_ADMIN
+router.use(protect);
 
-router.get('/dashboard', analyticsController.getDashboard);
-router.get('/sales', analyticsController.getDashboard);
-router.get('/orders-trends', analyticsController.getDashboard);
-router.get('/categories', analyticsController.getDashboard);
-router.get('/top-products', analyticsController.getDashboard);
-router.get('/revenue', analyticsController.getDashboard);
-router.get('/delivery', analyticsController.getDeliveryAnalytics);
+// Finance and revenue endpoints - SUPER_ADMIN only
+router.get('/dashboard', authorize('SUPER_ADMIN'), analyticsController.getDashboard);
+router.get('/sales', authorize('SUPER_ADMIN'), analyticsController.getDashboard);
+router.get('/orders-trends', authorize('SUPER_ADMIN'), analyticsController.getDashboard);
+router.get('/categories', authorize('SUPER_ADMIN'), analyticsController.getDashboard);
+router.get('/top-products', authorize('SUPER_ADMIN'), analyticsController.getDashboard);
+router.get('/revenue', authorize('SUPER_ADMIN'), analyticsController.getDashboard);
+
+// Delivery analytics can be accessed by Admins and Super Admins
+router.get('/delivery', authorize('ADMIN', 'SUPER_ADMIN'), analyticsController.getDeliveryAnalytics);
 
 export default router;

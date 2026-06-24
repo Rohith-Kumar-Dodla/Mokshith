@@ -16,6 +16,7 @@ import {
 } from 'recharts';
 import PageHeader from '../../components/superadmin/PageHeader';
 import analyticsService from '../../services/analyticsService';
+import useViewport from '../../hooks/useViewport';
 
 const COLORS = ['#2563EB', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
 
@@ -23,6 +24,7 @@ const Analytics = () => {
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { isMobile } = useViewport();
 
   useEffect(() => {
     const loadAnalytics = async () => {
@@ -50,6 +52,7 @@ const Analytics = () => {
   const categoryData = analytics?.categoryData || [];
   const topProducts = analytics?.topProducts || [];
 
+
   return (
     <div className="space-y-6 sm:space-y-8">
       <PageHeader
@@ -63,7 +66,7 @@ const Analytics = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-4'} gap-4 sm:gap-6`}>
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
           <p className="text-xs sm:text-sm text-gray-500">Total Orders</p>
           <p className="text-2xl font-bold text-gray-900">{dashboard.totalOrders ?? 0}</p>
@@ -85,7 +88,7 @@ const Analytics = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
         <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Revenue Trend</h2>
         {salesData.length > 0 ? (
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={isMobile ? 220 : 300}>
             <LineChart data={salesData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
               <XAxis dataKey="name" stroke="#6B7280" fontSize={12} />
@@ -101,7 +104,7 @@ const Analytics = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+      <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'} gap-6 sm:gap-8`}>
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
           <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Category Distribution</h2>
           {categoryData.length > 0 ? (

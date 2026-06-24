@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FiBox, FiShoppingCart, FiTruck, FiUsers, FiDollarSign, FiCheckCircle, FiPlus, FiPackage, FiTrendingUp, FiUserPlus, FiFileText, FiArrowRight, FiGrid } from 'react-icons/fi';
+import { FiBox, FiShoppingCart, FiTruck, FiUsers, FiCheckCircle, FiPlus, FiPackage, FiTrendingUp, FiUserPlus, FiFileText, FiArrowRight, FiGrid } from 'react-icons/fi';
 import Card from '../../components/admin/Card';
 import adminService from '../../services/adminService';
 import analyticsService from '../../services/analyticsService';
@@ -25,12 +25,10 @@ const AdminDashboard = () => {
       setLoading(true);
       setError('');
       try {
-        const [statsPayload, analyticsPayload] = await Promise.all([
-          adminService.getStats(),
-          analyticsService.getDashboard(),
-        ]);
+        const statsPayload = await adminService.getStats();
         setStats(statsPayload?.data ?? statsPayload);
-        setAnalytics(analyticsPayload?.data ?? analyticsPayload);
+        // intentionally do not fetch financial analytics here; Admin should not receive financial data
+        setAnalytics(null);
       } catch (err) {
         setError(err?.response?.data?.message || err?.message || 'Failed to load dashboard');
       } finally {
@@ -47,7 +45,7 @@ const AdminDashboard = () => {
     { title: 'Total Vendors', value: String(stats?.totalVendors ?? '—'), icon: FiUsers, change: '+0%', color: 'green' },
     { title: 'Delivery Partners', value: String(stats?.totalDeliveryPartners ?? '—'), icon: FiTruck, change: '+0%', color: 'red' },
     { title: 'Pending Deliveries', value: String(dashboard.pendingDeliveries ?? '—'), icon: FiTruck, change: '—', color: 'red' },
-    { title: 'Revenue', value: formatCurrency(stats?.revenue ?? dashboard.revenue), icon: FiDollarSign, change: `${dashboard.revenueGrowth >= 0 ? '+' : ''}${dashboard.revenueGrowth ?? 0}%`, color: 'green' },
+    // Revenue removed from Admin view (financials are Super Admin-only)
     { title: 'Pending Approvals', value: String(stats?.pendingApprovals ?? '—'), icon: FiUserPlus, change: '—', color: 'purple' },
     { title: 'Total Admins', value: String(stats?.totalAdmins ?? '—'), icon: FiGrid, change: '—', color: 'blue' },
     { title: 'Active Customers', value: String(dashboard.activeCustomers ?? '—'), icon: FiUsers, change: '—', color: 'blue' },
@@ -67,7 +65,7 @@ const AdminDashboard = () => {
     { title: 'Total Users', value: String(stats?.totalUsers ?? '—'), icon: FiCheckCircle, trend: '—' },
     { title: 'Pending Deliveries', value: String(dashboard.pendingDeliveries ?? '—'), icon: FiTruck, trend: '—' },
     { title: 'Total Vendors', value: String(stats?.totalVendors ?? '—'), icon: FiUserPlus, trend: '—' },
-    { title: 'Revenue', value: formatCurrency(stats?.revenue ?? dashboard.revenue), icon: FiDollarSign, trend: `${dashboard.revenueGrowth >= 0 ? '+' : ''}${dashboard.revenueGrowth ?? 0}%` },
+    // Revenue removed from Admin view
   ];
 
   const recentActivities = notifications.slice(0, 6).map((notification) => ({

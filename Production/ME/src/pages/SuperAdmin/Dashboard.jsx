@@ -5,6 +5,7 @@ import DashboardCard from '../../components/superadmin/DashboardCard';
 import ActivityFeed from '../../components/superadmin/ActivityFeed';
 import PageHeader from '../../components/superadmin/PageHeader';
 import superAdminService from '../../services/superAdminService';
+import useViewport from '../../hooks/useViewport';
 
 const formatRevenue = (amount) => {
   if (!amount) return '₹0';
@@ -28,6 +29,7 @@ const SuperAdminDashboard = () => {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { isMobile } = useViewport();
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -82,6 +84,58 @@ const SuperAdminDashboard = () => {
 
   if (loading) {
     return <p className="text-sm text-gray-500">Loading dashboard...</p>;
+  }
+
+  if (isMobile) {
+    return (
+      <div className="space-y-4 min-w-0">
+        <PageHeader
+          title="Super Admin Dashboard"
+          subtitle="Monitor and manage the entire B2B ecosystem."
+        />
+
+        {error && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-3">
+          {platformHealth.map((item, idx) => (
+            <div key={idx} className="bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gray-50">
+                    <item.icon size={20} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">{item.title}</p>
+                    <p className="text-lg font-bold text-gray-900">{item.value}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+          <h2 className="text-sm font-semibold text-gray-900 mb-2">Quick Actions</h2>
+          <div className="grid grid-cols-3 gap-2">
+            {quickActions.map((action) => (
+              <Link key={action.title} to={action.link} className="flex flex-col items-center gap-1 p-2 bg-gray-50 rounded-md">
+                <div className={`p-2 rounded-md ${QUICK_ACTION_COLORS[action.color]}`}><action.icon size={18} /></div>
+                <span className="text-xs text-gray-700 text-center">{action.title}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+          <h2 className="text-sm font-semibold text-gray-900 mb-2">Recent Activity</h2>
+          {activities.length > 0 ? <ActivityFeed activities={activities} /> : <p className="text-sm text-gray-500">No recent activity recorded.</p>}
+        </div>
+      </div>
+    );
   }
 
   return (

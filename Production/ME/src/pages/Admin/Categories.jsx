@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { FiEdit, FiTrash2, FiEye, FiPackage, FiTrendingUp } from 'react-icons/fi';
 import PageHeader from '../../components/admin/PageHeader';
 import Card from '../../components/admin/Card';
+import TableResponsive from '../../components/common/TableResponsive';
 import StatusBadge from '../../components/admin/StatusBadge';
 import Modal from '../../components/admin/Modal';
 import ImageUpload from '../../components/common/ImageUpload';
@@ -207,7 +208,7 @@ const Categories = () => {
       )}
 
       <Card className="overflow-hidden p-0">
-        <div className="overflow-x-auto">
+        <TableResponsive>
           <table className="w-full min-w-[600px]">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
@@ -247,7 +248,7 @@ const Categories = () => {
               ))}
             </tbody>
           </table>
-        </div>
+        </TableResponsive>
       </Card>
 
       <Modal

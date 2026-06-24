@@ -136,7 +136,8 @@ export const loginWithPassword = async ({ mobile, identifier, password }, req = 
     const notFoundMessage = isEmailIdentifier(loginIdentifier)
       ? 'User not found'
       : 'User not found';
-    throw new AppError(notFoundMessage, 404);
+    // Standardized error code for frontend mapping
+    throw new AppError(notFoundMessage, 404, 'ACCOUNT_NOT_FOUND');
   }
 
   // Check Maintenance Mode
@@ -160,7 +161,8 @@ export const loginWithPassword = async ({ mobile, identifier, password }, req = 
     // Track failed login attempt
     await fraudDetection.trackLoginAttempt(loginIdentifier, ip, false);
     logger.warn('Failed login attempt', { identifier: loginIdentifier, ip });
-    throw new AppError('Invalid credentials', 401);
+    // Standardized error code for frontend mapping
+    throw new AppError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
   }
 
   // Track successful login
