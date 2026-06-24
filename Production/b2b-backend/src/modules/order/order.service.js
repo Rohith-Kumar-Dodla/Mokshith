@@ -37,6 +37,8 @@ const __dirname = path.dirname(__filename);
 
 export const createOrder = async (userId, data) => {
   const { paymentMethod = 'COD', shippingAddress, items: requestItems, idempotencyKey } = data;
+  const start = Date.now();
+  logger.debug('START createOrder', { userId, idempotencyKey, paymentMethod, items: Array.isArray(requestItems) ? requestItems.length : undefined });
 
   // 🔥 0. Idempotency Check
   if (idempotencyKey) {
@@ -215,7 +217,12 @@ export const createOrder = async (userId, data) => {
     }
 
     // Create order
+    const startCreateOrderDb = Date.now();
     order = await orderRepo.createOrder(orderData, { session });
+    const dbDuration = Date.now() - startCreateOrderDb;
+    if (dbDuration > 1000) {
+      logger.warn('Slow DB operation: createOrder (orderRepo.createOrder) >1s', { userId, orderId: order?._id, durationMs: dbDuration });
+    }
     
     // 🔒 CRITICAL FIX: Use different stock handling based on payment method
     // COD & CREDIT: Immediate deduction
@@ -223,7 +230,12 @@ export const createOrder = async (userId, data) => {
     if (paymentMethod.toUpperCase() === 'COD' || paymentMethod.toUpperCase() === 'CREDIT') {
       // Immediate stock deduction
       for (const item of items) {
+        const s = Date.now();
         await reduceStock(item.productId, item.quantity, { session });
+        const d = Date.now() - s;
+        if (d > 1000) {
+          logger.warn('Slow DB operation: reduceStock took >1s', { productId: item.productId, quantity: item.quantity, durationMs: d, orderId: order?._id });
+        }
       }
     } else {
       // Reserve inventory for pending payment (15 min TTL)
@@ -232,7 +244,12 @@ export const createOrder = async (userId, data) => {
         productId: item.productId,
         quantity: item.quantity
       }));
+      const sReserve = Date.now();
       await reserveInventory(order._id.toString(), reservationItems, 900);
+      const dReserve = Date.now() - sReserve;
+      if (dReserve > 1000) {
+        logger.warn('Slow operation: reserveInventory took >1s', { orderId: order._id, durationMs: dReserve });
+      }
     }
 
     if (supportsTransactions) {
@@ -295,6 +312,11 @@ export const createOrder = async (userId, data) => {
     logger.error('Non-critical post-order error', { orderId: order?._id, userId, error: err.message, stack: err.stack });
   }
 
+  const totalDuration = Date.now() - start;
+  logger.debug('END createOrder', { userId, orderId: order?._id, durationMs: totalDuration });
+  if (totalDuration > 1000) {
+    logger.warn('Slow operation: createOrder overall took >1s', { userId, orderId: order?._id, durationMs: totalDuration });
+  }
   return order;
 };
 

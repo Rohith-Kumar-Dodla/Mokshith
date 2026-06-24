@@ -28,6 +28,8 @@ const postOrderQueue = new Queue('post-order', { connection });
  * @param {string} data.paymentMethod - Payment method
  */
 export const queuePostPaymentJobs = async (data) => {
+  const start = Date.now();
+  logger.debug('START queuePostPaymentJobs', { data });
   try {
     const { orderId, userId, amount, paymentMethod } = data;
 
@@ -57,12 +59,18 @@ export const queuePostPaymentJobs = async (data) => {
       }
     );
 
-    logger.info('Post-payment jobs queued', { orderId, userId });
+    const duration = Date.now() - start;
+    logger.info('Post-payment jobs queued', { orderId, userId, durationMs: duration });
+    if (duration > 1000) {
+      logger.warn('Slow operation: queuePostPaymentJobs took >1s', { orderId, userId, durationMs: duration });
+    }
   } catch (error) {
+    const duration = Date.now() - start;
     logger.error('Failed to queue post-payment jobs', {
       error: error.message,
       data,
       stack: error.stack,
+      durationMs: duration
     });
     // Don't throw - post-payment tasks are non-critical
   }
