@@ -15,6 +15,11 @@ export function isRazorpayEnabled() {
  * without credentials configured.
  */
 export function getRazorpay() {
+  // Allow tests to inject a mock Razorpay instance via global.__RAZORPAY_MOCK__
+  if (process.env.NODE_ENV === 'test' && global.__RAZORPAY_MOCK__) {
+    return global.__RAZORPAY_MOCK__;
+  }
+
   if (!isRazorpayEnabled()) {
     throw new Error(
       'Razorpay is not configured. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env to enable online payments.'
@@ -42,5 +47,8 @@ if (!isRazorpayEnabled()) {
   );
 }
 
-/** @deprecated Use getRazorpay() — kept for backward compatibility when configured */
-export const razorpay = isRazorpayEnabled() ? getRazorpay() : null;
+/** Note: do NOT instantiate the Razorpay client at module load.
+ *  Tests mock the 'razorpay' module; importing/creating the client here
+ *  would force an early require of the real SDK and prevent mocks from applying.
+ *  Use getRazorpay() to obtain a client at call time.
+ */

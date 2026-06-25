@@ -109,6 +109,13 @@ const orderSchema = new mongoose.Schema(
       type: Object,
       default: {},
     },
+    
+    // Track how many times payment creation was attempted for this order
+    paymentAttempts: {
+      type: Number,
+      default: 0,
+      index: true,
+    },
 
     statusHistory: [
       {
