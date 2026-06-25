@@ -6,7 +6,8 @@ const objectId = Joi.string().pattern(/^[0-9a-fA-F]{24}$/).message('Invalid Mong
 // 🔥 EXISTING (UNCHANGED)
 export const verifyPaymentSchema = Joi.object({
   body: Joi.object({
-    orderId: Joi.string().required(),
+    // orderId can be omitted when verifying by gateway IDs
+    orderId: Joi.string().optional(),
     razorpay_order_id: Joi.string().required(),
     razorpay_payment_id: Joi.string().required(),
     razorpay_signature: Joi.string().required(),

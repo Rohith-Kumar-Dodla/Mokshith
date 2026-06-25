@@ -209,9 +209,23 @@ export const loginWithPassword = async ({ mobile, identifier, password }, req = 
 // REFRESH TOKEN WITH ROTATION
 export const refreshAuthToken = async (token, req = {}) => {
   const ip = req.ip || 'unknown';
-  
-  // Find active refresh token
-  const refreshTokenDoc = await RefreshToken.findActiveToken(token);
+
+  await assertDatabaseReady();
+
+  let refreshTokenDoc;
+  try {
+    refreshTokenDoc = await RefreshToken.findActiveToken(token);
+  } catch (lookupError) {
+    if (isDatabaseConnectionError(lookupError)) {
+      logger.error('Refresh token lookup failed due to database connectivity', {
+        ip,
+        error: lookupError.message,
+      });
+      throw new AppError('Database temporarily unavailable', 503);
+    }
+    logger.error('Refresh token lookup failed', { ip, error: lookupError.message });
+    throw lookupError;
+  }
 
   if (!refreshTokenDoc) {
     logger.warn('Invalid or expired refresh token used', { ip });
@@ -236,10 +250,29 @@ export const refreshAuthToken = async (token, req = {}) => {
   await refreshTokenDoc.markUsed();
 
   // Get user
-  const user = await findUserById(refreshTokenDoc.userId);
+  let user;
+  try {
+    user = await findUserById(refreshTokenDoc.userId);
+  } catch (userLookupError) {
+    if (isDatabaseConnectionError(userLookupError)) {
+      logger.error('User lookup during token refresh failed due to database connectivity', {
+        userId: refreshTokenDoc.userId,
+        ip,
+        error: userLookupError.message,
+      });
+      throw new AppError('Database temporarily unavailable', 503);
+    }
+    logger.error('User lookup during token refresh failed', {
+      userId: refreshTokenDoc.userId,
+      ip,
+      error: userLookupError.message,
+    });
+    throw userLookupError;
+  }
 
   if (!user) {
-    throw new AppError('User not found', 404);
+    logger.warn('Refresh token references missing user', { userId: refreshTokenDoc.userId, ip });
+    throw new AppError('User not found', 401);
   }
 
   // Check if user is active

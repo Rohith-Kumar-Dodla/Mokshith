@@ -4,7 +4,8 @@ import { redisClient } from '../../src/config/redis.js';
 
 describe('Fraud Detection Service - Unit Tests', () => {
   beforeEach(async () => {
-    // Clear all Redis keys before each test
+    // Enable strict fraud mode for unit tests that validate thresholds
+    process.env.AUTH_STRICT_MODE = 'true';
     await redisClient.flushall();
   });
 

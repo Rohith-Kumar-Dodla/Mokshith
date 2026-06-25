@@ -1,6 +1,7 @@
-export default {
+module.exports = {
   testEnvironment: 'node',
   setupFiles: ['<rootDir>/tests/env.setup.js'],
+  // Use ESM setup file (tests/setup.js) — babel-jest with useESM will preserve ESM imports
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
   testMatch: [
     '**/tests/**/*.test.js',
@@ -58,9 +59,15 @@ export default {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@tests/(.*)$': '<rootDir>/tests/$1',
   },
-  transform: {},
+  transform: {
+    '^.+\\.js$': ['babel-jest', { plugins: ['@babel/plugin-syntax-import-meta'] }]
+  },
   globals: {
-    __DEV__: true
+    __DEV__: true,
+    'babel-jest': {
+      useESM: true
+    }
   },
   maxWorkers: '50%'
 };
+

@@ -29,6 +29,10 @@ router.post('/reset-password', authLimiter, validate(resetPasswordSchema), contr
 router.post('/refresh-token', controller.refreshToken);
 router.get('/csrf-token', controller.getCsrfTokenHandler);
 
+// Allow logout by refresh token without requiring authentication so clients can revoke tokens.
+// This route accepts refreshToken in the body (or cookie) and should be callable without access token.
+router.post('/logout', controller.logout);
+
 // 2FA routes
 router.post('/2fa/verify', authLimiter, validate(verify2FASchema), controller.verify2FA);
 
@@ -41,8 +45,7 @@ router.post('/2fa/verify-setup', csrfProtection, validate(enable2FAVerifySchema)
 router.post('/2fa/disable', csrfProtection, controller.disable2FA);
 router.post('/change-password', csrfProtection, validate(changePasswordSchema), controller.changePassword);
 
-// Session management
-router.post('/logout', csrfProtection, controller.logout);
+// Session management (protected endpoints)
 router.post('/logout-all', csrfProtection, controller.logoutAll);
 router.get('/sessions', controller.getActiveSessions);
 router.delete('/sessions/:tokenId', csrfProtection, controller.revokeSession);

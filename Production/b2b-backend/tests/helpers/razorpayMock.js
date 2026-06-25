@@ -66,8 +66,8 @@ export class MockRazorpay {
         })
       ),
 
-      refund: jest.fn().mockImplementation((paymentId, options = {}) =>
-        Promise.resolve({
+      refund: jest.fn().mockImplementation((paymentId, options = {}) => {
+        return Promise.resolve({
           id: `rfnd_${Date.now()}`,
           entity: 'refund',
           amount: options.amount || 10000,
@@ -75,7 +75,7 @@ export class MockRazorpay {
           payment_id: paymentId,
           status: 'processed',
           created_at: Math.floor(Date.now() / 1000),
-        })
+        });
       }),
 
       fetchMultiple: jest.fn().mockResolvedValue({

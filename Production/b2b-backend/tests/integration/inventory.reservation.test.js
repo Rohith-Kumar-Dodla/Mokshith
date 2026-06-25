@@ -39,8 +39,8 @@ describe('Inventory Reservation Tests', () => {
     // Create test product
     testProduct = await Product.create({
       name: 'Reservation Test Product',
-      category: 'Test',
-      basePrice: 1000,
+      categoryId: new mongoose.Types.ObjectId(),
+      price: 1000,
       stock: 100,
       status: 'ACTIVE',
     });
@@ -87,8 +87,8 @@ describe('Inventory Reservation Tests', () => {
     it('should handle multiple items in single reservation', async () => {
       const product2 = await Product.create({
         name: 'Product 2',
-        category: 'Test',
-        basePrice: 500,
+        categoryId: new mongoose.Types.ObjectId(),
+        price: 500,
         stock: 50,
         status: 'ACTIVE',
       });
@@ -201,8 +201,8 @@ describe('Inventory Reservation Tests', () => {
     it('should handle multi-item finalization atomically', async () => {
       const product2 = await Product.create({
         name: 'Product 2',
-        category: 'Test',
-        basePrice: 500,
+        categoryId: new mongoose.Types.ObjectId(),
+        price: 500,
         stock: 50,
         status: 'ACTIVE',
       });

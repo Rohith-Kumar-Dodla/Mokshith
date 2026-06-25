@@ -14,7 +14,7 @@ import { TEMPLATES } from '../notification/notification.templates.js';
 import { ORDER_STATUS } from '../../constants/orderStatus.js';
 import { PAYMENT_STATUS } from '../../constants/paymentStatus.js';
 
-export const createRazorpayOrder = async (amount, userId) => {
+export const createRazorpayOrder = async (amount, userId, orderId = null) => {
   // Razorpay minimum amount is 100 paise (₹1)
   if (!amount || amount < 1) {
     throw new AppError('Minimum payment amount is ₹1', 400);
@@ -32,6 +32,34 @@ export const createRazorpayOrder = async (amount, userId) => {
     if (duration > 1000) {
       logger.warn('Slow operation: createRazorpayOrder took >1s', { amount, userId, durationMs: duration });
     }
+    // Backwards-compatibility: include common property names expected by callers/tests
+    order.razorpayOrderId = order.gatewayOrderId || order.id || order.order_id;
+
+    // If an orderId was provided, update the Order metadata and create a Payment record
+    if (orderId) {
+      const OrderModel = (await import('../order/order.model.js')).default;
+      const PaymentModel = (await import('./payment.model.js')).default;
+
+      const existingOrder = await OrderModel.findById(orderId);
+      if (!existingOrder) {
+        throw new AppError('Order not found', 404);
+      }
+
+      // Increment paymentAttempts safely
+      existingOrder.paymentAttempts = (existingOrder.paymentAttempts || 0) + 1;
+      await existingOrder.save();
+
+      // Create a payment tracking record
+      await PaymentModel.create({
+        orderId: existingOrder._id,
+        userId,
+        amount,
+        transactionId: order.gatewayOrderId || order.id || order.order_id,
+        status: 'PENDING',
+        metadata: {},
+      });
+    }
+
     return order;
   } catch (error) {
     logger.error('Razorpay order creation failed', {
@@ -722,6 +750,7 @@ export const handleWebhook = async (rawBody, signature) => {
     const paymentLockKey = `payment:lock:${payment.orderId}`;
     const paymentLockValue = `${razorpay_payment_id}-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
     let paymentLockHeld = false;
+    let order = null;
     try {
       paymentLockHeld = await redisClient.acquireLock(paymentLockKey, paymentLockValue, 60);
       logger.debug('handleWebhook - payment lock acquisition', { paymentLockKey, paymentLockValue, paymentLockHeld, razorpay_payment_id, orderId: payment.orderId });
@@ -740,7 +769,7 @@ export const handleWebhook = async (rawBody, signature) => {
       payment.razorpayPaymentId = razorpay_payment_id;
       await payment.save();
 
-      const order = await Order.findById(payment.orderId);
+      order = await Order.findById(payment.orderId);
       if (order && order.paymentStatus !== 'PAID') {
         const expectedAmount = payment.amount ?? order.totalAmount;
         const amountDifference = Math.abs(expectedAmount - amount);
@@ -791,18 +820,19 @@ export const handleWebhook = async (rawBody, signature) => {
         logger.error('handleWebhook - failed to release payment lock (finally)', { paymentLockKey, error: releaseErr?.message || String(releaseErr), razorpay_payment_id });
       }
     }
-      order.paymentStatus = 'PAID';
-      order.status = 'CONFIRMED';
-      await order.save();
-      
-      logger.info('Order marked as paid via webhook', { orderId: order._id });
-      
-      // 🔒 CRITICAL FIX: Finalize inventory reservation after webhook payment
-      try {
-        const { finalizeReservation } = await import('../inventory/inventory.service.js');
-        await finalizeReservation(order._id.toString());
-        logger.info('Inventory reservation finalized via webhook', { orderId: order._id });
-      } catch (err) {
+      if (order) {
+        order.paymentStatus = 'PAID';
+        order.status = 'CONFIRMED';
+        await order.save();
+        
+        logger.info('Order marked as paid via webhook', { orderId: order._id });
+        
+        // 🔒 CRITICAL FIX: Finalize inventory reservation after webhook payment
+        try {
+          const { finalizeReservation } = await import('../inventory/inventory.service.js');
+          await finalizeReservation(order._id.toString());
+          logger.info('Inventory reservation finalized via webhook', { orderId: order._id });
+        } catch (err) {
         logger.error('CRITICAL: Failed to finalize inventory reservation via webhook', {
           orderId: order._id,
           error: err.message,
@@ -877,6 +907,7 @@ export const handleWebhook = async (rawBody, signature) => {
     } catch (releaseErr) {
       logger.error('handleWebhook - failed to release payment lock', { paymentLockKey, error: releaseErr?.message || String(releaseErr), razorpay_payment_id });
     }
+  }
 
   return { status: 'ok' };
 };

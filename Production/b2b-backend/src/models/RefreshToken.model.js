@@ -199,4 +199,13 @@ refreshTokenSchema.methods.revoke = function(by = 'user', reason = 'manual_revoc
   return this.save();
 };
 
+// Expose legacy-friendly virtuals for compatibility with tests expecting `.revoked`
+refreshTokenSchema.virtual('revoked').get(function () {
+  return this.isRevoked;
+});
+
+// Ensure virtuals are included when converting documents to objects/JSON
+refreshTokenSchema.set('toObject', { virtuals: true });
+refreshTokenSchema.set('toJSON', { virtuals: true });
+
 export default mongoose.model('RefreshToken', refreshTokenSchema);

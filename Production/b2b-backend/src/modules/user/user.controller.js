@@ -2,6 +2,7 @@ import { asyncHandler } from '../../utils/asyncHandler.js';
 import * as service from './user.service.js';
 import { successResponse } from '../../utils/responseHandler.js';
 import { uploadFile } from '../../services/fileUpload.service.js';
+import { logger } from '../../config/logger.js';
 
 export const getProfile = asyncHandler(async (req, res) => {
   logger.debug('User.getProfile - incoming', { userId: req.user?.id, ip: req.ip, path: req.path, origin: req.headers.origin });

@@ -1,10 +1,9 @@
-import { jest } from '@jest/globals';
 import mongoose from 'mongoose';
 import * as paymentRepo from '../../src/modules/payment/payment.repository.js';
 import Order from '../../src/modules/order/order.model.js';
 let paymentService;
-import { setupTestDB, teardownTestDB, clearDatabase, setupRedis, teardownRedis, mockExternalServices } from '../helpers/testUtils.js';
-import * as gateway from '../../src/modules/payment/payment.gateway.js';
+import crypto from 'crypto';
+import { setupTestDB, teardownTestDB, clearDatabase, setupRedis, teardownRedis } from '../helpers/testUtils.js';
 import { redisClient } from '../../src/config/redis.js';
 
 describe('Payment Webhook — idempotency and signature handling', () => {
@@ -13,9 +12,6 @@ describe('Payment Webhook — idempotency and signature handling', () => {
     process.env.RAZORPAY_WEBHOOK_SECRET = 'test_secret_123';
     await setupTestDB();
     setupRedis();
-    mockExternalServices();
-    // Import paymentService after mocking external services to avoid bullmq/ioredis-mock lua issues
-    // eslint-disable-next-line no-global-assign
     paymentService = await import('../../src/modules/payment/payment.service.js');
   });
 
@@ -26,7 +22,6 @@ describe('Payment Webhook — idempotency and signature handling', () => {
   });
 
   beforeEach(async () => {
-    jest.restoreAllMocks();
     await clearDatabase();
   });
 
@@ -76,11 +71,13 @@ describe('Payment Webhook — idempotency and signature handling', () => {
     };
 
     const rawBody = JSON.stringify(payload);
-    // Mock gateway signature verification to return true
-    jest.spyOn(gateway, 'verifyWebhookSignature').mockReturnValue(true);
+    const signature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET)
+      .update(rawBody)
+      .digest('hex');
 
     // Act - first processing
-    const first = await paymentService.handleWebhook(rawBody, 'sig1');
+    const first = await paymentService.handleWebhook(rawBody, signature);
     expect(first).toBeDefined();
     expect(first.status).toBe('ok');
 
@@ -98,11 +95,13 @@ describe('Payment Webhook — idempotency and signature handling', () => {
     expect(redisVal).toBeDefined();
 
     // Act - replay the same webhook
-    const second = await paymentService.handleWebhook(rawBody, 'sig1');
+    const second = await paymentService.handleWebhook(rawBody, signature);
     expect(second).toBeDefined();
-    // Accept either "Already processed" or "Already captured" message depending on timing
-    expect(typeof second.message === 'string' || second.status === 'ok').toBeTruthy();
-    expect(second.message ? second.message.toLowerCase().includes('already') : true).toBeTruthy();
+    // Should be idempotent
+    expect(second.status).toBe('ok');
+    if (second.message) {
+      expect(second.message.toLowerCase()).toContain('already');
+    }
   }, 20000);
 });
 

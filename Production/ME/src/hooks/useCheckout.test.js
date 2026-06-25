@@ -74,9 +74,15 @@ describe('useCheckout', () => {
     });
 
     expect(orderService.createOrder).toHaveBeenCalled();
+    // Navigate includes orderId query param and state with order/payment info
     expect(navigateMock).toHaveBeenCalledWith(
-      '/vendor/order-success',
-      expect.objectContaining({ replace: true })
+      expect.stringMatching(/^\/vendor\/order-success\?orderId=order-1$/),
+      expect.objectContaining({
+        replace: true,
+        state: expect.objectContaining({
+          paymentMethodId: 'cod',
+        }),
+      })
     );
   });
 });
