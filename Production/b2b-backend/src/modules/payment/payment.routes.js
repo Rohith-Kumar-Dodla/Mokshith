@@ -53,6 +53,11 @@ csrfProtected.post('/fail', paymentLimiter, protect, controller.failPayment);
 // 6. /initiate/:orderId
 csrfProtected.post('/initiate/:orderId', paymentLimiter, protect, controller.initiatePayment);
 
+// 7. Refunds
+csrfProtected.post('/refund', paymentLimiter, protect, controller.createRefund);
+csrfProtected.get('/refund/history/:orderId', paymentLimiter, protect, controller.getRefundHistory);
+csrfProtected.get('/refund/:refundId', paymentLimiter, protect, controller.getRefundById);
+
 // 7. Bank transfer payment proofs
 router.use('/bank-transfer', bankTransferRoutes);
 

@@ -4,9 +4,9 @@ import { successResponse } from '../../utils/responseHandler.js';
 import { logger } from '../../config/logger.js';
 
 export const createRazorpayOrder = asyncHandler(async (req, res) => {
-  const { amount } = req.body;
+  const { amount, orderId } = req.body;
   logger.debug('Payment.createRazorpayOrder - incoming', { userId: req.user?.id, ip: req.ip, origin: req.headers.origin, hasAuthHeader: !!req.headers.authorization, cookies: Object.keys(req.cookies || {}) });
-  const data = await service.createRazorpayOrder(amount, req.user.id);
+  const data = await service.createRazorpayOrder(amount, req.user.id, orderId);
   successResponse(res, data, 'Razorpay order created');
 });
 

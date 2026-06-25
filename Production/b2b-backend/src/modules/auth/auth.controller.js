@@ -1,6 +1,8 @@
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import * as authService from './auth.service.js';
 import { successResponse } from '../../utils/responseHandler.js';
+import { logger } from '../../config/logger.js';
+import AppError from '../../errors/AppError.js';
 import Audit from '../audit/audit.model.js';
 import { 
   trackAuthAttempt, 
@@ -108,6 +110,11 @@ export const refreshToken = asyncHandler(async (req, res) => {
   const token = bodyToken || cookieToken;
 
   logger.debug('Auth.refreshToken called', { hasBodyToken: !!bodyToken, hasCookieToken: !!cookieToken, ip: req.ip, origin: req.headers.origin });
+
+  if (!token || token === 'null' || token === 'undefined') {
+    logger.warn('Auth.refreshToken - no token provided', { ip: req.ip, origin: req.headers.origin });
+    throw new AppError('Refresh token required', 401);
+  }
 
   const data = await authService.refreshAuthToken(token, req);
 

@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import Redis from 'ioredis-mock';
-import { jest } from '@jest/globals';
 
 let mongoServer;
 let redisClient;
@@ -142,67 +141,65 @@ export const teardownRedis = async () => {
 
 // Mock external services
 export const mockExternalServices = () => {
-  // Mock Razorpay
   jest.mock('razorpay', () => {
-    return jest.fn().mockImplementation(() => ({
+    const razorpayMock = globalThis.jest.fn().mockImplementation(() => ({
       orders: {
-        create: jest.fn().mockResolvedValue({
+        create: globalThis.jest.fn().mockResolvedValue({
           id: 'order_mock123',
           amount: 10000,
           currency: 'INR',
           status: 'created',
         }),
-        fetch: jest.fn().mockResolvedValue({
+        fetch: globalThis.jest.fn().mockResolvedValue({
           id: 'order_mock123',
           status: 'paid',
         }),
       },
       payments: {
-        fetch: jest.fn().mockResolvedValue({
+        fetch: globalThis.jest.fn().mockResolvedValue({
           id: 'pay_mock123',
           order_id: 'order_mock123',
           status: 'captured',
           amount: 10000,
         }),
-        capture: jest.fn().mockResolvedValue({
+        capture: globalThis.jest.fn().mockResolvedValue({
           id: 'pay_mock123',
           status: 'captured',
         }),
-        refund: jest.fn().mockResolvedValue({
+        refund: globalThis.jest.fn().mockResolvedValue({
           id: 'rfnd_mock123',
           amount: 10000,
           status: 'processed',
         }),
       },
     }));
+
+    return razorpayMock;
   });
 
-  // Mock SendGrid/Email
   jest.mock('../../src/services/email.service.js', () => ({
-    sendEmail: jest.fn().mockResolvedValue(true),
-    sendOTPEmail: jest.fn().mockResolvedValue(true),
-    sendOrderConfirmation: jest.fn().mockResolvedValue(true),
+    sendEmail: globalThis.jest.fn().mockResolvedValue(true),
+    sendOTPEmail: globalThis.jest.fn().mockResolvedValue(true),
+    sendOrderConfirmation: globalThis.jest.fn().mockResolvedValue(true),
   }));
 
-  // Mock Socket.IO
   jest.mock('socket.io', () => ({
-    Server: jest.fn().mockImplementation(() => ({
-      emit: jest.fn(),
-      to: jest.fn().mockReturnThis(),
-      in: jest.fn().mockReturnThis(),
+    Server: globalThis.jest.fn().mockImplementation(() => ({
+      emit: globalThis.jest.fn(),
+      to: globalThis.jest.fn().mockReturnThis(),
+      in: globalThis.jest.fn().mockReturnThis(),
     })),
   }));
 
-  // Mock BullMQ
   jest.mock('bullmq', () => ({
-    Queue: jest.fn().mockImplementation(() => ({
-      add: jest.fn().mockResolvedValue({ id: 'job123' }),
-      process: jest.fn(),
-      close: jest.fn(),
+    Queue: globalThis.jest.fn().mockImplementation(() => ({
+      add: globalThis.jest.fn().mockResolvedValue({ id: 'job123' }),
+      process: globalThis.jest.fn(),
+      close: globalThis.jest.fn(),
     })),
-    Worker: jest.fn().mockImplementation(() => ({
-      on: jest.fn(),
-      close: jest.fn(),
+    Worker: globalThis.jest.fn().mockImplementation(() => ({
+      on: globalThis.jest.fn(),
+      close: globalThis.jest.fn(),
     })),
   }));
 };

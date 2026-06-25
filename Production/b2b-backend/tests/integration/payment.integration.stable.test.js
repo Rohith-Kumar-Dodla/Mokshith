@@ -8,7 +8,6 @@ import {
   clearDatabase,
   setupRedis,
   teardownRedis,
-  mockExternalServices,
   generateTestUser,
   generateTestOrder,
 } from '../helpers/testUtils.js';
@@ -20,12 +19,14 @@ import Order from '../../src/modules/order/order.model.js';
 import Payment from '../../src/modules/payment/payment.model.js';
 import { generateAccessToken } from '../../src/modules/auth/auth.token.js';
 import { generateCsrfToken } from '../../src/middlewares/csrf.middleware.js';
+import { MockRazorpay } from '../helpers/razorpayMock.js';
 
 let app;
 let request;
 
 // Ensure external services are mocked before app loads
-mockExternalServices();
+// Use in-process Razorpay mock via app's test hook
+global.__RAZORPAY_MOCK__ = new MockRazorpay();
 
 // Ensure test secrets are present in environment
 process.env.RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'test_secret';
@@ -63,12 +64,11 @@ describe('Payment module - stable integration tests', () => {
     const user = await User.create({ ...generateTestUser({ email: 'pay1@test.com' }), password: hashed, status: 'ACTIVE' });
 
     const accessToken = generateAccessToken(user);
-    const csrfToken2 = generateCsrfToken();
     expect(accessToken).toBeDefined();
     const csrfToken = generateCsrfToken();
 
-    const orderData = generateTestOrder({ customerId: user._id, totalAmount: 1500 });
-    const order = await Order.create({ ...orderData, status: 'CONFIRMED' });
+    const orderData = generateTestOrder({ userId: user._id, totalAmount: 1500 });
+    const order = await Order.create({ ...orderData, userId: user._id, status: 'CONFIRMED' });
 
     const res = await request
       .post('/api/v1/payments/create-order')
@@ -81,7 +81,7 @@ describe('Payment module - stable integration tests', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.data).toHaveProperty('razorpayOrderId');
 
-    const payment = await Payment.findOne({ razorpayOrderId: res.body.data.razorpayOrderId });
+    const payment = await Payment.findOne({ transactionId: res.body.data.razorpayOrderId });
     expect(payment).toBeDefined();
     expect(payment.amount).toBe(1500);
   });
@@ -92,14 +92,15 @@ describe('Payment module - stable integration tests', () => {
     const user = await User.create({ ...generateTestUser({ email: 'pay2@test.com' }), password: hashed, status: 'ACTIVE' });
 
     const accessToken = generateAccessToken(user);
+    const csrfToken = generateCsrfToken();
 
-    const order = await Order.create({ ...generateTestOrder({ customerId: user._id, totalAmount: 2000 }), status: 'CONFIRMED' });
+    const order = await Order.create({ ...generateTestOrder({ userId: user._id, totalAmount: 2000 }), userId: user._id, status: 'CONFIRMED' });
     const payment = await Payment.create({
       orderId: order._id,
-      customerId: user._id,
+      userId: user._id,
       amount: 2000,
-      razorpayOrderId: 'order_test_verify',
       status: 'PENDING',
+      transactionId: 'order_test_verify',
     });
 
     // Compute a valid signature using env secret
@@ -108,9 +109,10 @@ describe('Payment module - stable integration tests', () => {
     const verifyRes = await request
       .post('/api/v1/payments/verify')
       .set('Authorization', `Bearer ${accessToken}`)
-      .set('Cookie', `csrf-token=${csrfToken2}`)
-      .set('x-csrf-token', csrfToken2)
+      .set('Cookie', `csrf-token=${csrfToken}`)
+      .set('x-csrf-token', csrfToken)
       .send({
+        orderId: order._id.toString(),
         razorpay_order_id: 'order_test_verify',
         razorpay_payment_id: 'pay_test_verify',
         razorpay_signature: signature,
@@ -121,7 +123,38 @@ describe('Payment module - stable integration tests', () => {
     const updatedPayment = await Payment.findById(payment._id);
     expect(updatedPayment.status).toBe('SUCCESS');
     const updatedOrder = await Order.findById(order._id);
-    expect(updatedOrder.paymentStatus).toBe('SUCCESS' || 'PAID');
+    expect(['PAID', 'SUCCESS']).toContain(updatedOrder.paymentStatus);
+  });
+
+  it('rejects verify with invalid signature', async () => {
+    const password = 'Test@1234';
+    const hashed = await hashPassword(password);
+    const user = await User.create({ ...generateTestUser({ email: 'pay_invalid_sig@test.com' }), password: hashed, status: 'ACTIVE' });
+
+    const accessToken = generateAccessToken(user);
+    const csrfToken = generateCsrfToken();
+
+    const order = await Order.create({ ...generateTestOrder({ userId: user._id, totalAmount: 2000 }), userId: user._id, status: 'CONFIRMED' });
+    await Payment.create({
+      orderId: order._id,
+      userId: user._id,
+      amount: 2000,
+      status: 'PENDING',
+      transactionId: 'order_test_invalid_sig',
+    });
+
+    await request
+      .post('/api/v1/payments/verify')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .set('Cookie', `csrf-token=${csrfToken}`)
+      .set('x-csrf-token', csrfToken)
+      .send({
+        orderId: order._id.toString(),
+        razorpay_order_id: 'order_test_invalid_sig',
+        razorpay_payment_id: 'pay_test_invalid_sig',
+        razorpay_signature: 'definitely_invalid',
+      })
+      .expect(400);
   });
 
   it('handles webhook payment.captured and idempotently updates payment', async () => {
@@ -129,14 +162,12 @@ describe('Payment module - stable integration tests', () => {
     const hashed = await hashPassword(password);
     const user = await User.create({ ...generateTestUser({ email: 'pay3@test.com' }), password: hashed, status: 'ACTIVE' });
 
-    const accessToken = generateAccessToken(user);
-
-    const order = await Order.create({ ...generateTestOrder({ customerId: user._id, totalAmount: 1200 }), status: 'CONFIRMED' });
+    const order = await Order.create({ ...generateTestOrder({ userId: user._id, totalAmount: 1200 }), userId: user._id, status: 'CONFIRMED' });
     const payment = await Payment.create({
       orderId: order._id,
-      customerId: user._id,
+      userId: user._id,
       amount: 1200,
-      razorpayOrderId: 'order_webhook_1',
+      transactionId: 'order_webhook_1',
       razorpayPaymentId: 'pay_webhook_1',
       status: 'PENDING',
     });
@@ -145,7 +176,7 @@ describe('Payment module - stable integration tests', () => {
     const payload = {
       entity: 'event',
       event: 'payment.captured',
-      payload: { payment: { entity: { id: 'pay_webhook_1', order_id: 'order_webhook_1', amount: 1200 } } },
+      payload: { payment: { entity: { id: 'pay_webhook_1', order_id: 'order_webhook_1', amount: 1200 * 100 } } },
     };
     const raw = JSON.stringify(payload);
     const signature = crypto.createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET || env.razorpay.keySecret || 'test_secret').update(raw).digest('hex');
