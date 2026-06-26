@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
-import { setupTestDB, teardownTestDB, clearDatabase } from '../helpers/testUtils.js';
+import { clearDatabase } from '../helpers/testUtils.js';
 import User from '../../src/modules/user/user.model.js';
 import { loginWithPassword } from '../../src/modules/auth/auth.service.js';
 import { generateAccessToken } from '../../src/modules/auth/auth.token.js';
@@ -7,14 +7,6 @@ import { hashPassword } from '../../src/utils/hashPassword.js';
 import { findUserByEmailOrMobile } from '../../src/modules/auth/auth.repository.js';
 
 describe('Single Active Session - backend', () => {
-  beforeAll(async () => {
-    await setupTestDB();
-  });
-
-  afterAll(async () => {
-    await teardownTestDB();
-  });
-
   beforeEach(async () => {
     await clearDatabase();
   });

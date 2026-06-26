@@ -1,6 +1,7 @@
 import * as repo from './cart.repository.js';
 import Product from '../product/product.model.js';
 import AppError from '../../errors/AppError.js';
+import { checkStock } from '../inventory/inventory.service.js';
 import mongoose from 'mongoose';
 import { logger } from '../../config/logger.js';
 import {
@@ -74,11 +75,14 @@ export const addToCart = async (user, { productId, quantity }) => {
     throw new AppError(`Minimum order quantity for ${product.name} is ${minQty}`, 400);
   }
 
-  if (Number(product.stock ?? 0) < quantity) {
-    throw new AppError('Insufficient stock', 400);
-  }
-
   let cart = await loadUserCart(userId);
+  const targetProductId = productId.toString();
+  const existingItem = cart?.items.find(
+    (item) => normalizeProductRef(item.productId) === targetProductId
+  );
+  const requestedQty = existingItem ? existingItem.quantity + quantity : quantity;
+
+  await checkStock(productId, requestedQty);
 
   if (!cart) {
     await repo.createCart({
@@ -87,11 +91,6 @@ export const addToCart = async (user, { productId, quantity }) => {
     });
     return repo.findCartByUser(userId);
   }
-
-  const targetProductId = productId.toString();
-  const existingItem = cart.items.find(
-    (item) => normalizeProductRef(item.productId) === targetProductId
-  );
 
   if (existingItem) {
     existingItem.quantity += quantity;

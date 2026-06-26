@@ -14,6 +14,7 @@
     "test:unit": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/unit",
     "test:integration": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/integration",
     "test:e2e": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/e2e",
+    "test:infrastructure": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --config=jest.infrastructure.cjs",
     "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage",
     "test:watch": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "lint": "eslint . || echo 'ESLint not configured'",

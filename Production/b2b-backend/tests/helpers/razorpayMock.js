@@ -1,40 +1,35 @@
-import { jest } from '@jest/globals';
-
 /**
- * Mock Razorpay SDK for payment testing
+ * In-process Razorpay SDK mock for integration tests.
+ * Uses plain async functions (not jest.fn) so jest.clearAllMocks() cannot strip implementations.
  */
 export class MockRazorpay {
   constructor() {
     this.orders = {
-      create: jest.fn().mockImplementation((options) =>
-        Promise.resolve({
-          id: `order_${Date.now()}`,
-          entity: 'order',
-          amount: options.amount,
-          amount_paid: 0,
-          amount_due: options.amount,
-          currency: options.currency || 'INR',
-          receipt: options.receipt,
-          status: 'created',
-          attempts: 0,
-          created_at: Math.floor(Date.now() / 1000),
-        })
-      ),
+      create: async (options) => ({
+        id: `order_${Date.now()}`,
+        entity: 'order',
+        amount: options.amount,
+        amount_paid: 0,
+        amount_due: options.amount,
+        currency: options.currency || 'INR',
+        receipt: options.receipt,
+        status: 'created',
+        attempts: 0,
+        created_at: Math.floor(Date.now() / 1000),
+      }),
 
-      fetch: jest.fn().mockImplementation((orderId) =>
-        Promise.resolve({
-          id: orderId,
-          entity: 'order',
-          amount: 10000,
-          amount_paid: 10000,
-          amount_due: 0,
-          currency: 'INR',
-          status: 'paid',
-          attempts: 1,
-        })
-      ),
+      fetch: async (orderId) => ({
+        id: orderId,
+        entity: 'order',
+        amount: 10000,
+        amount_paid: 10000,
+        amount_due: 0,
+        currency: 'INR',
+        status: 'paid',
+        attempts: 1,
+      }),
 
-      fetchAll: jest.fn().mockResolvedValue({
+      fetchAll: async () => ({
         entity: 'collection',
         count: 1,
         items: [],
@@ -42,43 +37,38 @@ export class MockRazorpay {
     };
 
     this.payments = {
-      fetch: jest.fn().mockImplementation((paymentId) =>
-        Promise.resolve({
-          id: paymentId,
-          entity: 'payment',
-          amount: 10000,
-          currency: 'INR',
-          status: 'captured',
-          method: 'card',
-          captured: true,
-          created_at: Math.floor(Date.now() / 1000),
-        })
-      ),
-
-      capture: jest.fn().mockImplementation((paymentId, amount) =>
-        Promise.resolve({
-          id: paymentId,
-          entity: 'payment',
-          amount,
-          currency: 'INR',
-          status: 'captured',
-          captured: true,
-        })
-      ),
-
-      refund: jest.fn().mockImplementation((paymentId, options = {}) => {
-        return Promise.resolve({
-          id: `rfnd_${Date.now()}`,
-          entity: 'refund',
-          amount: options.amount || 10000,
-          currency: 'INR',
-          payment_id: paymentId,
-          status: 'processed',
-          created_at: Math.floor(Date.now() / 1000),
-        });
+      fetch: async (paymentId) => ({
+        id: paymentId,
+        entity: 'payment',
+        amount: 10000,
+        currency: 'INR',
+        status: 'captured',
+        method: 'card',
+        captured: true,
+        created_at: Math.floor(Date.now() / 1000),
       }),
 
-      fetchMultiple: jest.fn().mockResolvedValue({
+      capture: async (paymentId, amount) => ({
+        id: paymentId,
+        entity: 'payment',
+        amount,
+        currency: 'INR',
+        status: 'captured',
+        captured: true,
+      }),
+
+      refund: async (paymentId, options = {}) => ({
+        id: `rfnd_${Date.now()}`,
+        entity: 'refund',
+        amount: options.amount ?? 10000,
+        currency: 'INR',
+        payment_id: paymentId,
+        status: 'processed',
+        created_at: Math.floor(Date.now() / 1000),
+        notes: options.notes,
+      }),
+
+      fetchMultiple: async () => ({
         entity: 'collection',
         count: 0,
         items: [],
@@ -86,17 +76,15 @@ export class MockRazorpay {
     };
 
     this.refunds = {
-      fetch: jest.fn().mockImplementation((refundId) =>
-        Promise.resolve({
-          id: refundId,
-          entity: 'refund',
-          amount: 10000,
-          currency: 'INR',
-          status: 'processed',
-        })
-      ),
+      fetch: async (refundId) => ({
+        id: refundId,
+        entity: 'refund',
+        amount: 10000,
+        currency: 'INR',
+        status: 'processed',
+      }),
 
-      fetchAll: jest.fn().mockResolvedValue({
+      fetchAll: async () => ({
         entity: 'collection',
         count: 0,
         items: [],
@@ -104,48 +92,19 @@ export class MockRazorpay {
     };
   }
 
-  // Simulate payment failure
-  simulateFailure(method = 'create') {
-    if (method === 'create') {
-      this.orders.create.mockRejectedValueOnce(
-        new Error('Razorpay API Error: Invalid amount')
-      );
-    } else if (method === 'capture') {
-      this.payments.capture.mockRejectedValueOnce(
-        new Error('Payment capture failed')
-      );
-    }
-  }
-
-  // Simulate payment success
-  simulateSuccess(type = 'order') {
-    if (type === 'order') {
-      this.orders.fetch.mockResolvedValueOnce({
-        id: 'order_success',
-        status: 'paid',
-        amount_paid: 10000,
-      });
-    }
-  }
-
-  // Reset all mocks
   reset() {
-    this.orders.create.mockClear();
-    this.orders.fetch.mockClear();
-    this.payments.fetch.mockClear();
-    this.payments.capture.mockClear();
-    this.payments.refund.mockClear();
+    // no-op: implementations are stable plain functions
   }
 }
 
-/**
- * Mock Razorpay webhook signature verification
- */
-export const mockVerifyWebhookSignature = jest.fn().mockReturnValue(true);
+/** Ensure global Razorpay mock is present for payment integration suites. */
+export function ensureRazorpayMock() {
+  if (!global.__RAZORPAY_MOCK__) {
+    global.__RAZORPAY_MOCK__ = new MockRazorpay();
+  }
+  return global.__RAZORPAY_MOCK__;
+}
 
-/**
- * Generate Razorpay webhook payload
- */
 export const generateWebhookPayload = (event = 'payment.captured', data = {}) => ({
   entity: 'event',
   account_id: 'acc_test123',
@@ -167,13 +126,5 @@ export const generateWebhookPayload = (event = 'payment.captured', data = {}) =>
   },
   created_at: Math.floor(Date.now() / 1000),
 });
-
-/**
- * Generate webhook signature
- */
-export const generateWebhookSignature = (payload, secret = 'test_secret') => {
-  // Mock signature - in real tests we'd use crypto
-  return 'mock_signature_' + Buffer.from(JSON.stringify(payload)).toString('base64').slice(0, 20);
-};
 
 export default MockRazorpay;

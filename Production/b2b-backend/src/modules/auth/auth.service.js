@@ -4,6 +4,7 @@ import {
   createUser,
   updateUser,
   findUserById,
+  findUserByIdWithPassword,
 } from './auth.repository.js';
 
 import { hashPassword } from '../../utils/hashPassword.js';
@@ -94,7 +95,7 @@ export const register = async (data, req = {}) => {
 
   logger.info('User registered', { userId: user._id, email, role: user.role });
 
-  return user;
+  return sanitizeUser(user);
 };
 
 // PASSWORD LOGIN
@@ -431,7 +432,7 @@ export const verify2FASetup = async (userId, code) => {
  * Disable 2FA
  */
 export const disable2FA = async (userId, password) => {
-  const user = await findUserById(userId);
+  const user = await findUserByIdWithPassword(userId);
 
   if (!user) {
     throw new AppError('User not found', 404);
@@ -460,7 +461,7 @@ export const disable2FA = async (userId, password) => {
  * Change password with security checks
  */
 export const changePassword = async (userId, oldPassword, newPassword) => {
-  const user = await findUserById(userId);
+  const user = await findUserByIdWithPassword(userId);
 
   if (!user) {
     throw new AppError('User not found', 404);

@@ -3,8 +3,6 @@ import supertest from 'supertest';
 import crypto from 'crypto';
 
 import {
-  setupTestDB,
-  teardownTestDB,
   clearDatabase,
   setupRedis,
   teardownRedis,
@@ -13,31 +11,24 @@ import {
 } from '../helpers/testUtils.js';
 import { hashPassword } from '../../src/utils/hashPassword.js';
 
-import { env } from '../../src/config/env.js';
 import User from '../../src/modules/user/user.model.js';
 import Order from '../../src/modules/order/order.model.js';
 import Payment from '../../src/modules/payment/payment.model.js';
 import { generateAccessToken } from '../../src/modules/auth/auth.token.js';
 import { generateCsrfToken } from '../../src/middlewares/csrf.middleware.js';
-import { MockRazorpay } from '../helpers/razorpayMock.js';
+import { ensureRazorpayMock } from '../helpers/razorpayMock.js';
 
 let app;
 let request;
 
-// Ensure external services are mocked before app loads
-// Use in-process Razorpay mock via app's test hook
-global.__RAZORPAY_MOCK__ = new MockRazorpay();
-
-// Ensure test secrets are present in environment
 process.env.RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'test_secret';
 process.env.RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || 'test_secret';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_jwt_secret';
 
 describe('Payment module - stable integration tests', () => {
   beforeAll(async () => {
-    await setupTestDB();
+    ensureRazorpayMock();
     setupRedis();
-    // Dynamically import app after mocks are applied
     const mod = await import('../../src/app.js');
     app = mod.default || mod;
     request = supertest(app);
@@ -45,16 +36,16 @@ describe('Payment module - stable integration tests', () => {
 
   afterAll(async () => {
     await teardownRedis();
-    await teardownTestDB();
   });
 
   beforeEach(async () => {
+    ensureRazorpayMock();
     await clearDatabase();
   });
 
   const computeSignature = (orderId, paymentId) => {
     const sign = `${orderId}|${paymentId}`;
-    const secret = env.razorpay.keySecret || process.env.RAZORPAY_KEY_SECRET || 'test_secret';
+    const secret = process.env.RAZORPAY_KEY_SECRET || 'test_secret';
     return crypto.createHmac('sha256', secret).update(sign).digest('hex');
   };
 
@@ -179,7 +170,7 @@ describe('Payment module - stable integration tests', () => {
       payload: { payment: { entity: { id: 'pay_webhook_1', order_id: 'order_webhook_1', amount: 1200 * 100 } } },
     };
     const raw = JSON.stringify(payload);
-    const signature = crypto.createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET || env.razorpay.keySecret || 'test_secret').update(raw).digest('hex');
+    const signature = crypto.createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET || 'test_secret').update(raw).digest('hex');
 
     const res = await request.post('/api/v1/payments/webhook').set('X-Razorpay-Signature', signature).send(payload).expect(200);
     expect(res.body.success).toBe(true);

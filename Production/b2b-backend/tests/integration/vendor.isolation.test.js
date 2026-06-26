@@ -1,19 +1,9 @@
 import { jest } from '@jest/globals';
 import mongoose from 'mongoose';
 import Vendor from '../../src/modules/vendor/vendor.model.js';
-import { setupTestDB, teardownTestDB, clearDatabase } from '../helpers/testUtils.js';
+import { clearDatabase } from '../helpers/testUtils.js';
 
 describe('Vendor isolation and ownership boundaries', () => {
-  beforeAll(async () => {
-    process.env.NODE_ENV = 'test';
-    await setupTestDB();
-  });
-
-  afterAll(async () => {
-    await clearDatabase();
-    await teardownTestDB();
-  });
-
   beforeEach(async () => {
     jest.restoreAllMocks();
     await clearDatabase();

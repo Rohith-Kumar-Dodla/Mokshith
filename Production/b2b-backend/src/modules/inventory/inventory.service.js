@@ -129,6 +129,16 @@ export const addStock = async ({ productId, warehouseId, stock }) => {
     throw new AppError('Stock must be greater than 0', 400);
   }
 
+  const product = await Product.findById(productId).select('_id');
+  if (!product) {
+    throw new AppError('Product not found', 404);
+  }
+
+  const warehouse = await Warehouse.findById(warehouseId).select('_id');
+  if (!warehouse) {
+    throw new AppError('Warehouse not found', 404);
+  }
+
   let inventory = await repo.findInventory(productId, warehouseId);
 
   if (!inventory) {

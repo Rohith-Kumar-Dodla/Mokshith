@@ -1,5 +1,6 @@
 import { jest, beforeAll, afterAll } from '@jest/globals';
 import { setupTestDB, teardownTestDB } from './helpers/testUtils.js';
+import { ensureRazorpayMock } from './helpers/razorpayMock.js';
 
 // Environment flags are set in tests/env.setup.js before modules load.
 
@@ -8,6 +9,7 @@ beforeAll(async () => {
   console.log('Starting global test setup...');
   
   try {
+    ensureRazorpayMock();
     await setupTestDB();
     console.log('Test database setup complete');
   } catch (error) {
@@ -21,7 +23,7 @@ afterAll(async () => {
   console.log('Starting global test teardown...');
   
   try {
-    await teardownTestDB();
+    await teardownTestDB({ destroy: true });
     console.log('Test database teardown complete');
   } catch (error) {
     console.error('Failed to teardown test database:', error);

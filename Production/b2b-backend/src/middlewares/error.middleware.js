@@ -61,6 +61,10 @@ export const errorHandler = (err, req, res, next) => {
     error = new AppError('Your token has expired. Please log in again.', 401);
   }
 
+  if (err.name === 'PermissionError') {
+    error = new AppError(err.message, 403);
+  }
+
   // 🔥 Multer file upload errors
   if (err.name === 'MulterError') {
     if (err.code === 'LIMIT_FILE_SIZE') {
