@@ -37,6 +37,11 @@ export const findUserById = async (id) => {
   return User.findById(id);
 };
 
+/** Includes password + history for credential verification flows. */
+export const findUserByIdWithPassword = async (id) => {
+  return User.findById(id).select('+password +passwordHistory');
+};
+
 export const createUser = async (data) => {
   return User.create(data);
 };

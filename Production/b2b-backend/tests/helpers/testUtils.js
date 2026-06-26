@@ -4,18 +4,19 @@ import Redis from 'ioredis-mock';
 
 let mongoServer;
 let redisClient;
+let activeDbConnections = 0;
 
-// Setup test database
+// Setup test database (idempotent — safe across parallel unit / serial integration runs)
 export const setupTestDB = async () => {
+  activeDbConnections += 1;
+
   try {
-    // Only create if not already created
     if (!mongoServer) {
       mongoServer = await MongoMemoryServer.create();
     }
-    
+
     const mongoUri = mongoServer.getUri();
-    
-    // Only connect if not already connected
+
     if (mongoose.connection.readyState === 0) {
       await mongoose.connect(mongoUri, {
         maxPoolSize: 10,
@@ -29,33 +30,34 @@ export const setupTestDB = async () => {
   }
 };
 
-// Teardown test database
-export const teardownTestDB = async () => {
+/**
+ * Tear down the in-memory database.
+ * Default: no-op (global setup owns lifecycle). Pass { destroy: true } from tests/setup.js only.
+ */
+export const teardownTestDB = async ({ destroy = false } = {}) => {
+  if (!destroy) {
+    activeDbConnections = Math.max(0, activeDbConnections - 1);
+    return;
+  }
+
   try {
-    // Close mongoose connection if open
     if (mongoose.connection.readyState !== 0) {
-      // Drop database first while connection is still active
       try {
         await mongoose.connection.dropDatabase();
       } catch (error) {
         console.error('Failed to drop database (non-fatal):', error.message);
       }
-      
-      // Close all connections
+
       await mongoose.connection.close(false);
-      
-      // Wait briefly for connection to fully close
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
-    
-    // Stop MongoDB memory server
+
     if (mongoServer) {
       await mongoServer.stop({ doCleanup: true });
       mongoServer = null;
     }
   } catch (error) {
     console.error('Failed to teardown test database:', error);
-    // Force cleanup even on error
     if (mongoServer) {
       try {
         await mongoServer.stop({ doCleanup: true });
@@ -64,6 +66,8 @@ export const teardownTestDB = async () => {
       }
       mongoServer = null;
     }
+  } finally {
+    activeDbConnections = 0;
   }
 };
 
@@ -139,70 +143,12 @@ export const teardownRedis = async () => {
   }
 };
 
-// Mock external services
-export const mockExternalServices = () => {
-  jest.mock('razorpay', () => {
-    const razorpayMock = globalThis.jest.fn().mockImplementation(() => ({
-      orders: {
-        create: globalThis.jest.fn().mockResolvedValue({
-          id: 'order_mock123',
-          amount: 10000,
-          currency: 'INR',
-          status: 'created',
-        }),
-        fetch: globalThis.jest.fn().mockResolvedValue({
-          id: 'order_mock123',
-          status: 'paid',
-        }),
-      },
-      payments: {
-        fetch: globalThis.jest.fn().mockResolvedValue({
-          id: 'pay_mock123',
-          order_id: 'order_mock123',
-          status: 'captured',
-          amount: 10000,
-        }),
-        capture: globalThis.jest.fn().mockResolvedValue({
-          id: 'pay_mock123',
-          status: 'captured',
-        }),
-        refund: globalThis.jest.fn().mockResolvedValue({
-          id: 'rfnd_mock123',
-          amount: 10000,
-          status: 'processed',
-        }),
-      },
-    }));
-
-    return razorpayMock;
-  });
-
-  jest.mock('../../src/services/email.service.js', () => ({
-    sendEmail: globalThis.jest.fn().mockResolvedValue(true),
-    sendOTPEmail: globalThis.jest.fn().mockResolvedValue(true),
-    sendOrderConfirmation: globalThis.jest.fn().mockResolvedValue(true),
-  }));
-
-  jest.mock('socket.io', () => ({
-    Server: globalThis.jest.fn().mockImplementation(() => ({
-      emit: globalThis.jest.fn(),
-      to: globalThis.jest.fn().mockReturnThis(),
-      in: globalThis.jest.fn().mockReturnThis(),
-    })),
-  }));
-
-  jest.mock('bullmq', () => ({
-    Queue: globalThis.jest.fn().mockImplementation(() => ({
-      add: globalThis.jest.fn().mockResolvedValue({ id: 'job123' }),
-      process: globalThis.jest.fn(),
-      close: globalThis.jest.fn(),
-    })),
-    Worker: globalThis.jest.fn().mockImplementation(() => ({
-      on: globalThis.jest.fn(),
-      close: globalThis.jest.fn(),
-    })),
-  }));
-};
+/**
+ * Legacy hook for tests that imported mockExternalServices before app load.
+ * ESM cannot call jest.mock() at runtime — use tests/helpers/razorpayMock.js and
+ * global.__RAZORPAY_MOCK__ instead. Kept as a no-op for backward compatibility.
+ */
+export const mockExternalServices = () => {};
 
 // Generate test user data
 export const generateTestUser = (overrides = {}) => ({

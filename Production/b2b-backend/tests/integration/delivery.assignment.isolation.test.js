@@ -1,33 +1,29 @@
-import { jest } from '@jest/globals';
+import { describe, it, expect, beforeEach } from '@jest/globals';
 import mongoose from 'mongoose';
-import { setupTestDB, teardownTestDB, clearDatabase } from '../helpers/testUtils.js';
-import Delivery from '../../src/modules/delivery/delivery.model.js';
+import { clearDatabase } from '../helpers/testUtils.js';
+import Logistics from '../../src/modules/logistics/logistics.model.js';
 
-describe('Delivery assignment isolation', () => {
-  beforeAll(async () => {
-    process.env.NODE_ENV = 'test';
-    await setupTestDB();
-  });
-  afterAll(async () => {
-    await clearDatabase();
-    await teardownTestDB();
-  });
-
+describe('Logistics assignment isolation', () => {
   beforeEach(async () => {
-    jest.restoreAllMocks();
     await clearDatabase();
   });
 
   it('ensures delivery partner cannot access assignments of another partner', async () => {
-    const partnerA = await Delivery.create({ partnerId: new mongoose.Types.ObjectId(), name: 'A' });
-    const partnerB = await Delivery.create({ partnerId: new mongoose.Types.ObjectId(), name: 'B' });
+    const partnerA = new mongoose.Types.ObjectId();
+    const partnerB = new mongoose.Types.ObjectId();
+    const orderId = new mongoose.Types.ObjectId();
 
-    // Create assignment for A
-    const assign = await Delivery.create({ orderId: new mongoose.Types.ObjectId(), partnerId: partnerA.partnerId, status: 'ASSIGNED' });
+    await Logistics.create({
+      orderId,
+      deliveryPartnerId: partnerA,
+      status: 'ASSIGNED',
+      address: '123 Test Street',
+    });
 
-    // Query by B should not return A's assignment
-    const found = await Delivery.findOne({ orderId: assign.orderId, partnerId: partnerB.partnerId });
-    expect(found).toBeNull();
+    const foundForB = await Logistics.findOne({ orderId, deliveryPartnerId: partnerB });
+    expect(foundForB).toBeNull();
+
+    const foundForA = await Logistics.findOne({ orderId, deliveryPartnerId: partnerA });
+    expect(foundForA).not.toBeNull();
   });
 });
-

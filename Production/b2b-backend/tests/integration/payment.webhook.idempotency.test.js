@@ -3,21 +3,17 @@ import * as paymentRepo from '../../src/modules/payment/payment.repository.js';
 import Order from '../../src/modules/order/order.model.js';
 let paymentService;
 import crypto from 'crypto';
-import { setupTestDB, teardownTestDB, clearDatabase, setupRedis, teardownRedis } from '../helpers/testUtils.js';
+import { clearDatabase, setupRedis, teardownRedis } from '../helpers/testUtils.js';
 import { redisClient } from '../../src/config/redis.js';
 
 describe('Payment Webhook — idempotency and signature handling', () => {
   beforeAll(async () => {
-    process.env.NODE_ENV = 'test';
     process.env.RAZORPAY_WEBHOOK_SECRET = 'test_secret_123';
-    await setupTestDB();
     setupRedis();
     paymentService = await import('../../src/modules/payment/payment.service.js');
   });
 
   afterAll(async () => {
-    await clearDatabase();
-    await teardownTestDB();
     await teardownRedis();
   });
 

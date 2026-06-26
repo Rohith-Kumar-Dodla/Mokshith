@@ -3,7 +3,7 @@ import supertest from 'supertest';
 import jwt from 'jsonwebtoken';
 import app from '../../src/app.js';
 import User from '../../src/modules/user/user.model.js';
-import { clearDatabase } from './helpers/testUtils.js';
+import { clearDatabase } from '../helpers/testUtils.js';
 import { ROLES } from '../../src/constants/roles.js';
 import { USER_STATUS } from '../../src/constants/userStatus.js';
 import { hashPassword } from '../../src/utils/hashPassword.js';

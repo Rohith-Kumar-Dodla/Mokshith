@@ -2,22 +2,11 @@ import { jest } from '@jest/globals';
 import mongoose from 'mongoose';
 import Warehouse from '../../src/modules/warehouse/warehouse.model.js';
 import InventoryModel from '../../src/modules/inventory/inventory.model.js';
-import { setupTestDB, teardownTestDB, clearDatabase, mockExternalServices } from '../helpers/testUtils.js';
+import { clearDatabase } from '../helpers/testUtils.js';
 import * as warehouseService from '../../src/modules/warehouse/warehouse.service.js';
 import * as inventoryService from '../../src/modules/inventory/inventory.service.js';
 
 describe('Warehouse transfer and reconciliation', () => {
-  beforeAll(async () => {
-    process.env.NODE_ENV = 'test';
-    await setupTestDB();
-    mockExternalServices();
-  });
-
-  afterAll(async () => {
-    await clearDatabase();
-    await teardownTestDB();
-  });
-
   beforeEach(async () => {
     jest.restoreAllMocks();
     await clearDatabase();

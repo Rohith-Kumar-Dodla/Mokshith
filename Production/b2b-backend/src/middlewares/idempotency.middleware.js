@@ -69,7 +69,7 @@ export const operationIdempotency = (operationType) => {
       case 'order:create': {
         // Include payment method so COD vs bank transfer vs online are not conflated
         const cartSignature =
-          req.body.items?.map((i) => `${i.productId}:${i.quantity}`).join('|') || 'cart';
+          req.body.items?.map((i) => `${i.productId}:${i.quantity}`).join('_') || 'cart';
         const paymentMethod = String(req.body.paymentMethod || 'COD').toUpperCase();
         autoKey = `order:create:${req.user?.id}:${paymentMethod}:${cartSignature}`;
         break;

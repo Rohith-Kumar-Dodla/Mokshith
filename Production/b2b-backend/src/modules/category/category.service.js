@@ -1,6 +1,14 @@
 import * as repo from './category.repository.js';
 import AppError from '../../errors/AppError.js';
 
+const generateSlug = (name) =>
+  name
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
 export const createCategory = async (data) => {
   const { name, parentId } = data;
 
@@ -17,7 +25,10 @@ export const createCategory = async (data) => {
     throw new AppError('Category already exists under this parent', 400);
   }
 
-  return repo.createCategory(data);
+  return repo.createCategory({
+    ...data,
+    slug: data.slug || generateSlug(name),
+  });
 };
 
 export const getCategories = async () => {

@@ -6,6 +6,7 @@ import { getTransactionSupport } from '../../config/db.js';
 import { logger } from '../../config/logger.js';
 
 import Order from '../order/order.model.js';
+import Cart from '../cart/cart.model.js';
 import * as creditRepo from '../credit/credit.repository.js';
 import { generateInvoice } from '../invoice/invoice.service.js';
 
@@ -855,8 +856,7 @@ export const handleWebhook = async (rawBody, signature) => {
       }
 
       // Clear Cart on successful webhook capture
-      const CartModel = mongoose.model('Cart');
-      await CartModel.findOneAndUpdate(
+      await Cart.findOneAndUpdate(
         { userId: order.userId },
         { $set: { items: [] } }
       );
@@ -935,12 +935,7 @@ export const createRefund = async (orderId, userId, refundAmount, reason, initia
     throw new AppError('Unauthorized to refund this order', 403);
   }
 
-  // 3. Validate order is paid
-  if (order.paymentStatus !== 'PAID') {
-    throw new AppError('Cannot refund unpaid order', 400);
-  }
-
-  // 4. 🔒 Idempotency check - prevent duplicate refunds
+  // 3. 🔒 Idempotency check - return existing refund before status validation
   const refundKey = `refund:${orderId}:${userId}`;
   const existingRefundCheck = await redisClient.get(refundKey);
   if (existingRefundCheck) {
@@ -951,15 +946,25 @@ export const createRefund = async (orderId, userId, refundAmount, reason, initia
     }
   }
 
+  const existingRefunds = await Refund.find({ orderId, status: { $in: ['SUCCESS', 'PROCESSING'] } });
+  if (existingRefunds.length > 0) {
+    return existingRefunds[0];
+  }
+
+  // 4. Validate order is paid
+  if (order.paymentStatus !== PAYMENT_STATUS.PAID) {
+    throw new AppError('Cannot refund unpaid order', 400);
+  }
+
   // 5. Find payment record
   const payment = await repo.findByOrderId(orderId);
   if (!payment || !payment.razorpayPaymentId) {
     throw new AppError('Payment record not found or incomplete', 404);
   }
 
-  // 6. Check for existing refunds
-  const existingRefunds = await Refund.find({ orderId, status: { $in: ['SUCCESS', 'PROCESSING'] } });
-  const totalRefunded = existingRefunds.reduce((sum, r) => sum + r.amount, 0);
+  // 6. Check for existing refunds (amount cap)
+  const priorRefunds = await Refund.find({ orderId, status: { $in: ['SUCCESS', 'PROCESSING'] } });
+  const totalRefunded = priorRefunds.reduce((sum, r) => sum + r.amount, 0);
 
   // 7. Validate refund amount
   const maxRefundable = order.totalAmount - totalRefunded;
@@ -1043,8 +1048,8 @@ export const createRefund = async (orderId, userId, refundAmount, reason, initia
 
     // 15. Update order status for full refunds
     if (refundType === 'FULL') {
-      order.paymentStatus = 'REFUNDED';
-      order.status = 'CANCELLED';
+      order.paymentStatus = PAYMENT_STATUS.REFUNDED;
+      order.status = ORDER_STATUS.CANCELLED;
       await order.save();
     }
 

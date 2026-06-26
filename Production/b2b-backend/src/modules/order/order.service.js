@@ -103,7 +103,7 @@ export const createOrder = async (userId, data) => {
   // 🔥 1. Bulk fetch all products at once (Performance optimization)
   const productIds = finalItems.map(item => item.productId || item.id || item.productId?._id);
   const products = await Product.find({ _id: { $in: productIds } })
-    .select('_id name price basePrice weight minOrderQty moq')
+    .select('_id name price basePrice weight minOrderQty moq isActive')
     .lean();
   
   if (products.length !== productIds.length) {
@@ -123,6 +123,10 @@ export const createOrder = async (userId, data) => {
     const product = productMap.get(productId);
     
     if (!product) throw new AppError(`Product not found`, 404);
+
+    if (product.isActive === false) {
+      throw new AppError(`Product ${product.name} is not available`, 400);
+    }
 
     // Input validation
     if (!item.quantity || item.quantity < 1) {
@@ -452,9 +456,10 @@ export const getOrderByIdWithUser = async (id, user) => {
   const order = await orderRepo.findById(id);
   if (!order) throw new AppError('Order not found', 404);
 
+  const orderUserId = order.userId?._id ?? order.userId;
   const userId = typeof user === 'string' ? user : (user?.id || user?._id);
   const role = user?.role || null;
-  if (!(role === 'ADMIN' || role === 'SUPER_ADMIN') && userId && order.userId.toString() !== userId.toString()) {
+  if (!(role === 'ADMIN' || role === 'SUPER_ADMIN') && userId && orderUserId.toString() !== userId.toString()) {
     throw new AppError('Access denied', 403);
   }
 
@@ -468,9 +473,10 @@ export const downloadInvoice = async (orderId, user) => {
   if (!mongoose.Types.ObjectId.isValid(orderId)) throw new AppError('Invalid order ID', 400);
   const order = await orderRepo.findById(orderId);
   if (!order) throw new AppError('Order not found', 404);
+  const orderUserId = order.userId?._id ?? order.userId;
   const userId = typeof user === 'string' ? user : (user?.id || user?._id);
   const role = user?.role || null;
-  if (!(role === 'ADMIN' || role === 'SUPER_ADMIN') && userId && order.userId.toString() !== userId.toString()) {
+  if (!(role === 'ADMIN' || role === 'SUPER_ADMIN') && userId && orderUserId.toString() !== userId.toString()) {
     throw new AppError('Access denied', 403);
   }
 
