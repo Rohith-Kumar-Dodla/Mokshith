@@ -81,12 +81,16 @@ describe('User Profile API - Integration Tests', () => {
     });
 
     it('rejects profile update without CSRF token', async () => {
+      const previous = process.env.ENFORCE_CSRF_IN_TESTS;
+      process.env.ENFORCE_CSRF_IN_TESTS = 'true';
+
       const response = await request
         .put('/api/v1/users/me')
         .set('Authorization', `Bearer ${accessToken}`)
         .send({ name: 'No CSRF' })
         .expect(403);
 
+      process.env.ENFORCE_CSRF_IN_TESTS = previous;
       expect(response.body.success).toBe(false);
     });
   });

@@ -42,9 +42,8 @@ export const csrfProtection = (req, res, next) => {
   // Only protect state-changing methods
   const safeMethods = ['GET', 'HEAD', 'OPTIONS'];
   
-  // Skip CSRF checks in test environment to simplify automated tests.
-  // Tests simulate clients and often don't exchange cookies/headers for CSRF.
-  if (process.env.NODE_ENV === 'test') {
+  // Skip CSRF checks in test environment unless explicitly enforced for CSRF-focused tests.
+  if (process.env.NODE_ENV === 'test' && process.env.ENFORCE_CSRF_IN_TESTS !== 'true') {
     return next();
   }
 

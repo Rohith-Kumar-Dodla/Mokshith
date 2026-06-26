@@ -3,4 +3,5 @@ export const PAYMENT_STATUS = {
   PAID: 'PAID',
   FAILED: 'FAILED',
   REJECTED: 'REJECTED',
+  REFUNDED: 'REFUNDED',
 };

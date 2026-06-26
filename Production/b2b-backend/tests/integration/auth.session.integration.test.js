@@ -2,10 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/glo
 import supertest from 'supertest';
 
 import {
-  setupTestDB,
-  teardownTestDB,
   clearDatabase,
-  mockExternalServices,
   setupRedis,
   teardownRedis,
 } from '../helpers/testUtils.js';
@@ -13,17 +10,13 @@ import {
 import User from '../../src/modules/user/user.model.js';
 import { hashPassword } from '../../src/utils/hashPassword.js';
 
-// Ensure external services mocked before app import
-mockExternalServices();
-// Disable strict auth rate limiting in tests to avoid 429 during repeated logins
-process.env.AUTH_STRICT_MODE = process.env.AUTH_STRICT_MODE || 'false';
+// App imported after env is configured in tests/env.setup.js
 
 describe('Single Active Session - integration', () => {
   let app;
   let request;
 
   beforeAll(async () => {
-    await setupTestDB();
     setupRedis();
     const mod = await import('../../src/app.js');
     app = mod.default || mod;
@@ -32,7 +25,6 @@ describe('Single Active Session - integration', () => {
 
   afterAll(async () => {
     await teardownRedis();
-    await teardownTestDB();
   });
 
   beforeEach(async () => {

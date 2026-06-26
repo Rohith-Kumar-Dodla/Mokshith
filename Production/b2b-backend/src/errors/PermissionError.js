@@ -1,6 +1,8 @@
-class PermissionError extends Error {
-  constructor(message) {
-    super(message);
+import AppError from './AppError.js';
+
+class PermissionError extends AppError {
+  constructor(message = 'Permission denied') {
+    super(message, 403);
     this.name = 'PermissionError';
   }
 }

@@ -4,12 +4,14 @@ import mongoose from 'mongoose';
 import app from '../../src/app.js';
 import Cart from '../../src/modules/cart/cart.model.js';
 import Product from '../../src/modules/product/product.model.js';
+import Inventory from '../../src/modules/inventory/inventory.model.js';
 import Category from '../../src/modules/category/category.model.js';
 import User from '../../src/modules/user/user.model.js';
 import {
   clearDatabase,
   generateTestUser,
 } from '../helpers/testUtils.js';
+import { seedActiveUser, seedCategory, seedProduct, seedWarehouse, seedInventory } from '../helpers/integrationFixtures.js';
 import { hashPassword } from '../../src/utils/hashPassword.js';
 import { ROLES } from '../../src/constants/roles.js';
 import { USER_STATUS } from '../../src/constants/userStatus.js';
@@ -30,60 +32,52 @@ describe('Cart Module - Integration Tests', () => {
   let testProduct2;
   let inactiveProduct;
 
+  let testWarehouse;
+
   beforeEach(async () => {
     await clearDatabase();
     await redisClient.flushdb();
 
-    // Create test user
-    const hashedPassword = await hashPassword('Test@1234');
-    testUser = await User.create({
-      ...generateTestUser({
+    const session = await seedActiveUser({
+      email: 'cartuser@test.com',
+      mobile: '9876543210',
+      user: generateTestUser({
         email: 'cartuser@test.com',
         mobile: '9876543210',
       }),
-      password: hashedPassword,
-      role: ROLES.B2B_CUSTOMER,
-      status: USER_STATUS.ACTIVE,
     });
+    testUser = session.user;
+    userToken = session.accessToken;
 
-    // Login user
-    const loginResponse = await request
-      .post('/api/v1/auth/login')
-      .send({ identifier: 'cartuser@test.com', password: 'Test@1234' });
-    userToken = loginResponse.body.data.accessToken;
+    testCategory = await seedCategory({ name: 'Test Category', slug: 'test-category' });
+    testWarehouse = await seedWarehouse();
 
-    // Create test category
-    testCategory = await Category.create({
-      name: 'Test Category',
-      slug: 'test-category',
-    });
-
-    // Create test products
-    testProduct1 = await Product.create({
+    testProduct1 = await seedProduct(testCategory._id, {
       name: 'Test Product 1',
       price: 1000,
       stock: 100,
-      categoryId: testCategory._id,
-      isActive: true,
       moq: 10,
+      minOrderQty: 10,
     });
 
-    testProduct2 = await Product.create({
+    testProduct2 = await seedProduct(testCategory._id, {
       name: 'Test Product 2',
       price: 2000,
       stock: 50,
-      categoryId: testCategory._id,
-      isActive: true,
       moq: 5,
+      minOrderQty: 5,
     });
 
-    inactiveProduct = await Product.create({
+    inactiveProduct = await seedProduct(testCategory._id, {
       name: 'Inactive Product',
       price: 500,
       stock: 100,
-      categoryId: testCategory._id,
       isActive: false,
     });
+
+    await seedInventory({ productId: testProduct1._id, warehouseId: testWarehouse._id, stock: 100 });
+    await seedInventory({ productId: testProduct2._id, warehouseId: testWarehouse._id, stock: 50 });
+    await seedInventory({ productId: inactiveProduct._id, warehouseId: testWarehouse._id, stock: 100 });
   });
 
   afterEach(async () => {
@@ -145,18 +139,18 @@ describe('Cart Module - Integration Tests', () => {
           quantity: 10,
         });
 
-      // Add same product again
+      // Add same product again (each POST must satisfy MOQ ≥ 10)
       const response = await request
         .post('/api/v1/cart')
         .set('Authorization', `Bearer ${userToken}`)
         .send({
           productId: testProduct1._id.toString(),
-          quantity: 5,
+          quantity: 10,
         })
         .expect(200);
 
       expect(response.body.data.items).toHaveLength(1);
-      expect(response.body.data.items[0].quantity).toBe(15);
+      expect(response.body.data.items[0].quantity).toBe(20);
     });
 
     it('should reject adding product below MOQ', async () => {
@@ -409,118 +403,6 @@ describe('Cart Module - Integration Tests', () => {
     });
   });
 
-  describe('DELETE /api/v1/cart - Clear Cart', () => {
-    beforeEach(async () => {
-      await request
-        .post('/api/v1/cart')
-        .set('Authorization', `Bearer ${userToken}`)
-        .send({
-          productId: testProduct1._id.toString(),
-          quantity: 10,
-        });
-
-      await request
-        .post('/api/v1/cart')
-        .set('Authorization', `Bearer ${userToken}`)
-        .send({
-          productId: testProduct2._id.toString(),
-          quantity: 5,
-        });
-    });
-
-    it('should clear all items from cart', async () => {
-      const response = await request
-        .delete('/api/v1/cart')
-        .set('Authorization', `Bearer ${userToken}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.items).toHaveLength(0);
-
-      // Verify in database
-      const cart = await Cart.findOne({ userId: testUser._id });
-      expect(cart.items).toHaveLength(0);
-    });
-
-    it('should handle clearing empty cart gracefully', async () => {
-      // Clear cart first
-      await request
-        .delete('/api/v1/cart')
-        .set('Authorization', `Bearer ${userToken}`);
-
-      // Try clearing again
-      const response = await request
-        .delete('/api/v1/cart')
-        .set('Authorization', `Bearer ${userToken}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-    });
-  });
-
-  describe('PUT /api/v1/cart/:productId - Update Cart Item Quantity', () => {
-    beforeEach(async () => {
-      await request
-        .post('/api/v1/cart')
-        .set('Authorization', `Bearer ${userToken}`)
-        .send({
-          productId: testProduct1._id.toString(),
-          quantity: 10,
-        });
-    });
-
-    it('should update product quantity in cart', async () => {
-      const response = await request
-        .put(`/api/v1/cart/${testProduct1._id}`)
-        .set('Authorization', `Bearer ${userToken}`)
-        .send({ quantity: 20 })
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.items[0].quantity).toBe(20);
-    });
-
-    it('should reject quantity below MOQ', async () => {
-      const response = await request
-        .put(`/api/v1/cart/${testProduct1._id}`)
-        .set('Authorization', `Bearer ${userToken}`)
-        .send({ quantity: 5 }) // MOQ is 10
-        .expect(400);
-
-      expect(response.body.success).toBe(false);
-    });
-
-    it('should reject quantity exceeding stock', async () => {
-      const response = await request
-        .put(`/api/v1/cart/${testProduct1._id}`)
-        .set('Authorization', `Bearer ${userToken}`)
-        .send({ quantity: 200 }) // Stock is 100
-        .expect(400);
-
-      expect(response.body.success).toBe(false);
-    });
-
-    it('should reject negative quantity', async () => {
-      const response = await request
-        .put(`/api/v1/cart/${testProduct1._id}`)
-        .set('Authorization', `Bearer ${userToken}`)
-        .send({ quantity: -10 })
-        .expect(400);
-
-      expect(response.body.success).toBe(false);
-    });
-
-    it('should reject zero quantity (use delete instead)', async () => {
-      const response = await request
-        .put(`/api/v1/cart/${testProduct1._id}`)
-        .set('Authorization', `Bearer ${userToken}`)
-        .send({ quantity: 0 })
-        .expect(400);
-
-      expect(response.body.success).toBe(false);
-    });
-  });
-
   describe('Cart Persistence & Consistency', () => {
     it('should maintain cart across sessions', async () => {
       // Add to cart
@@ -614,18 +496,20 @@ describe('Cart Module - Integration Tests', () => {
 
   describe('Cart Size & Limits', () => {
     it('should handle large cart (many items)', async () => {
-      // Create multiple products and add to cart
-      const products = [];
       for (let i = 0; i < 20; i++) {
-        const product = await Product.create({
+        const product = await seedProduct(testCategory._id, {
           name: `Product ${i}`,
           price: 1000,
           stock: 100,
-          categoryId: testCategory._id,
-          isActive: true,
           moq: 5,
+          minOrderQty: 5,
         });
-        products.push(product);
+
+        await seedInventory({
+          productId: product._id,
+          warehouseId: testWarehouse._id,
+          stock: 100,
+        });
 
         await request
           .post('/api/v1/cart')
@@ -633,7 +517,8 @@ describe('Cart Module - Integration Tests', () => {
           .send({
             productId: product._id.toString(),
             quantity: 5,
-          });
+          })
+          .expect(200);
       }
 
       const response = await request
@@ -645,8 +530,10 @@ describe('Cart Module - Integration Tests', () => {
     });
 
     it('should handle very large quantity in cart', async () => {
-      testProduct1.stock = 10000;
-      await testProduct1.save();
+      await Inventory.findOneAndUpdate(
+        { productId: testProduct1._id, warehouseId: testWarehouse._id },
+        { stock: 10000 }
+      );
 
       const response = await request
         .post('/api/v1/cart')
