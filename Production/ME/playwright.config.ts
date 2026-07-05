@@ -1,7 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-  testDir: './tests/e2e',
+  // Point testDir to the unified tests folder so Playwright discovers all suites (smoke, e2e, api, etc.)
+  testDir: './tests',
+  testIgnore: ['**/integration/**'],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
