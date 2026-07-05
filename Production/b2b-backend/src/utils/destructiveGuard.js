@@ -1,6 +1,8 @@
 export const REQUIRED_DESTRUCTIVE_CONFIRM = 'I_UNDERSTAND_DATA_LOSS';
 
-export const APPLICATION_DATABASE_NAME = 'test';
+// APPLICATION_DATABASE_NAME moved to centralized resolver. Keep a local alias for compatibility.
+import { LEGACY_APPLICATION_DATABASE_NAME, getNodeEnv, isDatabaseAllowed, getAllowedDatabases } from '../config/environmentResolver.js';
+export const APPLICATION_DATABASE_NAME = LEGACY_APPLICATION_DATABASE_NAME;
 
 /**
  * Guard destructive maintenance scripts (seed, reset, wipe).
@@ -33,11 +35,12 @@ export function assertExpectedApplicationDatabase(dbName, { allowInMemory = fals
     return;
   }
 
-  const expected = process.env.APP_DATABASE_NAME?.trim() || APPLICATION_DATABASE_NAME;
-
-  if (dbName !== expected) {
+  // Use centralized resolver policy
+  const nodeEnv = getNodeEnv();
+  if (!isDatabaseAllowed(nodeEnv, dbName, { allowInMemory })) {
+    const allowed = getAllowedDatabases(nodeEnv);
     throw new Error(
-      `Wrong database selected: "${dbName}". Expected application database "${expected}". Aborting to prevent data loss.`
+      `Wrong database selected: "${dbName}". Allowed databases for NODE_ENV="${nodeEnv}" are: ${JSON.stringify(allowed)}. Aborting to prevent data loss.`
     );
   }
 }
