@@ -68,7 +68,7 @@ test.describe('Authentication Smoke Suite', () => {
   test('S-AUTH-02 | Login (2FA) - conditional if supported', async ({ page }) => {
     // Conditional test: enabled by env variable and requires seeded 2FA account support
     if (process.env.SMOKE_ENABLE_2FA !== 'true') {
-      test.skip('S-AUTH-02 skipped: SMOKE_ENABLE_2FA not enabled in environment');
+      test.skip(true, 'S-AUTH-02 skipped: SMOKE_ENABLE_2FA not enabled in environment');
     }
     const { payload } = await UserFactory.create(ROLES.B2B_CUSTOMER, 2);
     createdUsers.push(payload.email || payload.mobile);
@@ -139,7 +139,7 @@ test.describe('Authentication Smoke Suite', () => {
   test('S-SESSION-02 | Session restore on app load', async ({ page }) => {
     // Use API-backed fixture to obtain deterministic tokens quickly
     const result = await AuthFixtures.createAndLogin(null, ROLES.B2B_CUSTOMER, 5);
-    const created = result.user ?? result.payload;
+    const created = result.user ?? (result as any).payload;
     if (created) createdUsers.push(created.email || created.mobile);
     const sessionData = result.session?.data ?? result.session;
     const accessToken = sessionData?.accessToken ?? sessionData?.data?.accessToken;
@@ -194,7 +194,7 @@ test.describe('Authentication Smoke Suite', () => {
     await page.goto('/');
     const cookie = await sessionHelper.getSessionCookies(page);
     if (!cookie) {
-      test.skip('S-SEC-02 skipped: no refresh cookie detected in this environment');
+      test.skip(true, 'S-SEC-02 skipped: no refresh cookie detected in this environment');
     } else {
       const { name } = cookie;
       await validators.assertCookieAttributes(page, name, { secure: true }).catch((err) => {

@@ -24,6 +24,8 @@
     "verify:superadmin": "node scripts/verifySuperAdmin.js",
     "clear:auth-limits": "node scripts/clearAuthRateLimits.js",
     "fix:user-phone": "node scripts/fixUserPhoneIndex.js"
+    , "db:init": "node scripts/db/init-db.js",
+    "db:seed:qa": "node scripts/db/seed-qa.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1057.0",

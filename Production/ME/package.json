@@ -12,6 +12,7 @@
     "test:unit": "vitest",
     "test:integration": "vitest",
     "test:e2e": "playwright test",
+    "test:smoke": "playwright test --config=playwright.smoke.config.ts",
     "test:coverage": "vitest --coverage",
     "test:accessibility": "playwright test tests/e2e/accessibility.spec.ts"
   },
