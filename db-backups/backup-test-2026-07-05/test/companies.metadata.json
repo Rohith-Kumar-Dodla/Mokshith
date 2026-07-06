@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"email":{"$numberInt":"1"}},"name":"email_1"},{"v":{"$numberInt":"2"},"key":{"gstNumber":{"$numberInt":"1"}},"name":"gstNumber_1"}],"uuid":"1261d7977baf489a952c068e0044fdcf","collectionName":"companies","type":"collection"}
