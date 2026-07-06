@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js",
+    "dev": "cross-env NODE_ENV=development nodemon server.js",
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config=jest.config.cjs",
     "test:unit": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/unit",
     "test:integration": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/integration",
@@ -70,6 +70,7 @@
     "jest": "^30.4.2",
     "mongodb-memory-server": "^10.1.2",
     "nodemon": "^3.1.9",
+    "cross-env": "^7.0.3",
     "prettier": "^3.5.1",
     "supertest": "^7.0.0"
   }

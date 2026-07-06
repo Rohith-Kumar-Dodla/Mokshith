@@ -1,0 +1,10 @@
+# Ignore builder tests, backend tests, and other test frameworks
+**/tools/**
+**/tools/**/*
+**/Production/b2b-backend/tests/**
+**/*.__tests__/**
+**/*.test.*
+**/*.spec.*
+**/node_modules/**
+**/src/**
+**/*.snap
