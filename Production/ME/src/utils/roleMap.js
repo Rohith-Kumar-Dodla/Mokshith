@@ -1,6 +1,7 @@
 export const BACKEND_TO_FRONTEND_ROLE = {
   SUPER_ADMIN: 'super-admin',
   ADMIN: 'admin',
+  VENDOR: 'vendor',
   B2B_CUSTOMER: 'vendor',
   DELIVERY_PARTNER: 'delivery',
 };
@@ -8,7 +9,7 @@ export const BACKEND_TO_FRONTEND_ROLE = {
 export const FRONTEND_TO_BACKEND_ROLE = {
   'super-admin': 'SUPER_ADMIN',
   admin: 'ADMIN',
-  vendor: 'B2B_CUSTOMER',
+  vendor: 'VENDOR',
   delivery: 'DELIVERY_PARTNER',
 };
 

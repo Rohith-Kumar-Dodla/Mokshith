@@ -1,7 +1,20 @@
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
+  // Limit test discovery to the e2e folder only to avoid picking up unit tests from other runners.
+  // Enterprise policy: only discover Playwright E2E specs under tests/e2e.
   testDir: './tests/e2e',
+  // Ignore patterns to prevent traversal of non-e2e code and other test frameworks
+  testIgnore: [
+    '**/integration/**',
+    '**/__tests__/**',
+    '**/tests/unit/**',
+    '../../tools/**',
+    '../../Production/b2b-backend/tests/**',
+    // avoid scanning other source directories
+  ],
+  // match specs under the configured testDir only
+  testMatch: ['**/*.spec.{ts,tsx,js,jsx}'],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

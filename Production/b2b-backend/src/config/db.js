@@ -2,6 +2,7 @@ import dns from 'dns';
 import mongoose from 'mongoose';
 import { logger } from './logger.js';
 import { resolveMongoUri, maskMongoUri } from './env.js';
+import { getAppDatabaseName, isDatabaseAllowed, getAllowedDatabases, getNodeEnv } from './environmentResolver.js';
 import { getDatabaseConnectionState } from '../utils/databaseHealth.js';
 import { APPLICATION_DATABASE_NAME } from '../utils/destructiveGuard.js';
 import { bootstrapSuperAdmin } from '../bootstrap/superAdminBootstrap.js';
@@ -31,13 +32,14 @@ export async function validateDatabaseAtStartup() {
 
   const dbName = mongoose.connection.name;
   activeDatabaseName = dbName;
-  const expectedDatabase = process.env.APP_DATABASE_NAME?.trim() || APPLICATION_DATABASE_NAME;
+  const expectedDatabase = getAppDatabaseName();
   const usingInMemory = process.env.USE_IN_MEMORY_MONGO === 'true';
   const isTestRuntime = process.env.NODE_ENV === 'test';
-
-  if (!usingInMemory && !isTestRuntime && dbName !== expectedDatabase) {
+  // Use centralized policy to determine allowed DBs for this NODE_ENV
+  const nodeEnv = getNodeEnv();
+  if (!usingInMemory && !isTestRuntime && !isDatabaseAllowed(nodeEnv, dbName)) {
     throw new Error(
-      `Connected to wrong database "${dbName}". Application requires MongoDB database "${expectedDatabase}".`
+      `Connected to wrong database "${dbName}". Allowed databases for NODE_ENV="${nodeEnv}" are: ${JSON.stringify(getAllowedDatabases(nodeEnv))}.`
     );
   }
 

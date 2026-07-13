@@ -4,7 +4,11 @@ import { resolveUploadUrl } from './bankTransferUtils';
 const DEFAULT_RATING = 4;
 const DEFAULT_REVIEWS = 0;
 
-export function deriveProductStatus(stock = 0, moq = 1) {
+export function deriveProductStatus(stock = 0, moq = 1, isActive) {
+  if (isActive === false) {
+    return 'inactive';
+  }
+
   if (stock === 0) {
     return 'out_of_stock';
   }
@@ -98,7 +102,7 @@ export function mapBackendProduct(product) {
     id: product._id || product.id,
     category: categoryName,
     categoryId: categoryRefId,
-    status: deriveProductStatus(stock, moq),
+    status: deriveProductStatus(stock, moq, product.isActive),
     minimumOrderQuantity: moq,
     storedImage: withImageCacheBust(rawImage, imageVersion),
     image: displayImage,

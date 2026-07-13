@@ -9,7 +9,9 @@
   },
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js",
+    "dev": "cross-env NODE_ENV=development nodemon server.js",
+    "dev:qa": "cross-env NODE_ENV=qa nodemon server.js",
+    "dev:uat": "cross-env NODE_ENV=uat nodemon server.js",
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config=jest.config.cjs",
     "test:unit": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/unit",
     "test:integration": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/integration",
@@ -23,7 +25,9 @@
     "format:check": "prettier --check . || echo 'Prettier not configured'",
     "verify:superadmin": "node scripts/verifySuperAdmin.js",
     "clear:auth-limits": "node scripts/clearAuthRateLimits.js",
-    "fix:user-phone": "node scripts/fixUserPhoneIndex.js"
+    "fix:user-phone": "node scripts/fixUserPhoneIndex.js",
+    "db:init": "cross-env NODE_ENV=qa node scripts/db/init-db.js",
+    "db:seed:qa": "cross-env NODE_ENV=qa node scripts/db/seed-qa.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1057.0",
@@ -63,13 +67,14 @@
     "@babel/core": "^7.24.0",
     "@babel/plugin-syntax-import-meta": "^7.10.4",
     "@babel/preset-env": "^7.24.0",
-    "babel-jest": "^30.4.1",
+    "babel-jest": "^25.0.0",
     "cross-env": "^7.0.3",
     "eslint": "^9.20.1",
     "ioredis-mock": "^8.9.0",
     "jest": "^30.4.2",
     "mongodb-memory-server": "^10.1.2",
     "nodemon": "^3.1.9",
+    "cross-env": "^7.0.3",
     "prettier": "^3.5.1",
     "supertest": "^7.0.0"
   }

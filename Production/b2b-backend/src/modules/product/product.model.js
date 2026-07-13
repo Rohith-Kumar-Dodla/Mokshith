@@ -35,7 +35,8 @@ const productSchema = new mongoose.Schema(
 
     vendorId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Vendor',
+      // Seeded "vendors" are users with role=VENDOR. Store ownership as the User id.
+      ref: 'User',
       required: false,
     },
 

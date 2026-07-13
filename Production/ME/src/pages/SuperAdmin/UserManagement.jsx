@@ -261,7 +261,7 @@ const VendorsCardList = () => {
     const load = async () => {
       setLoading(true);
       try {
-        const resp = await adminService.getUsers({ role: 'B2B_CUSTOMER' });
+        const resp = await adminService.getUsers({ role: 'VENDOR' });
         const payload = resp?.data ?? resp;
         const users = Array.isArray(payload) ? payload : payload?.users || [];
         if (!mounted) return;

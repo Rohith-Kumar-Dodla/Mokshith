@@ -64,12 +64,19 @@ const startServer = async () => {
       logger.info('Socket.io initialized');
     }
 
-    // Configure Redis adapter for horizontal scaling
-    await configureSocketAdapter(io);
-
-    // Store io globally and in app locals
-    global.io = io;
-    app.set('io', io);
+    // Configure Redis adapter for horizontal scaling (only if Redis connected)
+    if (redisConnected) {
+      await configureSocketAdapter(io);
+      // Store io globally and in app locals
+      global.io = io;
+      app.set('io', io);
+    } else {
+      logger.warn('Redis not connected - skipping Socket.IO adapter configuration and global io registration');
+      // Still store io in app locals for compatibility, but avoid Redis adapter usage
+      app.set('io', io);
+      global.io = io;
+    }
+    
 
     io.on('connection', (socket) => {
       logger.info(`New socket connection: ${socket.id}`);
@@ -102,14 +109,13 @@ const startServer = async () => {
 
     // 🚀 Start BullMQ workers
     try {
-      // Only start workers if explicitly enabled and not in test
-      if (process.env.NODE_ENV !== 'test' && 
-          process.env.ENABLE_QUEUE !== 'false' && 
-          process.env.ENABLE_WORKERS !== 'false') {
+      // Safer default: require explicit opt-in to start workers in non-test environments.
+      // This prevents unexpected worker storms or remote Redis request spikes in developer machines.
+      if (process.env.NODE_ENV !== 'test' && process.env.ENABLE_WORKERS === 'true') {
         const { startWorkers } = await import('./src/workers/index.js');
         startWorkers();
       } else {
-        logger.info('Workers disabled in test environment');
+        logger.info('Workers not started. Set ENABLE_WORKERS=true to enable background workers.');
       }
     } catch (err) {
       logger.warn('⚠️ Workers not started:', err.message);

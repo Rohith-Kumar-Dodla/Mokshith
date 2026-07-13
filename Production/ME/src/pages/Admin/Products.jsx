@@ -72,11 +72,15 @@ const Products = () => {
     return matchesSearch && matchesCategory && matchesStock;
   });
 
-  const resetForm = () => {
+  const resetFormState = () => {
     setFormData(EMPTY_FORM);
     setImageFile(null);
     setFormError(null);
     setSelectedProduct(null);
+  };
+
+  const resetForm = () => {
+    resetFormState();
     clearMessages();
   };
 
@@ -118,7 +122,7 @@ const Products = () => {
 
   const handleCloseModal = () => {
     setIsAddModalOpen(false);
-    resetForm();
+    resetFormState();
   };
 
   const handleSubmit = async (event) => {

@@ -9,14 +9,14 @@ describe('roleMap', () => {
   it('maps backend roles to frontend roles', () => {
     expect(mapBackendRoleToFrontend('SUPER_ADMIN')).toBe('super-admin');
     expect(mapBackendRoleToFrontend('ADMIN')).toBe('admin');
-    expect(mapBackendRoleToFrontend('B2B_CUSTOMER')).toBe('vendor');
+    expect(mapBackendRoleToFrontend('VENDOR')).toBe('vendor');
     expect(mapBackendRoleToFrontend('DELIVERY_PARTNER')).toBe('delivery');
   });
 
   it('maps frontend roles to backend roles', () => {
     expect(mapFrontendRoleToBackend('super-admin')).toBe('SUPER_ADMIN');
     expect(mapFrontendRoleToBackend('admin')).toBe('ADMIN');
-    expect(mapFrontendRoleToBackend('vendor')).toBe('B2B_CUSTOMER');
+    expect(mapFrontendRoleToBackend('vendor')).toBe('VENDOR');
     expect(mapFrontendRoleToBackend('delivery')).toBe('DELIVERY_PARTNER');
   });
 
