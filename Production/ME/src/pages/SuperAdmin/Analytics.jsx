@@ -14,6 +14,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import { FiRefreshCw } from 'react-icons/fi';
 import PageHeader from '../../components/superadmin/PageHeader';
 import analyticsService from '../../services/analyticsService';
 import useViewport from '../../hooks/useViewport';
@@ -23,23 +24,26 @@ const COLORS = ['#2563EB', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'
 const Analytics = () => {
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const { isMobile } = useViewport();
 
-  useEffect(() => {
-    const loadAnalytics = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const response = await analyticsService.getDashboard();
-        setAnalytics(response.data ?? response);
-      } catch (err) {
-        setError(err?.response?.data?.message || err?.message || 'Failed to load analytics');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const loadAnalytics = async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+    setError('');
+    try {
+      const response = await analyticsService.getDashboard();
+      setAnalytics(response.data ?? response);
+    } catch (err) {
+      setError(err?.response?.data?.message || err?.message || 'Failed to load analytics');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
+  useEffect(() => {
     loadAnalytics();
   }, []);
 
@@ -58,6 +62,17 @@ const Analytics = () => {
       <PageHeader
         title="Analytics"
         subtitle="Platform analytics from live backend data."
+        actions={
+          <button
+            type="button"
+            onClick={() => loadAnalytics(true)}
+            disabled={refreshing}
+            className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] border rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50"
+          >
+            <FiRefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+            Refresh
+          </button>
+        }
       />
 
       {error && (

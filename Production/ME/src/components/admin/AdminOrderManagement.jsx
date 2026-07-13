@@ -11,18 +11,8 @@ import useDebouncedValue from '../../hooks/useDebouncedValue';
 
 const ADMIN_STATUS_OPTIONS = [
   { value: 'all', label: 'All Status' },
-  { value: 'PENDING', label: 'Pending' },
-  { value: 'CONFIRMED', label: 'Confirmed' },
-  { value: 'PROCESSING', label: 'Processing' },
-  { value: 'PACKED', label: 'Packed' },
-  { value: 'READY_TO_DISPATCH', label: 'Ready To Dispatch' },
-  { value: 'SHIPPED', label: 'Shipped' },
-  { value: 'OUT_FOR_DELIVERY', label: 'Out For Delivery' },
-  { value: 'DELIVERED', label: 'Delivered' },
   { value: 'COMPLETED', label: 'Completed' },
-  { value: 'CANCELLED', label: 'Cancelled' },
-  { value: 'RETURNED', label: 'Returned' },
-  { value: 'REFUNDED', label: 'Refunded' },
+  { value: 'COD', label: 'COD' },
 ];
 
 const NEXT_STATUS_MAP = {
@@ -95,12 +85,8 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
 
   const summaryCards = [
     { title: 'Total', value: String(stats.totalOrders), icon: FiPackage, color: 'blue' },
-    { title: 'Pending', value: String(stats.pendingOrders), icon: FiClock, color: 'orange' },
-    { title: 'Confirmed', value: String(stats.confirmedOrders), icon: FiPackage, color: 'blue' },
-    { title: 'Processing', value: String(stats.processingOrders), icon: FiPackage, color: 'purple' },
-    { title: 'Dispatched', value: String(stats.dispatchedOrders), icon: FiTruck, color: 'green' },
-    { title: 'Delivered', value: String(stats.deliveredOrders), icon: FiTruck, color: 'green' },
-    { title: 'Cancelled', value: String(stats.cancelledOrders), icon: FiClock, color: 'red' },
+    { title: 'Completed', value: String(stats.completedOrders), icon: FiCheck, color: 'green' },
+    { title: 'COD', value: String(stats.codOrders), icon: FiTruck, color: 'blue' },
   ];
 
   const handleStatusUpdate = async () => {

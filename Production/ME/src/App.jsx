@@ -38,7 +38,6 @@ const DeliveryAssignment = lazy(() => import('./pages/Admin/DeliveryAssignment')
 const Reports = lazy(() => import('./pages/Admin/Reports'));
 const AdminAnalytics = lazy(() => import('./pages/Admin/Analytics'));
 const AdminSettings = lazy(() => import('./pages/Admin/Settings'));
-const PaymentVerifications = lazy(() => import('./pages/Admin/PaymentVerifications'));
 
 const VendorLayout = lazy(() => import('./layouts/VendorLayout'));
 const VendorDashboard = lazy(() => import('./pages/Vendor/Dashboard'));
@@ -100,7 +99,6 @@ function App() {
                 <Route path="inventory" element={<Inventory />} />
                 <Route path="vendors" element={<AdminVendors />} />
                 <Route path="orders" element={<AdminOrders />} />
-                <Route path="payment-verifications" element={<PaymentVerifications />} />
                 <Route path="delivery-assignment" element={<DeliveryAssignment />} />
                 <Route path="reports" element={<Reports />} />
                 <Route path="analytics" element={<AdminAnalytics />} />

@@ -84,28 +84,10 @@ const VendorDashboard = () => {
               color="green"
             />
             <AnalyticsCard
-              title="Total Spending"
-              value={`₹${summary.totalSpending.toLocaleString('en-IN')}`}
-              icon={<FiDollarSign className="w-5 h-5 sm:w-6 sm:h-6" />}
-              color="green"
-            />
-            <AnalyticsCard
-              title="This Month Spending"
-              value={`₹${summary.thisMonthSpending.toLocaleString('en-IN')}`}
-              icon={<FiTrendingUp className="w-5 h-5 sm:w-6 sm:h-6" />}
-              color="blue"
-            />
-            <AnalyticsCard
               title="Wishlist Products"
               value={wishlistCount}
               icon={<FiHeart className="w-5 h-5 sm:w-6 sm:h-6" />}
               color="red"
-            />
-            <AnalyticsCard
-              title="Available Credit"
-              value={`₹${summary.availableCredit.toLocaleString('en-IN')}`}
-              icon={<FiTag className="w-5 h-5 sm:w-6 sm:h-6" />}
-              color="orange"
             />
             <AnalyticsCard
               title="Pending Orders"
