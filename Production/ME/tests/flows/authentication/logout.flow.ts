@@ -11,10 +11,15 @@ import storage from '../../utils/storage.helper';
  */
 export async function logoutFlow(page: Page) {
   await uiLogout(page);
-  // Ensure local session cleared
-  await storage.clearLocalStorage(page);
-  // Optionally, navigate to login to ensure app reloads
-  await page.goto('/login');
+  // Wait for app to perform logout and redirect to login page.
+  // Do not manipulate localStorage or cookies directly; verify observable behavior only.
+  try {
+    await page.waitForFunction(() => location.pathname === '/login' || location.pathname === '/', null, { timeout: 10000 });
+    // Ensure final navigation to /login (SPA may show root then redirect)
+    await page.waitForURL(/\/login/, { timeout: 10000 }).catch(() => null);
+  } catch {
+    // Non-fatal: caller tests will assert logout behavior.
+  }
 }
 
 export default logoutFlow;

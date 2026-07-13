@@ -56,14 +56,73 @@ export const UserFactory = {
     }
 
     const payload = this.build(role, index);
-    const response = await apiClient.post('/auth/register', {
-      name: payload.name,
-      email: payload.email,
-      mobile: payload.mobile,
-      password: payload.password,
-      role: payload.role,
-    });
-    return { payload, response: response.data };
+    try {
+      const requestBody = {
+        name: payload.name,
+        email: payload.email,
+        mobile: payload.mobile,
+        password: payload.password,
+        role: payload.role,
+      };
+      const response = await apiClient.post('/auth/register', requestBody);
+      return { payload, response: response.data };
+    } catch (err: any) {
+      // Enhanced debug: surface axios response and request for failing registration
+      const status = err?.response?.status;
+      const respBody = err?.response?.data;
+      console.error('UserFactory.create - registration failed', {
+        status,
+        responseBody: respBody,
+        requestPayload: {
+          name: payload.name,
+          email: payload.email,
+          mobile: payload.mobile,
+          password: payload.password ? '<redacted>' : undefined,
+          role: payload.role,
+        },
+        errorMessage: err.message,
+      });
+
+      // If the error indicates the user already exists, return a helpful response
+      const message = respBody?.message || '';
+      if (status === 400 && message.toLowerCase().includes('already registered')) {
+        // Try to login with provided credentials to verify ownership
+        try {
+          await apiClient.post('/auth/login', { identifier: payload.email, password: payload.password });
+          // Login succeeded - account exists and credentials match
+          return { payload, response: { existing: true, message: 'Existing account with matching credentials' } };
+        } catch (loginErr: any) {
+          // Login failed - likely the account exists but with different credentials.
+          // Avoid colliding: generate a unique email suffix and retry registration once.
+          const [local, domain] = String(payload.email).split('@');
+          const uniqueEmail = `${local}+qa${Date.now()}@${domain}`;
+          // Generate a unique 10-digit mobile starting with 9 (avoid collisions)
+          const uniqueMobile = `9${Math.floor(100000000 + Math.random() * 900000000)}`.slice(0, 10);
+          const retryBody = {
+            name: payload.name,
+            email: uniqueEmail,
+            mobile: uniqueMobile,
+            password: payload.password,
+            role: payload.role,
+          };
+          console.warn('UserFactory.create - email collision with different credentials. Retrying with unique email:', uniqueEmail);
+          try {
+            const retryResp = await apiClient.post('/auth/register', retryBody);
+            // update payload to reflect new email/mobile
+            payload.email = uniqueEmail;
+            payload.mobile = uniqueMobile;
+            return { payload, response: retryResp.data };
+          } catch (retryErr: any) {
+            const rStatus = retryErr?.response?.status;
+            const rBody = retryErr?.response?.data;
+            console.error('UserFactory.create - retry registration failed', { rStatus, rBody, retryBody });
+            throw retryErr;
+          }
+        }
+      }
+
+      throw err;
+    }
   },
 };
 

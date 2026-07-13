@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FiShoppingCart, FiHeart, FiArrowLeft, FiStar, FiCheck } from 'react-icons/fi';
 import BulkPricingTable from '../../components/vendor/BulkPricingTable';
@@ -25,6 +25,20 @@ const ProductDetails = () => {
   const [cartMessage, setCartMessage] = useState(null);
   const { addToCart, actionLoading: cartLoading } = useCart({ autoLoad: false });
   const { addToWishlist, actionLoading: wishlistLoading } = useWishlist({ autoLoad: false });
+  const addingRef = useRef(false);
+  const [adding, setAdding] = useState(false);
+
+  const releaseAddLock = () => {
+    addingRef.current = false;
+    setAdding(false);
+  };
+
+  const blockDuplicateAddToCart = (event) => {
+    if (addingRef.current || cartLoading) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  };
 
   useEffect(() => {
     if (product?.minimumOrderQuantity) {
@@ -52,7 +66,9 @@ const ProductDetails = () => {
     );
   }
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = async (event) => {
+    if (addingRef.current || cartLoading) return;
+
     const productId = product.id || product._id;
     const moq = Number(product.minimumOrderQuantity ?? product.moq ?? 1);
 
@@ -66,11 +82,19 @@ const ProductDetails = () => {
       return;
     }
 
+    addingRef.current = true;
+    setAdding(true);
+    if (event?.currentTarget) {
+      event.currentTarget.disabled = true;
+    }
+
     try {
       await addToCart(productId, quantity);
       setCartMessage({ type: 'success', text: `${product.name} added to cart` });
     } catch (addError) {
       setCartMessage({ type: 'error', text: addError.message || 'Failed to add product to cart' });
+    } finally {
+      releaseAddLock();
     }
   };
 
@@ -275,10 +299,11 @@ const ProductDetails = () => {
 
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <button
+                onClickCapture={blockDuplicateAddToCart}
                 onClick={handleAddToCart}
-                disabled={product.status === 'out_of_stock' || cartLoading}
+                disabled={product.status === 'out_of_stock' || cartLoading || adding}
                 className={`flex-1 py-2.5 h-10 sm:h-12 px-4 sm:px-6 rounded-lg text-xs sm:text-sm font-medium flex items-center justify-center gap-1.5 sm:gap-2 transition-colors ${
-                  product.status === 'out_of_stock' || cartLoading
+                  product.status === 'out_of_stock' || cartLoading || adding
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
@@ -286,7 +311,7 @@ const ProductDetails = () => {
                 <FiShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
                 {product.status === 'out_of_stock'
                   ? 'Out of Stock'
-                  : cartLoading
+                  : cartLoading || adding
                     ? 'Adding...'
                     : 'Add to Cart'}
               </button>

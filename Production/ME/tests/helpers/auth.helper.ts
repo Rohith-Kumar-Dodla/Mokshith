@@ -5,26 +5,50 @@ export async function uiLogin(page: Page, mobile: string, password: string) {
   await page.goto('/login');
   await page.fill(AuthSelectors.login.mobileInput, mobile);
   await page.fill(AuthSelectors.login.passwordInput, password);
-  await Promise.all([
-    page.waitForNavigation({ waitUntil: 'networkidle' }).catch(() => null),
-    page.click(AuthSelectors.login.signInButton),
-  ]);
+  // SPA navigation is client-side; click and let the calling flow wait deterministically.
+  await page.click(AuthSelectors.login.signInButton);
 }
 
 export async function uiLogout(page: Page) {
   // Try header logout button first
-  const logout = await page.$(AuthSelectors.navbar.logoutButton);
-  if (logout) {
-    await Promise.all([page.waitForNavigation().catch(() => null), logout.click()]);
-    return;
+  const logoutLocator = page.locator(AuthSelectors.navbar.logoutButton);
+  try {
+    await logoutLocator.waitFor({ state: 'visible', timeout: 5000 });
+  } catch {
+    throw new Error('Logout button not found in UI');
   }
+  // Click logout button
+  await logoutLocator.click();
 
-  // Fallback: call logout API via fetch in page context
-  await page.evaluate(async () => {
+  // Confirm dialog must appear
+    const dialog = page.locator('role=dialog[name="Confirm Logout"]');
     try {
-      await fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' });
-    } catch {}
-  });
+      await dialog.waitFor({ state: 'visible', timeout: 5000 });
+    } catch {
+      throw new Error('Logout dialog never appeared');
+    }
+
+    const confirmButton = dialog.locator('button:has-text("Logout")');
+    if ((await confirmButton.count()) === 0) {
+      throw new Error('Logout confirmation failed');
+    }
+
+    await confirmButton.click();
+
+    // Wait for logout API request triggered by UI
+    const resp = await page.waitForResponse(
+      (res) => res.url().includes('/auth/logout') && res.request().method() === 'POST',
+      { timeout: 10000 }
+    ).catch(() => null);
+    if (!resp) throw new Error('Logout API not called');
+    if (resp.status() !== 200) {
+      const body = await resp.text().catch(() => '');
+      throw new Error(`Logout API returned ${resp.status()}: ${body}`);
+    }
+
+    // Wait for redirect to login
+    await page.waitForURL(/\/login/, { timeout: 10000 });
+    return;
 }
 
 export default { uiLogin, uiLogout };

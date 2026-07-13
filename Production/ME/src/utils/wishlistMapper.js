@@ -16,7 +16,7 @@ export function mapBackendWishlistItem(item) {
 
   const product = mapBackendProduct(rawProduct);
   const productId = product.id || product._id;
-  const moq = Number(rawProduct.minOrderQty ?? rawProduct.moq ?? product.minimumOrderQuantity ?? 1);
+  const moq = Number(rawProduct.moq ?? rawProduct.minOrderQty ?? product.minimumOrderQuantity ?? 1);
   const availableStock = Number(product.stock ?? 0);
   const imageUrl = product.imageUrl || product.image || '';
   const price = Number(product.price ?? 0);

@@ -70,7 +70,7 @@ export const addToCart = async (user, { productId, quantity }) => {
     throw new AppError('Product is not available', 400);
   }
 
-  const minQty = product.minOrderQty || product.moq || 1;
+  const minQty = Math.max(Number(product.minOrderQty ?? 1), Number(product.moq ?? 1));
   if (quantity < minQty) {
     throw new AppError(`Minimum order quantity for ${product.name} is ${minQty}`, 400);
   }

@@ -10,15 +10,32 @@ import { apiClient } from '../../helpers/apiClient';
  * Flow performs orchestration only.
  */
 export async function restoreSessionWithTokens(page: Page, accessToken?: string, refreshToken?: string) {
+  // Navigate to app origin before touching localStorage to avoid SecurityError.
+  await page.goto('/');
+  await page.waitForLoadState('domcontentloaded');
+
   if (accessToken) {
     await storage.setLocalStorage(page, 'accessToken', accessToken);
   }
   if (refreshToken) {
     await storage.setLocalStorage(page, 'refreshToken', refreshToken);
   }
-  // Trigger app initialization that runs AuthContext.restoreSession
-  await page.goto('/');
-  await page.waitForLoadState('networkidle');
+
+  // Reload so application picks up stored tokens and initializes AuthContext.restoreSession
+  await page.reload();
+  // Avoid waiting for networkidle, which can hang when the app has long-polling/keepalive requests.
+  await page.waitForLoadState('domcontentloaded');
+
+  // AuthContext.restoreSession is async; wait until client storage reflects a hydrated session.
+  await page.waitForFunction(
+    () => {
+      const user = localStorage.getItem('user');
+      const isAuth = localStorage.getItem('isAuthenticated');
+      return !!user && isAuth === 'true';
+    },
+    null,
+    { timeout: 15000 }
+  );
 }
 
 export async function restoreSessionViaRefreshApi(page: Page, refreshToken: string) {
@@ -33,8 +50,11 @@ export async function restoreSessionViaRefreshApi(page: Page, refreshToken: stri
   if (newRefresh) {
     await storage.setLocalStorage(page, 'refreshToken', newRefresh);
   }
+  // Ensure page is at app origin and reload to pick up new tokens
   await page.goto('/');
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
+  await page.reload();
+  await page.waitForLoadState('domcontentloaded');
 }
 
 export default { restoreSessionWithTokens, restoreSessionViaRefreshApi };

@@ -3,8 +3,8 @@ import Joi from 'joi';
 export const createProductSchema = Joi.object({
   body: Joi.object({
     name: Joi.string().trim().required(),
-    description: Joi.string().optional(),
-    price: Joi.number().min(1).required(),
+    description: Joi.string().allow('').optional(),
+    price: Joi.number().greater(0).required(),
     stock: Joi.number().min(0).optional(),
     categoryId: Joi.string().required(),
     vendorId: Joi.string().optional(),
@@ -37,7 +37,7 @@ export const updateProductSchema = Joi.object({
   body: Joi.object({
     name: Joi.string().trim().optional(),
     description: Joi.string().allow('').optional(),
-    price: Joi.number().min(0).optional(),
+    price: Joi.number().greater(0).optional(),
     stock: Joi.number().min(0).optional(),
     categoryId: Joi.string().optional(),
     moq: Joi.number().min(1).optional(),
@@ -59,4 +59,22 @@ export const updateProductSchema = Joi.object({
       })
     ).optional()
   }),
+});
+
+export const updateStockSchema = Joi.object({
+  params: Joi.object({
+    id: Joi.string().required(),
+  }),
+  body: Joi.object({
+    stock: Joi.number().integer().min(0).required(),
+  }).required(),
+});
+
+export const updateStatusSchema = Joi.object({
+  params: Joi.object({
+    id: Joi.string().required(),
+  }),
+  body: Joi.object({
+    isActive: Joi.boolean().required(),
+  }).required(),
 });
