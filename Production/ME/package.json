@@ -13,6 +13,12 @@
     "test:integration": "vitest",
     "test:e2e": "playwright test",
     "test:smoke": "playwright test --config=playwright.smoke.config.ts",
+    "test:functional": "playwright test --config=playwright.functional.config.ts",
+    "test:validation": "playwright test --config=playwright.validation.config.ts",
+    "test:cart-smoke": "playwright test --config=playwright.cart.smoke.config.ts",
+    "test:cart-functional": "playwright test --config=playwright.cart.functional.config.ts",
+    "test:cart-authorization": "playwright test --config=playwright.cart.authorization.config.ts",
+    "test:cart-validation": "playwright test --config=playwright.cart.validation.config.ts",
     "test:coverage": "vitest --coverage",
     "test:accessibility": "playwright test tests/e2e/accessibility.spec.ts"
   },

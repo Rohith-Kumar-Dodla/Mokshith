@@ -18,6 +18,10 @@ describe('productMapper', () => {
       expect(deriveProductStatus(5, 10)).toBe('low_stock');
     });
 
+    it('returns inactive when isActive is false', () => {
+      expect(deriveProductStatus(100, 10, false)).toBe('inactive');
+    });
+
     it('returns active when stock meets moq', () => {
       expect(deriveProductStatus(50, 10)).toBe('active');
     });

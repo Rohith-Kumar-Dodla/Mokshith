@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiCreditCard, FiSmartphone, FiTruck, FiCheck, FiDollarSign } from 'react-icons/fi';
 import PageHeader from '../../components/vendor/PageHeader';
@@ -14,6 +14,35 @@ const PAYMENT_METHODS = [
   // Razorpay (online) only — keep label clear for users
   { id: 'razorpay', label: 'Razorpay (Online Payment)', icon: FiSmartphone, description: 'Pay securely via Razorpay (Test Mode)' },
 ];
+
+const GLOBAL_PLACING_KEY = '__b2bCheckoutPlacing';
+const GLOBAL_ORDER_CLICK_MUTEX = '__b2bOrderClickMutex';
+
+const isPlacementLockedGlobally = () =>
+  typeof window !== 'undefined' && window[GLOBAL_PLACING_KEY] === true;
+
+const setPlacementLockedGlobally = (locked) => {
+  if (typeof window !== 'undefined') {
+    window[GLOBAL_PLACING_KEY] = locked;
+  }
+};
+
+const acquireOrderClickMutex = () => {
+  if (typeof window === 'undefined') {
+    return true;
+  }
+  if (window[GLOBAL_ORDER_CLICK_MUTEX]) {
+    return false;
+  }
+  window[GLOBAL_ORDER_CLICK_MUTEX] = true;
+  return true;
+};
+
+const releaseOrderClickMutex = () => {
+  if (typeof window !== 'undefined') {
+    window[GLOBAL_ORDER_CLICK_MUTEX] = false;
+  }
+};
 
 const Checkout = () => {
   const { user } = useAuth();
@@ -38,6 +67,21 @@ const Checkout = () => {
     specialInstructions: '',
   });
   const [validationError, setValidationError] = useState('');
+  const [placementLocked, setPlacementLocked] = useState(false);
+  const placingRef = useRef(false);
+  const placeOrderButtonRef = useRef(null);
+  const orderIdempotencyKeyRef = useRef(null);
+
+  const releasePlacementLock = () => {
+    placingRef.current = false;
+    setPlacementLocked(false);
+    setPlacementLockedGlobally(false);
+    releaseOrderClickMutex();
+    orderIdempotencyKeyRef.current = null;
+    if (placeOrderButtonRef.current) {
+      placeOrderButtonRef.current.disabled = false;
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -60,53 +104,79 @@ const Checkout = () => {
     return '';
   };
 
-  const handlePlaceOrder = async () => {
-    // Prevent rapid double-invocation before submitting state updates propagate
-    if (handlePlaceOrder._running) return;
-    handlePlaceOrder._running = true;
+  const blockDuplicatePlaceOrder = (event) => {
+    if (isPlacementLockedGlobally() || placingRef.current || submitting || placementLocked) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  };
 
-    const validationMessage = validateForm();
-    if (validationMessage) {
-      setValidationError(validationMessage);
-      handlePlaceOrder._running = false;
+  const handlePlaceOrder = (event) => {
+    if (!acquireOrderClickMutex()) {
+      event?.preventDefault?.();
       return;
     }
-
-    setValidationError('');
-
-    if (selectedPayment === 'credit') {
-      const creditError = validateAmount(grandTotal);
-      if (creditError) {
-        setValidationError(creditError);
-        handlePlaceOrder._running = false;
-        return;
-      }
+    if (isPlacementLockedGlobally() || placingRef.current || submitting || placementLocked) {
+      releaseOrderClickMutex();
+      event?.preventDefault?.();
+      return;
+    }
+    placingRef.current = true;
+    setPlacementLocked(true);
+    setPlacementLockedGlobally(true);
+    if (event?.currentTarget) {
+      event.currentTarget.disabled = true;
     }
 
-    if (selectedPayment === 'hybrid') {
-      if (!credit || credit.availableCredit <= 0) {
-        setValidationError('No credit available for hybrid payment');
-        handlePlaceOrder._running = false;
-        return;
-      }
-      if (credit.availableCredit >= grandTotal) {
-        setValidationError('Sufficient credit available. Use Credit Line instead.');
-        handlePlaceOrder._running = false;
-        return;
-      }
+    if (!orderIdempotencyKeyRef.current) {
+      orderIdempotencyKeyRef.current = `order-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
     }
 
-    try {
-      await placeOrder({
-        formData,
-        paymentMethodId: selectedPayment,
-        orderTotal: grandTotal,
-      });
-    } catch {
-      // Error surfaced via checkoutError state.
-    } finally {
-      handlePlaceOrder._running = false;
-    }
+    void (async () => {
+      const validationMessage = validateForm();
+      if (validationMessage) {
+        setValidationError(validationMessage);
+        releasePlacementLock();
+        return;
+      }
+
+      setValidationError('');
+
+      if (selectedPayment === 'credit') {
+        const creditError = validateAmount(grandTotal);
+        if (creditError) {
+          setValidationError(creditError);
+          releasePlacementLock();
+          return;
+        }
+      }
+
+      if (selectedPayment === 'hybrid') {
+        if (!credit || credit.availableCredit <= 0) {
+          setValidationError('No credit available for hybrid payment');
+          releasePlacementLock();
+          return;
+        }
+        if (credit.availableCredit >= grandTotal) {
+          setValidationError('Sufficient credit available. Use Credit Line instead.');
+          releasePlacementLock();
+          return;
+        }
+      }
+
+      try {
+        await placeOrder({
+          formData,
+          paymentMethodId: selectedPayment,
+          orderTotal: grandTotal,
+          idempotencyKey: orderIdempotencyKeyRef.current,
+        });
+      } catch {
+        releasePlacementLock();
+      } finally {
+        releaseOrderClickMutex();
+      }
+    })();
   };
 
   if (loading) {
@@ -400,9 +470,15 @@ const Checkout = () => {
             </div>
 
             <button
+              ref={placeOrderButtonRef}
               type="button"
+              onClickCapture={blockDuplicatePlaceOrder}
               onClick={handlePlaceOrder}
-              disabled={submitting}
+              onDoubleClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+              }}
+              disabled={submitting || placementLocked}
               className="w-full py-2.5 h-10 sm:h-12 px-4 sm:px-6 bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
               {submitting

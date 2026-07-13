@@ -11,10 +11,11 @@ export default defineConfig({
     '../../Production/b2b-backend/tests/**',
   ],
   testMatch: ['**/*.spec.{ts,tsx,js,jsx}'],
-  fullyParallel: true,
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: 1,
+  globalSetup: './tests/smoke/global-setup.ts',
   reporter: [
     ['html'],
     ['junit', { outputFile: 'test-results/junit-smoke.xml' }],
@@ -33,7 +34,10 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev',
+    // Launch an orchestrator that starts both backend and frontend (dev mode).
+    // This ensures the API at port 5000 is available for smoke runs without
+    // weakening the frontend production guard.
+    command: 'node ./tools/start-dev-with-backend.js',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,

@@ -21,10 +21,8 @@ export class LoginPage {
   }
 
   async submit() {
-    await Promise.all([
-      this.page.waitForNavigation({ waitUntil: 'networkidle' }).catch(() => null),
-      this.page.click(AuthSelectors.login.signInButton),
-    ]);
+    // SPA navigation is client-side; click the submit button and let callers wait deterministically.
+    await this.page.click(AuthSelectors.login.signInButton);
   }
 
   async submitExpectingNoNavigation() {

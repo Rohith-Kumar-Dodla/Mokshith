@@ -284,6 +284,18 @@ export const logout = asyncHandler(async (req, res) => {
     logger.error('Logout error (handled):', error);
   }
 
+  // Ensure any cookie-based refresh token is cleared in the browser.
+  try {
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+      path: '/api/v1'
+    });
+  } catch (e) {
+    // swallow - best-effort
+  }
+
   successResponse(res, { success: true }, 'Logged out successfully');
 });
 

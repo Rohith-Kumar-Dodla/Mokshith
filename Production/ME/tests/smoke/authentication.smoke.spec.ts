@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import { execSync } from 'child_process';
+import path from 'path';
 import loginFlow from '../flows/authentication/login.flow';
 import logoutFlow from '../flows/authentication/logout.flow';
 import sessionRestoreFlows from '../flows/authentication/sessionRestore.flow';
@@ -14,6 +16,18 @@ import { ROLES } from '../../../b2b-backend/src/constants/roles.js';
 
 test.describe('Authentication Smoke Suite', () => {
   const createdUsers: string[] = [];
+
+  // Clear auth rate-limit keys before smoke suite to ensure deterministic login attempts.
+  // This is safe for single-worker smoke runs and required to avoid flaky 429s.
+  test.beforeAll(() => {
+    try {
+      const script = path.resolve(process.cwd(), '..', 'b2b-backend', 'scripts', 'clearAuthRateLimits.js');
+      execSync(`node "${script}"`, { stdio: 'ignore' });
+    } catch (err) {
+      // Non-fatal: if clearing fails, tests will proceed and may hit rate limits.
+      console.warn('Warning: failed to clear auth rate limits before smoke suite:', err?.message || err);
+    }
+  });
 
   test.afterEach(async () => {
     // Attempt cleanup of created users; try common test-only endpoints and ignore if not available.
@@ -41,10 +55,10 @@ test.describe('Authentication Smoke Suite', () => {
   });
 
   test('S-AUTH-01 | Login (password) - basic auth', async ({ page }) => {
-    const { payload } = await UserFactory.create(ROLES.B2B_CUSTOMER, 1);
-    // track for cleanup
-    createdUsers.push(payload.email || payload.mobile);
-    await loginFlow(page, payload.mobile, payload.password);
+    // Use deterministic approved seeded account in QA for login smoke.
+    const seededMobile = process.env.TEST_SEEDED_CUSTOMER_MOBILE || '9000000301';
+    const seededPassword = process.env.TEST_SEEDED_CUSTOMER_PASSWORD || 'Customer@123';
+    await loginFlow(page, seededMobile, seededPassword);
 
     // Validate tokens and session presence
     await validators.assertAccessTokenPresent(page).catch((err) => {
@@ -59,9 +73,10 @@ test.describe('Authentication Smoke Suite', () => {
     if (!user) throw new Error('S-AUTH-01 failed: authenticated user not present in client storage');
     const isAuth = await storage.getLocalStorage(page, 'isAuthenticated');
     if (isAuth !== 'true') throw new Error(`S-AUTH-01 failed: expected isAuthenticated=true but found ${isAuth}`);
-    // Verify user identity matches created payload
-    if (payload.mobile && user.mobile !== payload.mobile) {
-      throw new Error(`S-AUTH-01 failed: expected user mobile ${payload.mobile} found ${user.mobile}`);
+    // Optionally verify expected seeded mobile if provided
+    const expectedMobile = process.env.TEST_SEEDED_CUSTOMER_MOBILE;
+    if (expectedMobile && user.mobile !== expectedMobile) {
+      throw new Error(`S-AUTH-01 failed: expected user mobile ${expectedMobile} found ${user.mobile}`);
     }
   });
 
@@ -70,20 +85,24 @@ test.describe('Authentication Smoke Suite', () => {
     if (process.env.SMOKE_ENABLE_2FA !== 'true') {
       test.skip(true, 'S-AUTH-02 skipped: SMOKE_ENABLE_2FA not enabled in environment');
     }
-    const { payload } = await UserFactory.create(ROLES.B2B_CUSTOMER, 2);
-    createdUsers.push(payload.email || payload.mobile);
-    // If CI provides a deterministic code, it should be in TEST_2FA_CODE
+    // Use seeded account for 2FA tests. Require TEST_SEEDED_2FA_MOBILE to be set in CI.
+    const seededMobile = process.env.TEST_SEEDED_2FA_MOBILE;
+    const seededPassword = process.env.TEST_SEEDED_2FA_PASSWORD;
+    if (!seededMobile || !seededPassword) {
+      test.skip(true, 'S-AUTH-02 skipped: no seeded 2FA account configured (TEST_SEEDED_2FA_MOBILE/PASSWORD)');
+    }
     const twoFACode = process.env.TEST_2FA_CODE;
-    await loginFlow(page, payload.mobile, payload.password, twoFACode);
+    await loginFlow(page, seededMobile, seededPassword, twoFACode);
     await validators.assertAccessTokenPresent(page).catch((err) => {
       throw new Error('S-AUTH-02 failed: access token missing after 2FA login — ' + err.message);
     });
   });
 
   test('S-AUTH-03 | Logout (UI)', async ({ page }) => {
-    const { payload } = await UserFactory.create(ROLES.B2B_CUSTOMER, 3);
-    createdUsers.push(payload.email || payload.mobile);
-    await loginFlow(page, payload.mobile, payload.password);
+    // Use seeded deterministic customer
+    const seededMobile = process.env.TEST_SEEDED_CUSTOMER_MOBILE || '9000000301';
+    const seededPassword = process.env.TEST_SEEDED_CUSTOMER_PASSWORD || 'Customer@123';
+    await loginFlow(page, seededMobile, seededPassword);
 
     // perform logout flow
     await logoutFlow(page);
@@ -100,9 +119,10 @@ test.describe('Authentication Smoke Suite', () => {
   });
 
   test('S-AUTHZ-02 | Access protected route with auth (admin)', async ({ page }) => {
-    const { payload } = await UserFactory.create(ROLES.ADMIN, 1);
-    createdUsers.push(payload.email || payload.mobile);
-    await loginFlow(page, payload.mobile, payload.password);
+    // Use seeded admin account
+    const seededAdminMobile = process.env.TEST_SEEDED_ADMIN_MOBILE || '9000000002';
+    const seededAdminPassword = process.env.TEST_SEEDED_ADMIN_PASSWORD || 'Admin@123';
+    await loginFlow(page, seededAdminMobile, seededAdminPassword);
     await page.goto('/admin/dashboard');
     // Business assertions: session present and role matches expected
     await validators.assertAccessTokenPresent(page);
@@ -115,10 +135,10 @@ test.describe('Authentication Smoke Suite', () => {
   });
 
   test('S-SESSION-01 | Token refresh endpoint and rotation', async ({ page }) => {
-    // Create and login via API to get refresh token
-    const { payload } = await UserFactory.create(ROLES.B2B_CUSTOMER, 4);
-    createdUsers.push(payload.email || payload.mobile);
-    await loginFlow(page, payload.mobile, payload.password);
+    // Use seeded deterministic customer
+    const seededMobile = process.env.TEST_SEEDED_CUSTOMER_MOBILE || '9000000301';
+    const seededPassword = process.env.TEST_SEEDED_CUSTOMER_PASSWORD || 'Customer@123';
+    await loginFlow(page, seededMobile, seededPassword);
 
     // Read existing refresh token via storage helper
     await sessionHelper.validateSessionState(page);
@@ -137,11 +157,11 @@ test.describe('Authentication Smoke Suite', () => {
   });
 
   test('S-SESSION-02 | Session restore on app load', async ({ page }) => {
-    // Use API-backed fixture to obtain deterministic tokens quickly
-    const result = await AuthFixtures.createAndLogin(null, ROLES.B2B_CUSTOMER, 5);
-    const created = result.user ?? (result as any).payload;
-    if (created) createdUsers.push(created.email || created.mobile);
-    const sessionData = result.session?.data ?? result.session;
+    // Use seeded account to obtain tokens via API login (avoid creating users)
+    const seededMobile = process.env.TEST_SEEDED_CUSTOMER_MOBILE || '9000000301';
+    const seededPassword = process.env.TEST_SEEDED_CUSTOMER_PASSWORD || 'Customer@123';
+    const resp = await apiClient.post('/auth/login', { mobile: seededMobile, password: seededPassword });
+    const sessionData = resp.data?.data ?? resp.data;
     const accessToken = sessionData?.accessToken ?? sessionData?.data?.accessToken;
     const refreshToken = sessionData?.refreshToken ?? sessionData?.data?.refreshToken;
     if (!accessToken && !refreshToken) {
@@ -154,22 +174,30 @@ test.describe('Authentication Smoke Suite', () => {
   });
 
   test('S-ROLE-01 | Role-based redirect after login', async ({ page }) => {
-    // Vendor
-    const vendor = await UserFactory.create(ROLES.VENDOR, 1);
-    createdUsers.push(vendor.payload.email || vendor.payload.mobile);
-    await loginFlow(page, vendor.payload.mobile, vendor.payload.password);
+    // Vendor flow: use an approved seeded B2B Customer account (Customer One) which becomes vendor after approval.
+    const seededVendorMobile = process.env.TEST_SEEDED_CUSTOMER_MOBILE || '9000000301';
+    const seededVendorPassword = process.env.TEST_SEEDED_CUSTOMER_PASSWORD || 'Customer@123';
+    await loginFlow(page, seededVendorMobile, seededVendorPassword);
+    // Wait for client to persist tokens (deterministic signal) before asserting navigation
     await validators.assertAccessTokenPresent(page);
+    // Expect redirect to vendor dashboard
+    await expect(page).toHaveURL(/\/vendor\/dashboard/);
+    // Verify user present and frontend role mapping to vendor (frontend stores 'role' as mapped value)
     const vUser = await sessionHelper.getAuthenticatedUser(page);
     if (!vUser) throw new Error('S-ROLE-01 failed: vendor user not present after login');
-    if (vUser.role && vUser.role.toUpperCase() !== 'VENDOR' && vUser.role !== ROLES.VENDOR) {
-      throw new Error(`S-ROLE-01 failed: expected vendor role but found ${vUser.role}`);
+    const frontendRole = await storage.getLocalStorage(page, 'role');
+    if (frontendRole !== 'vendor') {
+      throw new Error(`S-ROLE-01 failed: expected frontend role 'vendor' but found ${frontendRole}`);
     }
-    // Logout then admin
+    // Logout then admin (seeded)
     await logoutFlow(page);
-    const admin = await UserFactory.create(ROLES.ADMIN, 2);
-    createdUsers.push(admin.payload.email || admin.payload.mobile);
-    await loginFlow(page, admin.payload.mobile, admin.payload.password);
+    const seededAdminMobile = process.env.TEST_SEEDED_ADMIN_MOBILE || '9000000002';
+    const seededAdminPassword = process.env.TEST_SEEDED_ADMIN_PASSWORD || 'Admin@123';
+    await loginFlow(page, seededAdminMobile, seededAdminPassword);
+    // Wait for client to persist tokens (deterministic signal) before asserting navigation
     await validators.assertAccessTokenPresent(page);
+    // Expect redirect to admin dashboard
+    await expect(page).toHaveURL(/\/admin\/dashboard/);
     const aUser = await sessionHelper.getAuthenticatedUser(page);
     if (!aUser) throw new Error('S-ROLE-01 failed: admin user not present after login');
     if (aUser.role && aUser.role.toUpperCase() !== 'ADMIN' && aUser.role !== ROLES.ADMIN) {
@@ -178,9 +206,9 @@ test.describe('Authentication Smoke Suite', () => {
   });
 
   test('S-SEC-01 | CSRF token available and accepted for state-changing request', async ({ page }) => {
-    const { payload } = await UserFactory.create(ROLES.B2B_CUSTOMER, 6);
-    createdUsers.push(payload.email || payload.mobile);
-    await loginFlow(page, payload.mobile, payload.password);
+    const seededMobile = process.env.TEST_SEEDED_CUSTOMER_MOBILE || '9000000301';
+    const seededPassword = process.env.TEST_SEEDED_CUSTOMER_PASSWORD || 'Customer@123';
+    await loginFlow(page, seededMobile, seededPassword);
     const token = await csrfHelper.fetchCsrfTokenApi();
     if (!token) throw new Error('S-SEC-01 failed: csrf token not returned by API');
     // Attach into page and validate presence

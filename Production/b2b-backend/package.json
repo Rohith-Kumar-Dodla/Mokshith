@@ -10,6 +10,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "cross-env NODE_ENV=development nodemon server.js",
+    "dev:qa": "cross-env NODE_ENV=qa nodemon server.js",
+    "dev:uat": "cross-env NODE_ENV=uat nodemon server.js",
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config=jest.config.cjs",
     "test:unit": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/unit",
     "test:integration": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/integration",
@@ -23,9 +25,9 @@
     "format:check": "prettier --check . || echo 'Prettier not configured'",
     "verify:superadmin": "node scripts/verifySuperAdmin.js",
     "clear:auth-limits": "node scripts/clearAuthRateLimits.js",
-    "fix:user-phone": "node scripts/fixUserPhoneIndex.js"
-    , "db:init": "node scripts/db/init-db.js",
-    "db:seed:qa": "node scripts/db/seed-qa.js"
+    "fix:user-phone": "node scripts/fixUserPhoneIndex.js",
+    "db:init": "cross-env NODE_ENV=qa node scripts/db/init-db.js",
+    "db:seed:qa": "cross-env NODE_ENV=qa node scripts/db/seed-qa.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1057.0",

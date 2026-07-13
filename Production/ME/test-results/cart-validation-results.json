@@ -1,0 +1,2933 @@
+{
+  "config": {
+    "argv": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "C:\\Users\\USER\\Mokshith\\Production\\ME\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "--config=playwright.cart.validation.config.ts"
+    ],
+    "configFile": "C:\\Users\\USER\\Mokshith\\Production\\ME\\playwright.cart.validation.config.ts",
+    "rootDir": "C:/Users/USER/Mokshith/Production/ME/tests/validation",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": "C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\validation\\global-setup.ts",
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/USER/Mokshith/Production/ME/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "C:/Users/USER/Mokshith/Production/ME/tests/validation",
+        "testIgnore": [
+          "**/integration/**",
+          "**/__tests__/**",
+          "**/tests/unit/**",
+          "../../tools/**",
+          "../../Production/b2b-backend/tests/**"
+        ],
+        "testMatch": [
+          "**/cart.validation.spec.ts"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "html",
+        {
+          "outputFolder": "playwright-report-cart-validation"
+        }
+      ],
+      [
+        "junit",
+        {
+          "outputFile": "test-results/junit-cart-validation.xml"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/cart-validation-results.json"
+        }
+      ],
+      [
+        "list",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.61.1",
+    "workers": 1,
+    "webServer": {
+      "command": "node ./tools/start-dev-with-backend.js",
+      "url": "http://localhost:5173",
+      "reuseExistingServer": true,
+      "timeout": 180000
+    }
+  },
+  "suites": [
+    {
+      "title": "cart.validation.spec.ts",
+      "file": "cart.validation.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Cart Validation Certification Suite",
+          "file": "cart.validation.spec.ts",
+          "line": 61,
+          "column": 6,
+          "specs": [],
+          "suites": [
+            {
+              "title": "Section A — Joi / Express API Input Validation",
+              "file": "cart.validation.spec.ts",
+              "line": 72,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "PV-CART-001 | Reject missing productId",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 149,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:35.047Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-dd2e6a363fd1973d2154",
+                  "file": "cart.validation.spec.ts",
+                  "line": 73,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-002 | Reject missing quantity",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 165,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:39.774Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-e82475b58d8f54ed14c4",
+                  "file": "cart.validation.spec.ts",
+                  "line": 79,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-003 | Reject zero quantity at Joi layer",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 179,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:39.960Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-466c23a970e34b0fe08f",
+                  "file": "cart.validation.spec.ts",
+                  "line": 85,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-004 | Reject negative quantity at Joi layer",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 155,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:40.152Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-06c999ca4afd283d42e2",
+                  "file": "cart.validation.spec.ts",
+                  "line": 92,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-005 | Reject non-numeric quantity strings",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 140,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:40.320Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-47dc4867300059f426b2",
+                  "file": "cart.validation.spec.ts",
+                  "line": 99,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-006 | Accept numeric string quantity via middleware coercion",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 665,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:40.471Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-682fe467479e29ba3a2f",
+                  "file": "cart.validation.spec.ts",
+                  "line": 106,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-007 | Document decimal quantity acceptance at Joi layer",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 926,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:41.157Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-3968bd129f485d3a2243",
+                  "file": "cart.validation.spec.ts",
+                  "line": 116,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-008 | Reject empty productId string",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 147,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:42.096Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-2b0441956d0f9d04e83f",
+                  "file": "cart.validation.spec.ts",
+                  "line": 129,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-009 | Reject non-string productId types",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 149,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:42.253Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-5992464e97340cadde5c",
+                  "file": "cart.validation.spec.ts",
+                  "line": 134,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-010 | Unknown body fields do not break validation",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 741,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:42.429Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-437cb76c0ea1a1aef52f",
+                  "file": "cart.validation.spec.ts",
+                  "line": 139,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-011 | Joi returns multiple errors (abortEarly false)",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 150,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:43.181Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-ffdfc47efaf90eb0ded8",
+                  "file": "cart.validation.spec.ts",
+                  "line": 149,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-012 | Reject completely empty JSON body",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 140,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:43.344Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-caef64396fc0bf29b1a5",
+                  "file": "cart.validation.spec.ts",
+                  "line": 157,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Section B — Service / Business API Validation",
+              "file": "cart.validation.spec.ts",
+              "line": 162,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "PV-CART-013 | Reject malformed product ObjectId",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 138,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:43.493Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-77dbfb5ee8561dc7b2e3",
+                  "file": "cart.validation.spec.ts",
+                  "line": 163,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-014 | Reject valid but non-existent product",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 165,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:43.640Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-70cd55ef90533c69c288",
+                  "file": "cart.validation.spec.ts",
+                  "line": 172,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-015 | Reject inactive product",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 169,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:43.816Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-701ee6e48392c404e79c",
+                  "file": "cart.validation.spec.ts",
+                  "line": 181,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-016 | Reject quantity below effective MOQ",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 565,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:43.995Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-faec956874890ba4bd39",
+                  "file": "cart.validation.spec.ts",
+                  "line": 190,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-017 | Accept quantity exactly at MOQ",
+                  "ok": false,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "failed",
+                          "duration": 438,
+                          "error": {
+                            "message": "AxiosError: Request failed with status code 500",
+                            "stack": "AxiosError: Request failed with status code 500\n    at settle (C:\\Users\\USER\\Mokshith\\Production\\ME\\node_modules\\axios\\lib\\core\\settle.js:19:12)\n    at IncomingMessage.handleStreamEnd (C:\\Users\\USER\\Mokshith\\Production\\ME\\node_modules\\axios\\lib\\adapters\\http.js:1237:13)\n    at Axios.request (C:\\Users\\USER\\Mokshith\\Production\\ME\\node_modules\\axios\\lib\\core\\Axios.js:46:41)\n    at removeFromCartApi (C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\helpers\\cart.api.helper.ts:30:20)\n    at clearCartApi (C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\helpers\\cart.api.helper.ts:45:7)\n    at C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\validation\\cart.validation.spec.ts:201:7",
+                            "location": {
+                              "file": "C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\helpers\\cart.api.helper.ts",
+                              "column": 20,
+                              "line": 30
+                            },
+                            "snippet": "\u001b[90m   at \u001b[39m..\\helpers\\cart.api.helper.ts:30\n\n\u001b[0m \u001b[90m 28 |\u001b[39m\n \u001b[90m 29 |\u001b[39m \u001b[36mexport\u001b[39m \u001b[36masync\u001b[39m \u001b[36mfunction\u001b[39m removeFromCartApi(session\u001b[33m:\u001b[39m \u001b[33mApiSession\u001b[39m\u001b[33m,\u001b[39m productId\u001b[33m:\u001b[39m string) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 30 |\u001b[39m   \u001b[36mconst\u001b[39m response \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m apiClient\u001b[33m.\u001b[39m\u001b[36mdelete\u001b[39m(\u001b[32m`/cart/${productId}`\u001b[39m\u001b[33m,\u001b[39m {\n \u001b[90m    |\u001b[39m                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 31 |\u001b[39m     headers\u001b[33m:\u001b[39m authHeaders(session)\u001b[33m,\u001b[39m\n \u001b[90m 32 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 33 |\u001b[39m   \u001b[36mreturn\u001b[39m unwrapData(response)\u001b[33m;\u001b[39m\u001b[0m"
+                          },
+                          "errors": [
+                            {
+                              "location": {
+                                "file": "C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\helpers\\cart.api.helper.ts",
+                                "column": 20,
+                                "line": 30
+                              },
+                              "message": "AxiosError: Request failed with status code 500\n\n\u001b[90m   at \u001b[39m..\\helpers\\cart.api.helper.ts:30\n\n\u001b[0m \u001b[90m 28 |\u001b[39m\n \u001b[90m 29 |\u001b[39m \u001b[36mexport\u001b[39m \u001b[36masync\u001b[39m \u001b[36mfunction\u001b[39m removeFromCartApi(session\u001b[33m:\u001b[39m \u001b[33mApiSession\u001b[39m\u001b[33m,\u001b[39m productId\u001b[33m:\u001b[39m string) {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 30 |\u001b[39m   \u001b[36mconst\u001b[39m response \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m apiClient\u001b[33m.\u001b[39m\u001b[36mdelete\u001b[39m(\u001b[32m`/cart/${productId}`\u001b[39m\u001b[33m,\u001b[39m {\n \u001b[90m    |\u001b[39m                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 31 |\u001b[39m     headers\u001b[33m:\u001b[39m authHeaders(session)\u001b[33m,\u001b[39m\n \u001b[90m 32 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 33 |\u001b[39m   \u001b[36mreturn\u001b[39m unwrapData(response)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at settle (C:\\Users\\USER\\Mokshith\\Production\\ME\\node_modules\\axios\\lib\\core\\settle.js:19:12)\u001b[22m\n\u001b[2m    at IncomingMessage.handleStreamEnd (C:\\Users\\USER\\Mokshith\\Production\\ME\\node_modules\\axios\\lib\\adapters\\http.js:1237:13)\u001b[22m\n\u001b[2m    at Axios.request (C:\\Users\\USER\\Mokshith\\Production\\ME\\node_modules\\axios\\lib\\core\\Axios.js:46:41)\u001b[22m\n\u001b[2m    at removeFromCartApi (C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\helpers\\cart.api.helper.ts:30:20)\u001b[22m\n\u001b[2m    at clearCartApi (C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\helpers\\cart.api.helper.ts:45:7)\u001b[22m\n\u001b[2m    at C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\validation\\cart.validation.spec.ts:201:7\u001b[22m"
+                            }
+                          ],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:44.571Z",
+                          "annotations": [],
+                          "attachments": [
+                            {
+                              "name": "error-context",
+                              "contentType": "text/markdown",
+                              "path": "C:\\Users\\USER\\Mokshith\\Production\\ME\\test-results\\cart.validation-Cart-Valid-b6e9c-ept-quantity-exactly-at-MOQ-chromium\\error-context.md"
+                            }
+                          ],
+                          "errorLocation": {
+                            "file": "C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\helpers\\cart.api.helper.ts",
+                            "column": 20,
+                            "line": 30
+                          }
+                        }
+                      ],
+                      "status": "unexpected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-54490a8cb10aead33099",
+                  "file": "cart.validation.spec.ts",
+                  "line": 200,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-018 | Enforce max(minOrderQty, moq) server-side",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 421,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:45.866Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-cd22dd94ad61f02085de",
+                  "file": "cart.validation.spec.ts",
+                  "line": 210,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-019 | Reject insufficient stock",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 429,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:50.073Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-99dcdf640ec3a5a53e4d",
+                  "file": "cart.validation.spec.ts",
+                  "line": 220,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-020 | Reject when inventory record missing",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "QA product create auto-provisions inventory — edge not reproducible in persistent QA",
+                          "location": {
+                            "file": "C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\validation\\cart.validation.spec.ts",
+                            "line": 231,
+                            "column": 12
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "skipped",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:50.524Z",
+                          "annotations": [
+                            {
+                              "type": "skip",
+                              "description": "QA product create auto-provisions inventory — edge not reproducible in persistent QA",
+                              "location": {
+                                "file": "C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\validation\\cart.validation.spec.ts",
+                                "line": 231,
+                                "column": 12
+                              }
+                            }
+                          ],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-d244413426941177ec47",
+                  "file": "cart.validation.spec.ts",
+                  "line": 230,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-021 | Accept quantity exactly equal to total stock",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 1031,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:50.537Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-0d5ccdd7b6982e9b3b1e",
+                  "file": "cart.validation.spec.ts",
+                  "line": 234,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-022 | Reject quantity one above stock",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 996,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:51.580Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-5932a87a04c86e0e79e6",
+                  "file": "cart.validation.spec.ts",
+                  "line": 244,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-023 | Duplicate add merges quantities when each POST satisfies MOQ",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 1278,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:52.586Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-499056ca12de120fd15b",
+                  "file": "cart.validation.spec.ts",
+                  "line": 254,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-024 | Cumulative stock check blocks second add",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 1274,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:53.874Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-c1520a9970df2806df8e",
+                  "file": "cart.validation.spec.ts",
+                  "line": 264,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-025 | Failed add does not corrupt existing cart",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 1415,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:55.166Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-bfb4aac7476f5024f4d9",
+                  "file": "cart.validation.spec.ts",
+                  "line": 273,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-026 | Service-level qty guard (defense in depth)",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 158,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:56.593Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-eb37906180c1d5090cc0",
+                  "file": "cart.validation.spec.ts",
+                  "line": 282,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Section C — DELETE API Validation",
+              "file": "cart.validation.spec.ts",
+              "line": 290,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "PV-CART-027 | Reject invalid productId param",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 523,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:56.764Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-4024e4637b21554168e3",
+                  "file": "cart.validation.spec.ts",
+                  "line": 291,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-028 | DELETE on empty cart shell is idempotent",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 875,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:57.301Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-dcd287fd3463277281b6",
+                  "file": "cart.validation.spec.ts",
+                  "line": 298,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-029 | Idempotent delete of product not in cart",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 1386,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:58.185Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-e969634d888b34734fc4",
+                  "file": "cart.validation.spec.ts",
+                  "line": 306,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-030 | Successful remove reduces line count",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 1992,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:42:59.591Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-233f88ac4883f88c989d",
+                  "file": "cart.validation.spec.ts",
+                  "line": 316,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Section D — GET Cart / Persistence Validation",
+              "file": "cart.validation.spec.ts",
+              "line": 328,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "PV-CART-031 | Prune stale items with missing product refs on load",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 993,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:43:01.598Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-d6af3de5f4c31c95d619",
+                  "file": "cart.validation.spec.ts",
+                  "line": 329,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-032 | Valid add persists across session reload",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 1023,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:43:02.603Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-be300f62a2ea2d5a3bf7",
+                  "file": "cart.validation.spec.ts",
+                  "line": 345,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-033 | Cart mapper computes MOQ and stock warnings correctly",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 3545,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:43:03.638Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-db3c514e98917c24436f",
+                  "file": "cart.validation.spec.ts",
+                  "line": 352,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Section E — Frontend Product Listing Validation",
+              "file": "cart.validation.spec.ts",
+              "line": 365,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "PV-CART-034 | Out-of-stock product cannot be added from listing",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 3692,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:43:07.368Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-5a9f7dde8c4a7e0d2f83",
+                  "file": "cart.validation.spec.ts",
+                  "line": 366,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-035 | Listing add sends MOQ quantity automatically",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 3662,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:43:11.076Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-e89760d6e9b96ac8d638",
+                  "file": "cart.validation.spec.ts",
+                  "line": 375,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-036 | Listing surfaces API stock error to user",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 4659,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:43:14.754Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-ae3edb8bd61b246e9602",
+                  "file": "cart.validation.spec.ts",
+                  "line": 391,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Section F — Frontend Product Details Quantity Validation",
+              "file": "cart.validation.spec.ts",
+              "line": 413,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "PV-CART-037 | Quantity initializes to MOQ when product loads",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 2533,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:43:19.429Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-e85ac2bdf8a630b16f59",
+                  "file": "cart.validation.spec.ts",
+                  "line": 414,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-038 | Decrement button clamped at MOQ",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 2461,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:43:21.977Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-1a830fc71d6561f6ebea",
+                  "file": "cart.validation.spec.ts",
+                  "line": 422,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-039 | Manual input below MOQ clamped to MOQ",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 2616,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:43:24.453Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-67889429ac5ed84e8983",
+                  "file": "cart.validation.spec.ts",
+                  "line": 431,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-040 | Increment capped at stock",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 5331,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:43:27.085Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-a24124ce6d67d5c284ae",
+                  "file": "cart.validation.spec.ts",
+                  "line": 440,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-041 | Invalid characters in quantity input sanitized",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 2508,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:43:32.429Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-281d5113f9ad6340e40a",
+                  "file": "cart.validation.spec.ts",
+                  "line": 451,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-042 | Paste negative value clamped to MOQ",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 2521,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:43:34.951Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-081bef9452c2c5fdcb5c",
+                  "file": "cart.validation.spec.ts",
+                  "line": 460,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-043 | Paste decimal truncated by parseInt",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 2390,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:43:37.484Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-0c7020488e1b60f8455c",
+                  "file": "cart.validation.spec.ts",
+                  "line": 469,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-044 | Empty quantity input resets to MOQ",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 2558,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:43:39.886Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-4cd0317728426cb8729a",
+                  "file": "cart.validation.spec.ts",
+                  "line": 478,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-045 | HTML5 min/max attributes set correctly",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 2486,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:43:42.459Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-76ba90f7e810b2ff25a3",
+                  "file": "cart.validation.spec.ts",
+                  "line": 488,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-046 | Client guard blocks API when qty below MOQ",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "UI input clamp prevents below-MOQ state — client guard branch unreachable via UI",
+                          "location": {
+                            "file": "C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\validation\\cart.validation.spec.ts",
+                            "line": 498,
+                            "column": 12
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "skipped",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:43:44.958Z",
+                          "annotations": [
+                            {
+                              "type": "skip",
+                              "description": "UI input clamp prevents below-MOQ state — client guard branch unreachable via UI",
+                              "location": {
+                                "file": "C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\validation\\cart.validation.spec.ts",
+                                "line": 498,
+                                "column": 12
+                              }
+                            }
+                          ],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-54416091c4a74c0696c5",
+                  "file": "cart.validation.spec.ts",
+                  "line": 497,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-047 | Out-of-stock details blocks add",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 2462,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:43:44.969Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-078b47c66ccb5e22d1e0",
+                  "file": "cart.validation.spec.ts",
+                  "line": 501,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-048 | API rejection surfaced in details cartMessage",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 3252,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:43:47.446Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-d4b002ef1d6b7f202e12",
+                  "file": "cart.validation.spec.ts",
+                  "line": 509,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-049 | Add button disabled while cart action loading",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 3333,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:43:50.713Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-06598c35cc1d7369e877",
+                  "file": "cart.validation.spec.ts",
+                  "line": 522,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Section G — Frontend Cart Page Validation",
+              "file": "cart.validation.spec.ts",
+              "line": 544,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "PV-CART-050 | Cart quantity editing disabled",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 4279,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:43:54.061Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-e5c99098a6057e6bcc27",
+                  "file": "cart.validation.spec.ts",
+                  "line": 545,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-051 | Max-stock warning when qty >= available stock",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 3382,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:43:58.357Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-90a70be47b35e10c9a78",
+                  "file": "cart.validation.spec.ts",
+                  "line": 554,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-052 | Below-MOQ cart warning branch (unreachable)",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "Cannot seed cart line below MOQ via public API — display branch not reachable",
+                          "location": {
+                            "file": "C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\validation\\cart.validation.spec.ts",
+                            "line": 566,
+                            "column": 12
+                          }
+                        }
+                      ],
+                      "expectedStatus": "skipped",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "skipped",
+                          "duration": 1,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:44:01.753Z",
+                          "annotations": [
+                            {
+                              "type": "skip",
+                              "description": "Cannot seed cart line below MOQ via public API — display branch not reachable",
+                              "location": {
+                                "file": "C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\validation\\cart.validation.spec.ts",
+                                "line": 566,
+                                "column": 12
+                              }
+                            }
+                          ],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "skipped"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-ce780d5abc5a112adbcb",
+                  "file": "cart.validation.spec.ts",
+                  "line": 565,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-053 | Remove control remains enabled",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 4018,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:44:01.764Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-deae4b8d0cc1c04e59cb",
+                  "file": "cart.validation.spec.ts",
+                  "line": 569,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Section H — Frontend Wishlist Validation",
+              "file": "cart.validation.spec.ts",
+              "line": 580,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "PV-CART-054 | Wishlist add-to-cart uses MOQ quantity",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 3386,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:44:05.794Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-073f85223c5366e0659d",
+                  "file": "cart.validation.spec.ts",
+                  "line": 581,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-055 | Wishlist blocks OOS add",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 4072,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:44:09.192Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-d164c784b0f82b350da0",
+                  "file": "cart.validation.spec.ts",
+                  "line": 602,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Section I — Frontend Checkout Form Validation",
+              "file": "cart.validation.spec.ts",
+              "line": 617,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "PV-CART-056 | Empty cart shows checkout empty state",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 2658,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:44:13.280Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-1efc9d2a8074f42f8687",
+                  "file": "cart.validation.spec.ts",
+                  "line": 621,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-057 | Missing delivery address blocked client-side",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 3238,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:44:16.347Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-13063b39976daabf4b0e",
+                  "file": "cart.validation.spec.ts",
+                  "line": 627,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-058 | Missing city blocked",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 3755,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:44:19.601Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-2a2731d82db7bf6e4710",
+                  "file": "cart.validation.spec.ts",
+                  "line": 635,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-059 | Missing state blocked",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 3232,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:44:23.378Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-deababc26cbdf8ad70bd",
+                  "file": "cart.validation.spec.ts",
+                  "line": 649,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-060 | Invalid pincode blocked",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 3373,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:44:26.627Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-385e59ac89d5386de43f",
+                  "file": "cart.validation.spec.ts",
+                  "line": 661,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-061 | Pincode non-digit characters stripped before validation",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 4606,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:44:30.016Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-7f61f6374bd022d90f39",
+                  "file": "cart.validation.spec.ts",
+                  "line": 674,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-062 | Missing phone blocked",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 2873,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:44:34.638Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-e01378cf763c6f2e9df2",
+                  "file": "cart.validation.spec.ts",
+                  "line": 684,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-063 | Valid checkout form proceeds to order API",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 4651,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:44:37.526Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-0a451a0b312f64f25913",
+                  "file": "cart.validation.spec.ts",
+                  "line": 698,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-064 | Double-click place order guarded",
+                  "ok": false,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "failed",
+                          "duration": 5537,
+                          "error": {
+                            "message": "Error: read ECONNRESET",
+                            "stack": "Error: read ECONNRESET\n    at AxiosError.from (C:\\Users\\USER\\Mokshith\\Production\\ME\\node_modules\\axios\\lib\\core\\AxiosError.js:77:24)\n    at RedirectableRequest.handleRequestError (C:\\Users\\USER\\Mokshith\\Production\\ME\\node_modules\\axios\\lib\\adapters\\http.js:1259:27)\n    at Axios.request (C:\\Users\\USER\\Mokshith\\Production\\ME\\node_modules\\axios\\lib\\core\\Axios.js:46:41)\n    at getCartApi (C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\helpers\\cart.api.helper.ts:25:20)\n    at clearCartApi (C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\helpers\\cart.api.helper.ts:37:16)\n    at vendorUi (C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\validation\\cart.validation.spec.ts:57:3)\n    at C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\validation\\cart.validation.spec.ts:712:9",
+                            "cause": {
+                              "message": "Error: read ECONNRESET",
+                              "stack": "Error: read ECONNRESET"
+                            },
+                            "location": {
+                              "file": "C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\helpers\\cart.api.helper.ts",
+                              "column": 20,
+                              "line": 25
+                            },
+                            "snippet": "\u001b[90m   at \u001b[39m..\\helpers\\cart.api.helper.ts:25\n\n\u001b[0m \u001b[90m 23 |\u001b[39m\n \u001b[90m 24 |\u001b[39m \u001b[36mexport\u001b[39m \u001b[36masync\u001b[39m \u001b[36mfunction\u001b[39m getCartApi(session\u001b[33m:\u001b[39m \u001b[33mApiSession\u001b[39m)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[33mCartResponse\u001b[39m \u001b[33m|\u001b[39m \u001b[36mnull\u001b[39m\u001b[33m>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 25 |\u001b[39m   \u001b[36mconst\u001b[39m response \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m apiClient\u001b[33m.\u001b[39m\u001b[36mget\u001b[39m(\u001b[32m'/cart'\u001b[39m\u001b[33m,\u001b[39m { headers\u001b[33m:\u001b[39m authHeaders(session) })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 26 |\u001b[39m   \u001b[36mreturn\u001b[39m unwrapData\u001b[33m<\u001b[39m\u001b[33mCartResponse\u001b[39m \u001b[33m|\u001b[39m \u001b[36mnull\u001b[39m\u001b[33m>\u001b[39m(response)\u001b[33m;\u001b[39m\n \u001b[90m 27 |\u001b[39m }\n \u001b[90m 28 |\u001b[39m\u001b[0m"
+                          },
+                          "errors": [
+                            {
+                              "location": {
+                                "file": "C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\helpers\\cart.api.helper.ts",
+                                "column": 20,
+                                "line": 25
+                              },
+                              "message": "Error: read ECONNRESET\n\n\u001b[90m   at \u001b[39m..\\helpers\\cart.api.helper.ts:25\n\n\u001b[0m \u001b[90m 23 |\u001b[39m\n \u001b[90m 24 |\u001b[39m \u001b[36mexport\u001b[39m \u001b[36masync\u001b[39m \u001b[36mfunction\u001b[39m getCartApi(session\u001b[33m:\u001b[39m \u001b[33mApiSession\u001b[39m)\u001b[33m:\u001b[39m \u001b[33mPromise\u001b[39m\u001b[33m<\u001b[39m\u001b[33mCartResponse\u001b[39m \u001b[33m|\u001b[39m \u001b[36mnull\u001b[39m\u001b[33m>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 25 |\u001b[39m   \u001b[36mconst\u001b[39m response \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m apiClient\u001b[33m.\u001b[39m\u001b[36mget\u001b[39m(\u001b[32m'/cart'\u001b[39m\u001b[33m,\u001b[39m { headers\u001b[33m:\u001b[39m authHeaders(session) })\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 26 |\u001b[39m   \u001b[36mreturn\u001b[39m unwrapData\u001b[33m<\u001b[39m\u001b[33mCartResponse\u001b[39m \u001b[33m|\u001b[39m \u001b[36mnull\u001b[39m\u001b[33m>\u001b[39m(response)\u001b[33m;\u001b[39m\n \u001b[90m 27 |\u001b[39m }\n \u001b[90m 28 |\u001b[39m\u001b[0m\n\u001b[2m    at AxiosError.from (C:\\Users\\USER\\Mokshith\\Production\\ME\\node_modules\\axios\\lib\\core\\AxiosError.js:77:24)\u001b[22m\n\u001b[2m    at RedirectableRequest.handleRequestError (C:\\Users\\USER\\Mokshith\\Production\\ME\\node_modules\\axios\\lib\\adapters\\http.js:1259:27)\u001b[22m\n\u001b[2m    at Axios.request (C:\\Users\\USER\\Mokshith\\Production\\ME\\node_modules\\axios\\lib\\core\\Axios.js:46:41)\u001b[22m\n\u001b[2m    at getCartApi (C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\helpers\\cart.api.helper.ts:25:20)\u001b[22m\n\u001b[2m    at clearCartApi (C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\helpers\\cart.api.helper.ts:37:16)\u001b[22m\n\u001b[2m    at vendorUi (C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\validation\\cart.validation.spec.ts:57:3)\u001b[22m\n\u001b[2m    at C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\validation\\cart.validation.spec.ts:712:9\u001b[22m\n\u001b[2m[cause]: \u001b[22mError: read ECONNRESET"
+                            }
+                          ],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:44:42.192Z",
+                          "annotations": [],
+                          "attachments": [
+                            {
+                              "name": "screenshot",
+                              "contentType": "image/png",
+                              "path": "C:\\Users\\USER\\Mokshith\\Production\\ME\\test-results\\cart.validation-Cart-Valid-c411d-e-click-place-order-guarded-chromium\\test-failed-1.png"
+                            },
+                            {
+                              "name": "video",
+                              "contentType": "video/webm",
+                              "path": "C:\\Users\\USER\\Mokshith\\Production\\ME\\test-results\\cart.validation-Cart-Valid-c411d-e-click-place-order-guarded-chromium\\video.webm"
+                            },
+                            {
+                              "name": "error-context",
+                              "contentType": "text/markdown",
+                              "path": "C:\\Users\\USER\\Mokshith\\Production\\ME\\test-results\\cart.validation-Cart-Valid-c411d-e-click-place-order-guarded-chromium\\error-context.md"
+                            }
+                          ],
+                          "errorLocation": {
+                            "file": "C:\\Users\\USER\\Mokshith\\Production\\ME\\tests\\helpers\\cart.api.helper.ts",
+                            "column": 20,
+                            "line": 25
+                          }
+                        }
+                      ],
+                      "status": "unexpected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-e2677dd3bf9cf539dea3",
+                  "file": "cart.validation.spec.ts",
+                  "line": 707,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Section J — Order API Business Validation",
+              "file": "cart.validation.spec.ts",
+              "line": 732,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "PV-CART-065 | Order from empty cart rejected server-side",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 1255,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:44:49.099Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-9f1823102e0b7dff8583",
+                  "file": "cart.validation.spec.ts",
+                  "line": 736,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-066 | Order rejects inactive product still in cart",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 3103,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:44:59.883Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-e4d4195f9ce66b010580",
+                  "file": "cart.validation.spec.ts",
+                  "line": 748,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-067 | Order re-validates stock at checkout time",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 5304,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:45:03.012Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-0c463af602979bd397cf",
+                  "file": "cart.validation.spec.ts",
+                  "line": 771,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-068 | Order shipping address Joi validation",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 1816,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:45:08.345Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-51aed711605540acc924",
+                  "file": "cart.validation.spec.ts",
+                  "line": 795,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-069 | Document order MOQ rule vs cart max()",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 4100,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:45:10.203Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-abf0c221a5fc2001bb11",
+                  "file": "cart.validation.spec.ts",
+                  "line": 811,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Section K — Sanitization & Injection",
+              "file": "cart.validation.spec.ts",
+              "line": 829,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "PV-CART-070 | NoSQL injection in productId rejected safely",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 310,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:45:14.342Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-7bad8820cfaa5d68a9c4",
+                  "file": "cart.validation.spec.ts",
+                  "line": 830,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-071 | XSS in API error message rendered safely in UI",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 5495,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:45:14.675Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-df05aed17095a06eb086",
+                  "file": "cart.validation.spec.ts",
+                  "line": 838,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-072 | DELETE path injection in productId param",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 40,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:45:20.429Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-28595edad85d7cf4d3ce",
+                  "file": "cart.validation.spec.ts",
+                  "line": 862,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Section L — Boundary & Negative Testing",
+              "file": "cart.validation.spec.ts",
+              "line": 868,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "PV-CART-073 | Product with stock < moq shows low_stock status",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 4442,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:45:20.493Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-37408565a47781b4e2ab",
+                  "file": "cart.validation.spec.ts",
+                  "line": 869,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-074 | Deactivated product cannot be re-added",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 1333,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:45:24.977Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-b4d0b3ff6a472dc64606",
+                  "file": "cart.validation.spec.ts",
+                  "line": 879,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-075 | Very large quantity rejected by stock not overflow",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 405,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:45:26.334Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-16d26dfe473220fe8345",
+                  "file": "cart.validation.spec.ts",
+                  "line": 897,
+                  "column": 5
+                },
+                {
+                  "title": "PV-CART-076 | Unauthenticated cart mutation rejected",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 120000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 29,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-07-09T22:45:26.757Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "73b786c2af46dd88afa0-82c171a88013b2e96644",
+                  "file": "cart.validation.spec.ts",
+                  "line": 907,
+                  "column": 5
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-07-09T22:42:33.500Z",
+    "duration": 173487.463,
+    "expected": 71,
+    "skipped": 3,
+    "unexpected": 2,
+    "flaky": 0
+  }
+}

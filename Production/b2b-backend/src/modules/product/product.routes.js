@@ -3,7 +3,7 @@ import * as controller from './product.controller.js';
 import { authenticate } from '../../middlewares/auth.middleware.js';
 import { requirePermission, requireRole, requireOwnershipOr } from '../../middlewares/permission.middleware.js';
 import { validate } from '../../middlewares/validate.middleware.js';
-import { createProductSchema, updateProductSchema } from './product.validation.js';
+import { createProductSchema, updateProductSchema, updateStockSchema, updateStatusSchema } from './product.validation.js';
 import { uploadImageToCloud } from '../../middlewares/upload.middleware.js';
 import { cacheMiddleware, clearCacheMiddleware } from '../../middlewares/cache.middleware.js';
 import { csrfProtection } from '../../middlewares/csrf.middleware.js';
@@ -60,7 +60,7 @@ router.patch(
   csrfProtection,
   controller.loadProduct,
   requireOwnershipOr('product', 'vendorId', PERMISSIONS.INVENTORY_UPDATE),
-  requireRole(ROLES.ADMIN, ROLES.SUPER_ADMIN),
+  validate(updateStockSchema),
   controller.updateStock,
   clearCacheMiddleware(['cache:*products*', 'cache:product:*'])
 );
@@ -70,6 +70,7 @@ router.patch(
   '/:id/status',
   authenticate,
   requireRole(ROLES.ADMIN, ROLES.SUPER_ADMIN),
+  validate(updateStatusSchema),
   controller.updateStatus
 );
 

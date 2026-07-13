@@ -12,8 +12,12 @@ dotenv.config();
 const patterns = [
   'auth:*',
   'fraud:login:*',
+  'fraud:login:ip:*',
   'fraud:register:ip:*',
   'fraud:blocked:*',
+  // Playwright suites create multiple orders per worker; clear stale counters between runs.
+  'order:*',
+  'payment:*',
 ];
 
 // Use centralized redis client
@@ -44,7 +48,7 @@ try {
     console.log(`Cleared ${count} key(s) matching ${pattern}`);
   }
 
-  console.log(`Done. Removed ${total} auth rate-limit key(s).`);
+  console.log(`Done. Removed ${total} test rate-limit key(s).`);
   console.log(`AUTH_STRICT_MODE=${process.env.AUTH_STRICT_MODE ?? '(unset, defaults to strict)'}`);
 } catch (error) {
   console.error('Failed to clear auth rate limits:', error.message);

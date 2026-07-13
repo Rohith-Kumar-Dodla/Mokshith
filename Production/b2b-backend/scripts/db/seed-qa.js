@@ -10,6 +10,9 @@
  */
 import connectDB from '../../src/config/db.js';
 import mongoose from 'mongoose';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { getAppDatabaseName } from '../../src/config/environmentResolver.js';
 import User from '../../src/modules/user/user.model.js';
 import Company from '../../src/modules/company/company.model.js';
@@ -31,8 +34,32 @@ import { hashPassword } from '../../src/utils/hashPassword.js';
 import { logger } from '../../src/config/logger.js';
 
 const now = new Date();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-async function upsertUser({ email, mobile, name, role, password }) {
+function ensureSeedProductImage() {
+  const uploadsDir = path.resolve(__dirname, '..', '..', 'uploads');
+  const target = path.join(uploadsDir, 'seed-product.png');
+  const sourceCandidates = [
+    path.resolve(__dirname, '..', '..', '..', 'ME', 'tests', 'test-data', 'products', 'valid-sample.png'),
+    path.resolve(__dirname, '..', '..', 'tests', 'test-data', 'products', 'valid-sample.png'),
+  ];
+
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+
+  if (!fs.existsSync(target)) {
+    const source = sourceCandidates.find((candidate) => fs.existsSync(candidate));
+    if (source) {
+      fs.copyFileSync(source, target);
+      logger.info(`Seeded product image copied to ${target}`);
+    } else {
+      logger.warn('Seed product image source not found; smoke image tests may fail until uploads/seed-product.png exists');
+    }
+  }
+}
+
+async function upsertUser({ email, mobile, name, role, password, status = 'ACTIVE' }) {
   const hashed = await hashPassword(password);
   const update = {
     $setOnInsert: {
@@ -41,13 +68,33 @@ async function upsertUser({ email, mobile, name, role, password }) {
       mobile,
       password: hashed,
       role,
-      status: 'ACTIVE',
+      status,
       lastPasswordChange: now,
       createdAt: now,
     },
   };
   const opts = { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true };
   return User.findOneAndUpdate({ $or: [{ email }, { mobile }] }, update, opts);
+}
+
+async function upsertInactiveUser({ email, mobile, name, role, password }) {
+  const hashed = await hashPassword(password);
+  return User.findOneAndUpdate(
+    { $or: [{ email }, { mobile }] },
+    {
+      $setOnInsert: {
+        name,
+        email,
+        mobile,
+        password: hashed,
+        role,
+        lastPasswordChange: now,
+        createdAt: now,
+      },
+      $set: { status: 'INACTIVE' },
+    },
+    { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
+  );
 }
 
 async function upsertCompany({ name, domain }) {
@@ -68,10 +115,14 @@ async function upsertCategory({ name, slug }) {
   );
 }
 
-async function upsertProduct({ sku, name, categoryId, price = 100 }) {
+async function upsertProduct({ sku, name, categoryId, price = 100, stock = 100, imageUrl = '/uploads/seed-product.png' }) {
   return Product.findOneAndUpdate(
     { name, categoryId },
-    { $setOnInsert: { name, price, categoryId, createdAt: now } },
+    {
+      $setOnInsert: { name, price, categoryId, createdAt: now },
+      // Ensure seeded products carry deterministic QA data on every seed run.
+      $set: { imageUrl, stock, isActive: true },
+    },
     { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
   );
 }
@@ -79,7 +130,10 @@ async function upsertProduct({ sku, name, categoryId, price = 100 }) {
 async function upsertInventory({ productId, warehouseId = null, quantity = 100 }) {
   return Inventory.findOneAndUpdate(
     { productId, warehouseId },
-    { $setOnInsert: { productId, warehouseId, stock: quantity, createdAt: now } },
+    {
+      $setOnInsert: { productId, warehouseId, reservedStock: 0, reorderLevel: 10, createdAt: now },
+      $set: { stock: quantity },
+    },
     { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
   );
 }
@@ -159,6 +213,8 @@ async function main() {
       process.exit(1);
     }
 
+    ensureSeedProductImage();
+
     // Users
     await upsertUser({
       email: 'superadmin@example.com',
@@ -216,7 +272,12 @@ async function main() {
     const warehouse = await upsertWarehouse({ name: 'Seed Warehouse', location: { city: 'SeedCity' } });
     for (const c of categories) {
       for (let p = 1; p <= 3; p++) {
-        const prod = await upsertProduct({ name: `${c.name} Product ${p}`, categoryId: c._id, price: 100 + p * 10 });
+        const prod = await upsertProduct({
+          name: `${c.name} Product ${p}`,
+          categoryId: c._id,
+          price: 100 + p * 10,
+          stock: 100 + p * 50,
+        });
         products.push(prod);
         await upsertInventory({ productId: prod._id, warehouseId: warehouse._id, quantity: 100 + p * 50 });
       }
@@ -267,6 +328,13 @@ async function main() {
     seededUsers.customer1 = await upsertUser({ email: 'customer1@example.com', mobile: '9000000301', name: 'Customer One', role: 'B2B_CUSTOMER', password: 'Customer@123' });
     seededUsers.customer2 = await upsertUser({ email: 'customer2@example.com', mobile: '9000000302', name: 'Customer Two', role: 'B2B_CUSTOMER', password: 'Customer@123' });
     seededUsers.customer3 = await upsertUser({ email: 'customer3@example.com', mobile: '9000000303', name: 'Customer Three', role: 'B2B_CUSTOMER', password: 'Customer@123' });
+    seededUsers.inactiveVendor = await upsertInactiveUser({
+      email: 'inactive-vendor@example.com',
+      mobile: '9000000401',
+      name: 'Inactive Vendor',
+      role: 'VENDOR',
+      password: 'Inactive@123',
+    });
 
     // Seed companies
     const companyA = await upsertCompany({ name: 'Seed Company A', domain: 'a.example.com' });
