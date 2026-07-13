@@ -169,9 +169,6 @@ const Profile = () => {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
               <AnalyticsCard title="Total Orders" value={summary.totalOrders} color="blue" />
-              <AnalyticsCard title="Total Spending" value={`₹${summary.totalSpending.toLocaleString('en-IN')}`} color="green" />
-              <AnalyticsCard title="This Month Spending" value={`₹${summary.thisMonthSpending.toLocaleString('en-IN')}`} color="blue" />
-              <AnalyticsCard title="Available Credit" value={`₹${summary.availableCredit.toLocaleString('en-IN')}`} color="orange" />
             </div>
 
             <div className="mb-4 sm:mb-6">

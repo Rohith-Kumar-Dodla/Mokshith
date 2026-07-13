@@ -133,7 +133,7 @@ const OrderCard = ({
           {order.status === 'delivered' ? (
             <>
               <p className="text-xs sm:text-sm text-gray-500">Delivered on</p>
-              <p className="text-xs sm:text-sm font-medium text-gray-900">{order.deliveryDate}</p>
+              <p className="text-xs sm:text-sm font-medium text-gray-900">{order.deliveryDate || 'Delivered'}</p>
             </>
           ) : (
             <>

@@ -144,21 +144,21 @@ const Invoices = () => {
             <table className="w-full min-w-[600px]">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left py-3 sm:py-4 px-3 sm:px-6 text-xs sm:text-sm font-semibold text-gray-700">Invoice ID</th>
-                  <th className="text-left py-3 sm:py-4 px-3 sm:px-6 text-xs sm:text-sm font-semibold text-gray-700">Order ID</th>
-                  <th className="text-left py-3 sm:py-4 px-3 sm:px-6 text-xs sm:text-sm font-semibold text-gray-700">Date</th>
-                  <th className="text-right py-3 sm:py-4 px-3 sm:px-6 text-xs sm:text-sm font-semibold text-gray-700">Amount</th>
-                  <th className="text-center py-3 sm:py-4 px-3 sm:px-6 text-xs sm:text-sm font-semibold text-gray-700">Status</th>
-                  <th className="text-center py-3 sm:py-4 px-3 sm:px-6 text-xs sm:text-sm font-semibold text-gray-700">Actions</th>
+                  <th className="text-left py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-sm font-semibold text-gray-700 whitespace-nowrap">Invoice ID</th>
+                  <th className="text-left py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-sm font-semibold text-gray-700 whitespace-nowrap">Order ID</th>
+                  <th className="text-left py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-sm font-semibold text-gray-700 whitespace-nowrap">Date</th>
+                  <th className="text-right py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-sm font-semibold text-gray-700 whitespace-nowrap">Amount</th>
+                  <th className="text-center py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-sm font-semibold text-gray-700 whitespace-nowrap">Status</th>
+                  <th className="text-center py-3 sm:py-4 px-4 sm:px-6 text-xs sm:text-sm font-semibold text-gray-700 whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filteredInvoices.map((invoice) => (
                   <tr key={invoice.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="py-3 sm:py-4 px-3 sm:px-6">
+                    <td className="py-3 sm:py-4 px-4 sm:px-6">
                       <span className="font-medium text-blue-600 text-xs sm:text-sm">{invoice.id}</span>
                     </td>
-                    <td className="py-3 sm:py-4 px-3 sm:px-6">
+                    <td className="py-3 sm:py-4 px-4 sm:px-6">
                       <Link
                         to={`/vendor/orders/${invoice.orderId}`}
                         className="font-medium text-gray-900 hover:text-blue-600 text-xs sm:text-sm"
@@ -166,14 +166,14 @@ const Invoices = () => {
                         {String(invoice.orderId).slice(-8).toUpperCase()}
                       </Link>
                     </td>
-                    <td className="py-3 sm:py-4 px-3 sm:px-6 text-gray-600 text-xs sm:text-sm">{invoice.invoiceDate}</td>
-                    <td className="py-3 sm:py-4 px-3 sm:px-6 text-right font-semibold text-gray-900 text-xs sm:text-sm">
+                    <td className="py-3 sm:py-4 px-4 sm:px-6 text-gray-600 text-xs sm:text-sm whitespace-nowrap">{invoice.invoiceDate}</td>
+                    <td className="py-3 sm:py-4 px-4 sm:px-6 text-right font-semibold text-gray-900 text-xs sm:text-sm whitespace-nowrap">
                       ₹{invoice.grandTotal.toFixed(2)}
                     </td>
-                    <td className="py-3 sm:py-4 px-3 sm:px-6 text-center">
+                    <td className="py-3 sm:py-4 px-4 sm:px-6 text-center whitespace-nowrap">
                       <StatusBadge status={invoice.status} size="sm" />
                     </td>
-                    <td className="py-3 sm:py-4 px-3 sm:px-6">
+                    <td className="py-3 sm:py-4 px-4 sm:px-6 whitespace-nowrap">
                       <div className="flex items-center justify-center gap-1 sm:gap-2">
                         <Link
                           to={`/vendor/orders/${invoice.orderId}`}

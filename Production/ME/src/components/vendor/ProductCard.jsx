@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FiShoppingCart, FiHeart, FiEye, FiStar } from 'react-icons/fi';
+import { FiShoppingCart, FiHeart, FiEye, FiStar, FiPlus, FiMinus } from 'react-icons/fi';
 import { getProductImageKey } from '../../utils/productMapper';
 
 const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) => {
@@ -10,6 +10,7 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) =
   const rating = product.rating ?? 4;
   const reviews = product.reviews ?? 0;
   const brand = product.brand || null;
+  const [quantity, setQuantity] = useState(product.minimumOrderQuantity ?? product.moq ?? 1);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -42,6 +43,22 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) =
       return Math.round(((product.mrp - product.price) / product.mrp) * 100);
     }
     return 0;
+  };
+
+  const handleQuantityChange = (delta) => {
+    const newQuantity = quantity + delta;
+    const minQty = product.minimumOrderQuantity ?? product.moq ?? 1;
+    const maxStock = product.stock ?? 999;
+    
+    if (newQuantity >= minQty && newQuantity <= maxStock) {
+      setQuantity(newQuantity);
+    }
+  };
+
+  const handleAddToCartClick = () => {
+    if (onAddToCart) {
+      onAddToCart({ ...product, selectedQuantity: quantity });
+    }
   };
 
   return (
@@ -137,8 +154,28 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) =
           <span>Stock: {product.stock}</span>
         </div>
 
+        <div className="flex items-center gap-2 mb-2 sm:mb-3">
+          <button
+            type="button"
+            onClick={() => handleQuantityChange(-1)}
+            disabled={quantity <= (product.minimumOrderQuantity ?? product.moq ?? 1)}
+            className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <FiMinus className="w-4 h-4" />
+          </button>
+          <span className="w-12 sm:w-16 text-center font-medium text-gray-900">{quantity}</span>
+          <button
+            type="button"
+            onClick={() => handleQuantityChange(1)}
+            disabled={quantity >= (product.stock ?? 999)}
+            className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <FiPlus className="w-4 h-4" />
+          </button>
+        </div>
+
         <button
-          onClick={() => onAddToCart && onAddToCart(product)}
+          onClick={handleAddToCartClick}
           disabled={product.status === 'out_of_stock'}
           className={`w-full py-2.5 h-10 sm:h-12 px-4 rounded-lg text-xs sm:text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
             product.status === 'out_of_stock'

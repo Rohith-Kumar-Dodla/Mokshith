@@ -48,7 +48,7 @@ const Checkout = () => {
   const { user } = useAuth();
   const [selectedPayment, setSelectedPayment] = useState('cod');
   const { loading, error, cartItems, subtotal, discount, tax, grandTotal, loadCart } = useCart();
-  const { submitting, error: checkoutError, placeOrder } = useCheckout({
+  const { submitting, error: checkoutError, placeOrder, setError: setCheckoutError } = useCheckout({
     onSuccess: async () => {
       await loadCart();
     },
@@ -133,14 +133,15 @@ const Checkout = () => {
     }
 
     void (async () => {
+      setCheckoutError(null);
+      setValidationError('');
+
       const validationMessage = validateForm();
       if (validationMessage) {
         setValidationError(validationMessage);
         releasePlacementLock();
         return;
       }
-
-      setValidationError('');
 
       if (selectedPayment === 'credit') {
         const creditError = validateAmount(grandTotal);
@@ -386,7 +387,11 @@ const Checkout = () => {
                 <button
                   key={method.id}
                   type="button"
-                  onClick={() => setSelectedPayment(method.id)}
+                  onClick={() => {
+                    setSelectedPayment(method.id);
+                    setCheckoutError(null);
+                    setValidationError('');
+                  }}
                   disabled={
                     (method.id === 'credit' && credit && grandTotal > credit.availableCredit) ||
                     (method.id === 'hybrid' && (!credit || credit.availableCredit <= 0 || credit.availableCredit >= grandTotal))
