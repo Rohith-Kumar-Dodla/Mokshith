@@ -224,12 +224,16 @@ export function computeOrderStats(orders = []) {
     delivered: 0,
     completed: 0,
     cancelled: 0,
+    cod: 0,
   };
 
   orders.forEach((order) => {
     const status = order.status;
     if (counts[status] !== undefined) {
       counts[status] += 1;
+    }
+    if (order.paymentMethod === 'COD' || order.paymentMethod === 'cod') {
+      counts.cod += 1;
     }
   });
 
@@ -242,6 +246,7 @@ export function computeOrderStats(orders = []) {
     deliveredOrders: counts.delivered + counts.completed,
     completedOrders: counts.completed,
     cancelledOrders: counts.cancelled,
+    codOrders: counts.cod,
     totalSpending: orders.reduce((sum, order) => sum + Number(order.amount || 0), 0),
   };
 }

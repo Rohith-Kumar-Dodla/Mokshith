@@ -34,7 +34,7 @@ const Products = () => {
 
   const handleAddToCart = async (product) => {
     const productId = product.id || product._id;
-    const quantity = Number(product.minimumOrderQuantity ?? product.moq ?? 1);
+    const quantity = Number(product.selectedQuantity ?? product.minimumOrderQuantity ?? product.moq ?? 1);
 
     if (quantity < 1) {
       showToast('error', 'Invalid quantity for this product');
