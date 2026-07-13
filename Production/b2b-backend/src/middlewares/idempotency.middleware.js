@@ -81,11 +81,13 @@ export const operationIdempotency = (operationType) => {
         autoKey = `inventory:add:${addData.productId}:${addData.warehouseId}:${addData.stock}`;
         break;
         
-      case 'inventory:update':
-        // Use productId + adjustment type for stock update
+      case 'inventory:update': {
+        // Include warehouse + target stock so repeated SET operations are not replayed incorrectly.
         const updateData = req.body;
-        autoKey = `inventory:update:${updateData.productId}:${updateData.operation}:${Date.now()}`;
+        const warehouseKey = updateData.warehouseId ?? 'default';
+        autoKey = `inventory:update:${updateData.productId}:${warehouseKey}:${updateData.stock}:${updateData.type || updateData.operation || 'SET'}`;
         break;
+      }
         
       case 'payment:refund':
         // Use orderId + refund amount

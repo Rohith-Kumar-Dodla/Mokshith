@@ -1,5 +1,6 @@
 import { loadEnv, projectRoot } from './loadEnv.js';
-import { APPLICATION_DATABASE_NAME } from '../utils/destructiveGuard.js';
+import { parseDatabaseName as parseDbFromResolver, getAppDatabaseName, getNodeEnv, getEnvFileInfo, isDatabaseAllowed } from './environmentResolver.js';
+// Keep existing resolveMongoUri logic but reuse parseDatabaseName from resolver
 
 loadEnv({ silent: process.env.NODE_ENV === 'test' });
 
@@ -36,7 +37,7 @@ export function resolveMongoUri() {
     return {
       uri: directUri,
       source: 'MONGO_URI_DIRECT',
-      databaseName: parseDatabaseName(directUri),
+      databaseName: parseDbFromResolver(directUri),
     };
   }
 
@@ -44,7 +45,7 @@ export function resolveMongoUri() {
     return {
       uri: primaryUri,
       source: 'MONGO_URI',
-      databaseName: parseDatabaseName(primaryUri),
+      databaseName: parseDbFromResolver(primaryUri),
     };
   }
 
@@ -114,8 +115,24 @@ export function validateEnv({ logger = console } = {}) {
     errors.push('Missing MONGO_URI (or set USE_IN_MEMORY_MONGO=true for local development)');
   }
 
-  const primaryDb = parseDatabaseName(env.MONGO_URI);
-  const directDb = parseDatabaseName(env.MONGO_URI_DIRECT);
+  // Pre-connection safety: ensure the MONGO_URI (if present) targets an allowed DB for this NODE_ENV
+  const nodeEnv = getNodeEnv();
+  const resolvedDbName = mongo.databaseName;
+  if (mongo.uri && !env.USE_IN_MEMORY_MONGO && nodeEnv !== 'test') {
+    if (resolvedDbName && !isDatabaseAllowed(nodeEnv, resolvedDbName)) {
+      const allowed = (Array.isArray(getAppDatabaseName) ? getAppDatabaseName : null);
+      logger.error?.('❌ Unsafe database target detected during startup validation') ?? logger.error('❌ Unsafe database target detected during startup validation');
+      logger.error?.(`[env] Environment : ${nodeEnv}`) ?? logger.error(`[env] Environment : ${nodeEnv}`);
+      logger.error?.(`[env] Resolved DB : ${resolvedDbName}`) ?? logger.error(`[env] Resolved DB : ${resolvedDbName}`);
+      logger.error?.(`[env] Expected DBs: ${getNodeEnv ? getAppDatabaseName() : '(unknown)'}`) ?? logger.error(`[env] Expected DBs: ${getAppDatabaseName()}`);
+      logger.error?.(`[env] Environment File : ${getEnvFileInfo(projectRoot)}`) ?? logger.error(`[env] Environment File : ${getEnvFileInfo(projectRoot)}`);
+      logger.error?.('Startup aborted: the resolved MongoDB database is not allowed for this NODE_ENV') ?? logger.error('Startup aborted: the resolved MongoDB database is not allowed for this NODE_ENV');
+      process.exit(1);
+    }
+  }
+
+  const primaryDb = parseDbFromResolver(env.MONGO_URI);
+  const directDb = parseDbFromResolver(env.MONGO_URI_DIRECT);
   if (env.MONGO_URI?.trim() && env.MONGO_URI_DIRECT?.trim()) {
     if (primaryDb && directDb && primaryDb !== directDb) {
       errors.push(
@@ -164,15 +181,15 @@ export function validateEnv({ logger = console } = {}) {
     errors.push('USE_IN_MEMORY_MONGO=true is not allowed in production');
   }
 
-  const expectedDatabase = process.env.APP_DATABASE_NAME?.trim() || APPLICATION_DATABASE_NAME;
+  // Derive the expected database name via centralized resolver (APP_DATABASE_NAME still supported)
+  const expectedDatabase = getAppDatabaseName();
 
   if (mongo.uri && !env.USE_IN_MEMORY_MONGO && env.NODE_ENV !== 'test') {
     if (!mongo.databaseName) {
-      errors.push('MONGO_URI must include the application database name (expected: test)');
+      warnings.push(`MONGO_URI must include the application database name (expected: ${expectedDatabase})`);
     } else if (mongo.databaseName !== expectedDatabase) {
-      errors.push(
-        `MONGO URI targets database "${mongo.databaseName}" but application database must be "${expectedDatabase}"`
-      );
+      // Do not abort startup in this phase — surface as a warning for awareness
+      warnings.push(`MONGO URI targets database "${mongo.databaseName}" but application database is expected to be "${expectedDatabase}".`);
     }
   }
 
@@ -198,14 +215,26 @@ export function validateEnv({ logger = console } = {}) {
   if (mongo.uri) {
     logger.info?.(
       `[env] Mongo target: ${mongo.databaseName || '(default)'} via ${mongo.source} (${maskMongoUri(mongo.uri)})`
-    ) ??
-      logger.log(
-        `[env] Mongo target: ${mongo.databaseName || '(default)'} via ${mongo.source} (${maskMongoUri(mongo.uri)})`
-      );
-
+    ) ?? logger.log(
+      `[env] Mongo target: ${mongo.databaseName || '(default)'} via ${mongo.source} (${maskMongoUri(mongo.uri)})`
+    );
   } else if (env.USE_IN_MEMORY_MONGO) {
     logger.warn?.('[env] USE_IN_MEMORY_MONGO=true — data resets on every restart') ??
       logger.warn('[env] USE_IN_MEMORY_MONGO=true — data resets on every restart');
+  }
+
+  // Startup awareness summary (do not reveal secrets)
+  try {
+    const envFileInfo = getEnvFileInfo(projectRoot);
+    logger.info('======================================');
+    logger.info(`[env] Environment : ${env.NODE_ENV || 'development'}`);
+    logger.info(`[env] Expected DB : ${expectedDatabase}`);
+    logger.info(`[env] Resolved DB : ${mongo.databaseName || '(unknown)'}`);
+    logger.info(`[env] Mongo Source : ${mongo.source || (env.USE_IN_MEMORY_MONGO ? 'in-memory' : '(unset)')}`);
+    logger.info(`[env] Environment File : ${envFileInfo}`);
+    logger.info('======================================');
+  } catch (e) {
+    // Non-fatal - logging only
   }
 
   return { env, mongo };

@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"orderId":{"$numberInt":"1"}},"name":"orderId_1"},{"v":{"$numberInt":"2"},"key":{"trackingNumber":{"$numberInt":"1"}},"name":"trackingNumber_1","unique":true}],"uuid":"e22100dc8cf4491c9a4b1eee7b6a9986","collectionName":"logistics","type":"collection"}

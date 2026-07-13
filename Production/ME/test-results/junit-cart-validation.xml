@@ -1,0 +1,246 @@
+<testsuites id="" name="" tests="76" failures="0" skipped="3" errors="2" time="173.487463">
+<testsuite name="cart.validation.spec.ts" timestamp="2026-07-09T22:42:34.243Z" hostname="chromium" tests="76" failures="0" skipped="3" time="149.679" errors="2">
+<testcase name="Cart Validation Certification Suite › Section A — Joi / Express API Input Validation › PV-CART-001 | Reject missing productId" classname="cart.validation.spec.ts" time="0.149">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section A — Joi / Express API Input Validation › PV-CART-002 | Reject missing quantity" classname="cart.validation.spec.ts" time="0.165">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section A — Joi / Express API Input Validation › PV-CART-003 | Reject zero quantity at Joi layer" classname="cart.validation.spec.ts" time="0.179">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section A — Joi / Express API Input Validation › PV-CART-004 | Reject negative quantity at Joi layer" classname="cart.validation.spec.ts" time="0.155">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section A — Joi / Express API Input Validation › PV-CART-005 | Reject non-numeric quantity strings" classname="cart.validation.spec.ts" time="0.14">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section A — Joi / Express API Input Validation › PV-CART-006 | Accept numeric string quantity via middleware coercion" classname="cart.validation.spec.ts" time="0.665">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section A — Joi / Express API Input Validation › PV-CART-007 | Document decimal quantity acceptance at Joi layer" classname="cart.validation.spec.ts" time="0.926">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section A — Joi / Express API Input Validation › PV-CART-008 | Reject empty productId string" classname="cart.validation.spec.ts" time="0.147">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section A — Joi / Express API Input Validation › PV-CART-009 | Reject non-string productId types" classname="cart.validation.spec.ts" time="0.149">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section A — Joi / Express API Input Validation › PV-CART-010 | Unknown body fields do not break validation" classname="cart.validation.spec.ts" time="0.741">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section A — Joi / Express API Input Validation › PV-CART-011 | Joi returns multiple errors (abortEarly false)" classname="cart.validation.spec.ts" time="0.15">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section A — Joi / Express API Input Validation › PV-CART-012 | Reject completely empty JSON body" classname="cart.validation.spec.ts" time="0.14">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section B — Service / Business API Validation › PV-CART-013 | Reject malformed product ObjectId" classname="cart.validation.spec.ts" time="0.138">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section B — Service / Business API Validation › PV-CART-014 | Reject valid but non-existent product" classname="cart.validation.spec.ts" time="0.165">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section B — Service / Business API Validation › PV-CART-015 | Reject inactive product" classname="cart.validation.spec.ts" time="0.169">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section B — Service / Business API Validation › PV-CART-016 | Reject quantity below effective MOQ" classname="cart.validation.spec.ts" time="0.565">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section B — Service / Business API Validation › PV-CART-017 | Accept quantity exactly at MOQ" classname="cart.validation.spec.ts" time="0.438">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|cart.validation-Cart-Valid-b6e9c-ept-quantity-exactly-at-MOQ-chromium\error-context.md]]
+]]>
+</system-out>
+<error message="Request failed with status code 500" type="AxiosError">
+<![CDATA[  [chromium] › cart.validation.spec.ts:200:5 › Cart Validation Certification Suite › Section B — Service / Business API Validation › PV-CART-017 | Accept quantity exactly at MOQ 
+
+    AxiosError: Request failed with status code 500
+
+       at ..\helpers\cart.api.helper.ts:30
+
+      28 |
+      29 | export async function removeFromCartApi(session: ApiSession, productId: string) {
+    > 30 |   const response = await apiClient.delete(`/cart/${productId}`, {
+         |                    ^
+      31 |     headers: authHeaders(session),
+      32 |   });
+      33 |   return unwrapData(response);
+        at settle (C:\Users\USER\Mokshith\Production\ME\node_modules\axios\lib\core\settle.js:19:12)
+        at IncomingMessage.handleStreamEnd (C:\Users\USER\Mokshith\Production\ME\node_modules\axios\lib\adapters\http.js:1237:13)
+        at Axios.request (C:\Users\USER\Mokshith\Production\ME\node_modules\axios\lib\core\Axios.js:46:41)
+        at removeFromCartApi (C:\Users\USER\Mokshith\Production\ME\tests\helpers\cart.api.helper.ts:30:20)
+        at clearCartApi (C:\Users\USER\Mokshith\Production\ME\tests\helpers\cart.api.helper.ts:45:7)
+        at C:\Users\USER\Mokshith\Production\ME\tests\validation\cart.validation.spec.ts:201:7
+
+    Error Context: ..\..\test-results\cart.validation-Cart-Valid-b6e9c-ept-quantity-exactly-at-MOQ-chromium\error-context.md
+]]>
+</error>
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section B — Service / Business API Validation › PV-CART-018 | Enforce max(minOrderQty, moq) server-side" classname="cart.validation.spec.ts" time="0.421">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section B — Service / Business API Validation › PV-CART-019 | Reject insufficient stock" classname="cart.validation.spec.ts" time="0.429">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section B — Service / Business API Validation › PV-CART-020 | Reject when inventory record missing" classname="cart.validation.spec.ts">
+<properties>
+<property name="skip" value="QA product create auto-provisions inventory — edge not reproducible in persistent QA">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section B — Service / Business API Validation › PV-CART-021 | Accept quantity exactly equal to total stock" classname="cart.validation.spec.ts" time="1.031">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section B — Service / Business API Validation › PV-CART-022 | Reject quantity one above stock" classname="cart.validation.spec.ts" time="0.996">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section B — Service / Business API Validation › PV-CART-023 | Duplicate add merges quantities when each POST satisfies MOQ" classname="cart.validation.spec.ts" time="1.278">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section B — Service / Business API Validation › PV-CART-024 | Cumulative stock check blocks second add" classname="cart.validation.spec.ts" time="1.274">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section B — Service / Business API Validation › PV-CART-025 | Failed add does not corrupt existing cart" classname="cart.validation.spec.ts" time="1.415">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section B — Service / Business API Validation › PV-CART-026 | Service-level qty guard (defense in depth)" classname="cart.validation.spec.ts" time="0.158">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section C — DELETE API Validation › PV-CART-027 | Reject invalid productId param" classname="cart.validation.spec.ts" time="0.523">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section C — DELETE API Validation › PV-CART-028 | DELETE on empty cart shell is idempotent" classname="cart.validation.spec.ts" time="0.875">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section C — DELETE API Validation › PV-CART-029 | Idempotent delete of product not in cart" classname="cart.validation.spec.ts" time="1.386">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section C — DELETE API Validation › PV-CART-030 | Successful remove reduces line count" classname="cart.validation.spec.ts" time="1.992">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section D — GET Cart / Persistence Validation › PV-CART-031 | Prune stale items with missing product refs on load" classname="cart.validation.spec.ts" time="0.993">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section D — GET Cart / Persistence Validation › PV-CART-032 | Valid add persists across session reload" classname="cart.validation.spec.ts" time="1.023">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section D — GET Cart / Persistence Validation › PV-CART-033 | Cart mapper computes MOQ and stock warnings correctly" classname="cart.validation.spec.ts" time="3.545">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section E — Frontend Product Listing Validation › PV-CART-034 | Out-of-stock product cannot be added from listing" classname="cart.validation.spec.ts" time="3.692">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section E — Frontend Product Listing Validation › PV-CART-035 | Listing add sends MOQ quantity automatically" classname="cart.validation.spec.ts" time="3.662">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section E — Frontend Product Listing Validation › PV-CART-036 | Listing surfaces API stock error to user" classname="cart.validation.spec.ts" time="4.659">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section F — Frontend Product Details Quantity Validation › PV-CART-037 | Quantity initializes to MOQ when product loads" classname="cart.validation.spec.ts" time="2.533">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section F — Frontend Product Details Quantity Validation › PV-CART-038 | Decrement button clamped at MOQ" classname="cart.validation.spec.ts" time="2.461">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section F — Frontend Product Details Quantity Validation › PV-CART-039 | Manual input below MOQ clamped to MOQ" classname="cart.validation.spec.ts" time="2.616">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section F — Frontend Product Details Quantity Validation › PV-CART-040 | Increment capped at stock" classname="cart.validation.spec.ts" time="5.331">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section F — Frontend Product Details Quantity Validation › PV-CART-041 | Invalid characters in quantity input sanitized" classname="cart.validation.spec.ts" time="2.508">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section F — Frontend Product Details Quantity Validation › PV-CART-042 | Paste negative value clamped to MOQ" classname="cart.validation.spec.ts" time="2.521">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section F — Frontend Product Details Quantity Validation › PV-CART-043 | Paste decimal truncated by parseInt" classname="cart.validation.spec.ts" time="2.39">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section F — Frontend Product Details Quantity Validation › PV-CART-044 | Empty quantity input resets to MOQ" classname="cart.validation.spec.ts" time="2.558">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section F — Frontend Product Details Quantity Validation › PV-CART-045 | HTML5 min/max attributes set correctly" classname="cart.validation.spec.ts" time="2.486">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section F — Frontend Product Details Quantity Validation › PV-CART-046 | Client guard blocks API when qty below MOQ" classname="cart.validation.spec.ts">
+<properties>
+<property name="skip" value="UI input clamp prevents below-MOQ state — client guard branch unreachable via UI">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section F — Frontend Product Details Quantity Validation › PV-CART-047 | Out-of-stock details blocks add" classname="cart.validation.spec.ts" time="2.462">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section F — Frontend Product Details Quantity Validation › PV-CART-048 | API rejection surfaced in details cartMessage" classname="cart.validation.spec.ts" time="3.252">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section F — Frontend Product Details Quantity Validation › PV-CART-049 | Add button disabled while cart action loading" classname="cart.validation.spec.ts" time="3.333">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section G — Frontend Cart Page Validation › PV-CART-050 | Cart quantity editing disabled" classname="cart.validation.spec.ts" time="4.279">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section G — Frontend Cart Page Validation › PV-CART-051 | Max-stock warning when qty &gt;= available stock" classname="cart.validation.spec.ts" time="3.382">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section G — Frontend Cart Page Validation › PV-CART-052 | Below-MOQ cart warning branch (unreachable)" classname="cart.validation.spec.ts">
+<properties>
+<property name="skip" value="Cannot seed cart line below MOQ via public API — display branch not reachable">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section G — Frontend Cart Page Validation › PV-CART-053 | Remove control remains enabled" classname="cart.validation.spec.ts" time="4.018">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section H — Frontend Wishlist Validation › PV-CART-054 | Wishlist add-to-cart uses MOQ quantity" classname="cart.validation.spec.ts" time="3.386">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section H — Frontend Wishlist Validation › PV-CART-055 | Wishlist blocks OOS add" classname="cart.validation.spec.ts" time="4.072">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section I — Frontend Checkout Form Validation › PV-CART-056 | Empty cart shows checkout empty state" classname="cart.validation.spec.ts" time="2.658">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section I — Frontend Checkout Form Validation › PV-CART-057 | Missing delivery address blocked client-side" classname="cart.validation.spec.ts" time="3.238">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section I — Frontend Checkout Form Validation › PV-CART-058 | Missing city blocked" classname="cart.validation.spec.ts" time="3.755">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section I — Frontend Checkout Form Validation › PV-CART-059 | Missing state blocked" classname="cart.validation.spec.ts" time="3.232">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section I — Frontend Checkout Form Validation › PV-CART-060 | Invalid pincode blocked" classname="cart.validation.spec.ts" time="3.373">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section I — Frontend Checkout Form Validation › PV-CART-061 | Pincode non-digit characters stripped before validation" classname="cart.validation.spec.ts" time="4.606">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section I — Frontend Checkout Form Validation › PV-CART-062 | Missing phone blocked" classname="cart.validation.spec.ts" time="2.873">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section I — Frontend Checkout Form Validation › PV-CART-063 | Valid checkout form proceeds to order API" classname="cart.validation.spec.ts" time="4.651">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section I — Frontend Checkout Form Validation › PV-CART-064 | Double-click place order guarded" classname="cart.validation.spec.ts" time="5.537">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|cart.validation-Cart-Valid-c411d-e-click-place-order-guarded-chromium\test-failed-1.png]]
+
+[[ATTACHMENT|cart.validation-Cart-Valid-c411d-e-click-place-order-guarded-chromium\video.webm]]
+
+[[ATTACHMENT|cart.validation-Cart-Valid-c411d-e-click-place-order-guarded-chromium\error-context.md]]
+]]>
+</system-out>
+<error message="read ECONNRESET" type="Error">
+<![CDATA[  [chromium] › cart.validation.spec.ts:707:5 › Cart Validation Certification Suite › Section I — Frontend Checkout Form Validation › PV-CART-064 | Double-click place order guarded 
+
+    Error: read ECONNRESET
+
+       at ..\helpers\cart.api.helper.ts:25
+
+      23 |
+      24 | export async function getCartApi(session: ApiSession): Promise<CartResponse | null> {
+    > 25 |   const response = await apiClient.get('/cart', { headers: authHeaders(session) });
+         |                    ^
+      26 |   return unwrapData<CartResponse | null>(response);
+      27 | }
+      28 |
+        at AxiosError.from (C:\Users\USER\Mokshith\Production\ME\node_modules\axios\lib\core\AxiosError.js:77:24)
+        at RedirectableRequest.handleRequestError (C:\Users\USER\Mokshith\Production\ME\node_modules\axios\lib\adapters\http.js:1259:27)
+        at Axios.request (C:\Users\USER\Mokshith\Production\ME\node_modules\axios\lib\core\Axios.js:46:41)
+        at getCartApi (C:\Users\USER\Mokshith\Production\ME\tests\helpers\cart.api.helper.ts:25:20)
+        at clearCartApi (C:\Users\USER\Mokshith\Production\ME\tests\helpers\cart.api.helper.ts:37:16)
+        at vendorUi (C:\Users\USER\Mokshith\Production\ME\tests\validation\cart.validation.spec.ts:57:3)
+        at C:\Users\USER\Mokshith\Production\ME\tests\validation\cart.validation.spec.ts:712:9
+    [cause]: Error: read ECONNRESET
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\..\test-results\cart.validation-Cart-Valid-c411d-e-click-place-order-guarded-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ..\..\test-results\cart.validation-Cart-Valid-c411d-e-click-place-order-guarded-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\..\test-results\cart.validation-Cart-Valid-c411d-e-click-place-order-guarded-chromium\error-context.md
+]]>
+</error>
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section J — Order API Business Validation › PV-CART-065 | Order from empty cart rejected server-side" classname="cart.validation.spec.ts" time="1.255">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section J — Order API Business Validation › PV-CART-066 | Order rejects inactive product still in cart" classname="cart.validation.spec.ts" time="3.103">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section J — Order API Business Validation › PV-CART-067 | Order re-validates stock at checkout time" classname="cart.validation.spec.ts" time="5.304">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section J — Order API Business Validation › PV-CART-068 | Order shipping address Joi validation" classname="cart.validation.spec.ts" time="1.816">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section J — Order API Business Validation › PV-CART-069 | Document order MOQ rule vs cart max()" classname="cart.validation.spec.ts" time="4.1">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section K — Sanitization &amp; Injection › PV-CART-070 | NoSQL injection in productId rejected safely" classname="cart.validation.spec.ts" time="0.31">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section K — Sanitization &amp; Injection › PV-CART-071 | XSS in API error message rendered safely in UI" classname="cart.validation.spec.ts" time="5.495">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section K — Sanitization &amp; Injection › PV-CART-072 | DELETE path injection in productId param" classname="cart.validation.spec.ts" time="0.04">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section L — Boundary &amp; Negative Testing › PV-CART-073 | Product with stock &lt; moq shows low_stock status" classname="cart.validation.spec.ts" time="4.442">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section L — Boundary &amp; Negative Testing › PV-CART-074 | Deactivated product cannot be re-added" classname="cart.validation.spec.ts" time="1.333">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section L — Boundary &amp; Negative Testing › PV-CART-075 | Very large quantity rejected by stock not overflow" classname="cart.validation.spec.ts" time="0.405">
+</testcase>
+<testcase name="Cart Validation Certification Suite › Section L — Boundary &amp; Negative Testing › PV-CART-076 | Unauthenticated cart mutation rejected" classname="cart.validation.spec.ts" time="0.029">
+</testcase>
+</testsuite>
+</testsuites>

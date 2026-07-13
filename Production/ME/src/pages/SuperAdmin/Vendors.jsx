@@ -20,7 +20,7 @@ const Vendors = () => {
     setLoading(true);
     setError('');
     try {
-      const response = await adminService.getUsers({ role: 'B2B_CUSTOMER' });
+      const response = await adminService.getUsers({ role: 'VENDOR' });
       const payload = response.data ?? response;
       const users = Array.isArray(payload) ? payload : payload?.users || [];
       setVendors(users.map(mapVendorUser));

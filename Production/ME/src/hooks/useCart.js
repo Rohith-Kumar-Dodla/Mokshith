@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import cartService from '../services/cartService';
 import { mapBackendCart } from '../utils/cartMapper';
 import { calculateCartTotals } from '../utils/pricingCalculator';
@@ -14,6 +14,7 @@ export function useCart({ autoLoad = true } = {}) {
   const [loading, setLoading] = useState(autoLoad);
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const addInFlightRef = useRef(false);
 
   const applyCartResponse = useCallback((response) => {
     const mappedCart = mapBackendCart(extractCartPayload(response));
@@ -47,6 +48,10 @@ export function useCart({ autoLoad = true } = {}) {
 
   const addToCart = useCallback(
     async (productId, quantity) => {
+      if (addInFlightRef.current) {
+        return;
+      }
+      addInFlightRef.current = true;
       setActionLoading(true);
       setError(null);
 
@@ -59,6 +64,7 @@ export function useCart({ autoLoad = true } = {}) {
         setError(message);
         throw new Error(message);
       } finally {
+        addInFlightRef.current = false;
         setActionLoading(false);
       }
     },

@@ -9,12 +9,20 @@ const __dirname = path.dirname(__filename);
 /** Absolute path to the b2b-backend project root (parent of src/) */
 export const projectRoot = path.resolve(__dirname, '../..');
 
-const ENV_CANDIDATES = [
-  path.join(projectRoot, '.env'),
-  path.join(projectRoot, '.env.local'),
-];
-
+// Build ordered candidates, preferring environment-specific files when NODE_ENV is set
 let loadedEnvPath = null;
+
+function buildEnvCandidates() {
+  const candidates = [];
+  const nodeEnv = process.env.NODE_ENV && String(process.env.NODE_ENV).trim();
+  if (nodeEnv) {
+    candidates.push(path.join(projectRoot, `.env.${nodeEnv}.local`));
+    candidates.push(path.join(projectRoot, `.env.${nodeEnv}`));
+  }
+  candidates.push(path.join(projectRoot, '.env.local'));
+  candidates.push(path.join(projectRoot, '.env'));
+  return candidates;
+}
 
 /**
  * Load environment variables from a fixed project-root path.
@@ -25,6 +33,7 @@ export function loadEnv({ silent = false } = {}) {
     return { envPath: loadedEnvPath, projectRoot };
   }
 
+  const ENV_CANDIDATES = buildEnvCandidates();
   for (const envPath of ENV_CANDIDATES) {
     if (fs.existsSync(envPath)) {
       const result = dotenv.config({ path: envPath, override: false });

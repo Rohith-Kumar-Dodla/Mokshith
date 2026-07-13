@@ -1,9 +1,11 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import orderService from '../services/orderService';
 import paymentService from '../services/paymentService';
+import api from '../services/api';
 import { mapBackendOrder } from '../utils/orderMapper';
 import { openRazorpayCheckout } from '../utils/razorpayCheckout';
+import { fetchCsrfToken } from '../utils/csrf';
 
 const PAYMENT_METHOD_MAP = {
   cod: 'COD',
@@ -24,6 +26,17 @@ export function mapPaymentMethodToBackend(paymentId) {
 const ONLINE_PAYMENT_METHODS = new Set(['razorpay', 'online', 'upi']);
 const HYBRID_PAYMENT_METHODS = new Set(['hybrid']);
 const BANK_TRANSFER_METHODS = new Set(['bank_transfer']);
+
+const GLOBAL_PLACE_ORDER_KEY = '__b2bPlaceOrderInFlight';
+
+const isPlaceOrderInFlightGlobally = () =>
+  typeof window !== 'undefined' && window[GLOBAL_PLACE_ORDER_KEY] === true;
+
+const setPlaceOrderInFlightGlobally = (inFlight) => {
+  if (typeof window !== 'undefined') {
+    window[GLOBAL_PLACE_ORDER_KEY] = inFlight;
+  }
+};
 
 function unwrapPayload(response) {
   return response?.data ?? response;
@@ -117,17 +130,24 @@ export function useCheckout({ onSuccess } = {}) {
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const placeOrderInFlightRef = useRef(false);
 
   const placeOrder = useCallback(
-    async ({ formData, paymentMethodId, orderTotal }) => {
+    async ({ formData, paymentMethodId, orderTotal, idempotencyKey: providedIdempotencyKey }) => {
+      if (isPlaceOrderInFlightGlobally() || placeOrderInFlightRef.current) {
+        return;
+      }
+      placeOrderInFlightRef.current = true;
+      setPlaceOrderInFlightGlobally(true);
       setSubmitting(true);
       setError(null);
 
       try {
+        await fetchCsrfToken(api, true);
         const shippingAddress = buildShippingAddress(formData);
-        const idempotencyKey = `order-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-        // TEMP LOG: help debug duplicate submissions
-        console.debug('Placing order - generated idempotencyKey', { idempotencyKey, user: formData?.email || 'unknown' });
+        const idempotencyKey =
+          providedIdempotencyKey ||
+          `order-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
         const payload = {
           paymentMethod: mapPaymentMethodToBackend(paymentMethodId),
@@ -194,6 +214,8 @@ export function useCheckout({ onSuccess } = {}) {
         setError(message);
         throw new Error(message);
       } finally {
+        placeOrderInFlightRef.current = false;
+        setPlaceOrderInFlightGlobally(false);
         setSubmitting(false);
       }
     },

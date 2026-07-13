@@ -4,6 +4,14 @@ import { hasPermission, hasAnyPermission, hasAllPermissions } from '../constants
 import { ROLES } from '../constants/roles.js';
 import { logSecurityEvent, SECURITY_EVENTS } from './securityAudit.middleware.js';
 
+function resolveResourceId(value) {
+  if (value == null) return null;
+  if (typeof value === 'object' && value._id != null) {
+    return String(value._id);
+  }
+  return String(value);
+}
+
 /**
  * Check if user has required permission
  */
@@ -120,18 +128,24 @@ export const requireOwnershipOr = (resourceField, ownerField, fallbackPermission
       return next(new AppError(`Resource not found: ${resourceField}`, 404));
     }
 
-    // Check ownership
-    const ownerId = resource[ownerField]?.toString() || resource[ownerField];
-    const userId = req.user._id?.toString() || req.user._id;
+    // Check ownership (vendorId may be a populated document from loadProduct)
+    const ownerId = resolveResourceId(resource[ownerField]);
+    const userId = resolveResourceId(req.user._id);
 
-    if (ownerId === userId) {
+    if (ownerId && userId && ownerId === userId) {
       // User owns the resource
       return next();
     }
 
-    // Check fallback permission
+    // Check fallback permission.
+    // Security: treat fallbackPermission as an admin-level override only.
+    // Vendors should NOT be allowed to bypass ownership via fallbackPermission.
     if (fallbackPermission && hasPermission(req.user.role, fallbackPermission)) {
-      return next();
+      // Allow only non-vendor roles (e.g., ADMIN/SUPER_ADMIN) to use the fallback permission.
+      if (req.user.role !== ROLES.VENDOR) {
+        return next();
+      }
+      // If role is VENDOR, do not allow fallbackPermission to bypass ownership.
     }
 
     logSecurityEvent(SECURITY_EVENTS.PERMISSION_DENIED, {

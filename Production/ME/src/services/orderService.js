@@ -1,5 +1,26 @@
 import api from './api';
 
+let moduleCreateOrderInFlight = null;
+
+function getCreateOrderInFlight() {
+  if (typeof window !== 'undefined') {
+    return window.__b2bCreateOrderInFlight ?? null;
+  }
+  return moduleCreateOrderInFlight;
+}
+
+function setCreateOrderInFlight(promise) {
+  if (typeof window !== 'undefined') {
+    window.__b2bCreateOrderInFlight = promise;
+  } else {
+    moduleCreateOrderInFlight = promise;
+  }
+}
+
+function clearCreateOrderInFlight() {
+  setCreateOrderInFlight(null);
+}
+
 const orderService = {
   getAllOrders: async (params = {}) => {
     const response = await api.get('/orders', { params });
@@ -12,12 +33,25 @@ const orderService = {
   },
 
   createOrder: async (orderData) => {
+    const inFlight = getCreateOrderInFlight();
+    if (inFlight) {
+      return inFlight;
+    }
+
     const headers = {};
     if (orderData?.idempotencyKey) {
       headers['Idempotency-Key'] = orderData.idempotencyKey;
     }
-    const response = await api.post('/orders', orderData, { headers });
-    return response.data;
+
+    const requestPromise = api
+      .post('/orders', orderData, { headers })
+      .then((response) => response.data)
+      .finally(() => {
+        clearCreateOrderInFlight();
+      });
+
+    setCreateOrderInFlight(requestPromise);
+    return requestPromise;
   },
 
   updateOrderStatus: async (orderId, statusData) => {
