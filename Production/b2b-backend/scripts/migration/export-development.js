@@ -17,6 +17,7 @@ import { MongoClient } from 'mongodb';
 import { loadEnv } from '../../src/config/loadEnv.js';
 import { getAppDatabaseName, getNodeEnv } from '../../src/config/environmentResolver.js';
 import { logger } from '../../src/config/logger.js';
+import { assertNotProduction, assertNotProductionDatabase } from '../../src/utils/destructiveGuard.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -26,14 +27,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 loadEnv();
 
 // Safety: Ensure we're not in production environment
-if (process.env.NODE_ENV === 'production') {
-  console.error('❌ ERROR: Cannot run export script in production environment');
-  console.error('This script is for exporting development data only.');
-  process.exit(1);
-}
+assertNotProduction('export-development.js');
 
 // Safety: Ensure we're connecting to development database
 const expectedDb = getAppDatabaseName();
+assertNotProductionDatabase(expectedDb, 'export-development.js');
+
 if (expectedDb !== 'mokshith-dev' && expectedDb !== 'test') {
   console.error(`❌ ERROR: Expected development database, but configured for: ${expectedDb}`);
   console.error('This script should only export from development (mokshith-dev)');

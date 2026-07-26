@@ -6,6 +6,7 @@ import { loadEnv } from '../src/config/loadEnv.js';
 import {
   assertDestructiveOperationAllowed,
   assertExpectedApplicationDatabase,
+  assertNotProduction,
   logDestructiveWarning,
   REQUIRED_DESTRUCTIVE_CONFIRM,
 } from '../src/utils/destructiveGuard.js';
@@ -62,6 +63,7 @@ async function deleteCollectionDocuments(collectionName, model = null) {
 }
 
 export async function resetDatabase() {
+  assertNotProduction('resetDatabase');
   logDestructiveWarning('Full database reset (deleteMany on all core collections)');
   assertDestructiveOperationAllowed('resetDatabase');
 
@@ -148,10 +150,8 @@ const isDirectExecution = process.argv[1]?.includes('dangerous-dev-tools/resetDa
 if (isDirectExecution) {
   (async () => {
     try {
-      if (process.env.NODE_ENV === 'production') {
-        console.error('Refusing to run destructive script in production');
-        process.exit(1);
-      }
+      // Enforce non-production using centralized guard
+      assertNotProduction('resetDatabase direct execution');
 
       if (process.env.DESTRUCTIVE_CONFIRM !== REQUIRED_DESTRUCTIVE_CONFIRM) {
         console.error(`Set DESTRUCTIVE_CONFIRM=${REQUIRED_DESTRUCTIVE_CONFIRM} to enable destructive scripts`);
