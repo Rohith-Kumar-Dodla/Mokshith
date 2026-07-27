@@ -13,3 +13,14 @@ export const assignDeliverySchema = Joi.object({
     deliveryPartnerId: Joi.string().required(),
   }),
 });
+
+export const collectCodPaymentSchema = Joi.object({
+  body: Joi.object({
+    collectionMode: Joi.string().valid('QR', 'CASH', 'qr', 'cash').required(),
+    cashCollectionProof: Joi.string().min(5).max(2000).optional().allow(''),
+    notes: Joi.string().trim().max(500).optional().allow(''),
+  }),
+  params: Joi.object({
+    id: Joi.string().hex().length(24).required(),
+  }),
+});

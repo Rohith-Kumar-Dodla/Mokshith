@@ -1,9 +1,13 @@
 import * as repo from './settings.repository.js';
 import AppError from '../../errors/AppError.js';
+import {
+  getPlatformSettings,
+} from '../platformSettings/platformSettings.service.js';
 
 // 🔥 Allowed keys (for safety)
 const ALLOWED_KEYS = [
   'maintenanceMode',
+  'maintenanceMessage',
   'siteName',
   'supportEmail',
   'defaultCurrency',
@@ -58,12 +62,21 @@ export const getAllSettings = async () => {
 
 export const getPublicConfig = async () => {
   const settings = await getAllSettings();
+  const platform = await getPlatformSettings();
   const publicKeys = ['allowRegistration', 'enableCOD', 'siteName', 'defaultCurrency', 'featureFlags'];
   
-  return settings.reduce((acc, s) => {
+  const config = settings.reduce((acc, s) => {
     if (publicKeys.includes(s.key)) {
       acc[s.key] = s.value;
     }
     return acc;
   }, {});
+
+  return {
+    ...config,
+    maintenanceMode: platform.maintenanceMode,
+    maintenanceMessage: platform.maintenanceMessage,
+    supportPhone: platform.supportPhone,
+    supportEmail: platform.supportEmail,
+  };
 };

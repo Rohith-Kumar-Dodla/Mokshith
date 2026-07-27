@@ -23,7 +23,6 @@ const StatusBadge = ({ status }) => {
           borderColor: 'border-yellow-200'
         };
       case 'inactive':
-      case 'rejected':
       case 'cancelled':
       case 'suspended':
       case 'out_of_stock':
@@ -34,10 +33,22 @@ const StatusBadge = ({ status }) => {
         };
       case 'packed':
       case 'dispatched':
+      case 'assigned':
+      case 'accepted':
+      case 'out_for_pickup':
+      case 'picked_up':
         return {
           bgColor: 'bg-blue-100',
           textColor: 'text-blue-800',
           borderColor: 'border-blue-200'
+        };
+      case 'delivery_failed':
+      case 'customer_unavailable':
+      case 'rejected':
+        return {
+          bgColor: 'bg-orange-100',
+          textColor: 'text-orange-800',
+          borderColor: 'border-orange-200'
         };
       default:
         return {

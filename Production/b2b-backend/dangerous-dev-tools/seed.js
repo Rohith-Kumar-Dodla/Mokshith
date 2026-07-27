@@ -7,6 +7,7 @@ import { loadEnv } from '../src/config/loadEnv.js';
 import {
   assertDestructiveOperationAllowed,
   assertExpectedApplicationDatabase,
+  assertNotProduction,
   logDestructiveWarning,
   REQUIRED_DESTRUCTIVE_CONFIRM,
 } from '../src/utils/destructiveGuard.js';
@@ -22,6 +23,7 @@ import { USER_STATUS } from '../src/constants/userStatus.js';
 loadEnv();
 
 export const seed = async () => {
+  assertNotProduction('seed.js');
   logDestructiveWarning('Legacy seed (wipes users, categories, products, companies, vendors)');
   assertDestructiveOperationAllowed('seed.js');
 
@@ -122,11 +124,8 @@ const isDirectExecution = process.argv[1]?.includes('dangerous-dev-tools/seed.js
 if (isDirectExecution) {
   (async () => {
     try {
-      // Enforce non-production
-      if (process.env.NODE_ENV === 'production') {
-        console.error('Refusing to run destructive script in production');
-        process.exit(1);
-      }
+      // Enforce non-production using centralized guard
+      assertNotProduction('seed.js direct execution');
 
       // Require explicit env token
       if (process.env.DESTRUCTIVE_CONFIRM !== REQUIRED_DESTRUCTIVE_CONFIRM) {

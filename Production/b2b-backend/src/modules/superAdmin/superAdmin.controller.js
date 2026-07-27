@@ -22,7 +22,7 @@ export const getStats = asyncHandler(async (req, res) => {
 });
 
 export const getAdmins = asyncHandler(async (req, res) => {
-  const admins = await service.getAdmins();
+  const admins = await service.getAdmins(req.query);
   successResponse(res, admins);
 });
 
@@ -39,6 +39,26 @@ export const deleteAdmin = asyncHandler(async (req, res) => {
 export const updateAdmin = asyncHandler(async (req, res) => {
   const admin = await service.updateAdmin(req.params.id, req.body, req.user?._id, req.ip);
   successResponse(res, admin, 'Admin updated successfully');
+});
+
+export const getDeliveryAgents = asyncHandler(async (req, res) => {
+  const agents = await service.getDeliveryAgents(req.query);
+  successResponse(res, agents);
+});
+
+export const createDeliveryAgent = asyncHandler(async (req, res) => {
+  const agent = await service.createDeliveryAgent(req.body, req.user?._id, req.ip);
+  successResponse(res, agent, 'Delivery agent created successfully', 201);
+});
+
+export const updateDeliveryAgent = asyncHandler(async (req, res) => {
+  const agent = await service.updateDeliveryAgent(req.params.id, req.body, req.user?._id, req.ip);
+  successResponse(res, agent, 'Delivery agent updated successfully');
+});
+
+export const deleteDeliveryAgent = asyncHandler(async (req, res) => {
+  const result = await service.deleteDeliveryAgent(req.params.id, req.user?._id, req.ip);
+  successResponse(res, result);
 });
 
 export const getMetrics = asyncHandler(async (req, res) => {

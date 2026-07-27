@@ -54,12 +54,19 @@ export async function seedAuthenticatedSession(page: Page, role: 'admin' | 'vend
   });
 
   await page.addInitScript(({ sessionUser, frontendRole }) => {
-    localStorage.setItem('accessToken', 'test-access');
-    localStorage.setItem('refreshToken', 'test-refresh');
-    localStorage.setItem('csrfToken', 'test-csrf');
-    localStorage.setItem('user', JSON.stringify(sessionUser));
-    localStorage.setItem('role', frontendRole);
-    localStorage.setItem('isAuthenticated', 'true');
+    const tabSessionId = 'tab_e2e_test';
+    sessionStorage.setItem('tabSessionId', tabSessionId);
+    localStorage.setItem(
+      `auth_session_${tabSessionId}`,
+      JSON.stringify({
+        accessToken: 'test-access',
+        refreshToken: 'test-refresh',
+        csrfToken: 'test-csrf',
+        user: sessionUser,
+        role: frontendRole,
+        isAuthenticated: true,
+      })
+    );
   }, { sessionUser: user, frontendRole: role });
 
   return { user, dashboardRoute: config.route };

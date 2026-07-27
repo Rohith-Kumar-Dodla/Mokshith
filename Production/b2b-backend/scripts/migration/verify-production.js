@@ -22,11 +22,12 @@ import { MongoClient } from 'mongodb';
 import { loadEnv } from '../../src/config/loadEnv.js';
 import { getAppDatabaseName, getNodeEnv } from '../../src/config/environmentResolver.js';
 import { logger } from '../../src/config/logger.js';
+import { assertNotProductionDatabase, isProduction, isProductionDatabase } from '../../src/utils/destructiveGuard.js';
 
 loadEnv();
 
 // Safety: Ensure we're in production environment
-if (process.env.NODE_ENV !== 'production') {
+if (!isProduction()) {
   console.error('❌ ERROR: This script can only run in production environment');
   console.error('Set NODE_ENV=production to proceed');
   process.exit(1);
@@ -34,7 +35,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 // Safety: Ensure we're connecting to production database
 const expectedDb = getAppDatabaseName();
-if (expectedDb !== 'mokshith-production') {
+if (!isProductionDatabase(expectedDb)) {
   console.error(`❌ ERROR: Expected production database, but configured for: ${expectedDb}`);
   console.error('This script should only verify production (mokshith-production)');
   process.exit(1);

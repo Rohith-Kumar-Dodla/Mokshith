@@ -10,6 +10,9 @@ describe('orderMapper', () => {
   it('maps backend order statuses to vendor UI statuses', () => {
     expect(mapBackendOrderStatus('CONFIRMED')).toBe('confirmed');
     expect(mapBackendOrderStatus('OUT_FOR_DELIVERY')).toBe('dispatched');
+    expect(mapBackendOrderStatus('ASSIGNED')).toBe('assigned');
+    expect(mapBackendOrderStatus('ACCEPTED')).toBe('accepted');
+    expect(mapBackendOrderStatus('PICKED_UP')).toBe('picked_up');
     expect(mapBackendOrderStatus('PENDING_PAYMENT')).toBe('pending');
   });
 
@@ -50,8 +53,12 @@ describe('orderMapper', () => {
   it('builds timeline from order status', () => {
     const timeline = buildOrderTimeline('PROCESSING', '2026-06-01T10:00:00.000Z');
     expect(timeline[0].completed).toBe(true);
-    expect(timeline[2].completed).toBe(true);
-    expect(timeline[4].completed).toBe(false);
+    expect(timeline[1].completed).toBe(true);
+    expect(timeline[2].completed).toBe(false);
+
+    const assignedTimeline = buildOrderTimeline('ASSIGNED', '2026-06-01T10:00:00.000Z');
+    expect(assignedTimeline[3].completed).toBe(true);
+    expect(assignedTimeline[4].completed).toBe(false);
   });
 
   it('computes order stats from mapped orders', () => {

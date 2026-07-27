@@ -3,7 +3,14 @@ import * as controller from './superAdmin.controller.js';
 import { protect } from '../../middlewares/auth.middleware.js';
 import { authorize } from '../../middlewares/role.middleware.js';
 import { validate } from '../../middlewares/validate.middleware.js';
-import { updateUserRoleSchema } from './superAdmin.validation.js';
+import {
+  updateUserRoleSchema,
+  createAdminSchema,
+  updateAdminSchema,
+  createDeliveryAgentSchema,
+  updateDeliveryAgentSchema,
+  listStaffSchema,
+} from './superAdmin.validation.js';
 
 const router = express.Router();
 
@@ -12,10 +19,15 @@ router.use(protect, authorize('SUPER_ADMIN'));
 
 // 👤 Users
 router.get('/users', controller.getUsers);
-router.get('/admins', controller.getAdmins);
-router.post('/admins', controller.createAdmin);
-router.patch('/admins/:id', controller.updateAdmin);
+router.get('/admins', validate(listStaffSchema), controller.getAdmins);
+router.post('/admins', validate(createAdminSchema), controller.createAdmin);
+router.patch('/admins/:id', validate(updateAdminSchema), controller.updateAdmin);
 router.delete('/admins/:id', controller.deleteAdmin);
+
+router.get('/delivery-agents', validate(listStaffSchema), controller.getDeliveryAgents);
+router.post('/delivery-agents', validate(createDeliveryAgentSchema), controller.createDeliveryAgent);
+router.patch('/delivery-agents/:id', validate(updateDeliveryAgentSchema), controller.updateDeliveryAgent);
+router.delete('/delivery-agents/:id', controller.deleteDeliveryAgent);
 
 // 🔄 Change role
 router.patch(

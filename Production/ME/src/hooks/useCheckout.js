@@ -144,16 +144,19 @@ export function useCheckout({ onSuccess } = {}) {
 
       try {
         await fetchCsrfToken(api, true);
-        const shippingAddress = buildShippingAddress(formData);
+        const shippingAddress = formData ? buildShippingAddress(formData) : null;
         const idempotencyKey =
           providedIdempotencyKey ||
           `order-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
         const payload = {
           paymentMethod: mapPaymentMethodToBackend(paymentMethodId),
-          shippingAddress,
           idempotencyKey,
         };
+
+        if (shippingAddress?.addressLine) {
+          payload.shippingAddress = shippingAddress;
+        }
 
         const response = await orderService.createOrder(payload);
         const orderPayload = unwrapPayload(response);
