@@ -11,9 +11,8 @@ import { useAuth } from '../../context/AuthContext';
 import { formatVendorAddressFull, vendorProfileToCheckoutForm } from '../../utils/vendorAddress';
 
 const PAYMENT_METHODS = [
-  { id: 'cod', label: 'Cash On Delivery', icon: FiTruck, description: 'Pay when you receive the order' },
-  // Razorpay (online) only — keep label clear for users
-  { id: 'razorpay', label: 'Razorpay (Online Payment)', icon: FiSmartphone, description: 'Pay securely via Razorpay (Test Mode)' },
+  { id: 'razorpay', label: 'Online Payment', icon: FiSmartphone, description: 'Pay securely via Razorpay (Test Mode)' },
+  { id: 'cod', label: 'Cash on Delivery', icon: FiTruck, description: 'Pay when you receive the order' },
 ];
 
 const GLOBAL_PLACING_KEY = '__b2bCheckoutPlacing';
@@ -47,7 +46,7 @@ const releaseOrderClickMutex = () => {
 
 const Checkout = () => {
   const { user } = useAuth();
-  const [selectedPayment, setSelectedPayment] = useState('cod');
+  const [selectedPayment, setSelectedPayment] = useState('');
   const { loading, error, cartItems, subtotal, discount, tax, grandTotal, loadCart } = useCart();
   const { submitting, error: checkoutError, placeOrder, setError: setCheckoutError } = useCheckout({
     onSuccess: async () => {
@@ -117,6 +116,9 @@ const Checkout = () => {
       return 'Business address not found. Please update your address in Vendor Settings before placing an order.';
     }
     if (!formData.phone.trim()) return 'Phone number is required';
+    if (!selectedPayment) {
+      return 'Please select a payment method before placing your order.';
+    }
     return '';
   };
 
@@ -318,7 +320,8 @@ const Checkout = () => {
           </div>
 
           <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Payment Method</h2>
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">Payment Method</h2>
+            <p className="text-sm text-gray-500 mb-3 sm:mb-4">Choose Payment Method</p>
 
             {!creditLoading && credit && (
               <div className="mb-4 p-3 sm:p-4 bg-blue-50 border border-blue-100 rounded-lg grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
@@ -459,8 +462,8 @@ const Checkout = () => {
               className="w-full py-2.5 h-10 sm:h-12 px-4 sm:px-6 bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
               {submitting
-                ? (['upi', 'online', 'hybrid'].includes(selectedPayment) ? 'Processing Payment...' : 'Placing Order...')
-                : (['upi', 'online', 'hybrid'].includes(selectedPayment) ? 'Pay & Place Order' : selectedPayment === 'bank_transfer' ? 'Place Order & Submit Payment' : 'Place Order')}
+                ? (['upi', 'online', 'hybrid', 'razorpay'].includes(selectedPayment) ? 'Processing Payment...' : 'Placing Order...')
+                : (['upi', 'online', 'hybrid', 'razorpay'].includes(selectedPayment) ? 'Pay & Place Order' : selectedPayment === 'bank_transfer' ? 'Place Order & Submit Payment' : 'Place Order')}
             </button>
 
             <p className="text-xs text-gray-500 text-center mt-2 sm:mt-3">

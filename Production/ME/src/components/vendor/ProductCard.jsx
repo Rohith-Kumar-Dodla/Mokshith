@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiShoppingCart, FiHeart, FiEye, FiStar, FiPlus, FiMinus } from 'react-icons/fi';
 import { getProductImageKey } from '../../utils/productMapper';
@@ -11,6 +11,8 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) =
   const reviews = product.reviews ?? 0;
   const brand = product.brand || null;
   const [quantity, setQuantity] = useState(product.minimumOrderQuantity ?? product.moq ?? 1);
+  const unitPrice = Number(product.price ?? 0);
+  const totalPrice = useMemo(() => unitPrice * quantity, [unitPrice, quantity]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -137,21 +139,25 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) =
           <span className="text-xs text-gray-500">({reviews})</span>
         </div>
 
-        <div className="flex items-baseline gap-2 mb-2 sm:mb-3">
-          <span className="text-lg sm:text-xl font-bold text-gray-900">₹{product.price.toFixed(2)}</span>
-          {product.mrp && (
-            <span className="text-xs sm:text-sm text-gray-400 line-through">₹{product.mrp.toFixed(2)}</span>
+        <div className="mb-2 sm:mb-3">
+          <div className="flex items-baseline gap-2">
+            <span className="text-lg sm:text-xl font-bold text-gray-900">
+              {quantity > 1 ? `Total: ₹${totalPrice.toFixed(2)}` : `₹${totalPrice.toFixed(2)}`}
+            </span>
+            {product.mrp && (
+              <span className="text-xs sm:text-sm text-gray-400 line-through">₹{product.mrp.toFixed(2)}</span>
+            )}
+          </div>
+          {quantity > 1 && (
+            <p className="text-xs text-gray-500 mt-0.5">
+              {quantity} × ₹{unitPrice.toFixed(2)} = ₹{totalPrice.toFixed(2)}
+            </p>
           )}
           {product.wholesalePrice && (
-            <span className="text-xs text-green-600 font-medium">
+            <p className="text-xs text-green-600 font-medium mt-0.5">
               Wholesale: ₹{product.wholesalePrice.toFixed(2)}
-            </span>
+            </p>
           )}
-        </div>
-
-        <div className="flex items-center justify-between text-xs text-gray-500 mb-2 sm:mb-3">
-          <span>MOQ: {product.minimumOrderQuantity} {product.unit}</span>
-          <span>Stock: {product.stock}</span>
         </div>
 
         <div className="flex items-center gap-2 mb-2 sm:mb-3">
@@ -172,6 +178,7 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) =
           >
             <FiPlus className="w-4 h-4" />
           </button>
+          <span className="text-xs text-gray-500 ml-auto">Stock: {product.stock}</span>
         </div>
 
         <button
