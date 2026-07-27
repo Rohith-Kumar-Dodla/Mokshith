@@ -415,6 +415,42 @@ export function useDelivery({ autoLoad = true } = {}) {
 
 
 
+  const collectCodPayment = useCallback(
+
+    async (shipmentId, payload) => {
+
+      setActionLoading(true);
+
+      setError(null);
+
+      try {
+
+        await deliveryService.collectCodPayment(shipmentId, payload);
+
+        await refreshAll({ silent: true });
+
+      } catch (actionError) {
+
+        const message = getErrorMessage(actionError, 'Failed to collect COD payment');
+
+        setError(message);
+
+        throw new Error(message);
+
+      } finally {
+
+        setActionLoading(false);
+
+      }
+
+    },
+
+    [refreshAll]
+
+  );
+
+
+
   const completeDelivery = useCallback(
 
     async (shipmentId, payload = {}) => {
@@ -540,6 +576,8 @@ export function useDelivery({ autoLoad = true } = {}) {
     startDelivery,
 
     markAsDelivered,
+
+    collectCodPayment,
 
     completeDelivery,
 

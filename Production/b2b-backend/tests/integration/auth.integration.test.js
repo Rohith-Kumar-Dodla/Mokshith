@@ -6,6 +6,7 @@ import RefreshToken from '../../src/models/RefreshToken.model.js';
 import {
   clearDatabase,
   generateTestUser,
+  generateTestRegisterPayload,
   mockRequest,
   mockResponse,
   mockNext,
@@ -34,7 +35,7 @@ describe('Authentication Module - Comprehensive Tests', () => {
 
   describe('POST /api/v1/auth/register - User Registration', () => {
     it('should register a new user with valid data', async () => {
-      const userData = generateTestUser({
+      const userData = generateTestRegisterPayload({
         email: 'newuser@test.com',
         mobile: '9876543210',
       });
@@ -55,7 +56,7 @@ describe('Authentication Module - Comprehensive Tests', () => {
     });
 
     it('should hash password before storing', async () => {
-      const userData = generateTestUser({
+      const userData = generateTestRegisterPayload({
         password: 'PlainPassword@123',
       });
 
@@ -67,7 +68,7 @@ describe('Authentication Module - Comprehensive Tests', () => {
     });
 
     it('should reject weak passwords', async () => {
-      const userData = generateTestUser({
+      const userData = generateTestRegisterPayload({
         password: 'weak', // Too short, no special chars
       });
 
@@ -81,7 +82,7 @@ describe('Authentication Module - Comprehensive Tests', () => {
     });
 
     it('should reject duplicate email', async () => {
-      const userData = generateTestUser({
+      const userData = generateTestRegisterPayload({
         email: 'duplicate@test.com',
       });
 
@@ -104,20 +105,20 @@ describe('Authentication Module - Comprehensive Tests', () => {
       // First registration
       await request
         .post('/api/v1/auth/register')
-        .send(generateTestUser({ mobile, email: 'user1@test.com' }))
+        .send(generateTestRegisterPayload({ mobile, email: 'user1@test.com' }))
         .expect(201);
 
       // Duplicate mobile
       const response = await request
         .post('/api/v1/auth/register')
-        .send(generateTestUser({ mobile, email: 'user2@test.com' }))
+        .send(generateTestRegisterPayload({ mobile, email: 'user2@test.com' }))
         .expect(400);
 
       expect(response.body.message).toContain('already registered');
     });
 
     it('should validate email format', async () => {
-      const userData = generateTestUser({
+      const userData = generateTestRegisterPayload({
         email: 'invalid-email',
       });
 
@@ -129,21 +130,34 @@ describe('Authentication Module - Comprehensive Tests', () => {
       expect(response.body.message).toContain('email');
     });
 
-    it('accepts mobile as required string (format enforced at login, not register)', async () => {
-      const userData = generateTestUser({
+    it('should reject invalid mobile format during registration', async () => {
+      const userData = generateTestRegisterPayload({
         mobile: '123',
       });
 
       const response = await request
         .post('/api/v1/auth/register')
         .send(userData)
-        .expect(201);
+        .expect(400);
 
-      expect(response.body.data.user.mobile).toBe('123');
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should reject role injection during public registration', async () => {
+      const userData = generateTestRegisterPayload({
+        role: ROLES.ADMIN,
+      });
+
+      const response = await request
+        .post('/api/v1/auth/register')
+        .send(userData)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
     });
 
     it('should check password against breach database', async () => {
-      const userData = generateTestUser({
+      const userData = generateTestRegisterPayload({
         password: 'Password123!', // Common breached password
       });
 
@@ -154,7 +168,7 @@ describe('Authentication Module - Comprehensive Tests', () => {
     });
 
     it('should track password history on registration', async () => {
-      const userData = generateTestUser();
+      const userData = generateTestRegisterPayload();
 
       await request.post('/api/v1/auth/register').send(userData).expect(201);
 
@@ -164,20 +178,29 @@ describe('Authentication Module - Comprehensive Tests', () => {
       expect(user.lastPasswordChange).toBeDefined();
     });
 
-    it('should set default role to B2B_CUSTOMER if not specified', async () => {
-      const userData = generateTestUser();
-      delete userData.role;
+    it('should always assign VENDOR role for public registration', async () => {
+      const userData = generateTestRegisterPayload();
 
       const response = await request
         .post('/api/v1/auth/register')
         .send(userData)
         .expect(201);
 
-      expect(response.body.data.user.role).toBe(ROLES.B2B_CUSTOMER);
+      expect(response.body.data.user.role).toBe(ROLES.VENDOR);
+    });
+
+    it('should store vendor address on registration', async () => {
+      const userData = generateTestRegisterPayload();
+
+      await request.post('/api/v1/auth/register').send(userData).expect(201);
+
+      const user = await User.findOne({ email: userData.email });
+      expect(user.vendorAddress.line1).toBe(userData.address.line1);
+      expect(user.businessName).toBe(userData.businessName);
     });
 
     it('should set initial user status to PENDING', async () => {
-      const userData = generateTestUser();
+      const userData = generateTestRegisterPayload();
 
       const response = await request
         .post('/api/v1/auth/register')
@@ -188,7 +211,7 @@ describe('Authentication Module - Comprehensive Tests', () => {
     });
 
     it('should return CSRF token on registration', async () => {
-      const userData = generateTestUser();
+      const userData = generateTestRegisterPayload();
 
       const response = await request
         .post('/api/v1/auth/register')
@@ -214,7 +237,8 @@ describe('Authentication Module - Comprehensive Tests', () => {
     });
 
     it('should sanitize user input to prevent XSS', async () => {
-      const userData = generateTestUser({
+      const userData = generateTestRegisterPayload({
+        ownerName: '<script>alert("XSS")</script>',
         name: '<script>alert("XSS")</script>',
       });
 
@@ -227,7 +251,7 @@ describe('Authentication Module - Comprehensive Tests', () => {
     });
 
     it('does not issue session tokens on registration (pending approval)', async () => {
-      const userData = generateTestUser();
+      const userData = generateTestRegisterPayload();
 
       const response = await request
         .post('/api/v1/auth/register')
@@ -308,9 +332,25 @@ describe('Authentication Module - Comprehensive Tests', () => {
           identifier: 'nonexistent@test.com',
           password: testPassword,
         })
-        .expect(404);
+        .expect(401);
 
       expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('Invalid credentials');
+    });
+
+    it('should reject pending user with wrong password using invalid credentials', async () => {
+      testUser.status = USER_STATUS.PENDING;
+      await testUser.save();
+
+      const response = await request
+        .post('/api/v1/auth/login')
+        .send({
+          identifier: testUser.email,
+          password: 'WrongPassword@123',
+        })
+        .expect(401);
+
+      expect(response.body.message).toContain('Invalid credentials');
     });
 
     it('should reject login for inactive user', async () => {
@@ -340,7 +380,7 @@ describe('Authentication Module - Comprehensive Tests', () => {
         })
         .expect(403);
 
-      expect(response.body.message).toMatch(/awaiting Super Admin approval/i);
+      expect(response.body.message).toMatch(/awaiting administrator approval/i);
     });
 
     // Account lockout behavior depends on fraud detection and rate limiters which are environment-specific.
@@ -752,7 +792,8 @@ describe('Authentication Module - Comprehensive Tests', () => {
     // Concurrent registration and extreme input tests removed to reduce flakiness and low-value coverage.
 
     it('should handle Unicode characters in names', async () => {
-      const userData = generateTestUser({
+      const userData = generateTestRegisterPayload({
+        ownerName: '测试用户 テストユーザー',
         name: '测试用户 テストユーザー',
       });
 

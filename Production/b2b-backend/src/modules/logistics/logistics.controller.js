@@ -25,15 +25,7 @@ export const getMyAssignments = asyncHandler(async (req, res) => {
 
 export const updateDeliveryStatus = asyncHandler(async (req, res) => {
   const { status } = req.body;
-  const shipment = await service.updateStatus(req.params.id, status);
-
-  // Emit real-time update
-  if (global.io) {
-    global.io.emit('delivery:statusUpdated', shipment);
-  } else if (req.app.get('io')) {
-    req.app.get('io').emit('delivery:statusUpdated', shipment);
-  }
-
+  const shipment = await service.updateStatus(req.params.id, status, req.user._id);
   successResponse(res, shipment, 'Status updated');
 });
 
@@ -65,6 +57,11 @@ export const startDelivery = asyncHandler(async (req, res) => {
 export const markAsDelivered = asyncHandler(async (req, res) => {
   const shipment = await service.updateStatus(req.params.id, 'DELIVERED', req.user._id);
   successResponse(res, shipment, 'Order delivered successfully');
+});
+
+export const collectCodPayment = asyncHandler(async (req, res) => {
+  const shipment = await service.collectCodPayment(req.params.id, req.user._id, req.body);
+  successResponse(res, shipment, 'COD payment collected successfully');
 });
 
 export const completeDelivery = asyncHandler(async (req, res) => {

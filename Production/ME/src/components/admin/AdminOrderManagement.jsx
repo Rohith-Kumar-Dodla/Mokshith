@@ -6,23 +6,33 @@ import SearchBar from './SearchBar';
 import FilterDropdown from './FilterDropdown';
 import Modal from './Modal';
 import orderService from '../../services/orderService';
-import { computeOrderStats, extractAdminOrdersResponse } from '../../utils/orderMapper';
+import { computeOrderStats, extractAdminOrdersResponse, mapAdminOrderView } from '../../utils/orderMapper';
 import useDebouncedValue from '../../hooks/useDebouncedValue';
+import useOrderStatusSync from '../../hooks/useOrderStatusSync';
+import { getOrderStatusLabel } from '../../utils/orderStatusSync';
 
 const ADMIN_STATUS_OPTIONS = [
   { value: 'all', label: 'All Status' },
+  { value: 'ASSIGNED', label: 'Assigned' },
+  { value: 'ACCEPTED', label: 'Accepted' },
+  { value: 'OUT_FOR_DELIVERY', label: 'Out For Delivery' },
+  { value: 'DELIVERED', label: 'Delivered' },
   { value: 'COMPLETED', label: 'Completed' },
-  { value: 'COD', label: 'COD' },
+  { value: 'DELIVERY_FAILED', label: 'Delivery Failed' },
 ];
 
 const NEXT_STATUS_MAP = {
   PENDING: ['CONFIRMED', 'CANCELLED'],
   CONFIRMED: ['PROCESSING', 'PACKED', 'CANCELLED'],
-  PROCESSING: ['PACKED', 'CANCELLED'],
-  PACKED: ['READY_TO_DISPATCH', 'CANCELLED'],
-  READY_TO_DISPATCH: ['SHIPPED', 'CANCELLED'],
-  SHIPPED: ['OUT_FOR_DELIVERY', 'CANCELLED'],
-  OUT_FOR_DELIVERY: ['DELIVERED', 'CANCELLED'],
+  PROCESSING: ['PACKED', 'ASSIGNED', 'CANCELLED'],
+  PACKED: ['READY_TO_DISPATCH', 'ASSIGNED', 'CANCELLED'],
+  READY_TO_DISPATCH: ['SHIPPED', 'ASSIGNED', 'CANCELLED'],
+  SHIPPED: ['OUT_FOR_DELIVERY', 'ASSIGNED', 'CANCELLED'],
+  ASSIGNED: ['ACCEPTED', 'CANCELLED'],
+  ACCEPTED: ['OUT_FOR_PICKUP', 'PICKED_UP', 'CANCELLED'],
+  OUT_FOR_PICKUP: ['PICKED_UP', 'CANCELLED'],
+  PICKED_UP: ['OUT_FOR_DELIVERY', 'CANCELLED'],
+  OUT_FOR_DELIVERY: ['DELIVERED', 'DELIVERY_FAILED', 'CANCELLED'],
   DELIVERED: ['COMPLETED', 'RETURNED'],
   COMPLETED: ['RETURNED'],
   RETURNED: ['REFUNDED'],
@@ -80,6 +90,38 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
   useEffect(() => {
     loadOrders({ silent: hasLoadedOnceRef.current });
   }, [loadOrders]);
+
+  useOrderStatusSync((event) => {
+    setOrders((current) =>
+      current.map((order) => {
+        const orderId = String(order.raw?._id || order.id);
+        if (orderId !== String(event.orderId)) return order;
+
+        const updatedRaw = {
+          ...(order.raw || {}),
+          status: event.status,
+          statusHistory: event.statusHistory || order.raw?.statusHistory,
+          logisticsStatus: event.logisticsStatus || order.raw?.logisticsStatus,
+          updatedAt: event.updatedAt || order.raw?.updatedAt,
+        };
+        return mapAdminOrderView(updatedRaw);
+      })
+    );
+
+    setSelectedOrder((current) => {
+      if (!current) return current;
+      const currentId = String(current.raw?._id || current.id);
+      if (currentId !== String(event.orderId)) return current;
+      const updatedRaw = {
+        ...(current.raw || {}),
+        status: event.status,
+        statusHistory: event.statusHistory || current.raw?.statusHistory,
+        logisticsStatus: event.logisticsStatus || current.raw?.logisticsStatus,
+        updatedAt: event.updatedAt || current.raw?.updatedAt,
+      };
+      return mapAdminOrderView(updatedRaw);
+    });
+  });
 
   const stats = useMemo(() => computeOrderStats(orders), [orders]);
 
@@ -178,7 +220,14 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
                   <td className="px-3 sm:px-6 py-3 text-xs sm:text-sm font-medium">{order.id}</td>
                   <td className="px-3 sm:px-6 py-3 text-xs sm:text-sm">{order.vendor}</td>
                   <td className="px-3 sm:px-6 py-3 text-xs sm:text-sm font-semibold">₹{order.amount.toLocaleString()}</td>
-                  <td className="px-3 sm:px-6 py-3"><StatusBadge status={order.status} /></td>
+                  <td className="px-3 sm:px-6 py-3">
+                    <StatusBadge status={order.status} />
+                    {order.raw?.logisticsStatus && (
+                      <p className="text-[10px] text-gray-500 mt-1">
+                        Delivery: {getOrderStatusLabel(order.raw.logisticsStatus)}
+                      </p>
+                    )}
+                  </td>
                   <td className="px-3 sm:px-6 py-3 text-xs sm:text-sm">{order.date}</td>
                   <td className="px-3 sm:px-6 py-3">
                     <button type="button" onClick={() => handleViewOrder(order)} className="inline-flex items-center gap-1 px-3 py-2 min-h-[44px] bg-blue-600 text-white rounded-lg text-xs sm:text-sm">
@@ -211,6 +260,55 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
                 <p className="text-lg font-bold">{selectedOrder.id}</p>
               </div>
               <StatusBadge status={selectedOrder.status} />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <div className="rounded-lg border border-gray-200 p-3">
+                <p className="text-xs text-gray-500">Payment Method</p>
+                <p className="font-medium text-gray-900">{selectedOrder.paymentMethod || '—'}</p>
+              </div>
+              <div className="rounded-lg border border-gray-200 p-3">
+                <p className="text-xs text-gray-500">Payment Status</p>
+                <p className="font-medium text-gray-900 capitalize">{selectedOrder.paymentStatus || '—'}</p>
+              </div>
+              {selectedOrder.paymentMethod === 'COD' && (
+                <>
+                  <div className="rounded-lg border border-gray-200 p-3">
+                    <p className="text-xs text-gray-500">Collection Method</p>
+                    <p className="font-medium text-gray-900">
+                      {selectedOrder.collectionMode === 'QR'
+                        ? 'QR Paid / Collected via QR'
+                        : selectedOrder.collectionMode === 'CASH'
+                          ? 'Cash'
+                          : 'Pending'}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 p-3">
+                    <p className="text-xs text-gray-500">Collected By</p>
+                    <p className="font-medium text-gray-900">{selectedOrder.paymentCollectedBy || '—'}</p>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 p-3 sm:col-span-2">
+                    <p className="text-xs text-gray-500">Collection Time</p>
+                    <p className="font-medium text-gray-900">
+                      {selectedOrder.paymentCollectedAt
+                        ? new Date(selectedOrder.paymentCollectedAt).toLocaleString('en-IN')
+                        : '—'}
+                    </p>
+                  </div>
+                  {selectedOrder.cashCollectionProof && (
+                    <div className="rounded-lg border border-gray-200 p-3 sm:col-span-2">
+                      <p className="text-xs text-gray-500 mb-2">Cash Collection Proof</p>
+                      <a href={selectedOrder.cashCollectionProof} target="_blank" rel="noreferrer">
+                        <img
+                          src={selectedOrder.cashCollectionProof}
+                          alt="Cash collection proof"
+                          className="w-40 h-40 object-cover rounded-lg border border-gray-200"
+                        />
+                      </a>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
             {(selectedOrder.raw?.statusHistory || []).length > 0 && (

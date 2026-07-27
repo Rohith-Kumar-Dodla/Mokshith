@@ -16,6 +16,10 @@ const OrderCard = ({
       case 'delivered':
         return 'bg-green-100 text-green-800';
       case 'dispatched':
+      case 'assigned':
+      case 'accepted':
+      case 'out_for_pickup':
+      case 'picked_up':
         return 'bg-blue-100 text-blue-800';
       case 'processing':
         return 'bg-yellow-100 text-yellow-800';
@@ -35,6 +39,10 @@ const OrderCard = ({
       case 'delivered':
         return <FiPackage className="w-4 h-4" />;
       case 'dispatched':
+      case 'assigned':
+      case 'accepted':
+      case 'out_for_pickup':
+      case 'picked_up':
         return <FiTruck className="w-4 h-4" />;
       case 'processing':
         return <FiClock className="w-4 h-4" />;

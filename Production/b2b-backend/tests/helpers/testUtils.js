@@ -161,6 +161,25 @@ export const generateTestUser = (overrides = {}) => ({
   ...overrides,
 });
 
+export const generateTestRegisterPayload = (overrides = {}) => ({
+  name: 'Test Owner',
+  businessName: 'Test Business Pvt Ltd',
+  ownerName: 'Test Owner',
+  email: `vendor${Date.now()}@example.com`,
+  mobile: `98765${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`,
+  password: 'Test@12345678',
+  address: {
+    line1: '123 Test Street',
+    area: 'Test Area',
+    city: 'Test City',
+    district: 'Test District',
+    state: 'Test State',
+    country: 'India',
+    pincode: '500001',
+  },
+  ...overrides,
+});
+
 // Generate test product data
 // Counter for unique SKU generation
 let productCounter = 0;
@@ -326,6 +345,7 @@ export default {
   teardownRedis,
   mockExternalServices,
   generateTestUser,
+  generateTestRegisterPayload,
   generateTestProduct,
   generateTestOrder,
   generateTestAddress,

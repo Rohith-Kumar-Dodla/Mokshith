@@ -4,12 +4,14 @@ import AppError from '../../errors/AppError.js';
 import { optimizeRoute } from './routeOptimization.js';
 import Order from '../order/order.model.js';
 import { DELIVERY_STATUS } from '../../constants/deliveryStatus.js';
-import { ORDER_STATUS } from '../../constants/orderStatus.js';
 import { sendNotification } from '../notification/notification.service.js';
 import { logger } from '../../config/logger.js';
+import { syncOrderStatusFromLogistics } from '../order/orderStatusSync.js';
+import { PAYMENT_STATUS } from '../../constants/paymentStatus.js';
 import mongoose from 'mongoose';
 
 const LOGISTICS_TRANSITIONS = {
+  [DELIVERY_STATUS.PENDING]: [DELIVERY_STATUS.ASSIGNED],
   [DELIVERY_STATUS.ASSIGNED]: [DELIVERY_STATUS.ACCEPTED],
   [DELIVERY_STATUS.ACCEPTED]: [DELIVERY_STATUS.PICKED],
   [DELIVERY_STATUS.PICKED]: [DELIVERY_STATUS.OUT_FOR_DELIVERY],
@@ -17,26 +19,25 @@ const LOGISTICS_TRANSITIONS = {
   [DELIVERY_STATUS.DELIVERED]: [DELIVERY_STATUS.COMPLETED],
 };
 
-const ORDER_STATUS_FROM_LOGISTICS = {
-  [DELIVERY_STATUS.ASSIGNED]: ORDER_STATUS.PROCESSING,
-  [DELIVERY_STATUS.ACCEPTED]: ORDER_STATUS.PROCESSING,
-  [DELIVERY_STATUS.PICKED]: ORDER_STATUS.PACKED,
-  [DELIVERY_STATUS.OUT_FOR_DELIVERY]: ORDER_STATUS.OUT_FOR_DELIVERY,
-  [DELIVERY_STATUS.DELIVERED]: ORDER_STATUS.DELIVERED,
-  [DELIVERY_STATUS.COMPLETED]: ORDER_STATUS.COMPLETED,
-};
+function isCodOrder(order) {
+  return String(order?.paymentMethod || '').toUpperCase() === 'COD';
+}
 
-const ORDER_STATUS_RANK = {
-  [ORDER_STATUS.CREATED]: 0,
-  [ORDER_STATUS.PENDING_PAYMENT]: 0,
-  [ORDER_STATUS.PENDING]: 0,
-  [ORDER_STATUS.CONFIRMED]: 1,
-  [ORDER_STATUS.PROCESSING]: 2,
-  [ORDER_STATUS.PACKED]: 3,
-  [ORDER_STATUS.OUT_FOR_DELIVERY]: 4,
-  [ORDER_STATUS.DELIVERED]: 5,
-  [ORDER_STATUS.COMPLETED]: 6,
-};
+async function assertCodPaymentCollected(order, nextStatus) {
+  if (!isCodOrder(order)) return;
+
+  const needsPayment =
+    nextStatus === DELIVERY_STATUS.DELIVERED || nextStatus === DELIVERY_STATUS.COMPLETED;
+
+  if (!needsPayment) return;
+
+  if (order.paymentStatus !== PAYMENT_STATUS.PAID) {
+    throw new AppError(
+      'COD payment must be collected before marking this order as delivered.',
+      400
+    );
+  }
+}
 
 const DELIVERY_NOTIFICATIONS = {
   [DELIVERY_STATUS.ASSIGNED]: {
@@ -77,39 +78,6 @@ function validateLogisticsTransition(currentStatus, nextStatus) {
 
 function resolveOrderId(orderRef) {
   return orderRef?._id || orderRef;
-}
-
-function emitDeliveryStatusUpdate(shipment, orderStatus) {
-  if (!global.io) return;
-
-  const orderId = resolveOrderId(shipment.orderId);
-  global.io.emit('delivery:statusUpdated', {
-    shipmentId: shipment._id,
-    orderId,
-    logisticsStatus: shipment.status,
-    orderStatus,
-    deliveryPartnerId: shipment.deliveryPartnerId?._id || shipment.deliveryPartnerId,
-    updatedAt: shipment.updatedAt,
-  });
-}
-
-async function syncOrderStatusFromLogistics(orderId, logisticsStatus) {
-  const nextOrderStatus = ORDER_STATUS_FROM_LOGISTICS[logisticsStatus];
-  if (!nextOrderStatus) return null;
-
-  const order = await Order.findById(orderId);
-  if (!order) return null;
-
-  const currentRank = ORDER_STATUS_RANK[order.status] ?? 0;
-  const nextRank = ORDER_STATUS_RANK[nextOrderStatus] ?? 0;
-
-  if (nextRank > currentRank) {
-    order.status = nextOrderStatus;
-    await order.save();
-    return nextOrderStatus;
-  }
-
-  return order.status;
 }
 
 async function notifyDeliveryStakeholders(shipment, logisticsStatus) {
@@ -234,12 +202,21 @@ export const autoAssignDelivery = async (orderId) => {
     });
   }
 
-  // 5. Emit socket event
+  // 5. Link order and sync canonical order status
+  await Order.findByIdAndUpdate(orderId, { shipmentId: shipment._id });
+  await syncOrderStatusFromLogistics(
+    orderId,
+    DELIVERY_STATUS.ASSIGNED,
+    { role: 'SYSTEM' },
+    { shipmentId: shipment._id }
+  );
+
   if (global.io) {
     global.io.emit('delivery:assigned', {
       orderId: order._id,
       deliveryPartnerId: chosenPartner._id,
-      shipmentId: shipment._id
+      shipmentId: shipment._id,
+      logisticsStatus: DELIVERY_STATUS.ASSIGNED,
     });
   }
 
@@ -281,6 +258,11 @@ export const updateStatus = async (id, status, userId, extra = {}) => {
 
   validateLogisticsTransition(shipment.status, status);
 
+  const linkedOrderId = resolveOrderId(shipment.orderId);
+  const orderDoc = await Order.findById(linkedOrderId);
+  if (!orderDoc) throw new AppError('Linked order not found', 404);
+  await assertCodPaymentCollected(orderDoc, status);
+
   const update = { status, ...extra };
   if (status === DELIVERY_STATUS.ACCEPTED && userId) {
     update.deliveryPartnerId = userId;
@@ -295,11 +277,103 @@ export const updateStatus = async (id, status, userId, extra = {}) => {
   const updated = await repo.updateShipment(id, update);
   const populated = await repo.findById(updated._id);
 
-  const orderStatus = await syncOrderStatusFromLogistics(resolveOrderId(populated.orderId), status);
-  emitDeliveryStatusUpdate(populated, orderStatus);
+  const actor = userId
+    ? { _id: userId, role: 'DELIVERY_PARTNER' }
+    : { role: 'SYSTEM' };
+
+  await syncOrderStatusFromLogistics(linkedOrderId, status, actor, {
+    shipmentId: populated._id,
+  });
   await notifyDeliveryStakeholders(populated, status);
 
   return populated;
+};
+
+export const collectCodPayment = async (id, userId, payload = {}) => {
+  const shipment = await repo.findById(id);
+  if (!shipment) throw new AppError('Shipment not found', 404);
+
+  const partnerId = shipment.deliveryPartnerId?._id || shipment.deliveryPartnerId;
+  if (!partnerId || String(partnerId) !== String(userId)) {
+    throw new AppError('You are not assigned to this delivery', 403);
+  }
+
+  if (shipment.status !== DELIVERY_STATUS.OUT_FOR_DELIVERY) {
+    throw new AppError('COD collection is only available when the order is out for delivery', 400);
+  }
+
+  const orderId = resolveOrderId(shipment.orderId);
+  const order = await Order.findById(orderId);
+  if (!order) throw new AppError('Order not found', 404);
+
+  if (!isCodOrder(order)) {
+    throw new AppError('Payment collection applies only to COD orders', 400);
+  }
+
+  if (order.paymentStatus === PAYMENT_STATUS.PAID) {
+    throw new AppError('Payment has already been collected for this order', 400);
+  }
+
+  const collectionMode = String(payload.collectionMode || '').toUpperCase();
+  if (!['QR', 'CASH'].includes(collectionMode)) {
+    throw new AppError('collectionMode must be QR or CASH', 400);
+  }
+
+  if (collectionMode === 'CASH' && !payload.cashCollectionProof) {
+    throw new AppError('Cash collection proof image is required', 400);
+  }
+
+  order.paymentStatus = PAYMENT_STATUS.PAID;
+  order.collectionMode = collectionMode;
+  order.paymentCollectedBy = userId;
+  order.paymentCollectedAt = new Date();
+  order.collectionNotes = payload.notes || '';
+
+  if (collectionMode === 'CASH') {
+    order.cashCollectionProof = payload.cashCollectionProof;
+    order.cashProofUploadedAt = new Date();
+  }
+
+  order.statusHistory = order.statusHistory || [];
+  order.statusHistory.push({
+    status: order.status,
+    changedBy: userId,
+    changedAt: new Date(),
+    note: `COD payment collected via ${collectionMode}`,
+  });
+
+  await order.save();
+
+  if (global.io) {
+    global.io.emit('order:paymentCollected', {
+      orderId: order._id,
+      shipmentId: shipment._id,
+      paymentStatus: order.paymentStatus,
+      collectionMode: order.collectionMode,
+      paymentCollectedAt: order.paymentCollectedAt,
+    });
+    global.io.emit('order:statusUpdated', {
+      orderId: order._id,
+      status: order.status,
+      paymentStatus: order.paymentStatus,
+      collectionMode: order.collectionMode,
+      statusHistory: order.statusHistory,
+    });
+  }
+
+  await notifyDeliveryStakeholders(shipment, 'PAYMENT_COLLECTED').catch(() => {});
+
+  const vendorId = order.userId;
+  if (vendorId) {
+    await sendNotification({
+      userId: vendorId,
+      title: 'COD Payment Collected',
+      message: `Payment for order #${order._id} was collected via ${collectionMode}.`,
+      type: 'PAYMENT',
+    }).catch((err) => logger.warn('COD vendor notification failed', { error: err.message }));
+  }
+
+  return repo.findById(shipment._id);
 };
 
 export const completeDelivery = async (id, userId, { notes, proofImage } = {}) => {
@@ -367,21 +441,13 @@ export const assignDeliveryPartner = async (shipmentId, deliveryPartnerId) => {
   const populated = await repo.findById(updated._id);
   const linkedOrderId = resolveOrderId(populated.orderId);
   await Order.findByIdAndUpdate(linkedOrderId, { shipmentId: populated._id });
-  const orderStatus = await syncOrderStatusFromLogistics(
-    linkedOrderId,
-    DELIVERY_STATUS.ASSIGNED
-  );
 
-  if (global.io) {
-    global.io.emit('delivery:assigned', {
-      orderId: populated.orderId?._id || populated.orderId,
-      deliveryPartnerId,
-      shipmentId: populated._id,
-      logisticsStatus: DELIVERY_STATUS.ASSIGNED,
-      orderStatus,
-    });
-    emitDeliveryStatusUpdate(populated, orderStatus);
-  }
+  await syncOrderStatusFromLogistics(
+    linkedOrderId,
+    DELIVERY_STATUS.ASSIGNED,
+    { role: 'ADMIN' },
+    { shipmentId: populated._id }
+  );
 
   await notifyDeliveryStakeholders(populated, DELIVERY_STATUS.ASSIGNED);
 

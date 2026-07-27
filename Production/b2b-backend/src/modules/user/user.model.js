@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { ROLES } from '../../constants/roles.js';
 import { USER_STATUS } from '../../constants/userStatus.js';
+import { vendorAddressMongooseSchema } from '../../schemas/address.schema.js';
 
 const userSchema = new mongoose.Schema(
   {
@@ -146,13 +147,30 @@ const userSchema = new mongoose.Schema(
     address: String,
     companyName: String,
 
-    // B2B Customer specific fields
+    // B2B Customer / Vendor profile fields
     gstNumber: String,
     businessName: String,
     businessAddress: String,
     ownerName: String,
+    vendorAddress: vendorAddressMongooseSchema,
+    employeeId: String,
+    // Vendor payment settings for COD QR collection
+    upiId: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    qrImage: {
+      type: String,
+      default: '',
+    },
+    qrImagePublicId: {
+      type: String,
+      default: '',
+    },
 
     // Delivery Partner specific fields
+    serviceArea: String,
     vehicleType: {
       type: String,
       enum: ['TWO_WHEELER', 'THREE_WHEELER', 'FOUR_WHEELER', 'HEAVY_VEHICLE'],

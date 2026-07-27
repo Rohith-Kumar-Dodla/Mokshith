@@ -14,7 +14,6 @@ import {
   generateRefreshToken,
   verifyToken,
 } from './auth.token.js';
-import { fetchSetting } from '../settings/settings.service.js';
 import { USER_STATUS } from '../../constants/userStatus.js';
 import { ROLES } from '../../constants/roles.js';
 import { createCreditAccount } from '../credit/credit.service.js';
@@ -31,19 +30,18 @@ import {
   assertDatabaseReady,
   isDatabaseConnectionError,
 } from '../../utils/databaseHealth.js';
-import { isEmailIdentifier } from '../../utils/loginIdentifier.js';
-
-const checkMaintenanceMode = async (user) => {
-  const maintenance = await fetchSetting('maintenanceMode');
-  const maintenanceOld = await fetchSetting('MAINTENANCE_MODE');
-  if ((maintenance?.value === true || maintenanceOld?.value === true) && user?.role !== ROLES.SUPER_ADMIN) {
-    throw new AppError('System under maintenance', 503);
-  }
-};
+import User from '../user/user.model.js';
+import {
+  syncLegacyAddressFromVendorAddress,
+} from '../../utils/vendorAddress.utils.js';
 
 export const register = async (data, req = {}) => {
   const { email, mobile, password } = data;
   const ip = req.ip || 'unknown';
+
+  if (data.role !== undefined) {
+    throw new AppError('Role cannot be set during public registration', 400);
+  }
 
   // Track registration attempts (fraud detection)
   await fraudDetection.trackRegistration(ip, email);
@@ -57,8 +55,16 @@ export const register = async (data, req = {}) => {
     throw new AppError(`${field} already registered`, 400);
   }
 
+  const normalizedGst = data.gstNumber?.trim()?.toUpperCase() || '';
+  if (normalizedGst) {
+    const existingGst = await User.findOne({ gstNumber: normalizedGst, isDeleted: { $ne: true } });
+    if (existingGst) {
+      throw new AppError('GST number already registered', 400);
+    }
+  }
+
   // Validate password against security policy
-  validatePassword(password, { name: data.name, email, mobile });
+  validatePassword(password, { name: data.ownerName || data.name, email, mobile });
 
   // RE-ENABLE BEFORE PRODUCTION: breach check disabled when AUTH_STRICT_MODE=false
   if (isAuthStrictMode()) {
@@ -73,15 +79,24 @@ export const register = async (data, req = {}) => {
   }
 
   const hashedPassword = await hashPassword(password);
+  const vendorAddress = data.address;
+  const legacyAddress = syncLegacyAddressFromVendorAddress(vendorAddress);
 
   const user = await createUser({
-    name: data.name,
+    name: data.ownerName || data.name,
     email,
     mobile,
     phone: mobile,
     password: hashedPassword,
-    role: data.role || ROLES.B2B_CUSTOMER,
+    role: ROLES.VENDOR,
     status: USER_STATUS.PENDING,
+    businessName: data.businessName,
+    ownerName: data.ownerName,
+    companyName: data.businessName,
+    gstNumber: normalizedGst || undefined,
+    vendorAddress,
+    businessAddress: legacyAddress,
+    address: legacyAddress,
     lastPasswordChange: new Date(),
     passwordHistory: [{ hash: hashedPassword, changedAt: new Date() }],
   });
@@ -134,36 +149,31 @@ export const loginWithPassword = async ({ mobile, identifier, password }, req = 
 
   if (!user) {
     await fraudDetection.trackLoginAttempt(loginIdentifier, ip, false);
-    const notFoundMessage = isEmailIdentifier(loginIdentifier)
-      ? 'User not found'
-      : 'User not found';
-    // Standardized error code for frontend mapping
-    throw new AppError(notFoundMessage, 404, 'ACCOUNT_NOT_FOUND');
+    throw new AppError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
   }
 
-  // Check Maintenance Mode
-  await checkMaintenanceMode(user);
-
-  // Check Approval Status
-  if (user.role !== ROLES.SUPER_ADMIN && user.status !== USER_STATUS.ACTIVE) {
-    let message = 'Your account is inactive or suspended. Please contact support.';
-    if (user.status === USER_STATUS.PENDING) {
-      message = 'Your account is awaiting Super Admin approval.';
-    } else if (user.status === USER_STATUS.REJECTED) {
-      message = 'Your registration has been rejected.';
-    }
-    throw new AppError(message, 403);
-  }
-
-  // Verify password
   const isMatch = await comparePassword(password, user.password);
 
   if (!isMatch) {
-    // Track failed login attempt
     await fraudDetection.trackLoginAttempt(loginIdentifier, ip, false);
     logger.warn('Failed login attempt', { identifier: loginIdentifier, ip });
-    // Standardized error code for frontend mapping
     throw new AppError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
+  }
+
+  if (user.role !== ROLES.SUPER_ADMIN && user.status !== USER_STATUS.ACTIVE) {
+    let message = 'Your account is inactive or suspended. Please contact support.';
+    let code = 'ACCOUNT_INACTIVE';
+
+    if (user.status === USER_STATUS.PENDING) {
+      message =
+        'Your account has been registered successfully. Your account is currently awaiting administrator approval. You will be able to log in once your account has been approved.';
+      code = 'ACCOUNT_PENDING_APPROVAL';
+    } else if (user.status === USER_STATUS.REJECTED) {
+      message = 'Your registration has been rejected.';
+      code = 'ACCOUNT_REJECTED';
+    }
+
+    throw new AppError(message, 403, code);
   }
 
   // Track successful login

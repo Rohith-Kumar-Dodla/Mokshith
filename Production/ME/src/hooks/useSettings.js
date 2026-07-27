@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import authService from '../services/authService';
 import settingsService from '../services/settingsService';
+import { mapUserVendorAddress, buildVendorAddressPayload } from '../utils/vendorAddress';
 
 const getErrorMessage = (error, fallback) =>
   error?.response?.data?.message || error?.message || fallback;
@@ -12,15 +13,20 @@ function mapProfileForm(user) {
     email: payload.email || '',
     mobile: payload.mobile || payload.phone || '',
     companyName: payload.companyName || payload.businessName || '',
+    businessName: payload.businessName || payload.companyName || '',
     gstNumber: payload.gstNumber || '',
     address: payload.businessAddress || payload.address || '',
-    businessDetails: '',
     ownerName: payload.ownerName || payload.name || '',
+    vendorAddress: mapUserVendorAddress(payload),
     profileImage: payload.profileImage || '',
+    upiId: payload.upiId || '',
+    qrImage: payload.qrImage || '',
+    qrImagePublicId: payload.qrImagePublicId || '',
     twoFactorEnabled: Boolean(payload.twoFactorEnabled),
     vehicleType: payload.vehicleType || '',
     vehicleNumber: payload.vehicleNumber || '',
     licenseNumber: payload.licenseNumber || '',
+    serviceArea: payload.serviceArea || '',
   };
 }
 
@@ -112,14 +118,18 @@ export function useSettings({ autoLoad = true } = {}) {
         name: formData.name || formData.ownerName,
         email: formData.email,
         mobile: formData.mobile,
-        companyName: formData.companyName,
+        companyName: formData.companyName || formData.businessName,
+        businessName: formData.businessName || formData.companyName,
         gstNumber: formData.gstNumber,
-        businessAddress: formData.address,
-        address: formData.address,
         ownerName: formData.ownerName,
+        vendorAddress: buildVendorAddressPayload(formData.vendorAddress || {}),
+        upiId: formData.upiId || '',
+        qrImage: formData.qrImage || '',
+        qrImagePublicId: formData.qrImagePublicId || '',
         vehicleType: formData.vehicleType || undefined,
         vehicleNumber: formData.vehicleNumber || undefined,
         licenseNumber: formData.licenseNumber || undefined,
+        serviceArea: formData.serviceArea || undefined,
       });
       const updated = mapProfileForm(response?.data ?? response);
       setProfile(updated);

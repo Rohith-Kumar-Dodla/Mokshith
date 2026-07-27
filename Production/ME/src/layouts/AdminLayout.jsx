@@ -13,6 +13,7 @@ import {
   FiMenu,
   FiX,
   FiBell,
+  FiLifeBuoy,
 } from 'react-icons/fi';
 import NotificationDrawer from '../components/admin/NotificationDrawer';
 import PortalSidebar from '../components/common/PortalSidebar';
@@ -44,6 +45,7 @@ const AdminLayout = () => {
     { path: '/admin/delivery-assignment', icon: FiTruck, label: 'Delivery Assignment' },
     { path: '/admin/reports', icon: FiFileText, label: 'Reports' },
     { path: '/admin/analytics', icon: FiBarChart2, label: 'Analytics' },
+    { path: '/admin/support', icon: FiLifeBuoy, label: 'Support' },
     { path: '/admin/settings', icon: FiSettings, label: 'Settings' },
   ];
 
