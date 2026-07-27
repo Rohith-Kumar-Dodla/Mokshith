@@ -8,11 +8,11 @@ import useCheckout from '../../hooks/useCheckout';
 import useCredit from '../../hooks/useCredit';
 import { useBankTransferDetails } from '../../hooks/useBankTransfer';
 import { useAuth } from '../../context/AuthContext';
+import { formatVendorAddressFull, vendorProfileToCheckoutForm } from '../../utils/vendorAddress';
 
 const PAYMENT_METHODS = [
-  { id: 'cod', label: 'Cash On Delivery', icon: FiTruck, description: 'Pay when you receive the order' },
-  // Razorpay (online) only — keep label clear for users
-  { id: 'razorpay', label: 'Razorpay (Online Payment)', icon: FiSmartphone, description: 'Pay securely via Razorpay (Test Mode)' },
+  { id: 'razorpay', label: 'Online Payment', icon: FiSmartphone, description: 'Pay securely via Razorpay (Test Mode)' },
+  { id: 'cod', label: 'Cash on Delivery', icon: FiTruck, description: 'Pay when you receive the order' },
 ];
 
 const GLOBAL_PLACING_KEY = '__b2bCheckoutPlacing';
@@ -46,7 +46,7 @@ const releaseOrderClickMutex = () => {
 
 const Checkout = () => {
   const { user } = useAuth();
-  const [selectedPayment, setSelectedPayment] = useState('cod');
+  const [selectedPayment, setSelectedPayment] = useState('');
   const { loading, error, cartItems, subtotal, discount, tax, grandTotal, loadCart } = useCart();
   const { submitting, error: checkoutError, placeOrder, setError: setCheckoutError } = useCheckout({
     onSuccess: async () => {
@@ -85,22 +85,40 @@ const Checkout = () => {
 
   useEffect(() => {
     if (user) {
+      const profileForm = vendorProfileToCheckoutForm(user);
       setFormData((prev) => ({
         ...prev,
-        businessName: prev.businessName || user.name || '',
-        contactPerson: prev.contactPerson || user.name || '',
-        phone: prev.phone || user.mobile || '',
-        email: prev.email || user.email || '',
+        ...profileForm,
+        businessName: profileForm.businessName || prev.businessName,
+        contactPerson: profileForm.contactPerson || prev.contactPerson,
+        phone: profileForm.phone || prev.phone,
+        email: profileForm.email || prev.email,
+        deliveryAddress: profileForm.deliveryAddress || prev.deliveryAddress,
+        city: profileForm.city || prev.city,
+        state: profileForm.state || prev.state,
+        pincode: profileForm.pincode || prev.pincode,
       }));
     }
   }, [user]);
 
+  const vendorAddressDisplay = user?.vendorAddress
+    ? formatVendorAddressFull(user.vendorAddress)
+    : formData.deliveryAddress
+      ? `${formData.deliveryAddress}, ${formData.city}, ${formData.state} - ${formData.pincode}`
+      : '';
+
+  const hasVendorAddress = Boolean(
+    user?.vendorAddress?.line1 || formData.deliveryAddress?.trim()
+  );
+
   const validateForm = () => {
-    if (!formData.deliveryAddress.trim()) return 'Delivery address is required';
-    if (!formData.city.trim()) return 'City is required';
-    if (!formData.state.trim()) return 'State is required';
-    if (!/^\d{6}$/.test(String(formData.pincode).replace(/\D/g, ''))) return 'Pincode must be 6 digits';
+    if (!hasVendorAddress) {
+      return 'Business address not found. Please update your address in Vendor Settings before placing an order.';
+    }
     if (!formData.phone.trim()) return 'Phone number is required';
+    if (!selectedPayment) {
+      return 'Please select a payment method before placing your order.';
+    }
     return '';
   };
 
@@ -253,83 +271,39 @@ const Checkout = () => {
         <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
             <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Delivery Address</h2>
+            <p className="text-sm text-gray-500 mb-4">
+              Your registered business address will be used for this order. Update it in{' '}
+              <Link to="/vendor/settings" className="text-blue-600 hover:text-blue-700 font-medium">
+                Vendor Settings
+              </Link>
+              .
+            </p>
             <div className="space-y-3 sm:space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Business Name</label>
-                <input
-                  type="text"
-                  value={formData.businessName}
-                  onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
-                  className="w-full px-4 py-2.5 h-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Business Name</p>
+                  <p className="text-sm text-gray-900 mt-1">{formData.businessName || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Contact Person</p>
+                  <p className="text-sm text-gray-900 mt-1">{formData.contactPerson || '—'}</p>
+                </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Address</label>
-                <textarea
-                  value={formData.deliveryAddress}
-                  onChange={(e) => setFormData({ ...formData, deliveryAddress: e.target.value })}
-                  rows={3}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter your complete delivery address"
-                />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                  <input
-                    type="text"
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    className="w-full px-4 py-2.5 h-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
-                  <input
-                    type="text"
-                    value={formData.state}
-                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                    className="w-full px-4 py-2.5 h-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Pincode</label>
-                  <input
-                    type="text"
-                    value={formData.pincode}
-                    onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
-                    className="w-full px-4 py-2.5 h-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Address</p>
+                <p className="text-sm text-gray-900 mt-1 whitespace-pre-wrap">
+                  {vendorAddressDisplay || 'No address on file'}
+                </p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
-                  <input
-                    type="text"
-                    value={formData.contactPerson}
-                    onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
-                    className="w-full px-4 py-2.5 h-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Phone</p>
+                  <p className="text-sm text-gray-900 mt-1">{formData.phone || '—'}</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-4 py-2.5 h-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Email</p>
+                  <p className="text-sm text-gray-900 mt-1">{formData.email || '—'}</p>
                 </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-4 py-2.5 h-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
               </div>
             </div>
           </div>
@@ -346,7 +320,8 @@ const Checkout = () => {
           </div>
 
           <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Payment Method</h2>
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">Payment Method</h2>
+            <p className="text-sm text-gray-500 mb-3 sm:mb-4">Choose Payment Method</p>
 
             {!creditLoading && credit && (
               <div className="mb-4 p-3 sm:p-4 bg-blue-50 border border-blue-100 rounded-lg grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
@@ -487,8 +462,8 @@ const Checkout = () => {
               className="w-full py-2.5 h-10 sm:h-12 px-4 sm:px-6 bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
               {submitting
-                ? (['upi', 'online', 'hybrid'].includes(selectedPayment) ? 'Processing Payment...' : 'Placing Order...')
-                : (['upi', 'online', 'hybrid'].includes(selectedPayment) ? 'Pay & Place Order' : selectedPayment === 'bank_transfer' ? 'Place Order & Submit Payment' : 'Place Order')}
+                ? (['upi', 'online', 'hybrid', 'razorpay'].includes(selectedPayment) ? 'Processing Payment...' : 'Placing Order...')
+                : (['upi', 'online', 'hybrid', 'razorpay'].includes(selectedPayment) ? 'Pay & Place Order' : selectedPayment === 'bank_transfer' ? 'Place Order & Submit Payment' : 'Place Order')}
             </button>
 
             <p className="text-xs text-gray-500 text-center mt-2 sm:mt-3">

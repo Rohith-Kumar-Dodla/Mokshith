@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import orderService from '../services/orderService';
 import { computeOrderStats, mapBackendOrder } from '../utils/orderMapper';
+import { patchMappedOrderFromStatusEvent } from '../utils/orderStatusSync';
+import useOrderStatusSync from './useOrderStatusSync';
 
 function extractOrdersPayload(response) {
   const payload = response?.data ?? response;
@@ -39,6 +41,12 @@ export function useOrders({ autoLoad = true } = {}) {
       loadOrders();
     }
   }, [autoLoad, loadOrders]);
+
+  useOrderStatusSync((event) => {
+    setOrders((current) =>
+      current.map((order) => patchMappedOrderFromStatusEvent(order, event))
+    );
+  });
 
   const stats = useMemo(() => computeOrderStats(orders), [orders]);
 
@@ -86,6 +94,10 @@ export function useOrderDetails(orderId, { autoLoad = true } = {}) {
       loadOrder();
     }
   }, [autoLoad, loadOrder]);
+
+  useOrderStatusSync((event) => {
+    setOrder((current) => patchMappedOrderFromStatusEvent(current, event));
+  });
 
   return {
     loading,

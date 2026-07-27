@@ -16,6 +16,7 @@ import { corsConfig } from './config/cors.js';
 import { securityMiddleware } from './config/security.js';
 import { requestLogger } from './middlewares/requestLogger.middleware.js';
 import { idempotencyMiddleware } from './middlewares/idempotency.middleware.js';
+import { maintenanceMiddleware } from './middlewares/maintenance.middleware.js';
 import { ipBlockMiddleware } from './middlewares/ipBlock.middleware.js';
 import { timeoutMiddleware } from './middlewares/timeout.middleware.js';
 import { correlationMiddleware } from './middlewares/correlation.middleware.js';
@@ -211,6 +212,9 @@ app.use(requestLogger);
 
 // 🔁 Idempotency middleware
 app.use(idempotencyMiddleware);
+
+// 🛠️ Maintenance mode — block write operations globally when enabled
+app.use('/api', maintenanceMiddleware);
 
 
 // 📊 Metrics (after API setup, before not-found)

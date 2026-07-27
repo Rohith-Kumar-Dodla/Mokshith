@@ -61,6 +61,11 @@ const deliveryService = {
     return response.data;
   },
 
+  collectCodPayment: async (shipmentId, payload) => {
+    const response = await api.post(`/logistics/${shipmentId}/collect-payment`, payload);
+    return response.data;
+  },
+
   completeDelivery: async (shipmentId, payload = {}) => {
     const response = await api.post(`/logistics/${shipmentId}/complete`, payload);
     return response.data;

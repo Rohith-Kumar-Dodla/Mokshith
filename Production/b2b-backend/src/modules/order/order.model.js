@@ -72,6 +72,33 @@ const orderSchema = new mongoose.Schema(
       index: true,
     },
 
+    // COD collection metadata (Order is source of truth)
+    collectionMode: {
+      type: String,
+      enum: ['QR', 'CASH'],
+    },
+    paymentCollectedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    paymentCollectedAt: {
+      type: Date,
+      default: null,
+    },
+    cashCollectionProof: {
+      type: String,
+      default: null,
+    },
+    cashProofUploadedAt: {
+      type: Date,
+      default: null,
+    },
+    collectionNotes: {
+      type: String,
+      default: '',
+    },
+
     address: {
       name: { type: String, required: true },
       phone: { type: String, required: true },

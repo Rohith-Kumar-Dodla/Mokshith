@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 import authService from '../services/authService';
 import { mapLoginError } from '../utils/loginErrorMapper';
 import { clearAuthStorage, getCsrfToken, getRefreshToken, persistSession } from '../utils/authStorage';
-import { mapBackendRoleToFrontend, mapFrontendRoleToBackend } from '../utils/roleMap';
+import { mapBackendRoleToFrontend } from '../utils/roleMap';
 
 const AuthContext = createContext(null);
 
@@ -14,11 +14,8 @@ export const useAuth = () => {
   return context;
 };
 
-  // Generic getter preserved for other flows
-  const getErrorMessage = (error, fallback) =>
-    error?.response?.data?.message || error?.message || fallback;
-
-  // Use centralized mapper so login errors are consistent across the app
+const getErrorMessage = (error, fallback) =>
+  error?.response?.data?.message || error?.message || fallback;
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -112,30 +109,6 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, [restoreSession]);
 
-  // Multi-tab synchronization: listen for logout or session replacement events
-  useEffect(() => {
-    const onStorage = (e) => {
-      if (!e.key) return;
-      if (e.key === 'logout') {
-        clearSession();
-      } else if (e.key === 'session_replaced') {
-        // Clear session and inform user
-        clearSession();
-        try {
-          const payload = JSON.parse(localStorage.getItem('session_replaced'));
-          const message = payload?.message || 'Your account was logged in from another device. Please sign in again.';
-          // Use a simple alert to notify (no UI changes requested)
-          window.alert(message);
-        } catch {
-          window.alert('Your account was logged in from another device. Please sign in again.');
-        }
-      }
-    };
-
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
-  }, [clearSession]);
-
   const login = async (mobile, password) => {
     try {
       const response = await authService.login({ mobile, password });
@@ -148,7 +121,6 @@ export const AuthProvider = ({ children }) => {
       const { user: sessionUser, accessToken, refreshToken, csrfToken } = payload;
       return applyUserSession(sessionUser, { accessToken, refreshToken, csrfToken });
     } catch (error) {
-      // Map to one of the two user-friendly messages
       throw new Error(mapLoginError(error));
     }
   };
@@ -166,15 +138,17 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      const backendRole = mapFrontendRoleToBackend(userData.role);
       const mobile = (userData.phone || userData.mobile || '').replace(/\D/g, '');
 
       const response = await authService.register({
-        name: userData.name,
+        name: userData.ownerName || userData.name,
+        businessName: userData.businessName,
+        ownerName: userData.ownerName || userData.name,
         email: userData.email,
         mobile,
         password: userData.password,
-        role: backendRole,
+        gstNumber: userData.gstNumber || undefined,
+        address: userData.address,
       });
 
       const payload = response.data ?? response;
@@ -184,7 +158,7 @@ export const AuthProvider = ({ children }) => {
         success: true,
         user: registeredUser,
         status: registeredUser?.status,
-        role: userData.role,
+        role: 'vendor',
       };
     } catch (error) {
       throw new Error(getErrorMessage(error, 'Registration failed'));
@@ -212,10 +186,7 @@ export const AuthProvider = ({ children }) => {
     } catch {
       // Always clear local session even if API logout fails.
     } finally {
-      // Notify other tabs
-      try {
-        localStorage.setItem('logout', Date.now().toString());
-      } catch {}
+      // Current tab only — never signal or clear other tabs.
       clearSession();
     }
   };

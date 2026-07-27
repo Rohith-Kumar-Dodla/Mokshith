@@ -1,6 +1,8 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { MaintenanceProvider } from './context/MaintenanceContext';
+import MaintenanceBanner from './components/common/MaintenanceBanner';
 import ProtectedRoute from './routes/ProtectedRoute';
 import ErrorBoundary from './components/common/ErrorBoundary';
 
@@ -26,6 +28,8 @@ const UserManagement = lazy(() => import('./pages/SuperAdmin/UserManagement'));
 const SuperAdminOrders = lazy(() => import('./pages/SuperAdmin/Orders'));
 const SuperAdminAnalytics = lazy(() => import('./pages/SuperAdmin/Analytics'));
 const SuperAdminSettings = lazy(() => import('./pages/SuperAdmin/Settings'));
+const SystemSettings = lazy(() => import('./pages/SuperAdmin/SystemSettings'));
+const StaffOnboarding = lazy(() => import('./pages/SuperAdmin/StaffOnboarding'));
 
 const AdminLayout = lazy(() => import('./layouts/AdminLayout'));
 const AdminDashboard = lazy(() => import('./pages/Admin/Dashboard'));
@@ -54,6 +58,8 @@ const VendorInvoices = lazy(() => import('./pages/Vendor/Invoices'));
 const VendorWishlist = lazy(() => import('./pages/Vendor/Wishlist'));
 const VendorProfile = lazy(() => import('./pages/Vendor/Profile'));
 const VendorSettings = lazy(() => import('./pages/Vendor/Settings'));
+const VendorSupport = lazy(() => import('./pages/Vendor/Support'));
+const AdminSupport = lazy(() => import('./pages/Admin/Support'));
 
 const DeliveryLayout = lazy(() => import('./layouts/DeliveryLayout'));
 const DeliveryDashboard = lazy(() => import('./pages/DeliveryPartner/Dashboard'));
@@ -68,8 +74,10 @@ const DeliverySettings = lazy(() => import('./pages/DeliveryPartner/Settings'));
 function App() {
   return (
     <AuthProvider>
+      <MaintenanceProvider>
       <Router>
         <ErrorBoundary>
+          <MaintenanceBanner />
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Home />} />
@@ -86,9 +94,11 @@ function App() {
                 <Route path="vendors" element={<Navigate to="/super-admin/user-management" replace />} />
                 <Route path="delivery-partners" element={<Navigate to="/super-admin/user-management" replace />} />
                 <Route path="user-management" element={<UserManagement />} />
+                <Route path="staff-onboarding" element={<StaffOnboarding />} />
                 <Route path="orders" element={<SuperAdminOrders />} />
                 <Route path="analytics" element={<SuperAdminAnalytics />} />
                 <Route path="settings" element={<SuperAdminSettings />} />
+                <Route path="system-settings" element={<SystemSettings />} />
               </Route>
 
               <Route path="/admin/*" element={<ProtectedRoute requiredRole="admin"><AdminLayout /></ProtectedRoute>}>
@@ -102,6 +112,7 @@ function App() {
                 <Route path="delivery-assignment" element={<DeliveryAssignment />} />
                 <Route path="reports" element={<Reports />} />
                 <Route path="analytics" element={<AdminAnalytics />} />
+                <Route path="support" element={<AdminSupport />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
 
@@ -120,6 +131,7 @@ function App() {
                 <Route path="invoices" element={<VendorInvoices />} />
                 <Route path="invoices/:id" element={<VendorInvoices />} />
                 <Route path="wishlist" element={<VendorWishlist />} />
+                <Route path="support" element={<VendorSupport />} />
                 <Route path="profile" element={<VendorProfile />} />
                 <Route path="settings" element={<VendorSettings />} />
               </Route>
@@ -141,6 +153,7 @@ function App() {
           </Suspense>
         </ErrorBoundary>
       </Router>
+      </MaintenanceProvider>
     </AuthProvider>
   );
 }

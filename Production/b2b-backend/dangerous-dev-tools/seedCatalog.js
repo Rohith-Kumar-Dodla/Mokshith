@@ -4,6 +4,7 @@ import { loadEnv } from '../src/config/loadEnv.js';
 import {
   assertDestructiveOperationAllowed,
   assertExpectedApplicationDatabase,
+  assertNotProduction,
   logDestructiveWarning,
   REQUIRED_DESTRUCTIVE_CONFIRM,
 } from '../src/utils/destructiveGuard.js';
@@ -59,6 +60,7 @@ async function findExistingCloudinaryUrl() {
 }
 
 async function seedCatalog() {
+  assertNotProduction('seedCatalog');
   logDestructiveWarning('Catalog seed (creates categories and products automatically)');
   assertDestructiveOperationAllowed('seedCatalog');
 
@@ -143,10 +145,7 @@ const isDirectExecution = process.argv[1]?.includes('dangerous-dev-tools/seedCat
 if (isDirectExecution) {
   (async () => {
     try {
-      if (process.env.NODE_ENV === 'production') {
-        console.error('Refusing to run destructive script in production');
-        process.exit(1);
-      }
+      assertNotProduction('seedCatalog direct execution');
       if (process.env.DESTRUCTIVE_CONFIRM !== REQUIRED_DESTRUCTIVE_CONFIRM) {
         console.error(`Set DESTRUCTIVE_CONFIRM=${REQUIRED_DESTRUCTIVE_CONFIRM} to enable destructive scripts`);
         process.exit(1);

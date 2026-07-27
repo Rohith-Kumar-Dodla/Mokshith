@@ -1,6 +1,8 @@
 import AppError from '../../errors/AppError.js';
 import * as repo from './user.repository.js';
 import { hashPassword } from '../../utils/hashPassword.js';
+import User from './user.model.js';
+import { syncLegacyAddressFromVendorAddress } from '../../utils/vendorAddress.utils.js';
 
 export const changePassword = async (userId, newPassword) => {
   const user = await repo.findById(userId);
@@ -44,6 +46,10 @@ const ALLOWED_PROFILE_FIELDS = [
   'businessName',
   'businessAddress',
   'ownerName',
+  'vendorAddress',
+  'upiId',
+  'qrImage',
+  'qrImagePublicId',
   'vehicleType',
   'vehicleNumber',
   'licenseNumber',
@@ -65,6 +71,25 @@ export const updateProfile = async (userId, data) => {
     if (data[key] !== undefined) {
       filteredData[key] = data[key];
     }
+  }
+
+  if (filteredData.gstNumber) {
+    const normalizedGst = filteredData.gstNumber.trim().toUpperCase();
+    const existingGst = await User.findOne({
+      gstNumber: normalizedGst,
+      _id: { $ne: userId },
+      isDeleted: { $ne: true },
+    });
+    if (existingGst) {
+      throw new AppError('GST number already registered', 400);
+    }
+    filteredData.gstNumber = normalizedGst;
+  }
+
+  if (filteredData.vendorAddress) {
+    const legacyAddress = syncLegacyAddressFromVendorAddress(filteredData.vendorAddress);
+    filteredData.businessAddress = legacyAddress;
+    filteredData.address = legacyAddress;
   }
 
   const user = await repo.updateUserById(userId, filteredData);

@@ -4,16 +4,23 @@ const STATUS_RANK = {
   PENDING: 0,
   CONFIRMED: 1,
   PROCESSING: 2,
-  PACKED: 2,
-  READY_TO_DISPATCH: 3,
-  SHIPPED: 3,
-  OUT_FOR_DELIVERY: 4,
-  DELIVERED: 5,
-  COMPLETED: 6,
-  RETURNED: 6,
-  REFUNDED: 6,
+  PACKED: 3,
+  READY_TO_DISPATCH: 4,
+  SHIPPED: 5,
+  ASSIGNED: 6,
+  ACCEPTED: 7,
+  OUT_FOR_PICKUP: 8,
+  PICKED_UP: 9,
+  OUT_FOR_DELIVERY: 10,
+  DELIVERED: 11,
+  COMPLETED: 12,
+  RETURNED: 13,
+  REFUNDED: 14,
   CANCELLED: -1,
   FAILED: -1,
+  DELIVERY_FAILED: -1,
+  CUSTOMER_UNAVAILABLE: -1,
+  REJECTED: -1,
 };
 
 export function mapBackendOrderStatus(status) {
@@ -27,6 +34,10 @@ export function mapBackendOrderStatus(status) {
     PACKED: 'packed',
     READY_TO_DISPATCH: 'ready_to_dispatch',
     SHIPPED: 'shipped',
+    ASSIGNED: 'assigned',
+    ACCEPTED: 'accepted',
+    OUT_FOR_PICKUP: 'out_for_pickup',
+    PICKED_UP: 'picked_up',
     OUT_FOR_DELIVERY: 'dispatched',
     DELIVERED: 'delivered',
     COMPLETED: 'completed',
@@ -34,6 +45,9 @@ export function mapBackendOrderStatus(status) {
     REFUNDED: 'refunded',
     CANCELLED: 'cancelled',
     FAILED: 'cancelled',
+    DELIVERY_FAILED: 'delivery_failed',
+    CUSTOMER_UNAVAILABLE: 'customer_unavailable',
+    REJECTED: 'rejected',
   };
   return statusMap[normalized] || 'pending';
 }
@@ -80,10 +94,13 @@ export function buildOrderTimeline(orderStatus, createdAt) {
   const steps = [
     { status: 'Order Placed', rank: 0 },
     { status: 'Order Confirmed', rank: 1 },
-    { status: 'Packed', rank: 2 },
-    { status: 'Dispatched', rank: 3 },
-    { status: 'Delivered', rank: 4 },
-    { status: 'Completed', rank: 5 },
+    { status: 'Packed', rank: 3 },
+    { status: 'Assigned', rank: 6 },
+    { status: 'Accepted', rank: 7 },
+    { status: 'Picked Up', rank: 9 },
+    { status: 'Out For Delivery', rank: 10 },
+    { status: 'Delivered', rank: 11 },
+    { status: 'Completed', rank: 12 },
   ];
 
   if (currentRank < 0) {
@@ -159,6 +176,13 @@ export function mapBackendOrder(order) {
     backendStatus,
     paymentMethod: order.paymentMethod || '—',
     paymentStatus: mapBackendPaymentStatus(order.paymentStatus),
+    collectionMode: order.collectionMode || null,
+    paymentCollectedAt: order.paymentCollectedAt || null,
+    paymentCollectedBy:
+      order.paymentCollector?.name ||
+      order.paymentCollectedBy?.name ||
+      null,
+    cashCollectionProof: order.cashCollectionProof || null,
     orderDate: formatOrderDate(order.createdAt),
     createdAt: order.createdAt ?? null,
     updatedAt: order.updatedAt ?? null,
