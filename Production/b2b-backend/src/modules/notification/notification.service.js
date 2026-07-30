@@ -1,17 +1,29 @@
 import * as repo from './notification.repository.js';
 import { notificationQueue } from '../../queues/notification.queue.js';
 import { fetchSetting } from '../settings/settings.service.js';
+import { logger } from '../../config/logger.js';
 
 export const sendNotification = async (data) => {
   const setting = await fetchSetting('notifications');
   if (setting && setting.value === false) {
     return null;
   }
-  
-  // 🔥 Queue-based (async processing)
-  await notificationQueue.add(data);
 
-  return repo.createNotification(data);
+  // Persist in-app notification first. Queue enqueue is best-effort for
+  // email/socket workers — Redis/BullMQ failures must not drop the row.
+  const created = await repo.createNotification(data);
+
+  try {
+    await notificationQueue.add(data);
+  } catch (err) {
+    logger.warn('Notification queue enqueue failed; in-app notification persisted', {
+      userId: data?.userId,
+      title: data?.title,
+      error: err?.message || String(err),
+    });
+  }
+
+  return created;
 };
 
 export const getNotifications = async (userId) => {

@@ -1,5 +1,7 @@
+import os from 'os';
 import mongoose from 'mongoose';
-import { redisClient } from '../config/redis.js';
+import { Queue } from 'bullmq';
+import { redisClient, getBullConnection } from '../config/redis.js';
 import { logger } from '../config/logger.js';
 import { monitoringService } from '../services/monitoring.service.js';
 import { workers } from '../workers/index.js';
@@ -99,7 +101,7 @@ async function checkDatabase() {
 
     // Determine status based on latency thresholds
     let status = 'healthy';
-    if (responseTime > 500) {
+    if (responseTime > 1500) {
       status = 'unhealthy';
       logger.error('Database latency critical', { responseTime });
     } else if (responseTime > 100) {
@@ -114,7 +116,7 @@ async function checkDatabase() {
       connections: mongoose.connection.db.serverConfig?.s?.pool?.totalConnectionCount || 'N/A',
       collections: stats.collections,
       dataSize: `${(stats.dataSize / 1024 / 1024).toFixed(2)} MB`,
-      thresholds: { healthy: '< 100ms', degraded: '< 500ms', unhealthy: '>= 500ms' }
+      thresholds: { healthy: '< 100ms', degraded: '< 1500ms', unhealthy: '>= 1500ms' }
     };
   } catch (error) {
     logger.error('Database health check failed:', error);
@@ -166,8 +168,12 @@ async function checkRedis() {
       status = 'degraded';
       logger.warn('Redis circuit breaker HALF_OPEN - testing recovery');
     } else if (responseTime > 200) {
-      status = 'unhealthy';
-      logger.error('Redis latency critical', { responseTime });
+      status = isRedisRequired() ? 'unhealthy' : 'degraded';
+      if (status === 'unhealthy') {
+        logger.error('Redis latency critical', { responseTime });
+      } else {
+        logger.warn('Redis latency high (optional Redis)', { responseTime });
+      }
     } else if (responseTime > 50) {
       status = 'degraded';
       logger.warn('Redis latency high', { responseTime });
@@ -222,26 +228,48 @@ function checkMemory() {
   const usage = process.memoryUsage();
   const totalHeapMB = (usage.heapTotal / 1024 / 1024).toFixed(2);
   const usedHeapMB = (usage.heapUsed / 1024 / 1024).toFixed(2);
-  const usagePercent = parseFloat(((usage.heapUsed / usage.heapTotal) * 100).toFixed(2));
+  const heapUsagePercent = parseFloat(((usage.heapUsed / usage.heapTotal) * 100).toFixed(2));
 
-  // Determine status based on memory usage thresholds
+  const totalSystemMem = os.totalmem();
+  const freeSystemMem = os.freemem();
+  const systemUsagePercent = parseFloat(
+    (((totalSystemMem - freeSystemMem) / totalSystemMem) * 100).toFixed(2)
+  );
+  const rssPercent = parseFloat(((usage.rss / totalSystemMem) * 100).toFixed(2));
+
+  // HeapUsed/heapTotal is not a reliable OOM signal (V8 grows the heap under load).
+  // Host-wide memory % is inflated on Windows (file cache). Use process RSS for critical alerts.
   let status = 'healthy';
-  if (usagePercent >= 90) {
+  if (rssPercent >= 85) {
     status = 'unhealthy';
-    logger.error('Memory usage critical', { usagePercent: `${usagePercent}%` });
-  } else if (usagePercent >= 80) {
+    logger.error('Memory usage critical', {
+      heapUsagePercent: `${heapUsagePercent}%`,
+      systemUsagePercent: `${systemUsagePercent}%`,
+      rssPercent: `${rssPercent}%`,
+    });
+  } else if (heapUsagePercent >= 80 || systemUsagePercent >= 90 || rssPercent >= 60) {
     status = 'degraded';
-    logger.warn('Memory usage high', { usagePercent: `${usagePercent}%` });
+    logger.warn('Memory usage high', {
+      heapUsagePercent: `${heapUsagePercent}%`,
+      systemUsagePercent: `${systemUsagePercent}%`,
+      rssPercent: `${rssPercent}%`,
+    });
   }
 
   return {
     status,
     heapTotal: `${totalHeapMB} MB`,
     heapUsed: `${usedHeapMB} MB`,
-    heapUsage: `${usagePercent}%`,
+    heapUsage: `${heapUsagePercent}%`,
+    systemMemoryUsage: `${systemUsagePercent}%`,
     rss: `${(usage.rss / 1024 / 1024).toFixed(2)} MB`,
+    rssPercent: `${rssPercent}%`,
     external: `${(usage.external / 1024 / 1024).toFixed(2)} MB`,
-    thresholds: { healthy: '< 80%', degraded: '< 90%', unhealthy: '>= 90%' }
+    thresholds: {
+      healthy: 'RSS < 60% of host, system < 90%',
+      degraded: 'heap >= 80%, system >= 90%, or RSS >= 60%',
+      unhealthy: 'RSS >= 85% of host memory',
+    },
   };
 }
 
@@ -272,8 +300,8 @@ async function checkQueues() {
       const isPaused = worker.isPaused();
       const isClosed = worker.closing || false;
       
-      // 🔒 PHASE 3: Get queue instance from worker to check depth
-      const queue = worker.queue;
+      // BullMQ v5 Workers do not expose a .queue getter — resolve by worker queue name.
+      const queue = new Queue(worker.name, { connection: getBullConnection() });
       let queueDepth = { waiting: 0, active: 0, delayed: 0, failed: 0 };
       let processingLatency = null;
       
@@ -348,6 +376,8 @@ async function checkQueues() {
           status: 'unhealthy',
           error: 'Failed to fetch queue metrics'
         });
+      } finally {
+        await queue.close();
       }
     }
 

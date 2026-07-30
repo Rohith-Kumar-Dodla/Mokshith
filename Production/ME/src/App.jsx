@@ -26,6 +26,7 @@ const UserManagement = lazy(() => import('./pages/SuperAdmin/UserManagement'));
 const SuperAdminOrders = lazy(() => import('./pages/SuperAdmin/Orders'));
 const SuperAdminAnalytics = lazy(() => import('./pages/SuperAdmin/Analytics'));
 const SuperAdminSettings = lazy(() => import('./pages/SuperAdmin/Settings'));
+const SuperAdminPaymentVerifications = lazy(() => import('./pages/SuperAdmin/PaymentVerifications'));
 
 const AdminLayout = lazy(() => import('./layouts/AdminLayout'));
 const AdminDashboard = lazy(() => import('./pages/Admin/Dashboard'));
@@ -88,6 +89,7 @@ function App() {
                 <Route path="delivery-partners" element={<Navigate to="/super-admin/user-management" replace />} />
                 <Route path="user-management" element={<UserManagement />} />
                 <Route path="orders" element={<SuperAdminOrders />} />
+                <Route path="payment-verifications" element={<SuperAdminPaymentVerifications />} />
                 <Route path="analytics" element={<SuperAdminAnalytics />} />
                 <Route path="settings" element={<SuperAdminSettings />} />
               </Route>

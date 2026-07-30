@@ -17,15 +17,16 @@ import { PAYMENT_STATUS } from '../../constants/paymentStatus.js';
 
 export const createRazorpayOrder = async (amount, userId, orderId = null) => {
   // Razorpay minimum amount is 100 paise (₹1)
-  if (!amount || amount < 1) {
+  const numericAmount = Number(amount);
+  if (!Number.isFinite(numericAmount) || numericAmount < 1) {
     throw new AppError('Minimum payment amount is ₹1', 400);
   }
 
   try {
     const start = Date.now();
-    logger.debug('START createRazorpayOrder', { amount, userId });
+    logger.debug('START createRazorpayOrder', { amount: numericAmount, userId });
     const order = await gateway.createPaymentOrder({ 
-      amount: amount,
+      amount: numericAmount,
       receipt: `rcpt_${userId.toString().slice(-6)}_${Date.now()}` // Shortened to fit Razorpay's 40-char limit
     });
     const duration = Date.now() - start;
@@ -54,7 +55,7 @@ export const createRazorpayOrder = async (amount, userId, orderId = null) => {
       await PaymentModel.create({
         orderId: existingOrder._id,
         userId,
-        amount,
+        amount: numericAmount,
         transactionId: order.gatewayOrderId || order.id || order.order_id,
         status: 'PENDING',
         metadata: {},
@@ -741,11 +742,23 @@ export const handleWebhook = async (rawBody, signature) => {
     const existingPayment = await repo.findByRazorpayPaymentId(razorpay_payment_id);
     if (existingPayment && existingPayment.status === 'SUCCESS') {
       logger.info('Payment already captured', { razorpay_payment_id });
+      try {
+        await redisClient.setex(webhookKey, 86400, Date.now().toString());
+      } catch (err) {
+        logger.error('Failed to mark webhook as processed in Redis', { webhookId, error: err.message });
+      }
       return { status: 'ok', message: 'Already captured' };
     }
 
     let payment = await repo.findByTransactionId(razorpay_order_id);
-    if (!payment) return { status: 'ok' };
+    if (!payment) {
+      try {
+        await redisClient.setex(webhookKey, 86400, Date.now().toString());
+      } catch (err) {
+        logger.error('Failed to mark webhook as processed in Redis', { webhookId, error: err.message });
+      }
+      return { status: 'ok' };
+    }
 
     // 🔒 Acquire payment lock to avoid concurrent verify vs webhook updates
     const paymentLockKey = `payment:lock:${payment.orderId}`;
@@ -1081,18 +1094,36 @@ export const createRefund = async (orderId, userId, refundAmount, reason, initia
 };
 
 /**
- * Get refund history for an order
+ * Get refund history for an order (owner or admin only)
  */
-export const getRefundHistory = async (orderId) => {
+export const getRefundHistory = async (orderId, user = null) => {
+  const Refund = (await import('./refund.model.js')).default;
+
+  const order = await Order.findById(orderId);
+  if (!order) {
+    throw new AppError('Order not found', 404);
+  }
+
+  if (user) {
+    const userId = user.id || user._id;
+    const role = user.role || null;
+    const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
+    if (!isAdmin && userId && order.userId.toString() !== userId.toString()) {
+      throw new AppError('Unauthorized to view refund history', 403);
+    }
+  }
+
   const refunds = await Refund.find({ orderId }).sort({ createdAt: -1 }).populate('initiatedBy', 'name email');
 
   return refunds;
 };
 
 /**
- * Get refund by ID
+ * Get refund by ID (owner or admin only)
  */
-export const getRefundById = async (refundId) => {
+export const getRefundById = async (refundId, user = null) => {
+  const Refund = (await import('./refund.model.js')).default;
+
   const refund = await Refund.findById(refundId)
     .populate('orderId')
     .populate('paymentId')
@@ -1100,6 +1131,17 @@ export const getRefundById = async (refundId) => {
 
   if (!refund) {
     throw new AppError('Refund not found', 404);
+  }
+
+  if (user) {
+    const userId = user.id || user._id;
+    const role = user.role || null;
+    const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
+    const order = refund.orderId;
+    const orderUserId = order?.userId?.toString?.() || order?.userId;
+    if (!isAdmin && userId && orderUserId && orderUserId.toString() !== userId.toString()) {
+      throw new AppError('Unauthorized to view this refund', 403);
+    }
   }
 
   return refund;

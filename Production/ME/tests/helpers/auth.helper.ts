@@ -33,13 +33,14 @@ export async function uiLogout(page: Page) {
       throw new Error('Logout confirmation failed');
     }
 
-    await confirmButton.click();
-
-    // Wait for logout API request triggered by UI
-    const resp = await page.waitForResponse(
+    // Register response waiter before click to avoid missing a fast logout response.
+    const respPromise = page.waitForResponse(
       (res) => res.url().includes('/auth/logout') && res.request().method() === 'POST',
       { timeout: 10000 }
-    ).catch(() => null);
+    );
+    await confirmButton.click();
+
+    const resp = await respPromise.catch(() => null);
     if (!resp) throw new Error('Logout API not called');
     if (resp.status() !== 200) {
       const body = await resp.text().catch(() => '');

@@ -50,6 +50,7 @@ export type ProductPayload = {
   stock?: number;
   categoryId: string;
   moq?: number;
+  minOrderQty?: number;
   isActive?: boolean;
   vendorId?: string;
   bulkPricing?: Array<{ minQuantity: number; price: number }>;

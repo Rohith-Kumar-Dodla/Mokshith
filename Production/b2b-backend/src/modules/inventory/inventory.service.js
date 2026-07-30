@@ -160,16 +160,12 @@ export const getLowStockItems = async () => {
 };
 
 export const getInventoryStats = async () => {
-  const stats = await repo.getStats();
-  return {
-    ...stats,
-    productCount: stats.uniqueProducts.length
-  };
+  return repo.getStats();
 };
 
-// 📦 Get All Inventory
-export const getInventory = async () => {
-  return repo.findAll();
+// 📦 Get Inventory (bounded, newest-first — see repository.findAll)
+export const getInventory = async (options = {}) => {
+  return repo.findAll(options);
 };
 
 // 🔄 Update Stock
