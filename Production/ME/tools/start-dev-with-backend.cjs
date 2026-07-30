@@ -15,9 +15,23 @@ function spawnProcess(cmd, args, opts) {
   return p;
 }
 
+// Prefer local Redis for Playwright QA so Upstash quota exhaustion cannot block certification.
+// dotenv loads .env.qa with override:false — pre-setting REDIS_URL keeps the local target.
+const backendEnv = Object.assign({}, process.env, {
+  REDIS_URL: process.env.PLAYWRIGHT_REDIS_URL || 'redis://127.0.0.1:6379',
+  REDIS_HOST: process.env.REDIS_HOST || '127.0.0.1',
+  REDIS_PORT: process.env.REDIS_PORT || '6379',
+  ENABLE_QUEUE: process.env.ENABLE_QUEUE || 'false',
+  ENABLE_WORKERS: process.env.ENABLE_WORKERS || 'false',
+  // QA Playwright: .env.qa leaves AUTH_STRICT_MODE unset → defaults to true and
+  // fraud login caps (5/15m) break late UI logins in long locked suites.
+  AUTH_STRICT_MODE: process.env.AUTH_STRICT_MODE || 'false',
+});
+delete backendEnv.REDIS_PASSWORD;
+
 // Start backend against QA DB so db:seed:qa and Playwright share the same dataset.
-console.log('Starting backend (QA) in', backendDir);
-spawnProcess('npm', ['run', 'dev:qa'], { cwd: backendDir, env: process.env });
+console.log('Starting backend (QA) in', backendDir, 'with local Redis for Playwright');
+spawnProcess('npm', ['run', 'dev:qa'], { cwd: backendDir, env: backendEnv });
 
 // Start frontend with VITE_API_BASE_URL ensured
 const env = Object.assign({}, process.env);
@@ -46,10 +60,14 @@ function checkBackend(cb) {
   req.end();
 }
 
-function waitForBackend(retries = 60) {
+function waitForBackend(retries = 120) {
+  // Never process.exit here: Playwright gates on the frontend URL, and exiting
+  // the starter would kill orphaned readiness while children may still be booting.
   if (retries <= 0) {
-    console.error('Backend did not become ready in time');
-    process.exit(1);
+    console.warn(
+      'Backend health not ready after wait window; keeping starter alive for late boot'
+    );
+    return;
   }
   checkBackend((err, status) => {
     if (!err && status >= 200 && status < 500) {
@@ -62,7 +80,7 @@ function waitForBackend(retries = 60) {
             shell: true,
             cwd: backendDir,
             stdio: 'inherit',
-            env: process.env,
+            env: backendEnv,
           });
           seed.on('close', (code) => {
             if (code !== 0) {
@@ -77,6 +95,11 @@ function waitForBackend(retries = 60) {
       }
       // keep process alive — both child processes are attached; just wait
     } else {
+      if (retries % 10 === 0) {
+        console.log(
+          `Waiting for backend health... remaining=${retries} err=${err ? err.message : 'none'} status=${status || 'n/a'}`
+        );
+      }
       setTimeout(() => waitForBackend(retries - 1), 1000);
     }
   });

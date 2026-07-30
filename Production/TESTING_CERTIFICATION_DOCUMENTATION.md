@@ -181,7 +181,7 @@ Business modules discovered from **FRONTEND_DOCUMENTATION.md** (§8, 16 feature 
 | Support | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 |
 | Analytics & Reports | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 |
 | Audit | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 |
-| Admin Portal | 🔴 | 🟡 | 🟡 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 |
+| Admin Portal | ✅ | ✅ | ✅ | ✅ | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 |
 | Super Admin Portal | 🔴 | 🔴 | 🟡 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 |
 | Settings & Platform Config | 🔴 | 🔴 | 🔴 | 🔴 | 🟡 | 🔴 | 🔴 | 🔴 | 🔴 |
 | Uploads & Media | 🟡 | 🟡 | 🔴 | 🟡 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 |
@@ -395,11 +395,63 @@ Business modules discovered from **FRONTEND_DOCUMENTATION.md** (§8, 16 feature 
 
 | Field | Value |
 |-------|-------|
-| **Current module** | **Admin Portal** |
-| **Current phase** | **Smoke Certification** (next — Notifications 🏆 FULLY CERTIFIED) |
-| **Phase status** | Notifications Smoke · Functional · AuthZ · Validation all ✅ LOCKED |
-| **Previous module** | 🏆 **Notifications — FULLY ENTERPRISE CERTIFIED** |
-| **Next suite** | Admin Smoke — begin only after this handoff |
+| **Current module** | **Super Admin Portal** |
+| **Current phase** | **Smoke Certification** (next — Admin FULLY CERTIFIED) |
+| **Phase status** | 🏆 Admin Smoke · Functional · Authorization · Validation ✅ LOCKED |
+| **Previous module** | 🏆 **Admin Portal — FULLY ENTERPRISE CERTIFIED** |
+| **Next suite** | Super Admin Smoke — begin only after Admin full certification (achieved) |
+
+### Admin Smoke — ✅ LOCKED (2026-07-30)
+
+| Field | Detail |
+|-------|--------|
+| **Config** | `playwright.admin.smoke.config.ts` |
+| **Command** | `npm run test:admin-smoke` |
+| **Count** | **29/29 passed** (`AS-ADM-001`–`029`), 0 skipped, 0 failed |
+| **Flake gate** | ✅ **Three consecutive** full greens (~2.2m / ~2.0m / ~2.0m) |
+| **Coverage** | Guest/vendor/delivery/super-admin route protection · dashboard + `/admin/stats` metrics · 10 sidebar links · Products/Categories/Inventory/Vendors/Orders/Delivery Assignment/Reports/Analytics/Settings · restricted payment-verifications stub · notification bell/drawer · `/admin/stats` + `/admin/users` API · refresh persistence · UI login · logout |
+| **Production truths** | `ProtectedRoute requiredRole="admin"` · Payment Verifications not in sidebar · no financial `/analytics/dashboard` on Admin · `/admin` module = stats/users/approvals only (domain APIs separate) |
+| **Discovery RCA** | RC-1 session invalidation (UI login mid-suite) → reorder + `refreshAdminApiSession` · RC-2 Settings strict-mode → `exact: true` · RC-3 role redirect hydration → 15s URL wait + role poll · RC-4 deep-link auth flake → `establishAdminUiSession` dashboard gate |
+| **Regression gates** | Notifications / Logistics / Payments / Inventory suites unchanged (locked) |
+
+### Admin Functional — ✅ LOCKED (2026-07-30)
+
+| Field | Detail |
+|-------|--------|
+| **Config** | `playwright.admin.functional.config.ts` |
+| **Command** | `npm run test:admin-functional` |
+| **Count** | **45/45 passed** (`AF-ADM-001`–`045`), 0 skipped, 0 failed |
+| **Flake gate** | ✅ **Three consecutive** full greens (~3.7m / ~3.7m / ~3.8m) |
+| **Coverage** | Dashboard quick actions · Products CRUD/search/filter/HTML-required · Categories CRUD · Vendors search/filter/approve/reject/suspend/profile · Orders search/status/refresh/pagination/Manage · Inventory stats/search/stock/validation · Delivery tabs/assign/reassign/refresh · Reports CSV + PDF error · Analytics delivery Completion Rate · Settings profile/preferences/account UI · Notification Mark all · refresh persistence · `/admin/stats` |
+| **Production truths** | Empty product name blocked by HTML `required` (not React formError) · Delivery partners are clickable cards (not `<select>`) · Profile submit also saves settings → toast may be `Settings saved successfully` · No Admin financial analytics / payment verification workflows |
+| **Discovery RCA** | RC-1 register password/email policy · RC-2 Recent Activities locator scope · RC-3 HTML5 required vs React error · RC-4 Order ID strict-mode · RC-5 partner card UI · RC-6 profile empty-string Joi + settings toast · RC-7 Mark-all strict-mode |
+| **Smoke regression** | Keep `npm run test:admin-smoke` green |
+
+### Admin Authorization — ✅ LOCKED (2026-07-30)
+
+| Field | Detail |
+|-------|--------|
+| **Config** | `playwright.admin.authorization.config.ts` |
+| **Command** | `npm run test:admin-authorization` |
+| **Count** | **82/82 passed** (`AA-ADM-001`–`082`), 0 skipped, 0 failed |
+| **Flake gate** | ✅ **Three consecutive** full greens (~1.7m / ~1.7m / ~1.6m); discovery also 82/82 (~1.9m) |
+| **Coverage** | Guest `/admin/*` UI · Vendor/Delivery/Super Admin portal redirects · Admin cross-portal blocks · Unauthenticated `/admin` + domain APIs · JWT malformed/null/expired/tampered/missing/ghost/no-sessionId/escalated-claim · Session replace · Inactive vendor token + login · Valid session + cleared tokens · Admin vs Super Admin `/admin` + analytics RBAC · Products/categories/inventory/orders/logistics domain RBAC · CSRF truth (`injectCsrfToken` on `/admin` vs `csrfProtection` on category/product/order writes) · Logout/deep-link/nav visibility · Backend source-truth mounts |
+| **Production truths** | UI `requiredRole="admin"` — Super Admin → `/super-admin/dashboard` · `/admin` API: `authenticate` + `injectCsrfToken` only (no `csrfProtection`); `authorize(ADMIN, SUPER_ADMIN)` · Super Admin API allowed on `/admin`; UI blocked · Inventory stats/update **ADMIN only** (SA 403) · Analytics `/delivery` ADMIN+SA; `/dashboard` SUPER_ADMIN only · Categories/products POST + order status PATCH require CSRF; logistics assign + inventory update + product status do not |
+| **Discovery RCA** | RC-INFRA-1 Upstash Redis quota → Playwright QA forces local `REDIS_URL` via starter/config · RC-INFRA-2 missing Chromium headless shell → `npx playwright install chromium` · RC-INFRA-3 starter `process.exit(1)` on slow backend health → warn + keep alive · **0 assertion failures** (suite matched production on first clean discovery) |
+| **Regression gates** | Keep Admin Smoke/Functional green; do not modify locked AS/AF-ADM |
+
+### Admin Validation — ✅ LOCKED (2026-07-30)
+
+| Field | Detail |
+|-------|--------|
+| **Config** | `playwright.admin.validation.config.ts` |
+| **Command** | `npm run test:admin-validation` |
+| **Count** | **78/78 passed** (`AV-ADM-001`–`078`), 0 skipped, 0 failed |
+| **Flake gate** | ✅ **Three consecutive** full greens (~1.2m / ~1.2m / ~1.2m); discovery green also ~1.3m |
+| **Coverage** | `/admin` user status Joi (no enum) · CastError/404 · approve/reject no-Joi · B2B/DP create Joi · credit no-Joi · Products/categories Joi+CSRF · Order status enum/pattern/transition/note/CSRF · Inventory POST + SUBTRACT insufficient · Logistics assign Joi/CastError/partner 404 · Profile/settings `.min(1)` + enums + change-password · UI HTML5 required (products/categories) · Inventory negative stock client message · PaymentVerifications restriction stub · Source locks + envelopes |
+| **Production truths** | `status: Joi.string().required()` without `.valid()` · approve/reject/credit no Joi · `/admin` writes no `csrfProtection` · Inventory update field is `stock` (not `quantity`) · Empty JSON body on CSRF routes may 403 before parse · Product Name HTML `required` blocks before React formError |
+| **Discovery RCA** | RC-1 empty order body → include 403 CSRF band · RC-2 inventory body used `quantity` → production `stock` · RC-3 UI locators → reuse Admin page objects / `adminGoto` (match AF-ADM) |
+| **Module status** | 🏆 **ADMIN — FULLY ENTERPRISE CERTIFIED** |
 
 ### Logistics Smoke — ✅ LOCKED (2026-07-28)
 
@@ -601,8 +653,12 @@ Smoke · Functional · Authorization · Validation — all LOCKED.
 
 | Phase | Status |
 |-------|--------|
-| All phases | 🔴 |
-| Partial tests | 🟡 admin-create/edit/delete/inventory functional specs |
+| Smoke | ✅ LOCKED — `npm run test:admin-smoke` (AS-ADM-001–029, 3× green) |
+| Functional | ✅ LOCKED — `npm run test:admin-functional` (AF-ADM-001–045, 3× green) |
+| Authorization | ✅ LOCKED — `npm run test:admin-authorization` (AA-ADM-001–082, 3× green) |
+| Validation | ✅ LOCKED — `npm run test:admin-validation` (AV-ADM-001–078, 3× green) |
+| Module status | 🏆 **FULLY ENTERPRISE CERTIFIED** |
+| Partial tests | 🟡 admin-create/edit/delete/inventory functional specs (pre-cert scaffolding) |
 | E2E | 🔴 `admin.spec.ts` — **skipped** |
 
 ### 7.8 Super Admin Portal
@@ -838,25 +894,26 @@ After each phase lock, update:
 
 | Metric | Value |
 |--------|-------|
-| **Overall completion** | **Commerce Core + Logistics + Notifications complete; Admin next** |
+| **Overall completion** | **Commerce Core + Logistics + Notifications + Admin complete** |
 | **Commerce Core** | 🏆 Product · Cart · Wishlist · Orders · Inventory · Payments |
 | **Logistics** | 🏆 **FULLY ENTERPRISE CERTIFIED** |
 | **Notifications** | 🏆 **FULLY ENTERPRISE CERTIFIED** (Smoke · Functional · Authorization · Validation) |
+| **Admin Portal** | 🏆 **FULLY ENTERPRISE CERTIFIED** (Smoke · Functional · Authorization · Validation) |
 | **Backend integration certified** | **Yes** (platform-wide Jest) |
 
 ### Current task
 
-**Admin Smoke Certification** — begin only after Notifications full lock (achieved). Design Admin Smoke from production Admin portal routes/layouts only.
+**Super Admin Smoke Certification** — begin only after Admin full lock (achieved). Design from production Super Admin routes only; do not modify locked suites.
 
 ### Next immediate task
 
-1. Design **Admin Smoke** suite from production Admin portal implementation
-2. Do **not** invent Admin features or modify locked Notifications / Logistics / Payments / Inventory suites
-3. Keep Notifications (4) + Logistics / Payments / Inventory green as regression gates
+1. Design **Super Admin Smoke** suite from production `/super-admin/*` + SA APIs
+2. Do **not** modify locked Admin / Notifications / Logistics / Payments / Inventory suites
+3. Keep regression gates green
 
 ### Locked baselines — do not regress
 
-✅ Backend Integration · ✅ Authentication Smoke · ✅ Product (4 phases) · ✅ Cart · ✅ Wishlist · ✅ Orders · ✅ Inventory (4 phases) · ✅ Payments (4 phases) · ✅ **Logistics (4 phases — FULLY CERTIFIED)** · ✅ **Notifications (4 phases — FULLY CERTIFIED)**
+✅ Backend Integration · ✅ Authentication Smoke · ✅ Product (4 phases) · ✅ Cart · ✅ Wishlist · ✅ Orders · ✅ Inventory (4 phases) · ✅ Payments (4 phases) · ✅ **Logistics (4 phases — FULLY CERTIFIED)** · ✅ **Notifications (4 phases — FULLY CERTIFIED)** · ✅ **Admin (4 phases — FULLY CERTIFIED)**
 
 ---
 
@@ -883,6 +940,10 @@ After each phase lock, update:
 | Notifications functional | `ME/tests/functional/notifications.functional.spec.ts` |
 | Notifications authorization | `ME/tests/functional/notifications.authorization.spec.ts` |
 | Notifications validation | `ME/tests/validation/notifications.validation.spec.ts` |
+| Admin smoke | `ME/tests/smoke/admin.smoke.spec.ts` |
+| Admin functional | `ME/tests/functional/admin.functional.spec.ts` |
+| Admin authorization | `ME/tests/functional/admin.authorization.spec.ts` |
+| Admin validation | `ME/tests/validation/admin.validation.spec.ts` |
 
 ### Backend integration (certified)
 
@@ -919,6 +980,7 @@ From official implementation baselines (must be tracked as defects, not test fai
 
 *End of TESTING_CERTIFICATION_DOCUMENTATION.md — Master Testing & Certification Reference.*
 
-*Continue Admin Smoke Certification (§6) without restarting locked baselines (§4.1).*
+*Continue Super Admin Smoke Certification (§6) without restarting locked baselines (§4.1).*
+*🏆 Admin Portal is FULLY ENTERPRISE CERTIFIED — do not modify AS/AF/AA/AV-ADM suites.*
 *✅ Notifications Smoke · Functional · Authorization · Validation are LOCKED — do not modify NS/NF/NA/NV-NOT suites.*
-*🏆 Notifications + Logistics remain FULLY ENTERPRISE CERTIFIED.*
+*🏆 Notifications + Logistics + Admin remain FULLY ENTERPRISE CERTIFIED.*
