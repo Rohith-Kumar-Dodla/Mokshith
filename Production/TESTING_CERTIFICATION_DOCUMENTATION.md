@@ -182,7 +182,7 @@ Business modules discovered from **FRONTEND_DOCUMENTATION.md** (§8, 16 feature 
 | Analytics & Reports | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 |
 | Audit | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 |
 | Admin Portal | ✅ | ✅ | ✅ | ✅ | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 |
-| Super Admin Portal | 🔴 | 🔴 | 🟡 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 |
+| Super Admin Portal | ✅ | ✅ | ✅ | ✅ | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 |
 | Settings & Platform Config | 🔴 | 🔴 | 🔴 | 🔴 | 🟡 | 🔴 | 🔴 | 🔴 | 🔴 |
 | Uploads & Media | 🟡 | 🟡 | 🔴 | 🟡 | 🔴 | 🔴 | 🔴 | 🔴 | 🔴 |
 | Companies & Vendors | 🔴 | 🔴 | 🟡 | 🔴 | 🟡 | 🔴 | 🔴 | 🔴 | 🔴 |
@@ -395,11 +395,63 @@ Business modules discovered from **FRONTEND_DOCUMENTATION.md** (§8, 16 feature 
 
 | Field | Value |
 |-------|-------|
-| **Current module** | **Super Admin Portal** |
-| **Current phase** | **Smoke Certification** (next — Admin FULLY CERTIFIED) |
-| **Phase status** | 🏆 Admin Smoke · Functional · Authorization · Validation ✅ LOCKED |
-| **Previous module** | 🏆 **Admin Portal — FULLY ENTERPRISE CERTIFIED** |
-| **Next suite** | Super Admin Smoke — begin only after Admin full certification (achieved) |
+| **Current module** | **API Certification** (next — Super Admin FULLY CERTIFIED) |
+| **Current phase** | **Platform API Certification** |
+| **Phase status** | 🏆 Super Admin Smoke · Functional · Authorization · Validation ✅ LOCKED |
+| **Previous module** | 🏆 **Super Admin Portal — FULLY ENTERPRISE CERTIFIED** |
+| **Next suite** | API Certification — begin only after Super Admin full lock (achieved) |
+
+### Super Admin Validation — ✅ LOCKED (2026-07-31)
+
+| Field | Detail |
+|-------|--------|
+| **Config** | `playwright.superadmin.validation.config.ts` |
+| **Command** | `npm run test:superadmin-validation` |
+| **Count** | **53/53 passed** (`SAV-SA-001`–`053`), 0 skipped, 0 failed |
+| **Flake gate** | ✅ **Three consecutive** full greens (53/53 × 3) |
+| **Coverage** | Role Joi enum · CastError/404 · Approvals no-Joi + CSRF · CreateAdmin no-Joi + prototype · Stats query no-Joi · Admin status no-enum · Mongo operator strip · Payment reject reason min/max/pattern/CSRF · Profile/settings min(1)/enums/CSRF · Analytics no query Joi · Transport malformed JSON/content-type · Envelopes · UI reject reason + Reset Password disabled + HTML required · Source locks |
+| **Production truths** | Only `PATCH /super-admin/users/:id/role` has SA Joi · Approvals CSRF no body Joi · Payment reject `reason` 3–500 · Status string.required without enum · Analytics no Joi |
+| **Discovery RCA** | **0 assertion failures** on first clean discovery |
+| **Module status** | 🏆 **SUPER ADMIN — FULLY ENTERPRISE CERTIFIED** |
+
+### Super Admin Authorization — ✅ LOCKED (2026-07-31)
+
+| Field | Detail |
+|-------|--------|
+| **Config** | `playwright.superadmin.authorization.config.ts` |
+| **Command** | `npm run test:superadmin-authorization` |
+| **Count** | **80/80 passed** (`SAA-SA-001`–`080`), 0 skipped, 0 failed |
+| **Flake gate** | ✅ **Three consecutive** full greens (~2.6m / ~2.3m / ~2.6m); clean discovery also 80/80 (~2.9m) |
+| **Coverage** | Guest UI · Portal RBAC redirects · Unauth APIs · JWT malformed/null/expired/tampered/missing/ghost/no-sessionId/escalated · Session replace · Inactive vendor login gate · SA UI access · Role matrix on stats/metrics/admins/approvals/analytics/bank-transfer · SA `/admin` API allow + inventory deny · CSRF: `/super-admin` writes no CSRF; admin-approvals + bank-transfer + order status CSRF required; `/admin` approve no CSRF · Logout/deep-link · Backend source locks |
+| **Production truths** | UI `requiredRole="super-admin"` · `/super-admin` SUPER_ADMIN only · SA UI blocked from `/admin/*` but SA API allowed · Analytics dashboard SA-only; delivery ADMIN+SA · Bank-transfer pending/approve/reject SA-only · Inventory ADMIN-only |
+| **Discovery RCA** | RC-1 stale SA session after replace caused CSRF-positive approve timeout → refresh session before Section H · RC-2 paymentProof source path `payment-proof/` not `payment/` |
+| **Regression gates** | Keep SS-SA / SF-SA green; do not modify locked suites |
+
+### Super Admin Functional — ✅ LOCKED (2026-07-31)
+
+| Field | Detail |
+|-------|--------|
+| **Config** | `playwright.superadmin.functional.config.ts` |
+| **Command** | `npm run test:superadmin-functional` |
+| **Count** | **45/45 passed** (`SF-SA-001`–`045`), 0 skipped, 0 failed |
+| **Flake gate** | ✅ **Three consecutive** full greens (~6.5m / ~6.9m / ~7.4m); clean discovery also 45/45 (~6.0m) |
+| **Coverage** | Dashboard metrics + Quick Actions (incl. Generate Report → Analytics) · Platform Monitoring · User Approvals approve/reject/refresh · Admin search/deactivate/activate + Reset Password disabled · Vendor search/filter/approve/reject/suspend · Delivery search/deactivate/activate + Edit stub alert · Global Orders search/filter/refresh/pagination/Manage · Payment approve toast + reject reason validation · Analytics KPIs/charts · **no** analytics date filters/exports · Settings profile/preferences/notifications/account UI · Notification drawer · refresh persistence · tab switching · `/super-admin/stats` |
+| **Production truths** | No Financial Dashboard / Reports pages · Create Admin UI absent (API-only) · Approvals use `window.confirm` (no success toast) · Payment Verifications live on SA · Vendor FilterDropdown has no Suspended option · Settings Notifications tab must be scoped vs header bell |
+| **Discovery RCA** | RC-1 Suspend filter asserted non-existent Suspended option → assert Suspend control removed · RC-2 Settings `Notifications` tab collided with header bell → scope `main nav` |
+| **Smoke regression** | Keep `npm run test:superadmin-smoke` green; do not modify SS-SA |
+
+### Super Admin Smoke — ✅ LOCKED (2026-07-31)
+
+| Field | Detail |
+|-------|--------|
+| **Config** | `playwright.superadmin.smoke.config.ts` |
+| **Command** | `npm run test:superadmin-smoke` |
+| **Count** | **32/32 passed** (`SS-SA-001`–`032`), 0 skipped, 0 failed |
+| **Flake gate** | ✅ **Three consecutive** full greens (~1.5m / ~1.6m / ~2.0m); discovery also 32/32 (~1.9m) |
+| **Coverage** | Guest/Admin/Vendor/Delivery route protection · SA dashboard Platform brand + stats metrics · Quick Actions / Platform Health · 7 sidebar links (no Reports / Financial Dashboard) · Platform Monitoring · User Management tabs · User Approvals empty-or-list · Admin Management · Global Orders · Payment Verifications live page · Analytics KPIs · Settings · legacy `/admin-approvals` redirect · notification bell/drawer · `/super-admin/stats` + `/analytics/dashboard` API · Admin/Vendor RBAC denials · refresh persistence · UI login · logout |
+| **Production truths** | `ProtectedRoute requiredRole="super-admin"` · Sidebar brand subtitle **Platform** · Analytics is the finance surface (no separate Financial Dashboard / Reports pages) · Payment Verifications **routed and live** on SA · User Management tabs: Approvals / Admin / Vendor / Delivery Partners · Backend `/super-admin` = `protect` + `authorize('SUPER_ADMIN')` · Stats shape: `admins`, `vendors`, `orders`, `revenue` |
+| **Discovery RCA** | RC-INFRA-1 webServer timeout when FE/BE not pre-warmed → reuse existing server / local starter · RC-INFRA-2 missing Chromium headless shell → `npx playwright install chromium` · **0 assertion failures** on first clean discovery |
+| **Regression gates** | Keep Admin S/F/A/V green; do not invent SA Financial Dashboard / Reports; do not begin Functional until this lock |
 
 ### Admin Smoke — ✅ LOCKED (2026-07-30)
 
@@ -665,9 +717,13 @@ Smoke · Functional · Authorization · Validation — all LOCKED.
 
 | Phase | Status |
 |-------|--------|
-| All phases | 🔴 |
+| Smoke | ✅ LOCKED — `npm run test:superadmin-smoke` (SS-SA-001–032, 3× green) |
+| Functional | ✅ LOCKED — `npm run test:superadmin-functional` (SF-SA-001–045, 3× green) |
+| Authorization | ✅ LOCKED — `npm run test:superadmin-authorization` (SAA-SA-001–080, 3× green) |
+| Validation | ✅ LOCKED — `npm run test:superadmin-validation` (SAV-SA-001–053, 3× green) |
+| Module status | 🏆 **FULLY ENTERPRISE CERTIFIED** |
 | E2E | 🔴 `superadmin.spec.ts` — **skipped** |
-| Blockers | `/super-admin/payment-verifications` unrouted (frontend doc §21.1) |
+| Notes | Payment Verifications **is routed** on SA (`/super-admin/payment-verifications`); older “unrouted” notes are stale |
 
 ### 7.9 Authentication (expand beyond Smoke)
 
@@ -711,9 +767,9 @@ For each module: **Implementation Review** → phase certifications → **Produc
 | Payments | ✅ | ✅ | ✅ | ✅ | ✅ | 🟡 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | Inventory | ✅ | ✅ | ✅ | ✅ | ✅ | 🟡 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | Logistics / Delivery | ✅ | ✅ | ✅ | ✅ | ✅ | 🟡 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| Admin Portal | ✅ | ⬜ | 🟡 | 🟡 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| Super Admin | ✅ | ⬜ | ⬜ | 🟡 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| Notifications | ✅ | ✅ | ✅ | ⬜ | ⬜ | 🟡 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| Admin Portal | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| Super Admin | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| Notifications | ✅ | ✅ | ✅ | ✅ | ✅ | 🟡 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | Analytics | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | Settings / Maintenance | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | 🟡 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | Credit | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -894,26 +950,28 @@ After each phase lock, update:
 
 | Metric | Value |
 |--------|-------|
-| **Overall completion** | **Commerce Core + Logistics + Notifications + Admin complete** |
+| **Overall completion** | **Commerce Core + Logistics + Notifications + Admin + Super Admin complete; next = API Certification** |
 | **Commerce Core** | 🏆 Product · Cart · Wishlist · Orders · Inventory · Payments |
 | **Logistics** | 🏆 **FULLY ENTERPRISE CERTIFIED** |
 | **Notifications** | 🏆 **FULLY ENTERPRISE CERTIFIED** (Smoke · Functional · Authorization · Validation) |
 | **Admin Portal** | 🏆 **FULLY ENTERPRISE CERTIFIED** (Smoke · Functional · Authorization · Validation) |
+| **Super Admin Portal** | 🏆 **FULLY ENTERPRISE CERTIFIED** (Smoke · Functional · Authorization · Validation) |
+| **API Certification** | 🔴 Next — begin after Super Admin full lock (**achieved**) |
 | **Backend integration certified** | **Yes** (platform-wide Jest) |
 
 ### Current task
 
-**Super Admin Smoke Certification** — begin only after Admin full lock (achieved). Design from production Super Admin routes only; do not modify locked suites.
+**API Certification** — begin only after Super Admin full lock (**achieved**). Certify production API contracts only; do not invent endpoints; do not modify locked Super Admin suites.
 
 ### Next immediate task
 
-1. Design **Super Admin Smoke** suite from production `/super-admin/*` + SA APIs
-2. Do **not** modify locked Admin / Notifications / Logistics / Payments / Inventory suites
+1. Design **API Certification** suite from production route/controller contracts
+2. Do **not** modify locked SS-SA / SF-SA / SAA-SA / SAV-SA / Admin / Notifications / Logistics / Payments / Inventory suites
 3. Keep regression gates green
 
 ### Locked baselines — do not regress
 
-✅ Backend Integration · ✅ Authentication Smoke · ✅ Product (4 phases) · ✅ Cart · ✅ Wishlist · ✅ Orders · ✅ Inventory (4 phases) · ✅ Payments (4 phases) · ✅ **Logistics (4 phases — FULLY CERTIFIED)** · ✅ **Notifications (4 phases — FULLY CERTIFIED)** · ✅ **Admin (4 phases — FULLY CERTIFIED)**
+✅ Backend Integration · ✅ Authentication Smoke · ✅ Product (4 phases) · ✅ Cart · ✅ Wishlist · ✅ Orders · ✅ Inventory (4 phases) · ✅ Payments (4 phases) · ✅ **Logistics (4 phases — FULLY CERTIFIED)** · ✅ **Notifications (4 phases — FULLY CERTIFIED)** · ✅ **Admin (4 phases — FULLY CERTIFIED)** · 🏆 **Super Admin (4 phases — FULLY ENTERPRISE CERTIFIED)**
 
 ---
 
@@ -941,6 +999,10 @@ After each phase lock, update:
 | Notifications authorization | `ME/tests/functional/notifications.authorization.spec.ts` |
 | Notifications validation | `ME/tests/validation/notifications.validation.spec.ts` |
 | Admin smoke | `ME/tests/smoke/admin.smoke.spec.ts` |
+| Super Admin smoke | `ME/tests/smoke/superadmin.smoke.spec.ts` |
+| Super Admin functional | `ME/tests/functional/superadmin.functional.spec.ts` |
+| Super Admin authorization | `ME/tests/functional/superadmin.authorization.spec.ts` |
+| Super Admin validation | `ME/tests/validation/superadmin.validation.spec.ts` |
 | Admin functional | `ME/tests/functional/admin.functional.spec.ts` |
 | Admin authorization | `ME/tests/functional/admin.authorization.spec.ts` |
 | Admin validation | `ME/tests/validation/admin.validation.spec.ts` |
@@ -967,7 +1029,7 @@ After each phase lock, update:
 
 From official implementation baselines (must be tracked as defects, not test failures):
 
-1. Super Admin payment verifications route missing (`App.jsx`)
+1. ~~Super Admin payment verifications route missing~~ — **resolved in production** (`/super-admin/payment-verifications` routed + live; Admin page remains restricted stub)
 2. Admin financial analytics disabled / empty by design
 3. Checkout UI exposes only COD + Razorpay (credit/hybrid/bank_transfer hidden)
 4. Notification "Mark All as Read" no-op
@@ -980,7 +1042,12 @@ From official implementation baselines (must be tracked as defects, not test fai
 
 *End of TESTING_CERTIFICATION_DOCUMENTATION.md — Master Testing & Certification Reference.*
 
-*Continue Super Admin Smoke Certification (§6) without restarting locked baselines (§4.1).*
+*Continue API Certification without restarting locked baselines (§4.1).*
+*✅ Super Admin Smoke is LOCKED — do not modify SS-SA suites.*
+*✅ Super Admin Functional is LOCKED — do not modify SF-SA suites.*
+*✅ Super Admin Authorization is LOCKED — do not modify SAA-SA suites.*
+*✅ Super Admin Validation is LOCKED — do not modify SAV-SA suites.*
+*🏆 Super Admin Portal is FULLY ENTERPRISE CERTIFIED.*
 *🏆 Admin Portal is FULLY ENTERPRISE CERTIFIED — do not modify AS/AF/AA/AV-ADM suites.*
 *✅ Notifications Smoke · Functional · Authorization · Validation are LOCKED — do not modify NS/NF/NA/NV-NOT suites.*
-*🏆 Notifications + Logistics + Admin remain FULLY ENTERPRISE CERTIFIED.*
+*🏆 Notifications + Logistics + Admin + Super Admin remain FULLY ENTERPRISE CERTIFIED.*
