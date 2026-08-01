@@ -5,8 +5,7 @@ import { authorize } from '../../middlewares/role.middleware.js';
 import { validate } from '../../middlewares/validate.middleware.js';
 import { 
   updateUserStatusSchema, 
-  createB2BCustomerSchema, 
-  createDeliveryPartnerSchema 
+  createB2BCustomerSchema,
 } from './admin.validation.js';
 
 const router = express.Router();
@@ -15,7 +14,6 @@ router.use(protect, authorize('ADMIN', 'SUPER_ADMIN'));
 
 router.get('/users', adminController.getUsers);
 router.post('/b2b-customers', validate(createB2BCustomerSchema), adminController.createB2BCustomer);
-router.post('/delivery-partners', validate(createDeliveryPartnerSchema), adminController.createDeliveryPartner);
 router.get('/approvals', adminController.getApprovals);
 router.post('/approve/:id', adminController.approveUser);
 router.post('/reject/:id', adminController.rejectUser);

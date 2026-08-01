@@ -25,7 +25,7 @@ export const createOrderSchema = Joi.object({
       city: Joi.string().trim().min(2).max(50).required(),
       state: Joi.string().trim().min(2).max(50).required(),
       pincode: Joi.string().trim().pattern(/^[0-9]{6}$/).required(),
-    }).required(),
+    }).optional(),
     idempotencyKey: Joi.string().pattern(/^[a-zA-Z0-9_-]+$/).max(255).optional(),
   }).unknown(true),
 });

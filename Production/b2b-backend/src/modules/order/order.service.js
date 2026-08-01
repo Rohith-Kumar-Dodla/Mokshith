@@ -7,7 +7,7 @@ import User from '../user/user.model.js';
 import Logistics from '../logistics/logistics.model.js';
 
 import AppError from '../../errors/AppError.js';
-import { validateTransition } from './order.workflow.js';
+import { applyOrderStatusUpdate } from './orderStatusSync.js';
 
 import { generateInvoice, getInvoiceByOrderId } from '../invoice/invoice.service.js';
 import { sendNotification } from '../notification/notification.service.js';
@@ -21,6 +21,7 @@ import { createShipment } from '../logistics/logistics.service.js';
 import { assignDelivery } from '../../services/deliveryAssignment.service.js';
 import Warehouse from '../warehouse/warehouse.model.js';
 import { fetchSetting } from '../settings/settings.service.js';
+import { vendorAddressToShippingAddress } from '../../utils/vendorAddress.utils.js';
 
 import { ORDER_STATUS } from '../../constants/orderStatus.js';
 import { PAYMENT_STATUS } from '../../constants/paymentStatus.js';
@@ -47,15 +48,22 @@ export const createOrder = async (userId, data) => {
   }
 
   // 🔥 0. Validation
-  if (!shippingAddress) throw new AppError('Shipping address is required', 400);
-  if (!mongoose.Types.ObjectId.isValid(userId)) throw new AppError('Invalid user ID', 400);
-  
-  // 🔥 Check Maintenance Mode
-  const maintenance = await fetchSetting('maintenanceMode');
-  const maintenanceOld = await fetchSetting('MAINTENANCE_MODE');
-  if (maintenance?.value === true || maintenanceOld?.value === true) {
-    throw new AppError('System under maintenance. Order placement is blocked.', 503);
+  let resolvedShippingAddress = shippingAddress;
+  if (!resolvedShippingAddress) {
+    const user = await User.findById(userId).lean();
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+    resolvedShippingAddress = vendorAddressToShippingAddress(user);
+    if (!resolvedShippingAddress) {
+      throw new AppError(
+        'Delivery address not found. Please complete your business address in vendor settings.',
+        400
+      );
+    }
   }
+
+  if (!mongoose.Types.ObjectId.isValid(userId)) throw new AppError('Invalid user ID', 400);
 
   // 🔥 Check Order Cutoff Time
   const cutoffSetting = await fetchSetting('orderCutoffTime');
@@ -185,8 +193,8 @@ export const createOrder = async (userId, data) => {
     commissionRate,
     commissionAmount,
     paymentMethod: paymentMethod.toUpperCase(),
-    address: shippingAddress,
-    shippingAddress,
+    address: resolvedShippingAddress,
+    shippingAddress: resolvedShippingAddress,
     status: ORDER_STATUS.CREATED,
     paymentStatus: PAYMENT_STATUS.PENDING,
     requiresHeavyVehicle: totalWeight > 100,
@@ -336,6 +344,20 @@ async function enrichOrdersWithDeliveryPartner(orders) {
     shipments.map((shipment) => [String(shipment.orderId), shipment])
   );
 
+  const collectorIds = [
+    ...new Set(
+      orders
+        .map((order) => order.paymentCollectedBy)
+        .filter(Boolean)
+        .map((id) => String(id._id || id))
+    ),
+  ];
+
+  const collectors = collectorIds.length
+    ? await mongoose.model('User').find({ _id: { $in: collectorIds } }).select('name email mobile').lean()
+    : [];
+  const collectorsById = new Map(collectors.map((user) => [String(user._id), user]));
+
   return orders.map((order) => {
     const shipment =
       shipmentByOrderId.get(String(order._id)) ||
@@ -348,10 +370,15 @@ async function enrichOrdersWithDeliveryPartner(orders) {
         ? order.shipmentId.deliveryPartnerId
         : null);
 
+    const collector =
+      collectorsById.get(String(order.paymentCollectedBy)) ||
+      (typeof order.paymentCollectedBy === 'object' ? order.paymentCollectedBy : null);
+
     return {
       ...order,
       deliveryPartner: partner || null,
       logisticsStatus: shipment?.status || order.shipmentId?.status || null,
+      paymentCollector: collector || null,
     };
   });
 }
@@ -610,39 +637,10 @@ export const markOrderAsFailedWithUser = async (id, user) => {
 };
 
 export const updateOrderStatus = async (orderId, newStatus, actor = {}, note = '') => {
-  const order = await Order.findById(orderId);
-
-  if (!order) throw new AppError('Order not found', 404);
-
-  validateTransition(order.status, newStatus);
-
-  const previousStatus = order.status;
-  order.status = newStatus;
-  order.statusHistory = order.statusHistory || [];
-  order.statusHistory.push({
-    status: newStatus,
-    changedBy: actor.id || actor._id,
-    changedAt: new Date(),
-    note: note || `Status changed from ${previousStatus} to ${newStatus}`,
+  const order = await applyOrderStatusUpdate(orderId, newStatus, actor, {
+    source: 'admin',
+    note: note || undefined,
   });
-
-  await order.save();
-
-  try {
-    const Audit = (await import('../audit/audit.model.js')).default;
-    await Audit.create({
-      userId: actor.id || actor._id,
-      userEmail: actor.email,
-      role: actor.role,
-      action: 'ORDER_STATUS_UPDATED',
-      entity: 'ORDER',
-      entityId: order._id,
-      details: `Order ${order._id} status: ${previousStatus} → ${newStatus}`,
-      severity: 'INFO',
-    });
-  } catch (auditError) {
-    logger.warn('Failed to create order status audit log', { error: auditError.message });
-  }
 
   const [enriched] = await enrichOrdersWithDeliveryPartner([order.toObject()]);
   return enriched || order;

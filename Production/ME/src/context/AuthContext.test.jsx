@@ -2,6 +2,13 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AuthProvider, useAuth } from './AuthContext';
 import authService from '../services/authService';
+import {
+  getAccessToken,
+  getAuthSessionKey,
+  getCsrfToken,
+  getRefreshToken,
+  getTabSessionId,
+} from '../utils/authStorage';
 
 vi.mock('../services/authService', () => ({
   default: {
@@ -17,6 +24,7 @@ vi.mock('../services/authService', () => ({
 describe('AuthContext', () => {
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
     vi.clearAllMocks();
     authService.getCurrentUser.mockRejectedValue(new Error('No session'));
   });
@@ -58,9 +66,11 @@ describe('AuthContext', () => {
     expect(result.current.isAuthenticated).toBe(true);
     expect(result.current.role).toBe('admin');
     expect(result.current.user.name).toBe('Test User');
+    expect(getRefreshToken()).toBe('refresh-token');
+    expect(localStorage.getItem(getAuthSessionKey())).toBeTruthy();
   });
 
-  it('login stores tokens and mapped role', async () => {
+  it('login stores tokens in the current tab session only', async () => {
     authService.login.mockResolvedValue({
       data: {
         user: {
@@ -93,9 +103,11 @@ describe('AuthContext', () => {
     });
     expect(result.current.isAuthenticated).toBe(true);
     expect(result.current.role).toBe('admin');
-    expect(localStorage.getItem('accessToken')).toBe('access-token');
-    expect(localStorage.getItem('refreshToken')).toBe('refresh-token');
-    expect(localStorage.getItem('csrfToken')).toBe('csrf-token');
+    expect(getAccessToken()).toBe('access-token');
+    expect(getRefreshToken()).toBe('refresh-token');
+    expect(getCsrfToken()).toBe('csrf-token');
+    expect(localStorage.getItem('accessToken')).toBeNull();
+    expect(sessionStorage.getItem('tabSessionId')).toBe(getTabSessionId());
   });
 
   it('login rejects with API error message', async () => {
@@ -118,15 +130,15 @@ describe('AuthContext', () => {
     ).rejects.toThrow('Invalid credentials');
   });
 
-  it('register creates pending admin via API', async () => {
+  it('register creates pending vendor via API', async () => {
     authService.register.mockResolvedValue({
       data: {
         user: {
-          _id: 'admin-1',
-          name: 'Test Admin',
-          email: 'admin@example.com',
+          _id: 'vendor-1',
+          name: 'Test Vendor',
+          email: 'vendor@example.com',
           mobile: '9876543210',
-          role: 'ADMIN',
+          role: 'VENDOR',
           status: 'PENDING',
         },
       },
@@ -142,26 +154,47 @@ describe('AuthContext', () => {
 
     const response = await act(async () => {
       return await result.current.register({
-        name: 'Test Admin',
-        email: 'admin@example.com',
+        businessName: 'Test Business',
+        ownerName: 'Test Vendor',
+        email: 'vendor@example.com',
         password: 'password',
         phone: '9876543210',
-        role: 'admin',
+        address: {
+          line1: '123 Street',
+          area: 'Area',
+          city: 'City',
+          district: 'District',
+          state: 'State',
+          country: 'India',
+          pincode: '500001',
+        },
       });
     });
 
     expect(authService.register).toHaveBeenCalledWith({
-      name: 'Test Admin',
-      email: 'admin@example.com',
+      name: 'Test Vendor',
+      businessName: 'Test Business',
+      ownerName: 'Test Vendor',
+      email: 'vendor@example.com',
       mobile: '9876543210',
       password: 'password',
-      role: 'ADMIN',
+      gstNumber: undefined,
+      address: {
+        line1: '123 Street',
+        area: 'Area',
+        city: 'City',
+        district: 'District',
+        state: 'State',
+        country: 'India',
+        pincode: '500001',
+      },
     });
     expect(response.success).toBe(true);
     expect(response.status).toBe('PENDING');
+    expect(response.role).toBe('vendor');
   });
 
-  it('logout clears auth state and calls API', async () => {
+  it('logout clears only the current tab session', async () => {
     authService.login.mockResolvedValue({
       data: {
         user: { _id: '123', name: 'Test User', role: 'ADMIN' },
@@ -184,6 +217,8 @@ describe('AuthContext', () => {
       await result.current.login('9876543210', 'Password123!');
     });
 
+    const sessionKey = getAuthSessionKey();
+
     await act(async () => {
       await result.current.logout();
     });
@@ -192,6 +227,10 @@ describe('AuthContext', () => {
     expect(result.current.user).toBeNull();
     expect(result.current.role).toBeNull();
     expect(result.current.isAuthenticated).toBe(false);
-    expect(localStorage.getItem('accessToken')).toBeNull();
+    expect(localStorage.getItem(sessionKey)).toBeNull();
+    expect(sessionStorage.getItem('tabSessionId')).toBeNull();
+    // Creating a fresh tab id for reads after logout must not revive the old session.
+    expect(getAccessToken()).toBeNull();
+    expect(localStorage.getItem(sessionKey)).toBeNull();
   });
 });

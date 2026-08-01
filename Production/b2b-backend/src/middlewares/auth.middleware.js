@@ -1,8 +1,7 @@
 import jwt from 'jsonwebtoken';
 import AppError from '../errors/AppError.js';
-import { fetchSetting } from '../modules/settings/settings.service.js';
-import { ROLES } from '../constants/roles.js';
 import { findUserById } from '../modules/auth/auth.repository.js';
+import { ROLES } from '../constants/roles.js';
 import { USER_STATUS } from '../constants/userStatus.js';
 import { logger } from '../config/logger.js';
 
@@ -81,14 +80,6 @@ export const protect = async (req, res, next) => {
       return next(err);
     }
 
-    // 🔥 Check Maintenance Mode (allow super admin)
-    const maintenance = await fetchSetting('maintenanceMode');
-    const maintenanceOld = await fetchSetting('MAINTENANCE_MODE');
-    if ((maintenance?.value === true || maintenanceOld?.value === true) && user.role !== ROLES.SUPER_ADMIN) {
-      return next(new AppError('System under maintenance', 503));
-    }
-
-    // 🔥 Check User Status
     if (user.role !== ROLES.SUPER_ADMIN && user.status !== USER_STATUS.ACTIVE) {
       let message = 'Your account is inactive or suspended. Please contact support.';
       if (user.status === USER_STATUS.PENDING) {

@@ -11,6 +11,8 @@ import {
 } from 'react-icons/fi';
 import useSettings from '../../hooks/useSettings';
 import { getPasswordRequirementsText } from '../../utils/authValidationPolicy';
+import VendorAddressFields from '../vendor/VendorAddressFields';
+import uploadService from '../../services/uploadService';
 
 const VEHICLE_TYPES = [
   { value: 'TWO_WHEELER', label: 'Two Wheeler' },
@@ -67,6 +69,7 @@ export default function SettingsPage({ PageHeader, role = 'vendor' }) {
   const [otpCode, setOtpCode] = useState('');
   const [disablePassword, setDisablePassword] = useState('');
   const [showDisable2FA, setShowDisable2FA] = useState(false);
+  const [uploadingQr, setUploadingQr] = useState(false);
 
   useEffect(() => {
     if (profile) setProfileForm(profile);
@@ -90,9 +93,6 @@ export default function SettingsPage({ PageHeader, role = 'vendor' }) {
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
     await saveProfile(profileForm);
-    if (settingsForm.businessDetails !== undefined) {
-      await saveSettings({ businessDetails: settingsForm.businessDetails });
-    }
   };
 
   const handleSettingsSubmit = async (e) => {
@@ -194,12 +194,32 @@ export default function SettingsPage({ PageHeader, role = 'vendor' }) {
                 {(isVendor || role === 'admin' || role === 'super-admin') && (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
-                      <input className={inputClass} value={profileForm.companyName || ''} onChange={(e) => setProfileForm({ ...profileForm, companyName: e.target.value })} />
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Business Name</label>
+                      <input
+                        className={inputClass}
+                        value={profileForm.businessName || profileForm.companyName || ''}
+                        onChange={(e) => setProfileForm({
+                          ...profileForm,
+                          businessName: e.target.value,
+                          companyName: e.target.value,
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Owner Name</label>
+                      <input
+                        className={inputClass}
+                        value={profileForm.ownerName || ''}
+                        onChange={(e) => setProfileForm({ ...profileForm, ownerName: e.target.value })}
+                      />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">GST Number</label>
-                      <input className={inputClass} value={profileForm.gstNumber || ''} onChange={(e) => setProfileForm({ ...profileForm, gstNumber: e.target.value.toUpperCase() })} />
+                      <input
+                        className={inputClass}
+                        value={profileForm.gstNumber || ''}
+                        onChange={(e) => setProfileForm({ ...profileForm, gstNumber: e.target.value.toUpperCase() })}
+                      />
                     </div>
                   </>
                 )}
@@ -224,19 +244,76 @@ export default function SettingsPage({ PageHeader, role = 'vendor' }) {
                     </div>
                   </>
                 )}
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                  <textarea className={inputClass} rows={3} value={profileForm.address || ''} onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })} />
-                </div>
-                {(isVendor || role === 'admin') && (
-                  <div className="sm:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Business Details</label>
-                    <textarea
-                      className={inputClass}
-                      rows={3}
-                      value={settingsForm.businessDetails || ''}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, businessDetails: e.target.value })}
+                {isVendor && (
+                  <div className="sm:col-span-2 border-t border-gray-100 pt-4">
+                    <h3 className="text-sm font-semibold text-gray-900 mb-3">Business Details & Address</h3>
+                    <VendorAddressFields
+                      value={profileForm.vendorAddress || {}}
+                      onChange={(vendorAddress) => setProfileForm({ ...profileForm, vendorAddress })}
+                      idPrefix="settings-vendor-address"
                     />
+                  </div>
+                )}
+                {isVendor && (
+                  <div className="sm:col-span-2 border-t border-gray-100 pt-4 space-y-4">
+                    <h3 className="text-sm font-semibold text-gray-900">Payment Settings</h3>
+                    <p className="text-xs text-gray-500">
+                      Used by delivery agents for COD QR collection.
+                    </p>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">UPI ID</label>
+                      <input
+                        className={inputClass}
+                        value={profileForm.upiId || ''}
+                        onChange={(e) => setProfileForm({ ...profileForm, upiId: e.target.value.trim() })}
+                        placeholder="name@upi"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">QR Image</label>
+                      {profileForm.qrImage ? (
+                        <div className="mb-3">
+                          <img
+                            src={profileForm.qrImage}
+                            alt="UPI QR"
+                            className="w-40 h-40 object-contain border border-gray-200 rounded-lg bg-white"
+                          />
+                        </div>
+                      ) : null}
+                      <label className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gray-100 text-sm font-medium text-gray-700 hover:bg-gray-200 cursor-pointer min-h-[44px]">
+                        {uploadingQr ? 'Uploading...' : profileForm.qrImage ? 'Replace QR Image' : 'Upload QR Image'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={uploadingQr}
+                          onChange={async (event) => {
+                            const file = event.target.files?.[0];
+                            if (!file) return;
+                            setUploadingQr(true);
+                            try {
+                              const uploaded = await uploadService.uploadImage(file, 'vendor-qr');
+                              setProfileForm({
+                                ...profileForm,
+                                qrImage: uploaded?.url || uploaded?.secure_url || '',
+                                qrImagePublicId: uploaded?.publicId || '',
+                              });
+                            } catch (uploadError) {
+                              // surface via settings toast on next save if needed
+                              console.error(uploadError);
+                            } finally {
+                              setUploadingQr(false);
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                )}
+                {!isVendor && (
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                    <textarea className={inputClass} rows={3} value={profileForm.address || ''} onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })} />
                   </div>
                 )}
               </div>

@@ -4,6 +4,7 @@ import { loadEnv } from '../src/config/loadEnv.js';
 import {
   assertDestructiveOperationAllowed,
   assertExpectedApplicationDatabase,
+  assertNotProduction,
   logDestructiveWarning,
   REQUIRED_DESTRUCTIVE_CONFIRM,
 } from '../src/utils/destructiveGuard.js';
@@ -39,6 +40,7 @@ const products = [
 
 const seedDB = async () => {
   try {
+    assertNotProduction('seedWholesale');
     logDestructiveWarning('Wholesale seed (deleteMany on products and categories, then re-inserts demo catalog)');
     assertDestructiveOperationAllowed('seedWholesale');
 
@@ -89,10 +91,7 @@ const isDirectExecution = process.argv[1]?.includes('dangerous-dev-tools/seedWho
 
 if (isDirectExecution) {
   (async () => {
-    if (process.env.NODE_ENV === 'production') {
-      console.error('Refusing to run destructive script in production');
-      process.exit(1);
-    }
+    assertNotProduction('seedWholesale direct execution');
     if (process.env.DESTRUCTIVE_CONFIRM !== REQUIRED_DESTRUCTIVE_CONFIRM) {
       console.error(`Set DESTRUCTIVE_CONFIRM=${REQUIRED_DESTRUCTIVE_CONFIRM} to enable destructive scripts`);
       process.exit(1);

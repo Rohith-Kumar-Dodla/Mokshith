@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { isProduction } from './destructiveGuard.js';
 
 /**
  * Apply runtime safety patches to mongoose and native collection methods.
@@ -19,8 +20,8 @@ export function applyMongoSafetyPatches({ logger = console } = {}) {
     return Object.keys(filter).length === 0;
   }
 
-  // Only enforce strict checks when running in production
-  const inProduction = process.env.NODE_ENV === 'production';
+  // Only enforce strict checks when running in production (using centralized guard)
+  const inProduction = isProduction();
 
   // Patch Model-level destructive methods
   const Model = mongoosePkg.Model;

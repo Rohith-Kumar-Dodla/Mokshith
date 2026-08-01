@@ -65,8 +65,17 @@ export async function loginFlow(page: Page, mobile: string, password: string, tw
     { timeout: 15000 }
   );
 
-  // 6) Only after navigation, assert accessToken exists in localStorage
-  await page.waitForFunction(() => !!localStorage.getItem('accessToken'), null, { timeout: 15000 });
+  // 6) Only after navigation, assert this tab has an isolated auth session
+  await page.waitForFunction(() => {
+    const tabId = sessionStorage.getItem('tabSessionId');
+    if (!tabId) return false;
+    try {
+      const session = JSON.parse(localStorage.getItem(`auth_session_${tabId}`) || 'null');
+      return Boolean(session?.accessToken);
+    } catch {
+      return false;
+    }
+  }, null, { timeout: 15000 });
 }
 
 export default loginFlow;

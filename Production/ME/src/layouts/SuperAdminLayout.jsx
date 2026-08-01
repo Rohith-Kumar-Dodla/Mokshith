@@ -13,6 +13,8 @@ import {
   FiX,
   FiBell,
   FiUserCheck,
+  FiUserPlus,
+  FiTool,
 } from 'react-icons/fi';
 import NotificationDrawer from '../components/superadmin/NotificationDrawer';
 import PortalSidebar from '../components/common/PortalSidebar';
@@ -34,9 +36,11 @@ const SuperAdminLayout = () => {
     { path: '/super-admin/dashboard', icon: FiGrid, label: 'Dashboard' },
     { path: '/super-admin/platform', icon: FiMonitor, label: 'Platform Monitoring' },
     { path: '/super-admin/user-management', icon: FiUserCheck, label: 'User Management' },
+    { path: '/super-admin/staff-onboarding', icon: FiUserPlus, label: 'Staff Onboarding' },
     { path: '/super-admin/orders', icon: FiPackage, label: 'Orders' },
     { path: '/super-admin/payment-verifications', icon: FiDollarSign, label: 'Payment Verifications' },
     { path: '/super-admin/analytics', icon: FiBarChart2, label: 'Analytics' },
+    { path: '/super-admin/system-settings', icon: FiTool, label: 'System Settings' },
     { path: '/super-admin/settings', icon: FiSettings, label: 'Settings' },
   ];
 

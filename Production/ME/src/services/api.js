@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { clearAuthStorage, getAccessToken, getCsrfToken, getRefreshToken, persistSession } from '../utils/authStorage';
 import { fetchCsrfToken, isCsrfError } from '../utils/csrf';
+import { mapMaintenanceError } from '../utils/loginErrorMapper';
 
 const CSRF_HEADER = 'x-csrf-token';
 const STATE_CHANGING_METHODS = ['post', 'put', 'patch', 'delete'];
@@ -105,12 +106,15 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const requestUrl = originalRequest?.url || '';
 
+    const maintenanceMessage = mapMaintenanceError(error);
+    if (maintenanceMessage) {
+      error.maintenanceMessage = maintenanceMessage;
+      error.isMaintenanceError = true;
+    }
+
     const backendCode = error.response?.data?.error?.code;
     if (backendCode === 'SESSION_REPLACED') {
-      localStorage.setItem('session_replaced', JSON.stringify({
-        message: error.response?.data?.message || 'Your account was logged in from another device. Please sign in again.',
-        ts: Date.now()
-      }));
+      // Only invalidate this tab's session — never broadcast to other tabs.
       clearAuthStorage();
       redirectToLogin();
       return Promise.reject(error);

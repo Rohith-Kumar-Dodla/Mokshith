@@ -435,10 +435,18 @@ test.describe('Cart Authorization Suite', () => {
     test('PA-CART-044 | Invalid browser token redirects to login on cart load', async ({ page }) => {
       await page.goto('/');
       await page.evaluate(() => {
-        localStorage.setItem('accessToken', 'invalid-token-value');
-        localStorage.setItem('refreshToken', 'invalid-refresh');
-        localStorage.setItem('isAuthenticated', 'true');
-        localStorage.setItem('user', JSON.stringify({ role: 'vendor', name: 'Bad Session' }));
+        const tabSessionId = 'tab_invalid_test';
+        sessionStorage.setItem('tabSessionId', tabSessionId);
+        localStorage.setItem(
+          `auth_session_${tabSessionId}`,
+          JSON.stringify({
+            accessToken: 'invalid-token-value',
+            refreshToken: 'invalid-refresh',
+            isAuthenticated: true,
+            user: { role: 'vendor', name: 'Bad Session' },
+            role: 'vendor',
+          })
+        );
       });
       await page.goto('/vendor/cart');
       await expect(page).toHaveURL(/\/login/, { timeout: 20000 });

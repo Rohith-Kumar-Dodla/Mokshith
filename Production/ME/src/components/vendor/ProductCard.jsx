@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FiShoppingCart, FiHeart, FiEye, FiStar } from 'react-icons/fi';
+import { FiShoppingCart, FiHeart, FiEye, FiStar, FiPlus, FiMinus } from 'react-icons/fi';
 import { getProductImageKey } from '../../utils/productMapper';
 
 const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) => {
@@ -10,6 +10,9 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) =
   const rating = product.rating ?? 4;
   const reviews = product.reviews ?? 0;
   const brand = product.brand || null;
+  const [quantity, setQuantity] = useState(product.minimumOrderQuantity ?? product.moq ?? 1);
+  const unitPrice = Number(product.price ?? 0);
+  const totalPrice = useMemo(() => unitPrice * quantity, [unitPrice, quantity]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -42,6 +45,22 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) =
       return Math.round(((product.mrp - product.price) / product.mrp) * 100);
     }
     return 0;
+  };
+
+  const handleQuantityChange = (delta) => {
+    const newQuantity = quantity + delta;
+    const minQty = product.minimumOrderQuantity ?? product.moq ?? 1;
+    const maxStock = product.stock ?? 999;
+    
+    if (newQuantity >= minQty && newQuantity <= maxStock) {
+      setQuantity(newQuantity);
+    }
+  };
+
+  const handleAddToCartClick = () => {
+    if (onAddToCart) {
+      onAddToCart({ ...product, selectedQuantity: quantity });
+    }
   };
 
   return (
@@ -120,25 +139,50 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) =
           <span className="text-xs text-gray-500">({reviews})</span>
         </div>
 
-        <div className="flex items-baseline gap-2 mb-2 sm:mb-3">
-          <span className="text-lg sm:text-xl font-bold text-gray-900">₹{product.price.toFixed(2)}</span>
-          {product.mrp && (
-            <span className="text-xs sm:text-sm text-gray-400 line-through">₹{product.mrp.toFixed(2)}</span>
+        <div className="mb-2 sm:mb-3">
+          <div className="flex items-baseline gap-2">
+            <span className="text-lg sm:text-xl font-bold text-gray-900">
+              {quantity > 1 ? `Total: ₹${totalPrice.toFixed(2)}` : `₹${totalPrice.toFixed(2)}`}
+            </span>
+            {product.mrp && (
+              <span className="text-xs sm:text-sm text-gray-400 line-through">₹{product.mrp.toFixed(2)}</span>
+            )}
+          </div>
+          {quantity > 1 && (
+            <p className="text-xs text-gray-500 mt-0.5">
+              {quantity} × ₹{unitPrice.toFixed(2)} = ₹{totalPrice.toFixed(2)}
+            </p>
           )}
           {product.wholesalePrice && (
-            <span className="text-xs text-green-600 font-medium">
+            <p className="text-xs text-green-600 font-medium mt-0.5">
               Wholesale: ₹{product.wholesalePrice.toFixed(2)}
-            </span>
+            </p>
           )}
         </div>
 
-        <div className="flex items-center justify-between text-xs text-gray-500 mb-2 sm:mb-3">
-          <span>MOQ: {product.minimumOrderQuantity} {product.unit}</span>
-          <span>Stock: {product.stock}</span>
+        <div className="flex items-center gap-2 mb-2 sm:mb-3">
+          <button
+            type="button"
+            onClick={() => handleQuantityChange(-1)}
+            disabled={quantity <= (product.minimumOrderQuantity ?? product.moq ?? 1)}
+            className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <FiMinus className="w-4 h-4" />
+          </button>
+          <span className="w-12 sm:w-16 text-center font-medium text-gray-900">{quantity}</span>
+          <button
+            type="button"
+            onClick={() => handleQuantityChange(1)}
+            disabled={quantity >= (product.stock ?? 999)}
+            className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <FiPlus className="w-4 h-4" />
+          </button>
+          <span className="text-xs text-gray-500 ml-auto">Stock: {product.stock}</span>
         </div>
 
         <button
-          onClick={() => onAddToCart && onAddToCart(product)}
+          onClick={handleAddToCartClick}
           disabled={product.status === 'out_of_stock'}
           className={`w-full py-2.5 h-10 sm:h-12 px-4 rounded-lg text-xs sm:text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
             product.status === 'out_of_stock'

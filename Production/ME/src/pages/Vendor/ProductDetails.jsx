@@ -17,7 +17,6 @@ const ProductDetails = () => {
     unitPrice: currentBulkPrice,
     total: currentTotal,
     bulkApplied,
-    moqUnitPrice,
     pricingLoading,
   } = useProductPricing(product, quantity);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -201,7 +200,7 @@ const ProductDetails = () => {
             </div>
 
             <div className="bg-gray-50 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
-              <div className="flex items-baseline gap-2 sm:gap-3 mb-1 sm:mb-2">
+              <div className="flex items-baseline gap-2 sm:gap-3">
                 <span className="text-2xl sm:text-3xl font-bold text-gray-900">₹{currentBulkPrice.toFixed(2)}</span>
                 {product.mrp && (
                   <>
@@ -213,13 +212,6 @@ const ProductDetails = () => {
                     )}
                   </>
                 )}
-              </div>
-              <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-600">
-                <span>MRP: ₹{product.mrp?.toFixed(2) || 'N/A'}</span>
-                <span>•</span>
-                <span>Wholesale: ₹{product.wholesalePrice?.toFixed(2) || 'N/A'}</span>
-                <span>•</span>
-                <span>MOQ price: ₹{moqUnitPrice.toFixed(2)}</span>
               </div>
             </div>
 

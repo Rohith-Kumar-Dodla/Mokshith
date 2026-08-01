@@ -10,24 +10,67 @@ export const updateShipment = (id, data) =>
   Logistics.findByIdAndUpdate(id, data, { new: true });
 
 export const findById = (id) =>
-  Logistics.findById(id).populate('orderId warehouseId deliveryPartnerId');
+  Logistics.findById(id)
+    .populate({
+      path: 'orderId',
+      populate: {
+        path: 'userId',
+        select: 'name email mobile businessName upiId qrImage',
+      },
+    })
+    .populate('warehouseId')
+    .populate('deliveryPartnerId', 'name email mobile');
 
 export const findAll = (filter = {}) =>
-  Logistics.find(filter).populate('orderId warehouseId deliveryPartnerId');
+  Logistics.find(filter)
+    .populate({
+      path: 'orderId',
+      populate: {
+        path: 'userId',
+        select: 'name email mobile businessName upiId qrImage',
+      },
+    })
+    .populate('warehouseId')
+    .populate('deliveryPartnerId', 'name email mobile');
 
 export const findAllActive = () =>
   Logistics.find({ status: { $nin: ['DELIVERED', 'COMPLETED', 'CANCELLED', 'FAILED'] } })
-    .populate('orderId warehouseId deliveryPartnerId');
+    .populate({
+      path: 'orderId',
+      populate: {
+        path: 'userId',
+        select: 'name email mobile businessName upiId qrImage',
+      },
+    })
+    .populate('warehouseId')
+    .populate('deliveryPartnerId', 'name email mobile');
 
 export const findAllDelivered = () =>
   Logistics.find({ status: { $in: ['DELIVERED', 'COMPLETED'] } })
-    .populate('orderId warehouseId deliveryPartnerId');
+    .populate({
+      path: 'orderId',
+      populate: {
+        path: 'userId',
+        select: 'name email mobile businessName upiId qrImage',
+      },
+    })
+    .populate('warehouseId')
+    .populate('deliveryPartnerId', 'name email mobile');
 
 export const findByPartner = (partnerId, statuses) =>
   Logistics.find({
     deliveryPartnerId: partnerId,
     status: { $in: statuses }
-  }).populate('orderId warehouseId deliveryPartnerId');
+  })
+    .populate({
+      path: 'orderId',
+      populate: {
+        path: 'userId',
+        select: 'name email mobile businessName upiId qrImage',
+      },
+    })
+    .populate('warehouseId')
+    .populate('deliveryPartnerId', 'name email mobile');
 
 export const countByStatus = (filter = {}) =>
   Logistics.aggregate([
