@@ -8,7 +8,14 @@ export const addStock = asyncHandler(async (req, res) => {
 });
 
 export const getInventory = asyncHandler(async (req, res) => {
-  const data = await service.getInventory();
+  const limit = req.query.limit;
+  const page = Math.max(Number(req.query.page) || 1, 1);
+  const skip =
+    req.query.skip !== undefined
+      ? Number(req.query.skip)
+      : (page - 1) * (Number(limit) || 500);
+
+  const data = await service.getInventory({ limit, skip });
   successResponse(res, data);
 });
 

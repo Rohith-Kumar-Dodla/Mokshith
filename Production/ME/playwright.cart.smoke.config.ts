@@ -35,7 +35,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'node ./tools/start-dev-with-backend.js',
+    command: 'node ./tools/start-dev-with-backend.cjs',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
     timeout: 180000,

@@ -28,6 +28,7 @@ const UserManagement = lazy(() => import('./pages/SuperAdmin/UserManagement'));
 const SuperAdminOrders = lazy(() => import('./pages/SuperAdmin/Orders'));
 const SuperAdminAnalytics = lazy(() => import('./pages/SuperAdmin/Analytics'));
 const SuperAdminSettings = lazy(() => import('./pages/SuperAdmin/Settings'));
+const SuperAdminPaymentVerifications = lazy(() => import('./pages/SuperAdmin/PaymentVerifications'));
 const SystemSettings = lazy(() => import('./pages/SuperAdmin/SystemSettings'));
 const StaffOnboarding = lazy(() => import('./pages/SuperAdmin/StaffOnboarding'));
 
@@ -96,6 +97,7 @@ function App() {
                 <Route path="user-management" element={<UserManagement />} />
                 <Route path="staff-onboarding" element={<StaffOnboarding />} />
                 <Route path="orders" element={<SuperAdminOrders />} />
+                <Route path="payment-verifications" element={<SuperAdminPaymentVerifications />} />
                 <Route path="analytics" element={<SuperAdminAnalytics />} />
                 <Route path="settings" element={<SuperAdminSettings />} />
                 <Route path="system-settings" element={<SystemSettings />} />

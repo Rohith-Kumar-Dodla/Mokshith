@@ -38,6 +38,7 @@ const SuperAdminLayout = () => {
     { path: '/super-admin/user-management', icon: FiUserCheck, label: 'User Management' },
     { path: '/super-admin/staff-onboarding', icon: FiUserPlus, label: 'Staff Onboarding' },
     { path: '/super-admin/orders', icon: FiPackage, label: 'Orders' },
+    { path: '/super-admin/payment-verifications', icon: FiDollarSign, label: 'Payment Verifications' },
     { path: '/super-admin/analytics', icon: FiBarChart2, label: 'Analytics' },
     { path: '/super-admin/system-settings', icon: FiTool, label: 'System Settings' },
     { path: '/super-admin/settings', icon: FiSettings, label: 'Settings' },

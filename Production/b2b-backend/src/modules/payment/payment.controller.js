@@ -2,6 +2,7 @@ import { asyncHandler } from '../../utils/asyncHandler.js';
 import * as service from './payment.service.js';
 import { successResponse } from '../../utils/responseHandler.js';
 import { logger } from '../../config/logger.js';
+import AppError from '../../errors/AppError.js';
 
 export const createRazorpayOrder = asyncHandler(async (req, res) => {
   const { amount, orderId } = req.body;
@@ -87,7 +88,7 @@ export const createRefund = asyncHandler(async (req, res) => {
 export const getRefundHistory = asyncHandler(async (req, res) => {
   const { orderId } = req.params;
   
-  const refunds = await service.getRefundHistory(orderId);
+  const refunds = await service.getRefundHistory(orderId, req.user);
   
   successResponse(res, refunds, 'Refund history retrieved');
 });
@@ -95,7 +96,7 @@ export const getRefundHistory = asyncHandler(async (req, res) => {
 export const getRefundById = asyncHandler(async (req, res) => {
   const { refundId } = req.params;
   
-  const refund = await service.getRefundById(refundId);
+  const refund = await service.getRefundById(refundId, req.user);
   
   successResponse(res, refund, 'Refund details retrieved');
 });

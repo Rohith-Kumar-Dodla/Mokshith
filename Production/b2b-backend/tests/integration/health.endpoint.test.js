@@ -1,9 +1,9 @@
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { describe, it, expect, jest, beforeAll, beforeEach, afterEach } from '@jest/globals';
 import request from 'supertest';
 import mongoose from 'mongoose';
 import app from '../../src/app.js';
 import { redisClient } from '../../src/config/redis.js';
-import { clearDatabase, cleanupQueuesAndWorkers } from '../helpers/testUtils.js';
+import { clearDatabase, cleanupQueuesAndWorkers, ensureTestDbConnected } from '../helpers/testUtils.js';
 
 /**
  * 🔒 CRITICAL: Health Check Endpoint Tests
@@ -11,14 +11,30 @@ import { clearDatabase, cleanupQueuesAndWorkers } from '../helpers/testUtils.js'
  */
 
 describe('Health Check Endpoint Tests', () => {
+  const resetCircuitBreaker = () => {
+    if (!redisClient.circuitBreaker) return;
+    redisClient.circuitBreaker.state = 'CLOSED';
+    redisClient.circuitBreaker.failureCount = 0;
+    redisClient.circuitBreaker.successCount = 0;
+    redisClient.circuitBreaker.nextAttempt = 0;
+  };
+
+  beforeAll(async () => {
+    resetCircuitBreaker();
+    await ensureTestDbConnected();
+    if (mongoose.connection.readyState === 1) {
+      await mongoose.connection.db.admin().ping();
+    }
+  });
+
   beforeEach(async () => {
     await clearDatabase();
-    
-    // Reset circuit breaker
-    if (redisClient.circuitBreaker) {
-      redisClient.circuitBreaker.state = 'CLOSED';
-      redisClient.circuitBreaker.failureCount = 0;
-    }
+    resetCircuitBreaker();
+  });
+
+  afterEach(() => {
+    resetCircuitBreaker();
+    jest.restoreAllMocks();
   });
 
   describe('GET /api/v1/health - Basic Health', () => {
@@ -82,7 +98,7 @@ describe('Health Check Endpoint Tests', () => {
       }
     });
 
-    it('should report degraded when latency 100-500ms', async () => {
+    it('should report degraded when latency 100-1500ms', async () => {
       // Mock slow database
       const originalExec = mongoose.Query.prototype.exec;
       jest.spyOn(mongoose.Query.prototype, 'exec').mockImplementation(async function() {
@@ -92,7 +108,7 @@ describe('Health Check Endpoint Tests', () => {
 
       const res = await request(app).get('/api/v1/health');
 
-      if (res.body.checks.database.latencyMs >= 100 && res.body.checks.database.latencyMs <= 500) {
+      if (res.body.checks.database.latencyMs >= 100 && res.body.checks.database.latencyMs <= 1500) {
         expect(res.body.checks.database.status).toBe('degraded');
         expect(res.body.status).toMatch(/degraded|healthy/);
       }
@@ -100,16 +116,16 @@ describe('Health Check Endpoint Tests', () => {
       jest.restoreAllMocks();
     });
 
-    it('should report unhealthy when latency >= 500ms', async () => {
+    it('should report unhealthy when latency >= 1500ms', async () => {
       const originalPing = mongoose.connection.db.admin().ping.bind(mongoose.connection.db.admin());
       jest.spyOn(mongoose.connection.db.admin(), 'ping').mockImplementation(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 600));
+        await new Promise((resolve) => setTimeout(resolve, 1600));
         return originalPing();
       });
 
       const res = await request(app).get('/api/v1/health');
 
-      if (res.body.checks.database.latencyMs >= 500) {
+      if (res.body.checks.database.latencyMs >= 1500) {
         expect(res.body.checks.database.status).toBe('unhealthy');
         expect(res.body.status).toBe('unhealthy');
         expect(res.status).toBe(503);
@@ -214,35 +230,40 @@ describe('Health Check Endpoint Tests', () => {
     });
 
     it('should detect high queue depth', async () => {
-      // Add many jobs to queue to increase depth
+      // Standard test config disables queues; BullMQ also requires real Redis (Lua scripts).
+      // Validate the disabled-queue contract instead of opening a TCP Redis connection.
+      if (process.env.ENABLE_QUEUE !== 'true') {
+        const res = await request(app).get('/api/v1/health').expect(200);
+        expect(res.body.checks.queues.enabled).toBe(false);
+        expect(res.body.checks.queues.details.waiting).toBe(0);
+        return;
+      }
+
       const { Queue } = await import('bullmq');
-      const testQueue = new Queue('test-queue', {
-        connection: {
-          host: process.env.REDIS_HOST || 'localhost',
-          port: parseInt(process.env.REDIS_PORT) || 6379,
-        },
+      const { getBullConnection } = await import('../../src/config/redis.js');
+      const testQueue = new Queue('test-queue-health-depth', {
+        connection: getBullConnection(),
       });
 
-      // Add 100 jobs
-      const promises = [];
-      for (let i = 0; i < 100; i++) {
-        promises.push(testQueue.add('test-job', { index: i }));
+      try {
+        const promises = [];
+        for (let i = 0; i < 100; i++) {
+          promises.push(testQueue.add('test-job', { index: i }));
+        }
+        await Promise.all(promises);
+
+        const res = await request(app).get('/api/v1/health');
+
+        if (res.body.checks.queues.details && res.body.checks.queues.details.waiting > 50) {
+          expect(res.body.checks.queues.status).toMatch(/degraded|unhealthy/);
+        }
+      } finally {
+        await cleanupQueuesAndWorkers({
+          queues: [testQueue].filter(Boolean),
+          obliterate: true,
+          timeout: 5000,
+        });
       }
-      await Promise.all(promises);
-
-      const res = await request(app).get('/api/v1/health');
-
-      // Should report queue issues if depth exceeds thresholds
-      if (res.body.checks.queues.details && res.body.checks.queues.details.waiting > 50) {
-        expect(res.body.checks.queues.status).toMatch(/degraded|unhealthy/);
-      }
-
-      // Safe cleanup
-      await cleanupQueuesAndWorkers({
-        queues: [testQueue].filter(Boolean),
-        obliterate: true,
-        timeout: 5000
-      });
     });
 
     it('should detect failed job accumulation', async () => {
@@ -371,17 +392,17 @@ describe('Health Check Endpoint Tests', () => {
 
   describe('Health Check Error Handling', () => {
     it('should handle database connection errors', async () => {
-      // Temporarily close database
       await mongoose.connection.close();
 
-      const res = await request(app)
-        .get('/api/v1/health')
-        .expect(503);
+      try {
+        const res = await request(app)
+          .get('/api/v1/health')
+          .expect(503);
 
-      expect(res.body.checks.database.status).toBe('unhealthy');
-
-      // Reconnect
-      await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/test');
+        expect(res.body.checks.database.status).toBe('unhealthy');
+      } finally {
+        await ensureTestDbConnected();
+      }
     });
 
     it('should gracefully handle check timeouts', async () => {

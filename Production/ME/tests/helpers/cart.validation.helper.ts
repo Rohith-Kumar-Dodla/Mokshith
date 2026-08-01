@@ -23,7 +23,15 @@ import {
 export function clearValidationRateLimits(): void {
   try {
     const script = path.resolve(process.cwd(), '..', 'b2b-backend', 'scripts', 'clearAuthRateLimits.js');
-    execSync(`node "${script}"`, { stdio: 'ignore' });
+    const redisUrl =
+      !process.env.REDIS_URL || String(process.env.REDIS_URL).includes('upstash')
+        ? process.env.PLAYWRIGHT_REDIS_URL || 'redis://127.0.0.1:6379'
+        : process.env.REDIS_URL;
+    execSync(`node "${script}"`, {
+      stdio: 'ignore',
+      env: { ...process.env, REDIS_URL: redisUrl },
+      timeout: 20000,
+    });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.warn('Warning: failed to clear validation rate limits:', message);

@@ -4,6 +4,20 @@ import { logger } from '../config/logger.js';
 const IDEMPOTENCY_TTL = 86400; // 24 hours in seconds
 
 /**
+ * Normalize a value into a charset-safe idempotency key segment.
+ * Prevents valid payloads (decimal stock, non-ASCII) and invalid shapes (objects)
+ * from being rejected as "Invalid idempotency key format" before Joi/business
+ * validation can run. Manual keys still pass through the format regex below.
+ */
+function toIdempotencyPart(value) {
+  if (value === null || value === undefined) return 'null';
+  if (typeof value === 'object') {
+    return `obj_${Buffer.from(JSON.stringify(value)).toString('base64url').slice(0, 48)}`;
+  }
+  return String(value).replace(/[^a-zA-Z0-9_.:-]/g, '_').slice(0, 80);
+}
+
+/**
  * Core idempotency middleware
  * Prevents duplicate processing of state-changing operations
  */
@@ -75,17 +89,31 @@ export const operationIdempotency = (operationType) => {
         break;
       }
         
-      case 'inventory:add':
+      case 'inventory:add': {
         // Use productId + quantity + warehouseId for stock addition
         const addData = req.body;
-        autoKey = `inventory:add:${addData.productId}:${addData.warehouseId}:${addData.stock}`;
+        autoKey = [
+          'inventory',
+          'add',
+          toIdempotencyPart(addData.productId),
+          toIdempotencyPart(addData.warehouseId),
+          toIdempotencyPart(addData.stock),
+        ].join(':');
         break;
-        
+      }
+
       case 'inventory:update': {
         // Include warehouse + target stock so repeated SET operations are not replayed incorrectly.
         const updateData = req.body;
         const warehouseKey = updateData.warehouseId ?? 'default';
-        autoKey = `inventory:update:${updateData.productId}:${warehouseKey}:${updateData.stock}:${updateData.type || updateData.operation || 'SET'}`;
+        autoKey = [
+          'inventory',
+          'update',
+          toIdempotencyPart(updateData.productId),
+          toIdempotencyPart(warehouseKey),
+          toIdempotencyPart(updateData.stock),
+          toIdempotencyPart(updateData.type || updateData.operation || 'SET'),
+        ].join(':');
         break;
       }
         
@@ -106,8 +134,8 @@ export const operationIdempotency = (operationType) => {
     // --- TEMP LOGGING: record the keys used for idempotency to aid debugging ---
     logger.debug('operationIdempotency - computed keys', { operationType, manualKey, autoKey, finalKey: key, path: req.path, method: req.method });
 
-    // Validate key format
-    if (!/^[a-zA-Z0-9_:-]{1,255}$/.test(key)) {
+    // Validate key format (allow '.' for decimal stock amounts in auto-keys)
+    if (!/^[a-zA-Z0-9_.:-]{1,255}$/.test(key)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid idempotency key format',

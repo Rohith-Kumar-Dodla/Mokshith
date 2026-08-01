@@ -11,7 +11,7 @@ export const updateStatusSchema = Joi.object({
 export const assignDeliverySchema = Joi.object({
   body: Joi.object({
     deliveryPartnerId: Joi.string().required(),
-  }),
+  }).required(),
 });
 
 export const collectCodPaymentSchema = Joi.object({
