@@ -97,7 +97,7 @@ const NotificationDrawer = ({ isOpen, onClose, notifications = [] }) => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 mb-1">
-                        <h4 className="font-medium text-gray-900 text-sm">{notification.title}</h4>
+                        <p className="font-medium text-gray-900 text-sm">{notification.title}</p>
                         {!notification.read && (
                           <span className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full" />
                         )}

@@ -50,9 +50,9 @@ const NotificationDrawer = ({ isOpen, onClose, notifications }) => {
                         !notification.read ? 'bg-blue-600' : 'bg-gray-300'
                       }`} />
                       <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 text-xs sm:text-sm">
+                        <p className="font-semibold text-gray-900 text-xs sm:text-sm">
                           {notification.title}
-                        </h3>
+                        </p>
                         <p className="text-gray-600 text-xs sm:text-sm mt-1">
                           {notification.message}
                         </p>

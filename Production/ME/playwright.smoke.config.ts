@@ -37,7 +37,7 @@ export default defineConfig({
     // Launch an orchestrator that starts both backend and frontend (dev mode).
     // This ensures the API at port 5000 is available for smoke runs without
     // weakening the frontend production guard.
-    command: 'node ./tools/start-dev-with-backend.js',
+    command: 'node ./tools/start-dev-with-backend.cjs',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,

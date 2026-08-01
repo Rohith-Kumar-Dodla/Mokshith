@@ -138,6 +138,7 @@ export default class AdminProductsPage {
       ),
       this.saveButton().click(),
     ]);
+    await expect(this.saveButton()).toHaveCount(0, { timeout: 15000 });
     return response;
   }
 

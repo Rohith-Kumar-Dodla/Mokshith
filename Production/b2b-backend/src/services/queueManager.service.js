@@ -7,12 +7,30 @@ import { getBullConnection } from '../config/redis.js';
  * Replaces setImmediate with reliable BullMQ jobs that survive server crashes
  */
 
-// Use BullMQ-compatible connection factory (prefers REDIS_URL)
-const connection = getBullConnection();
+const isQueueEnabled = () => process.env.ENABLE_QUEUE === 'true';
 
-// Initialize queues
-const postPaymentQueue = new Queue('post-payment', { connection });
-const postOrderQueue = new Queue('post-order', { connection });
+let postPaymentQueue;
+let postOrderQueue;
+
+function getPostPaymentQueue() {
+  if (!isQueueEnabled()) {
+    return null;
+  }
+  if (!postPaymentQueue) {
+    postPaymentQueue = new Queue('post-payment', { connection: getBullConnection() });
+  }
+  return postPaymentQueue;
+}
+
+function getPostOrderQueue() {
+  if (!isQueueEnabled()) {
+    return null;
+  }
+  if (!postOrderQueue) {
+    postOrderQueue = new Queue('post-order', { connection: getBullConnection() });
+  }
+  return postOrderQueue;
+}
 
 /**
  * Queue post-payment processing jobs (invoice, delivery, notifications)
@@ -23,6 +41,11 @@ const postOrderQueue = new Queue('post-order', { connection });
  * @param {string} data.paymentMethod - Payment method
  */
 export const queuePostPaymentJobs = async (data) => {
+  if (!isQueueEnabled()) {
+    logger.debug('Queues disabled - skipping queuePostPaymentJobs', { data });
+    return;
+  }
+
   const start = Date.now();
   logger.debug('START queuePostPaymentJobs', { data });
   try {
@@ -33,8 +56,13 @@ export const queuePostPaymentJobs = async (data) => {
       return;
     }
 
+    const queue = getPostPaymentQueue();
+    if (!queue) {
+      return;
+    }
+
     // Add job with retry configuration
-    await postPaymentQueue.add(
+    await queue.add(
       'process-payment-completion',
       {
         orderId,
@@ -79,6 +107,11 @@ export const queuePostPaymentJobs = async (data) => {
  * @param {string} data.paymentMethod - Payment method
  */
 export const queuePostOrderJobs = async (data) => {
+  if (!isQueueEnabled()) {
+    logger.debug('Queues disabled - skipping queuePostOrderJobs', { data });
+    return;
+  }
+
   try {
     const { orderId, userId, paymentMethod } = data;
 
@@ -87,7 +120,12 @@ export const queuePostOrderJobs = async (data) => {
       return;
     }
 
-    await postOrderQueue.add(
+    const queue = getPostOrderQueue();
+    if (!queue) {
+      return;
+    }
+
+    await queue.add(
       'process-order-logistics',
       {
         orderId,
@@ -121,11 +159,22 @@ export const queuePostOrderJobs = async (data) => {
  */
 export const closeQueues = async () => {
   try {
-    await Promise.all([postPaymentQueue.close(), postOrderQueue.close()]);
-    logger.info('Queues closed successfully');
+    const closePromises = [];
+    if (postPaymentQueue) {
+      closePromises.push(postPaymentQueue.close());
+    }
+    if (postOrderQueue) {
+      closePromises.push(postOrderQueue.close());
+    }
+    if (closePromises.length > 0) {
+      await Promise.all(closePromises);
+      logger.info('Queues closed successfully');
+    }
+    postPaymentQueue = undefined;
+    postOrderQueue = undefined;
   } catch (error) {
     logger.error('Error closing queues', { error: error.message });
   }
 };
 
-export { postPaymentQueue, postOrderQueue };
+export { getPostPaymentQueue as postPaymentQueue, getPostOrderQueue as postOrderQueue };

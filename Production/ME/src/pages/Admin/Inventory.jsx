@@ -28,12 +28,23 @@ const Inventory = () => {
     setError(null);
 
     try {
-      const [inventoryResponse, statsResponse] = await Promise.all([
+      const [inventoryResult, statsResult] = await Promise.allSettled([
         inventoryService.getInventory(),
         inventoryService.getInventoryStats(),
       ]);
-      setInventory(mapBackendInventory(inventoryResponse));
-      setStats(mapInventoryStats(statsResponse));
+
+      if (inventoryResult.status !== 'fulfilled') {
+        throw inventoryResult.reason;
+      }
+
+      setInventory(mapBackendInventory(inventoryResult.value));
+
+      if (statsResult.status === 'fulfilled') {
+        setStats(mapInventoryStats(statsResult.value));
+      } else {
+        // Keep the page usable when the aggregate stats endpoint is slower than the row list.
+        setStats(mapInventoryStats(null));
+      }
     } catch (loadError) {
       setError(loadError?.response?.data?.message || loadError.message || 'Failed to load inventory');
     } finally {
@@ -148,7 +159,11 @@ const Inventory = () => {
           };
           const colors = colorClasses[card.color];
           return (
-            <Card key={index} className="hover:shadow-md transition-shadow p-3 sm:p-6">
+            <Card
+              key={index}
+              className="hover:shadow-md transition-shadow p-3 sm:p-6"
+              data-testid={`inventory-stat-${card.title.toLowerCase().replace(/\s+/g, '-')}`}
+            >
               <div className="flex items-start justify-between">
                 <div className={`p-2 sm:p-3 rounded-lg ${colors.bg}`}>
                   <card.icon size={18} sm:size={24} className={colors.icon} />
@@ -242,6 +257,9 @@ const Inventory = () => {
                   <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-700">{item.lastUpdated}</td>
                   <td className="px-4 sm:px-6 py-3 sm:py-4">
                     <button
+                      type="button"
+                      aria-label={`Update stock for ${item.productName}`}
+                      data-testid={`inventory-update-${item.id}`}
                       onClick={() => handleUpdateStock(item)}
                       className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 h-10 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-sm"
                     >
@@ -279,9 +297,15 @@ const Inventory = () => {
               </div>
             )}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">Current Quantity</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2" htmlFor="inventory-stock-quantity">
+                Current Quantity
+              </label>
               <input
-                type="number"
+                id="inventory-stock-quantity"
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
+                aria-label="Current Quantity"
                 value={stockQuantity}
                 onChange={(e) => setStockQuantity(e.target.value)}
                 className="w-full px-4 py-2.5 h-12 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
