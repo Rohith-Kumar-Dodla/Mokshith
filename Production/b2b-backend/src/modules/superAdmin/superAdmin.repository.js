@@ -26,7 +26,10 @@ export const getSystemStats = async () => {
     Company.countDocuments(),
     Order.countDocuments(),
     User.countDocuments({ role: ROLES.ADMIN, isDeleted: { $ne: true } }),
-    User.countDocuments({ role: ROLES.B2B_CUSTOMER, isDeleted: { $ne: true } }),
+    User.countDocuments({
+      role: { $in: [ROLES.VENDOR, ROLES.B2B_CUSTOMER] },
+      isDeleted: { $ne: true },
+    }),
     User.countDocuments({ role: ROLES.DELIVERY_PARTNER, isDeleted: { $ne: true } }),
     Product.countDocuments(),
     User.countDocuments({

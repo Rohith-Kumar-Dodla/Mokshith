@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { getUserFacingErrorMessage } from '../../utils/apiResponse';
 import { FiEye, FiCheck, FiX } from 'react-icons/fi';
 import PageHeader from '../../components/superadmin/PageHeader';
 import SearchBar from '../../components/superadmin/SearchBar';
@@ -25,7 +26,7 @@ const Vendors = () => {
       const users = Array.isArray(payload) ? payload : payload?.users || [];
       setVendors(users.map(mapVendorUser));
     } catch (err) {
-      setError(err?.response?.data?.message || err?.message || 'Failed to load vendors');
+      setError(getUserFacingErrorMessage(err, 'Failed to load vendors');
       setVendors([]);
     } finally {
       setLoading(false);
@@ -45,7 +46,7 @@ const Vendors = () => {
       else if (action === 'suspend') await adminService.updateUserStatus(vendorId, 'SUSPENDED');
       await loadVendors();
     } catch (err) {
-      setError(err?.response?.data?.message || err?.message || 'Action failed');
+      setError(getUserFacingErrorMessage(err, 'Action failed');
     } finally {
       setActionLoading(false);
     }
@@ -163,7 +164,8 @@ const Vendors = () => {
             options={statusOptions}
             selected={statusFilter}
             onSelect={setStatusFilter}
-            label="Filter by Status"
+            label="Filter"
+            onClear={() => setStatusFilter('all')}
           />
         </div>
       </div>

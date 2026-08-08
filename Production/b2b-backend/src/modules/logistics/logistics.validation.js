@@ -13,3 +13,9 @@ export const assignDeliverySchema = Joi.object({
     deliveryPartnerId: Joi.string().required(),
   }),
 });
+
+export const rejectDeliverySchema = Joi.object({
+  body: Joi.object({
+    reason: Joi.string().trim().max(500).optional().allow('', null),
+  }).default({}),
+});

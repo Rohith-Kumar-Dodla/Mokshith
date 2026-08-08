@@ -134,39 +134,50 @@ export const operationIdempotency = (operationType) => {
 
       if (!lockAcquired) {
         logger.warn(`Concurrent ${operationType} detected, lock busy`, { key, lockKey });
-        // Attempt best-effort completion check for known operations before rejecting
-        try {
-          if (operationType === 'order:create') {
-            // If an order with this idempotency key already exists, return it (don't block user)
+
+        const findExistingOrder = async () => {
+          if (operationType !== 'order:create') return null;
+          try {
             const mongoose = await import('mongoose');
             const OrderModel = mongoose.default.models.Order || mongoose.default.model('Order');
             const userId = req.user?.id;
-            if (userId) {
-              const existingOrder = await OrderModel.findOne({ idempotencyKey: key, userId }).lean();
-              if (existingOrder) {
-                logger.info('operationIdempotency - found existing order for idempotency key', { key, orderId: existingOrder._id });
-                return res.json(existingOrder);
-              }
-            }
+            if (!userId) return null;
+            return OrderModel.findOne({ idempotencyKey: key, userId }).lean();
+          } catch (checkErr) {
+            logger.error('operationIdempotency - fallback completion check failed', {
+              error: checkErr?.message || String(checkErr),
+            });
+            return null;
           }
-        } catch (checkErr) {
-          logger.error('operationIdempotency - fallback completion check failed', { error: checkErr?.message || String(checkErr) });
-        }
+        };
 
-        // Short polling window: wait up to 1s for the lock to be released (helps transient races)
+        // Align wait with lock TTL so a concurrent request can observe the completed order
+        // instead of failing after 1s while createOrder is still running.
+        const waitTimeout = operationType === 'order:create' ? 15000 : 1000;
+        const pollInterval = 250;
         const start = Date.now();
-        const waitTimeout = 1000;
-        const pollInterval = 150;
-        let waited = 0;
+
         while (Date.now() - start < waitTimeout) {
-          // If cached response appears while waiting, return it
           const cachedNow = await redisClient.get(redisKey);
           if (cachedNow) {
-            logger.info('operationIdempotency - cached response found during short wait', { key });
+            logger.info('operationIdempotency - cached response found during wait', { key });
             return res.json(JSON.parse(cachedNow));
           }
+
+          const existingOrder = await findExistingOrder();
+          if (existingOrder) {
+            logger.info('operationIdempotency - found existing order for idempotency key', {
+              key,
+              orderId: existingOrder._id,
+            });
+            return res.status(200).json({
+              success: true,
+              message: 'Order already created',
+              data: existingOrder,
+            });
+          }
+
           await new Promise((r) => setTimeout(r, pollInterval));
-          waited += pollInterval;
         }
 
         // Still locked — reject as duplicate in progress

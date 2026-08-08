@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { getUserFacingErrorMessage } from '../utils/apiResponse';
 import pricingService from '../services/pricingService';
 import { getMoqUnitPrice, resolveEffectiveUnitPrice } from '../utils/pricingCalculator';
 
@@ -31,7 +32,7 @@ export function useProductPricing(product, quantity) {
       } catch (error) {
         if (!cancelled) {
           setApiPricing(null);
-          setPricingError(error?.response?.data?.message || error.message || 'Failed to calculate price');
+          setPricingError(getUserFacingErrorMessage(error, 'Failed to calculate price');
         }
       } finally {
         if (!cancelled) {

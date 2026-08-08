@@ -8,8 +8,16 @@ import { hashPassword } from '../../utils/hashPassword.js';
 
 export const getAllUsers = async (role) => {
   const query = { isDeleted: { $ne: true } };
-  if (role) query.role = role;
-  return User.find(query).sort({ createdAt: -1 });
+  if (role) {
+    const normalized = String(role).toUpperCase();
+    // Vendor portal users may be stored as VENDOR (registration) or legacy B2B_CUSTOMER
+    if (normalized === ROLES.VENDOR || normalized === ROLES.B2B_CUSTOMER) {
+      query.role = { $in: [ROLES.VENDOR, ROLES.B2B_CUSTOMER] };
+    } else {
+      query.role = normalized;
+    }
+  }
+  return User.find(query).sort({ createdAt: -1 }).lean();
 };
 
 export const createB2BCustomer = async (data) => {
@@ -97,7 +105,10 @@ export const getStats = async () => {
   const totalUsers = await User.countDocuments({ isDeleted: { $ne: true } });
   const totalOrders = await Order.countDocuments();
   const totalAdmins = await User.countDocuments({ role: ROLES.ADMIN, isDeleted: { $ne: true } });
-  const totalVendors = await User.countDocuments({ role: ROLES.B2B_CUSTOMER, isDeleted: { $ne: true } });
+  const totalVendors = await User.countDocuments({
+    role: { $in: [ROLES.VENDOR, ROLES.B2B_CUSTOMER] },
+    isDeleted: { $ne: true },
+  });
   const totalDeliveryPartners = await User.countDocuments({ role: ROLES.DELIVERY_PARTNER, isDeleted: { $ne: true } });
   const pendingApprovals = await User.countDocuments({
     status: USER_STATUS.PENDING,

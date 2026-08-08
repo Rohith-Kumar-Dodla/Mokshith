@@ -72,12 +72,15 @@ const Checkout = () => {
   const placeOrderButtonRef = useRef(null);
   const orderIdempotencyKeyRef = useRef(null);
 
-  const releasePlacementLock = () => {
+  const releasePlacementLock = ({ clearIdempotencyKey = false } = {}) => {
     placingRef.current = false;
     setPlacementLocked(false);
     setPlacementLockedGlobally(false);
     releaseOrderClickMutex();
-    orderIdempotencyKeyRef.current = null;
+    // Keep the same idempotency key across recoverable failures so retries cannot create a second order
+    if (clearIdempotencyKey) {
+      orderIdempotencyKeyRef.current = null;
+    }
     if (placeOrderButtonRef.current) {
       placeOrderButtonRef.current.disabled = false;
     }
@@ -171,8 +174,10 @@ const Checkout = () => {
           orderTotal: grandTotal,
           idempotencyKey: orderIdempotencyKeyRef.current,
         });
+        // Success navigates away; only clear key if still mounted on this page
+        orderIdempotencyKeyRef.current = null;
       } catch {
-        releasePlacementLock();
+        releasePlacementLock({ clearIdempotencyKey: false });
       } finally {
         releaseOrderClickMutex();
       }

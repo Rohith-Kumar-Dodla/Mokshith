@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
+import { getUserFacingErrorMessage } from '../utils/apiResponse';
 import creditService from '../services/creditService';
 
-const getErrorMessage = (error, fallback) =>
-  error?.response?.data?.message || error?.message || fallback;
 
 function unwrapCredit(payload) {
   const data = payload?.data ?? payload;
@@ -28,7 +27,7 @@ export function useCredit({ autoLoad = true } = {}) {
       const payload = await creditService.getCredit();
       setCredit(unwrapCredit(payload));
     } catch (loadError) {
-      setError(getErrorMessage(loadError, 'Failed to load credit account'));
+      setError(getUserFacingErrorMessage(loadError, 'Failed to load credit account'));
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getUserFacingErrorMessage } from '../../utils/apiResponse';
 import { Link } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import Card from '../../components/Card';
@@ -28,7 +29,7 @@ const ForgotPassword = () => {
         setDevResetUrl(payload.resetUrl);
       }
     } catch (err) {
-      setError(err?.response?.data?.message || err.message || 'Failed to send reset link');
+      setError(getUserFacingErrorMessage(err, 'Failed to send reset link');
     } finally {
       setLoading(false);
     }

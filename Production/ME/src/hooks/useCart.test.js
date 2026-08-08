@@ -72,7 +72,7 @@ describe('useCart', () => {
 
   it('handles load errors', async () => {
     cartService.getCart.mockRejectedValue({
-      response: { data: { message: 'Unauthorized' } },
+      response: { status: 401, data: { message: 'Unauthorized' } },
     });
 
     const { result } = renderHook(() => useCart());
@@ -81,7 +81,7 @@ describe('useCart', () => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(result.current.error).toBe('Unauthorized');
+    expect(result.current.error).toBe('Your session has expired. Please sign in again.');
     expect(result.current.cartItems).toHaveLength(0);
   });
 

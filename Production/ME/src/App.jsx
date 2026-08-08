@@ -83,11 +83,12 @@ function App() {
                 <Route index element={<Navigate to="/super-admin/dashboard" replace />} />
                 <Route path="dashboard" element={<SuperAdminDashboard />} />
                 <Route path="platform" element={<Platform />} />
-                <Route path="admin-approvals" element={<Navigate to="/super-admin/user-management" replace />} />
-                <Route path="vendors" element={<Navigate to="/super-admin/user-management" replace />} />
-                <Route path="delivery-partners" element={<Navigate to="/super-admin/user-management" replace />} />
+                <Route path="admin-approvals" element={<Navigate to="/super-admin/user-management?tab=approvals" replace />} />
+                <Route path="vendors" element={<Navigate to="/super-admin/user-management?tab=vendors" replace />} />
+                <Route path="delivery-partners" element={<Navigate to="/super-admin/user-management?tab=delivery" replace />} />
                 <Route path="user-management" element={<UserManagement />} />
                 <Route path="orders" element={<SuperAdminOrders />} />
+                <Route path="payment-verifications" element={<Navigate to="/super-admin/orders" replace />} />
                 <Route path="analytics" element={<SuperAdminAnalytics />} />
                 <Route path="settings" element={<SuperAdminSettings />} />
               </Route>
@@ -95,8 +96,8 @@ function App() {
               <Route path="/admin/*" element={<ProtectedRoute requiredRole="admin"><AdminLayout /></ProtectedRoute>}>
                 <Route index element={<Navigate to="/admin/dashboard" replace />} />
                 <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="products" element={<Products />} />
                 <Route path="categories" element={<Categories />} />
+                <Route path="products" element={<Products />} />
                 <Route path="inventory" element={<Inventory />} />
                 <Route path="vendors" element={<AdminVendors />} />
                 <Route path="orders" element={<AdminOrders />} />

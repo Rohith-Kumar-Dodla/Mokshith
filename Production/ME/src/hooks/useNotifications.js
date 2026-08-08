@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { getUserFacingErrorMessage } from '../utils/apiResponse';
 import notificationService from '../services/notificationService';
 import { mapNotifications } from '../utils/deliveryMapper';
 
-const getErrorMessage = (error, fallback) =>
-  error?.response?.data?.message || error?.message || fallback;
 
 export function useNotifications({ autoLoad = true } = {}) {
   const [notifications, setNotifications] = useState([]);
@@ -17,7 +16,7 @@ export function useNotifications({ autoLoad = true } = {}) {
       const payload = await notificationService.getNotifications();
       setNotifications(mapNotifications(payload));
     } catch (loadError) {
-      setError(getErrorMessage(loadError, 'Failed to load notifications'));
+      setError(getUserFacingErrorMessage(loadError, 'Failed to load notifications'));
       setNotifications([]);
     } finally {
       setLoading(false);

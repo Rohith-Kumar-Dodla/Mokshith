@@ -32,9 +32,9 @@ const orderService = {
     return response.data;
   },
 
-  createOrder: async (orderData) => {
+  createOrder: async (orderData, options = {}) => {
     const inFlight = getCreateOrderInFlight();
-    if (inFlight) {
+    if (inFlight && !options.skipInFlightGuard) {
       return inFlight;
     }
 
@@ -43,14 +43,18 @@ const orderService = {
       headers['Idempotency-Key'] = orderData.idempotencyKey;
     }
 
+    // Align with server timeoutMiddleware(30000): order create can exceed the default 10s
+    // axios timeout while MongoDB/inventory work completes — causing false UI failures.
     const requestPromise = api
-      .post('/orders', orderData, { headers })
+      .post('/orders', orderData, { headers, timeout: 30000 })
       .then((response) => response.data)
       .finally(() => {
         clearCreateOrderInFlight();
       });
 
-    setCreateOrderInFlight(requestPromise);
+    if (!options.skipInFlightGuard) {
+      setCreateOrderInFlight(requestPromise);
+    }
     return requestPromise;
   },
 

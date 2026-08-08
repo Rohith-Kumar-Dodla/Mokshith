@@ -23,9 +23,35 @@ import { monitoringMiddleware, errorRateTracker } from './middlewares/monitoring
 
 import { sentryRequestHandler, sentryTracingHandler, sentryErrorHandler } from './config/sentry.js';
 import { healthCheck, livenessProbe, readinessProbe, getMetrics, redisOnlyProbe } from './controllers/health.controller.js';
-
+import jwt from 'jsonwebtoken';
+import { logger } from './config/logger.js';
+import { ROLES } from './constants/roles.js';
 import logisticsRoutes from './modules/logistics/logistics.routes.js';
 
+/** Metrics require SUPER_ADMIN bearer token OR METRICS_TOKEN header — never public in production. */
+const metricsGate = (req, res, next) => {
+  const metricsToken = process.env.METRICS_TOKEN;
+  const provided = req.headers['x-metrics-token'] || req.query.token;
+  if (metricsToken && provided && provided === metricsToken) {
+    return next();
+  }
+
+  try {
+    const auth = req.headers.authorization || '';
+    const bearer = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+    if (!bearer) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+    const decoded = jwt.verify(bearer, process.env.JWT_SECRET);
+    if (decoded.role !== ROLES.SUPER_ADMIN && decoded.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({ success: false, message: 'Forbidden' });
+    }
+    return next();
+  } catch (error) {
+    logger.warn('Metrics auth failed', { error: error.message });
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
+};
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -213,8 +239,8 @@ app.use(requestLogger);
 app.use(idempotencyMiddleware);
 
 
-// 📊 Metrics (after API setup, before not-found)
-app.get('/metrics', getMetrics);
+// 📊 Metrics (authenticated — never public in production)
+app.get('/metrics', metricsGate, getMetrics);
 
 // 🚀 API routes
 app.use('/api', routes);

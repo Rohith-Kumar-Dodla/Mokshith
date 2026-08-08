@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { getUserFacingErrorMessage } from '../utils/apiResponse';
 
 import deliveryService from '../services/deliveryService';
 
@@ -24,9 +25,6 @@ import {
 
 
 
-const getErrorMessage = (error, fallback) =>
-
-  error?.response?.data?.message || error?.message || fallback;
 
 
 
@@ -102,7 +100,7 @@ export function useDelivery({ autoLoad = true } = {}) {
 
         deliveryService.getProfile().catch((profileLoadError) => {
 
-          setProfileError(getErrorMessage(profileLoadError, 'Failed to load profile'));
+          setProfileError(getUserFacingErrorMessage(profileLoadError, 'Failed to load profile'));
 
           return null;
 
@@ -185,7 +183,7 @@ export function useDelivery({ autoLoad = true } = {}) {
 
     } catch (loadError) {
 
-      setError(getErrorMessage(loadError, 'Failed to load delivery data'));
+      setError(getUserFacingErrorMessage(loadError, 'Failed to load delivery data'));
 
     } finally {
 
@@ -215,7 +213,7 @@ export function useDelivery({ autoLoad = true } = {}) {
 
     } catch (profileLoadError) {
 
-      const message = getErrorMessage(profileLoadError, 'Failed to load profile');
+      const message = getUserFacingErrorMessage(profileLoadError, 'Failed to load profile');
 
       setProfileError(message);
 
@@ -255,7 +253,7 @@ export function useDelivery({ autoLoad = true } = {}) {
 
     } catch (loadError) {
 
-      const message = getErrorMessage(loadError, 'Failed to load shipment details');
+      const message = getUserFacingErrorMessage(loadError, 'Failed to load shipment details');
 
       setError(message);
 
@@ -287,7 +285,43 @@ export function useDelivery({ autoLoad = true } = {}) {
 
       } catch (actionError) {
 
-        const message = getErrorMessage(actionError, 'Failed to accept delivery');
+        const message = getUserFacingErrorMessage(actionError, 'Failed to accept delivery');
+
+        setError(message);
+
+        throw new Error(message);
+
+      } finally {
+
+        setActionLoading(false);
+
+      }
+
+    },
+
+    [refreshAll]
+
+  );
+
+
+
+  const rejectAssignment = useCallback(
+
+    async (shipmentId, payload = {}) => {
+
+      setActionLoading(true);
+
+      setError(null);
+
+      try {
+
+        await deliveryService.rejectAssignment(shipmentId, payload);
+
+        await refreshAll({ silent: true });
+
+      } catch (actionError) {
+
+        const message = getUserFacingErrorMessage(actionError, 'Failed to reject delivery assignment');
 
         setError(message);
 
@@ -323,7 +357,7 @@ export function useDelivery({ autoLoad = true } = {}) {
 
       } catch (actionError) {
 
-        const message = getErrorMessage(actionError, 'Failed to mark order as picked up');
+        const message = getUserFacingErrorMessage(actionError, 'Failed to mark order as picked up');
 
         setError(message);
 
@@ -359,7 +393,7 @@ export function useDelivery({ autoLoad = true } = {}) {
 
       } catch (actionError) {
 
-        const message = getErrorMessage(actionError, 'Failed to start delivery');
+        const message = getUserFacingErrorMessage(actionError, 'Failed to start delivery');
 
         setError(message);
 
@@ -395,7 +429,7 @@ export function useDelivery({ autoLoad = true } = {}) {
 
       } catch (actionError) {
 
-        const message = getErrorMessage(actionError, 'Failed to mark delivery as completed');
+        const message = getUserFacingErrorMessage(actionError, 'Failed to mark delivery as completed');
 
         setError(message);
 
@@ -431,7 +465,7 @@ export function useDelivery({ autoLoad = true } = {}) {
 
       } catch (actionError) {
 
-        const message = getErrorMessage(actionError, 'Failed to confirm delivery');
+        const message = getUserFacingErrorMessage(actionError, 'Failed to confirm delivery');
 
         setError(message);
 
@@ -469,7 +503,7 @@ export function useDelivery({ autoLoad = true } = {}) {
 
     } catch (actionError) {
 
-      const message = getErrorMessage(actionError, 'Failed to update profile');
+      const message = getUserFacingErrorMessage(actionError, 'Failed to update profile');
 
       setProfileError(message);
 
@@ -534,6 +568,8 @@ export function useDelivery({ autoLoad = true } = {}) {
     loadShipment,
 
     acceptDelivery,
+
+    rejectAssignment,
 
     pickUpDelivery,
 

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getUserFacingErrorMessage } from '../../utils/apiResponse';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import Card from '../../components/Card';
@@ -40,7 +41,7 @@ const ResetPassword = () => {
       setSuccess('Password reset successfully. Redirecting to login...');
       setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
-      setError(err?.response?.data?.message || err.message || 'Failed to reset password');
+      setError(getUserFacingErrorMessage(err, 'Failed to reset password');
     } finally {
       setLoading(false);
     }

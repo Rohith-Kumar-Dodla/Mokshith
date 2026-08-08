@@ -38,5 +38,6 @@ describe('SuperAdminLayout', () => {
     expect(screen.queryAllByRole('button', { name: /^Logout$/i })).toHaveLength(1);
     // User Management link should be in the sidebar menu
     expect(screen.getByRole('link', { name: /User Management/i })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Payment Verifications/i })).not.toBeInTheDocument();
   });
 });

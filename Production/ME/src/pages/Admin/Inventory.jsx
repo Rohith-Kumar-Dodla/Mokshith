@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { getUserFacingErrorMessage } from '../../utils/apiResponse';
 import { FiEdit, FiAlertTriangle, FiPackage, FiTrendingUp } from 'react-icons/fi';
 import PageHeader from '../../components/admin/PageHeader';
 import Card from '../../components/admin/Card';
@@ -35,7 +36,7 @@ const Inventory = () => {
       setInventory(mapBackendInventory(inventoryResponse));
       setStats(mapInventoryStats(statsResponse));
     } catch (loadError) {
-      setError(loadError?.response?.data?.message || loadError.message || 'Failed to load inventory');
+      setError(getUserFacingErrorMessage(loadError, 'Failed to load inventory');
     } finally {
       setLoading(false);
     }
@@ -107,7 +108,7 @@ const Inventory = () => {
       setIsStockModalOpen(false);
       await loadInventory();
     } catch (submitError) {
-      setSaveError(submitError?.response?.data?.message || submitError.message || 'Failed to update stock');
+      setSaveError(getUserFacingErrorMessage(submitError, 'Failed to update stock');
     } finally {
       setSaving(false);
     }

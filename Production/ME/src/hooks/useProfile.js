@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { getUserFacingErrorMessage } from '../utils/apiResponse';
 import authService from '../services/authService';
 import { useAuth } from '../context/AuthContext';
 
@@ -30,8 +31,6 @@ function mapProfile(user) {
   };
 }
 
-const getErrorMessage = (error, fallback) =>
-  error?.response?.data?.message || error?.message || fallback;
 
 export function useProfile({ autoLoad = true } = {}) {
   const { user: authUser } = useAuth();
@@ -50,7 +49,7 @@ export function useProfile({ autoLoad = true } = {}) {
       setProfile(mapped);
       return mapped;
     } catch (loadError) {
-      setError(getErrorMessage(loadError, 'Failed to load profile'));
+      setError(getUserFacingErrorMessage(loadError, 'Failed to load profile'));
       return null;
     } finally {
       setLoading(false);
@@ -78,7 +77,7 @@ export function useProfile({ autoLoad = true } = {}) {
         setIsEditing(false);
         return mapped;
       } catch (saveError) {
-        const message = getErrorMessage(saveError, 'Failed to update profile');
+        const message = getUserFacingErrorMessage(saveError, 'Failed to update profile');
         setError(message);
         throw new Error(message);
       } finally {

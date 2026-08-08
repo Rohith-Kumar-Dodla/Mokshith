@@ -52,8 +52,24 @@ const logisticsSchema = new mongoose.Schema(
     completedAt: Date,
     deliveryNotes: String,
     deliveryProofImage: String,
+
+    /** Last partner who rejected this assignment (audit; not the active assignee) */
+    lastRejectedPartnerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    rejectedAt: Date,
+    rejectionReason: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+      default: null,
+    },
   },
   { timestamps: true }
 );
+
+logisticsSchema.index({ deliveryPartnerId: 1, status: 1 });
 
 export default mongoose.model('Logistics', logisticsSchema);

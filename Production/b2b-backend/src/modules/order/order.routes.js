@@ -10,12 +10,14 @@ import { orderLimiter } from '../../config/rateLimiter.js';
 import {
   createOrderSchema,
   updateOrderStatusSchema,
+  getOrdersQuerySchema,
 } from './order.validation.js';
 
 const router = express.Router();
 
 // 🔒 State-changing routes with CSRF protection and rate limiting
-router.post('/', protect, orderLimiter, operationIdempotency('order:create'), csrfProtection, validate(createOrderSchema), controller.createOrder);
+// CSRF must run before idempotency so invalid/missing CSRF never acquires the create lock
+router.post('/', protect, orderLimiter, csrfProtection, operationIdempotency('order:create'), validate(createOrderSchema), controller.createOrder);
 router.post('/:id/fail', protect, csrfProtection, controller.markOrderAsFailed);
 router.patch(
   '/:id/status',
@@ -27,7 +29,7 @@ router.patch(
 );
 
 // Read-only routes (no CSRF needed)
-router.get('/', protect, controller.getOrders);
+router.get('/', protect, validate(getOrdersQuerySchema), controller.getOrders);
 router.get('/:id/invoice', protect, controller.downloadInvoice);
 router.get('/:id', protect, controller.getOrderById);
 

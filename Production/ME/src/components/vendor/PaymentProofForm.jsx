@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getUserFacingErrorMessage } from '../../utils/apiResponse';
 import { FiUpload, FiFileText } from 'react-icons/fi';
 import paymentService from '../../services/paymentService';
 
@@ -35,9 +36,7 @@ const PaymentProofForm = ({ orderId, onSuccess, disabled = false, submitLabel = 
       if (onSuccess) await onSuccess();
     } catch (submitError) {
       setError(
-        submitError?.response?.data?.message ||
-        submitError.message ||
-        'Failed to submit payment proof'
+        getUserFacingErrorMessage(submitError, 'Failed to submit payment proof')
       );
     } finally {
       setSubmitting(false);

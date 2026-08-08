@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { getUserFacingErrorMessage } from '../../utils/apiResponse';
 import { Link } from 'react-router-dom';
 import { FiBox, FiShoppingCart, FiTruck, FiUsers, FiCheckCircle, FiPlus, FiPackage, FiTrendingUp, FiUserPlus, FiFileText, FiArrowRight, FiGrid } from 'react-icons/fi';
 import Card from '../../components/admin/Card';
@@ -30,7 +31,7 @@ const AdminDashboard = () => {
         // intentionally do not fetch financial analytics here; Admin should not receive financial data
         setAnalytics(null);
       } catch (err) {
-        setError(err?.response?.data?.message || err?.message || 'Failed to load dashboard');
+        setError(getUserFacingErrorMessage(err, 'Failed to load dashboard');
       } finally {
         setLoading(false);
       }
@@ -41,12 +42,12 @@ const AdminDashboard = () => {
 
   const dashboard = analytics?.dashboard || {};
   const summaryCards = useMemo(() => [
-    { title: 'Total Orders', value: String(stats?.totalOrders ?? dashboard.totalOrders ?? '—'), icon: FiShoppingCart, change: `${dashboard.ordersGrowth >= 0 ? '+' : ''}${dashboard.ordersGrowth ?? 0}%`, color: 'orange' },
-    { title: 'Total Vendors', value: String(stats?.totalVendors ?? '—'), icon: FiUsers, change: '+0%', color: 'green' },
-    { title: 'Delivery Partners', value: String(stats?.totalDeliveryPartners ?? '—'), icon: FiTruck, change: '+0%', color: 'red' },
+    { title: 'Total Orders', value: String(stats?.totalOrders ?? dashboard.totalOrders ?? '—'), icon: FiShoppingCart, change: `${dashboard.ordersGrowth >= 0 ? '+' : ''}${dashboard.ordersGrowth ?? 0}%`, color: 'orange', to: '/admin/orders' },
+    { title: 'Total Vendors', value: String(stats?.totalVendors ?? '—'), icon: FiUsers, change: '+0%', color: 'green', to: '/admin/vendors' },
+    { title: 'Delivery Partners', value: String(stats?.totalDeliveryPartners ?? '—'), icon: FiTruck, change: '+0%', color: 'red', to: '/admin/delivery-assignment?tab=partners' },
     { title: 'Pending Deliveries', value: String(dashboard.pendingDeliveries ?? '—'), icon: FiTruck, change: '—', color: 'red' },
     // Revenue removed from Admin view (financials are Super Admin-only)
-    { title: 'Pending Approvals', value: String(stats?.pendingApprovals ?? '—'), icon: FiUserPlus, change: '—', color: 'purple' },
+    { title: 'Pending Approvals', value: String(stats?.pendingApprovals ?? '—'), icon: FiUserPlus, change: '—', color: 'purple', to: '/admin/vendors?status=pending' },
     { title: 'Total Admins', value: String(stats?.totalAdmins ?? '—'), icon: FiGrid, change: '—', color: 'blue' },
     { title: 'Active Customers', value: String(dashboard.activeCustomers ?? '—'), icon: FiUsers, change: '—', color: 'blue' },
   ], [stats, dashboard]);
@@ -110,8 +111,8 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         {summaryCards.map((card, index) => {
           const colors = getColorClasses(card.color);
-          return (
-            <Card key={index} className="hover:shadow-md transition-shadow p-4 sm:p-6">
+          const content = (
+            <>
               <div className="flex items-start justify-between">
                 <div className={`p-2 sm:p-3 rounded-lg ${colors.bg}`}>
                   <card.icon className={`w-4 h-4 sm:w-6 sm:h-6 ${colors.icon}`} />
@@ -122,6 +123,27 @@ const AdminDashboard = () => {
               </div>
               <p className="text-gray-600 text-xs sm:text-sm mt-3 sm:mt-4">{card.title}</p>
               <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{card.value}</p>
+            </>
+          );
+
+          if (card.to) {
+            return (
+              <Link
+                key={index}
+                to={card.to}
+                aria-label={`View ${card.title}`}
+                className="block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                <Card className="hover:shadow-md transition-shadow p-4 sm:p-6 cursor-pointer hover:border-blue-200 border border-transparent h-full">
+                  {content}
+                </Card>
+              </Link>
+            );
+          }
+
+          return (
+            <Card key={index} className="hover:shadow-md transition-shadow p-4 sm:p-6">
+              {content}
             </Card>
           );
         })}

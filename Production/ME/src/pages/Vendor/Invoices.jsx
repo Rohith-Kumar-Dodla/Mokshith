@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { getUserFacingErrorMessage } from '../../utils/apiResponse';
 import { Link } from 'react-router-dom';
 import { FiDownload, FiEye, FiPrinter } from 'react-icons/fi';
 import PageHeader from '../../components/vendor/PageHeader';
@@ -43,7 +44,7 @@ const Invoices = () => {
       const list = payload?.data ?? payload;
       setInvoices((Array.isArray(list) ? list : []).map(mapInvoice));
     } catch (err) {
-      setError(err?.response?.data?.message || err?.message || 'Failed to load invoices');
+      setError(getUserFacingErrorMessage(err, 'Failed to load invoices');
       setInvoices([]);
     } finally {
       setLoading(false);
@@ -85,7 +86,7 @@ const Invoices = () => {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      setError(err?.response?.data?.message || err?.message || 'Failed to download invoice');
+      setError(getUserFacingErrorMessage(err, 'Failed to download invoice');
     } finally {
       setDownloadingId(null);
     }

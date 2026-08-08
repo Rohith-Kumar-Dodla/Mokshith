@@ -3,7 +3,7 @@ import * as controller from './logistics.controller.js';
 import { protect } from '../../middlewares/auth.middleware.js';
 import { authorize } from '../../middlewares/role.middleware.js';
 import { validate } from '../../middlewares/validate.middleware.js';
-import { assignDeliverySchema } from './logistics.validation.js';
+import { assignDeliverySchema, rejectDeliverySchema } from './logistics.validation.js';
 
 const router = express.Router();
 
@@ -11,6 +11,13 @@ router.get('/delivery-queue', protect, authorize('ADMIN', 'DELIVERY_PARTNER', 'S
 router.get('/history', protect, authorize('ADMIN', 'DELIVERY_PARTNER', 'SUPER_ADMIN'), controller.getDeliveryHistory);
 router.get('/analytics', protect, authorize('ADMIN', 'DELIVERY_PARTNER', 'SUPER_ADMIN'), controller.getDeliveryAnalytics);
 router.post('/:id/accept', protect, authorize('DELIVERY_PARTNER'), controller.acceptDelivery);
+router.post(
+  '/:id/reject',
+  protect,
+  authorize('DELIVERY_PARTNER'),
+  validate(rejectDeliverySchema),
+  controller.rejectAssignment
+);
 router.post('/:id/pick', protect, authorize('DELIVERY_PARTNER'), controller.pickUpDelivery);
 router.post('/:id/start', protect, authorize('DELIVERY_PARTNER'), controller.startDelivery);
 router.post('/:id/delivered', protect, authorize('DELIVERY_PARTNER'), controller.markAsDelivered);

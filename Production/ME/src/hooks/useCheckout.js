@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import { getUserFacingErrorMessage } from '../utils/apiResponse';
 import { useNavigate } from 'react-router-dom';
 import orderService from '../services/orderService';
 import paymentService from '../services/paymentService';
@@ -6,6 +7,10 @@ import api from '../services/api';
 import { mapBackendOrder } from '../utils/orderMapper';
 import { openRazorpayCheckout } from '../utils/razorpayCheckout';
 import { fetchCsrfToken } from '../utils/csrf';
+import {
+  isDefiniteOrderFailure,
+  isUncertainOrderError,
+} from '../utils/orderReconciliation';
 
 const PAYMENT_METHOD_MAP = {
   cod: 'COD',
@@ -40,6 +45,39 @@ const setPlaceOrderInFlightGlobally = (inFlight) => {
 
 function unwrapPayload(response) {
   return response?.data ?? response;
+}
+
+async function reconcileCreatedOrder(idempotencyKey, lastPayload = null) {
+  if (!idempotencyKey) return null;
+
+  // Prefer idempotent replay with the same payload — backend returns the original order
+  if (lastPayload) {
+    try {
+      const replay = await orderService.createOrder(
+        { ...lastPayload, idempotencyKey },
+        { skipInFlightGuard: true }
+      );
+      const orderPayload = unwrapPayload(replay);
+      const mapped = mapBackendOrder(orderPayload);
+      if (mapped?.id) return mapped;
+    } catch {
+      // Fall through to list reconciliation
+    }
+  }
+
+  try {
+    const listResponse = await orderService.getAllOrders({ page: 1, limit: 20 });
+    const payload = unwrapPayload(listResponse);
+    const orders = Array.isArray(payload)
+      ? payload
+      : payload?.orders ?? payload?.data?.orders ?? payload?.data ?? [];
+    const match = orders.find(
+      (order) => String(order?.idempotencyKey || '') === String(idempotencyKey)
+    );
+    return match ? mapBackendOrder(match) : null;
+  } catch {
+    return null;
+  }
 }
 
 export function buildShippingAddress(formData) {
@@ -132,6 +170,26 @@ export function useCheckout({ onSuccess } = {}) {
   const [error, setError] = useState(null);
   const placeOrderInFlightRef = useRef(false);
 
+  const finalizeSuccess = useCallback(
+    async ({ mappedOrder, paymentPending, paymentMethodId }) => {
+      if (onSuccess) {
+        await onSuccess(mappedOrder);
+      }
+
+      navigate(`/vendor/order-success?orderId=${mappedOrder.id}`, {
+        replace: true,
+        state: {
+          order: mappedOrder,
+          paymentPending,
+          paymentMethodId,
+        },
+      });
+
+      return mappedOrder;
+    },
+    [navigate, onSuccess]
+  );
+
   const placeOrder = useCallback(
     async ({ formData, paymentMethodId, orderTotal, idempotencyKey: providedIdempotencyKey }) => {
       if (isPlaceOrderInFlightGlobally() || placeOrderInFlightRef.current) {
@@ -142,12 +200,13 @@ export function useCheckout({ onSuccess } = {}) {
       setSubmitting(true);
       setError(null);
 
+      const shippingAddress = buildShippingAddress(formData);
+      const idempotencyKey =
+        providedIdempotencyKey ||
+        `order-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
       try {
         await fetchCsrfToken(api, true);
-        const shippingAddress = buildShippingAddress(formData);
-        const idempotencyKey =
-          providedIdempotencyKey ||
-          `order-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
         const payload = {
           paymentMethod: mapPaymentMethodToBackend(paymentMethodId),
@@ -155,7 +214,41 @@ export function useCheckout({ onSuccess } = {}) {
           idempotencyKey,
         };
 
-        const response = await orderService.createOrder(payload);
+        let response;
+        try {
+          response = await orderService.createOrder(payload);
+        } catch (createError) {
+          if (isDefiniteOrderFailure(createError)) {
+            throw createError;
+          }
+
+          if (isUncertainOrderError(createError)) {
+            const reconciled = await reconcileCreatedOrder(idempotencyKey, payload);
+            if (reconciled?.id) {
+              let paymentPending = reconciled?.backendStatus === 'PENDING_PAYMENT';
+              if (
+                !ONLINE_PAYMENT_METHODS.has(paymentMethodId) &&
+                !HYBRID_PAYMENT_METHODS.has(paymentMethodId) &&
+                !BANK_TRANSFER_METHODS.has(paymentMethodId)
+              ) {
+                return finalizeSuccess({
+                  mappedOrder: reconciled,
+                  paymentPending,
+                  paymentMethodId,
+                });
+              }
+              // Online / hybrid / bank_transfer still need their follow-up flows below
+              response = { data: reconciled.raw || reconciled };
+            } else {
+              throw new Error(
+                'Order status is uncertain. Please check My Orders before placing again.'
+              );
+            }
+          } else {
+            throw createError;
+          }
+        }
+
         const orderPayload = unwrapPayload(response);
         let mappedOrder = mapBackendOrder(orderPayload);
         const orderId = mappedOrder?.id;
@@ -191,26 +284,14 @@ export function useCheckout({ onSuccess } = {}) {
           return mappedOrder;
         }
 
-        if (onSuccess) {
-          await onSuccess(mappedOrder);
-        }
-
-        // Navigate to order success and include orderId in query string so page can be refreshed
-        navigate(`/vendor/order-success?orderId=${orderId}`, {
-          replace: true,
-          state: {
-            order: mappedOrder,
-            paymentPending,
-            paymentMethodId,
-          },
+        return finalizeSuccess({
+          mappedOrder,
+          paymentPending,
+          paymentMethodId,
         });
-
-        return mappedOrder;
       } catch (submitError) {
         const message =
-          submitError?.response?.data?.message ||
-          submitError.message ||
-          'Failed to place order';
+          getUserFacingErrorMessage(submitError, 'Failed to place order');
         setError(message);
         throw new Error(message);
       } finally {
@@ -219,7 +300,7 @@ export function useCheckout({ onSuccess } = {}) {
         setSubmitting(false);
       }
     },
-    [navigate, onSuccess]
+    [finalizeSuccess, navigate, onSuccess]
   );
 
   return {

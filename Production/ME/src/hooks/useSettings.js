@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
+import { getUserFacingErrorMessage } from '../utils/apiResponse';
 import authService from '../services/authService';
 import settingsService from '../services/settingsService';
 
-const getErrorMessage = (error, fallback) =>
-  error?.response?.data?.message || error?.message || fallback;
 
 function mapProfileForm(user) {
   const payload = user?.data ?? user ?? {};
@@ -93,7 +92,7 @@ export function useSettings({ autoLoad = true } = {}) {
       setSessions(sessionsList.map(mapSession).filter(Boolean));
       return { profile: profileData, settings: settingsData };
     } catch (loadError) {
-      setError(getErrorMessage(loadError, 'Failed to load settings'));
+      setError(getUserFacingErrorMessage(loadError, 'Failed to load settings'));
       return null;
     } finally {
       setLoading(false);
@@ -126,7 +125,7 @@ export function useSettings({ autoLoad = true } = {}) {
       setSuccess('Profile updated successfully');
       return updated;
     } catch (saveError) {
-      const message = getErrorMessage(saveError, 'Failed to update profile');
+      const message = getUserFacingErrorMessage(saveError, 'Failed to update profile');
       setError(message);
       throw new Error(message);
     } finally {
@@ -144,7 +143,7 @@ export function useSettings({ autoLoad = true } = {}) {
       setSuccess('Profile photo updated');
       return updated;
     } catch (uploadError) {
-      const message = getErrorMessage(uploadError, 'Failed to upload photo');
+      const message = getUserFacingErrorMessage(uploadError, 'Failed to upload photo');
       setError(message);
       throw new Error(message);
     } finally {
@@ -162,7 +161,7 @@ export function useSettings({ autoLoad = true } = {}) {
       setSuccess('Settings saved successfully');
       return updated;
     } catch (saveError) {
-      const message = getErrorMessage(saveError, 'Failed to save settings');
+      const message = getUserFacingErrorMessage(saveError, 'Failed to save settings');
       setError(message);
       throw new Error(message);
     } finally {
@@ -178,7 +177,7 @@ export function useSettings({ autoLoad = true } = {}) {
       setSuccess('Password changed successfully. Please sign in again.');
       return true;
     } catch (saveError) {
-      const message = getErrorMessage(saveError, 'Failed to change password');
+      const message = getUserFacingErrorMessage(saveError, 'Failed to change password');
       setError(message);
       throw new Error(message);
     } finally {
@@ -194,7 +193,7 @@ export function useSettings({ autoLoad = true } = {}) {
       setSessions([]);
       setSuccess('Logged out from all other devices');
     } catch (logoutError) {
-      setError(getErrorMessage(logoutError, 'Failed to logout other devices'));
+      setError(getUserFacingErrorMessage(logoutError, 'Failed to logout other devices'));
     } finally {
       setSaving(false);
     }
@@ -208,7 +207,7 @@ export function useSettings({ autoLoad = true } = {}) {
       setSessions((prev) => prev.filter((s) => s.id !== tokenId));
       setSuccess('Session revoked');
     } catch (revokeError) {
-      setError(getErrorMessage(revokeError, 'Failed to revoke session'));
+      setError(getUserFacingErrorMessage(revokeError, 'Failed to revoke session'));
     } finally {
       setSaving(false);
     }
@@ -223,7 +222,7 @@ export function useSettings({ autoLoad = true } = {}) {
       setTwoFASetup(payload);
       return payload;
     } catch (setupError) {
-      const message = getErrorMessage(setupError, 'Failed to start 2FA setup');
+      const message = getUserFacingErrorMessage(setupError, 'Failed to start 2FA setup');
       setError(message);
       throw new Error(message);
     } finally {
@@ -240,7 +239,7 @@ export function useSettings({ autoLoad = true } = {}) {
       setProfile((prev) => ({ ...prev, twoFactorEnabled: true }));
       setSuccess('Two-factor authentication enabled');
     } catch (verifyError) {
-      setError(getErrorMessage(verifyError, 'Invalid verification code'));
+      setError(getUserFacingErrorMessage(verifyError, 'Invalid verification code'));
       throw verifyError;
     } finally {
       setSaving(false);
@@ -256,7 +255,7 @@ export function useSettings({ autoLoad = true } = {}) {
       setTwoFASetup(null);
       setSuccess('Two-factor authentication disabled');
     } catch (disableError) {
-      setError(getErrorMessage(disableError, 'Failed to disable 2FA'));
+      setError(getUserFacingErrorMessage(disableError, 'Failed to disable 2FA'));
       throw disableError;
     } finally {
       setSaving(false);

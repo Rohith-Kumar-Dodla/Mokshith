@@ -1,4 +1,6 @@
 import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
+import { getUserFacingErrorMessage } from '../../utils/apiResponse';
+import { useSearchParams } from 'react-router-dom';
 import {
   FiUsers,
   FiUserCheck,
@@ -20,7 +22,6 @@ import DataTable from '../../components/superadmin/DataTable';
 import StatusBadge from '../../components/superadmin/StatusBadge';
 import Modal from '../../components/superadmin/Modal';
 import adminService from '../../services/adminService';
-import useViewport from '../../hooks/useViewport';
 
 const SECTION_KEYS = [
   { key: 'approvals', label: 'User Approvals', icon: FiUserCheck },
@@ -28,6 +29,8 @@ const SECTION_KEYS = [
   { key: 'vendors', label: 'Vendor Management', icon: FiShoppingBag },
   { key: 'delivery', label: 'Delivery Partners', icon: FiTruck },
 ];
+
+const VALID_TABS = new Set(SECTION_KEYS.map((s) => s.key));
 
 const formatDate = (value) => {
   if (!value) return '—';
@@ -63,7 +66,7 @@ const AdminManagement = () => {
         lastLogin: u.lastLogin,
       })));
     } catch (err) {
-      setError(err?.response?.data?.message || err?.message || 'Failed to load admins');
+      setError(getUserFacingErrorMessage(err, 'Failed to load admins');
       setAdmins([]);
     } finally {
       setLoading(false);
@@ -80,10 +83,9 @@ const AdminManagement = () => {
     try {
       if (action === 'activate') await adminService.updateUserStatus(id, 'ACTIVE');
       if (action === 'deactivate') await adminService.updateUserStatus(id, 'INACTIVE');
-      // Reset password endpoint not available in current services; leave placeholder behaviour
       await loadAdmins();
     } catch (err) {
-      setError(err?.response?.data?.message || err?.message || 'Action failed');
+      setError(getUserFacingErrorMessage(err, 'Action failed');
     } finally {
       setActionLoading(false);
     }
@@ -93,6 +95,7 @@ const AdminManagement = () => {
     { label: 'All Status', value: 'all' },
     { label: 'Active', value: 'active' },
     { label: 'Inactive', value: 'inactive' },
+    { label: 'Pending', value: 'pending' },
   ];
 
   const filtered = useMemo(() => admins.filter((a) => {
@@ -131,7 +134,7 @@ const AdminManagement = () => {
               type="button"
               disabled={actionLoading}
               onClick={() => runAction(row.id, 'activate')}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 min-h-[44px]"
             >
               Activate
             </button>
@@ -140,7 +143,7 @@ const AdminManagement = () => {
               type="button"
               disabled={actionLoading}
               onClick={() => runAction(row.id, 'deactivate')}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 disabled:opacity-50"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 disabled:opacity-50 min-h-[44px]"
             >
               Deactivate
             </button>
@@ -149,7 +152,7 @@ const AdminManagement = () => {
             type="button"
             disabled
             title="Reset password (backend not exposed)"
-            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg opacity-60 cursor-not-allowed"
+            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg opacity-60 cursor-not-allowed min-h-[44px]"
           >
             Reset Password
           </button>
@@ -163,11 +166,6 @@ const AdminManagement = () => {
       <PageHeader
         title="Admin Management"
         subtitle="Create, view and manage admin accounts."
-        actions={(
-          <div className="flex items-center gap-2">
-            <SearchBar placeholder="Search admins..." value={searchTerm} onSearch={setSearchTerm} />
-          </div>
-        )}
       />
 
       {error && (
@@ -175,6 +173,21 @@ const AdminManagement = () => {
           {error}
         </div>
       )}
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+          <div className="flex-1">
+            <SearchBar placeholder="Search admins..." value={searchTerm} onSearch={setSearchTerm} />
+          </div>
+          <FilterDropdown
+            options={statusOptions}
+            selected={statusFilter}
+            onSelect={setStatusFilter}
+            label="Filter"
+            onClear={() => setStatusFilter('all')}
+          />
+        </div>
+      </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden p-4 sm:p-6">
         {loading ? (
@@ -188,6 +201,7 @@ const AdminManagement = () => {
     </div>
   );
 };
+
 
 /* Mobile card renderers for approvals, vendors and delivery partners
    Implemented here to avoid changing existing shared components.
@@ -371,10 +385,26 @@ const DeliveryCardList = () => {
   );
 };
 const UserManagement = () => {
-  const [section, setSection] = useState('approvals');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const initialSection = VALID_TABS.has(tabParam) ? tabParam : 'approvals';
+  const [section, setSection] = useState(initialSection);
   const [mobileOpen, setMobileOpen] = useState(false);
   const contentRef = useRef(null);
-  const { isMobile } = useViewport();
+
+  useEffect(() => {
+    const next = searchParams.get('tab');
+    if (VALID_TABS.has(next) && next !== section) {
+      setSection(next);
+    }
+  }, [searchParams, section]);
+
+  const selectSection = (key) => {
+    setSection(key);
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', key);
+    setSearchParams(next, { replace: true });
+  };
 
   return (
     <div className="min-h-[70vh] user-management">
@@ -391,8 +421,9 @@ const UserManagement = () => {
             {SECTION_KEYS.map((s) => (
               <button
                 key={s.key}
-                onClick={() => setSection(s.key)}
-                className={`w-full inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                type="button"
+                onClick={() => selectSection(s.key)}
+                className={`w-full inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] ${
                   section === s.key ? 'bg-blue-600 text-white' : 'bg-white border border-gray-100 text-gray-700 hover:bg-gray-50'
                 }`}
                 aria-current={section === s.key ? 'page' : undefined}
@@ -409,8 +440,9 @@ const UserManagement = () => {
               {SECTION_KEYS.map((s) => (
                 <button
                   key={s.key}
-                  onClick={() => setSection(s.key)}
-                  className={`w-full inline-flex items-center justify-center gap-2 px-3 py-3 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  type="button"
+                  onClick={() => selectSection(s.key)}
+                  className={`w-full inline-flex items-center justify-center gap-2 px-3 py-3 rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px] ${
                     section === s.key ? 'bg-blue-600 text-white' : 'bg-white border border-gray-100 text-gray-700'
                   }`}
                   aria-current={section === s.key ? 'page' : undefined}
@@ -438,11 +470,11 @@ const UserManagement = () => {
 
       <Modal isOpen={mobileOpen} onClose={() => setMobileOpen(false)} title="Quick Actions">
         <div className="space-y-3">
-          <button className="w-full inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg">
+          <button type="button" className="w-full inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg min-h-[44px]">
             <FiPlus />
             Create Admin
           </button>
-          <button className="w-full inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg">
+          <button type="button" className="w-full inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg min-h-[44px]">
             <FiSearch />
             Search Users
           </button>

@@ -8,6 +8,11 @@ const StatusBadge = ({ status, size = 'md' }) => {
         text: 'text-green-800',
         icon: 'OK'
       },
+      completed: {
+        bg: 'bg-green-100',
+        text: 'text-green-800',
+        icon: 'Completed'
+      },
       dispatched: {
         bg: 'bg-blue-100',
         text: 'text-blue-800',

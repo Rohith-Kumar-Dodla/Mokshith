@@ -27,7 +27,8 @@
     "clear:auth-limits": "node scripts/clearAuthRateLimits.js",
     "fix:user-phone": "node scripts/fixUserPhoneIndex.js",
     "db:init": "cross-env NODE_ENV=qa node scripts/db/init-db.js",
-    "db:seed:qa": "cross-env NODE_ENV=qa node scripts/db/seed-qa.js"
+    "db:seed:qa": "cross-env NODE_ENV=qa node scripts/db/seed-qa.js",
+    "load:probe": "node scripts/load/v1-capacity-probe.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1057.0",

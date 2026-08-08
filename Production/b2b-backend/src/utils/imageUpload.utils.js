@@ -49,20 +49,30 @@ export function stripImageFields(data = {}) {
 export async function replaceStoredImage(existingRecord, data, file, folder = 'images') {
   const payload = stripImageFields(data);
 
-  if (!file) {
-    return payload;
+  if (file) {
+    const next = await applyUploadedImage(payload, file, folder);
+
+    const previousPublicId = existingRecord?.imagePublicId;
+    const nextPublicId = next.imagePublicId;
+
+    if (previousPublicId && previousPublicId !== nextPublicId) {
+      await deleteStoredAsset(previousPublicId);
+    }
+
+    return next;
   }
 
-  const next = await applyUploadedImage(payload, file, folder);
-
-  const previousPublicId = existingRecord?.imagePublicId;
-  const nextPublicId = next.imagePublicId;
-
-  if (previousPublicId && previousPublicId !== nextPublicId) {
-    await deleteStoredAsset(previousPublicId);
+  // Allow pre-uploaded image URLs (upload endpoint already stored the asset)
+  if (data.imageUrl) {
+    return {
+      ...payload,
+      image: data.imageUrl,
+      imageUrl: data.imageUrl,
+      imagePublicId: data.imagePublicId ?? existingRecord?.imagePublicId ?? null,
+    };
   }
 
-  return next;
+  return payload;
 }
 
 export function appendCacheBust(url, version) {

@@ -1,6 +1,7 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
-const MetricCard = ({ title, value, icon, change, color = 'blue' }) => {
+const MetricCard = ({ title, value, icon, change, color = 'blue', to, ariaLabel }) => {
   const colorClasses = {
     blue: {
       bg: 'bg-blue-50',
@@ -35,9 +36,12 @@ const MetricCard = ({ title, value, icon, change, color = 'blue' }) => {
   };
 
   const colors = colorClasses[color] || colorClasses.blue;
+  const className = `bg-white rounded-xl border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-shadow block w-full text-left ${
+    to ? 'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500' : ''
+  }`;
 
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-shadow">
+  const content = (
+    <>
       <div className="flex items-center justify-between mb-3 sm:mb-4">
         <div className={`p-2 sm:p-3 rounded-lg ${colors.bg}`}>
           <div className={colors.iconText}>{icon}</div>
@@ -50,8 +54,18 @@ const MetricCard = ({ title, value, icon, change, color = 'blue' }) => {
       </div>
       <p className="text-xs sm:text-sm text-gray-600 mb-1">{title}</p>
       <p className="text-xl sm:text-2xl font-bold text-gray-900">{value}</p>
-    </div>
+    </>
   );
+
+  if (to) {
+    return (
+      <Link to={to} className={className} aria-label={ariaLabel || `View ${title}`}>
+        {content}
+      </Link>
+    );
+  }
+
+  return <div className={className}>{content}</div>;
 };
 
 export default React.memo(MetricCard);

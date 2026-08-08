@@ -9,6 +9,7 @@ const LOGISTICS_STATUS_MAP = {
   COMPLETED: 'completed',
   CANCELLED: 'failed',
   FAILED: 'failed',
+  REJECTED: 'rejected',
 };
 
 function unwrapList(payload) {
