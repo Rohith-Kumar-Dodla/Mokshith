@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { getUserFacingErrorMessage } from '../../utils/apiResponse';
 import {
   LineChart,
   Line,
@@ -37,7 +38,7 @@ const Analytics = () => {
         setAnalytics(null);
         setDeliveryAnalytics(deliveryPayload?.data ?? deliveryPayload);
       } catch (err) {
-        setError(err?.response?.data?.message || err?.message || 'Failed to load analytics');
+        setError(getUserFacingErrorMessage(err, 'Failed to load analytics');
       } finally {
         setLoading(false);
       }

@@ -160,12 +160,56 @@ function resolveDeliveryPartnerPhone(order) {
   return partner.mobile || partner.phone || null;
 }
 
+export function formatEstimatedDelivery(backendStatus, order = {}) {
+  const status = String(backendStatus || '').toUpperCase();
+  const terminalHideEta = new Set([
+    'DELIVERED',
+    'COMPLETED',
+    'CANCELLED',
+    'FAILED',
+    'RETURNED',
+    'REFUNDED',
+  ]);
+
+  if (terminalHideEta.has(status)) {
+    return null;
+  }
+
+  if (order.estimatedDelivery || order.shipmentId?.estimatedDelivery) {
+    const raw = order.estimatedDelivery || order.shipmentId?.estimatedDelivery;
+    const asDate = new Date(raw);
+    if (!Number.isNaN(asDate.getTime())) {
+      return formatOrderDate(raw);
+    }
+    if (typeof raw === 'string' && raw.toLowerCase() !== 'processing') {
+      return raw;
+    }
+  }
+
+  // In-progress orders without a real ETA still show a neutral placeholder
+  const inProgress = new Set([
+    'CREATED',
+    'PENDING_PAYMENT',
+    'PENDING',
+    'CONFIRMED',
+    'PROCESSING',
+    'PACKED',
+    'READY_TO_DISPATCH',
+    'SHIPPED',
+    'OUT_FOR_DELIVERY',
+  ]);
+
+  return inProgress.has(status) ? 'Processing' : null;
+}
+
 export function mapBackendOrder(order) {
   if (!order) return null;
 
   const items = (order.items ?? []).map(mapBackendOrderItem).filter(Boolean);
   const shippingAddress = order.shippingAddress || order.address || null;
   const backendStatus = order.status;
+  const isDeliveredOrCompleted =
+    backendStatus === 'DELIVERED' || backendStatus === 'COMPLETED';
 
   return {
     id: order._id || order.id,
@@ -186,8 +230,8 @@ export function mapBackendOrder(order) {
     orderDate: formatOrderDate(order.createdAt),
     createdAt: order.createdAt ?? null,
     updatedAt: order.updatedAt ?? null,
-    deliveryDate: backendStatus === 'DELIVERED' ? formatOrderDate(order.updatedAt) : null,
-    estimatedDelivery: backendStatus === 'DELIVERED' ? null : 'Processing',
+    deliveryDate: isDeliveredOrCompleted ? formatOrderDate(order.updatedAt || order.deliveredAt) : null,
+    estimatedDelivery: formatEstimatedDelivery(backendStatus, order),
     deliveryPartner: resolveDeliveryPartnerName(order),
     deliveryPartnerPhone: resolveDeliveryPartnerPhone(order),
     logisticsStatus: order.logisticsStatus || order.shipmentId?.status || null,
@@ -274,3 +318,30 @@ export function computeOrderStats(orders = []) {
     totalSpending: orders.reduce((sum, order) => sum + Number(order.amount || 0), 0),
   };
 }
+
+/** Normalize backend payment method for display (never invent new enums). */
+export function formatPaymentMethodLabel(paymentMethod) {
+  const method = String(paymentMethod || '').toUpperCase();
+  return method || '—';
+}
+
+/**
+ * Mirrors backend buildPaymentCompletedFilter:
+ * PAID paymentStatus OR COD delivered/completed (COD stays PENDING by design).
+ */
+export function isPaymentCompletedOrder(order) {
+  const paymentStatus = String(order?.paymentStatus || order?.raw?.paymentStatus || '').toUpperCase();
+  const paymentMethod = String(order?.paymentMethod || order?.raw?.paymentMethod || '').toUpperCase();
+  const status = String(
+    order?.backendStatus || order?.raw?.status || order?.status || ''
+  ).toUpperCase();
+
+  if (paymentStatus === 'PAID') return true;
+  if (paymentMethod === 'COD' && (status === 'DELIVERED' || status === 'COMPLETED')) return true;
+  // Mapped UI statuses for COD delivered/completed when backendStatus missing
+  if (paymentMethod === 'COD' && (order?.status === 'delivered' || order?.status === 'completed')) {
+    return true;
+  }
+  return false;
+}
+

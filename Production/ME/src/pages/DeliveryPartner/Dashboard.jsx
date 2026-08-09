@@ -19,10 +19,17 @@ const DeliveryDashboard = () => {
   const activityTimeline = analytics?.activityTimeline ?? [];
 
   const summaryCards = [
-    { title: 'Assigned Orders', value: deliveryAnalytics.assignedOrders, icon: <FiPackage size={24} />, change: '+2', color: 'blue' },
+    {
+      title: 'Assigned Orders',
+      value: deliveryAnalytics.assignedOrders,
+      icon: <FiPackage size={24} />,
+      change: '+2',
+      color: 'blue',
+      to: '/delivery/assigned-orders',
+    },
     { title: 'Pending Deliveries', value: deliveryAnalytics.pendingDeliveries, icon: <FiClock size={24} />, change: '+1', color: 'orange' },
-    { title: 'Completed Deliveries', value: deliveryAnalytics.completedDeliveries, icon: <FiCheckCircle size={24} />, change: '+3', color: 'green' },
-    { title: "Today's Earnings", value: `₹${deliveryAnalytics.todaysEarnings}`, icon: <FiDollarSign size={24} />, change: '+15%', color: 'purple' },
+    { title: 'Completed Deliveries', value: deliveryAnalytics.completedDeliveries, icon: <FiCheckCircle size={24} />, change: '+3', color: 'green', to: '/delivery/history' },
+    { title: "Today's Earnings", value: `₹${deliveryAnalytics.todaysEarnings}`, icon: <FiDollarSign size={24} />, change: '+15%', color: 'purple', to: '/delivery/earnings' },
     { title: 'Monthly Earnings', value: `₹${deliveryAnalytics.monthlyEarnings}`, icon: <FiTrendingUp size={24} />, change: '+8%', color: 'green' },
     { title: 'Average Rating', value: deliveryAnalytics.averageRating, icon: <FiStar size={24} />, change: '+0.2', color: 'orange' },
     { title: 'Success Rate', value: `${deliveryAnalytics.successRate}%`, icon: <FiCheckCircle size={24} />, change: '+2%', color: 'blue' },

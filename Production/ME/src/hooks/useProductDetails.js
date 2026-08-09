@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import productService from '../services/productService';
 import { mapBackendProduct, mapBackendProducts } from '../utils/productMapper';
-import { unwrapApiData } from '../utils/apiResponse';
+import { unwrapApiData, getUserFacingErrorMessage } from '../utils/apiResponse';
 
 export function useProductDetails(productId) {
   const [product, setProduct] = useState(null);
@@ -49,7 +49,7 @@ export function useProductDetails(productId) {
     } catch (fetchError) {
       setProduct(null);
       setRelatedProducts([]);
-      setError(fetchError?.response?.data?.message || fetchError.message || 'Failed to load product');
+      setError(getUserFacingErrorMessage(fetchError, 'Failed to load product');
     } finally {
       setLoading(false);
     }

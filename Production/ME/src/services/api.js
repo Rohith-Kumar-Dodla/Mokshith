@@ -6,6 +6,20 @@ import { mapMaintenanceError } from '../utils/loginErrorMapper';
 const CSRF_HEADER = 'x-csrf-token';
 const STATE_CHANGING_METHODS = ['post', 'put', 'patch', 'delete'];
 
+/** Backend CSRF-exempt public auth mutations — do not prefetch CSRF (login issues a fresh token). */
+const CSRF_EXEMPT_URL_PATTERNS = [
+  '/auth/login',
+  '/auth/register',
+  '/auth/refresh-token',
+  '/auth/forgot-password',
+  '/auth/reset-password',
+  '/auth/2fa/verify-login',
+  '/auth/csrf-token',
+];
+
+const isCsrfExemptRequest = (url = '') =>
+  CSRF_EXEMPT_URL_PATTERNS.some((pattern) => String(url).includes(pattern));
+
 const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 // Support runtime-injected global (window.__BACKEND_URL__) for platforms where build-time env is unavailable
 const runtimeBackendUrl = typeof window !== 'undefined' ? window.__BACKEND_URL__ : undefined;
@@ -67,9 +81,8 @@ api.interceptors.request.use(
 
     const method = config.method?.toLowerCase();
     const isStateChanging = method && STATE_CHANGING_METHODS.includes(method);
-    const isCsrfEndpoint = config.url?.includes('/auth/csrf-token');
 
-    if (isStateChanging && !isCsrfEndpoint) {
+    if (isStateChanging && !isCsrfExemptRequest(config.url || '')) {
       const csrfToken = await fetchCsrfToken(api, !getCsrfToken());
       if (csrfToken) {
         config.headers[CSRF_HEADER] = csrfToken;
@@ -120,6 +133,7 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // One CSRF retry: refresh header+cookie via single-flight. Order create keeps the same Idempotency-Key.
     if (isCsrfError(error) && originalRequest && !originalRequest._csrfRetry) {
       originalRequest._csrfRetry = true;
       const csrfToken = await fetchCsrfToken(api, true);

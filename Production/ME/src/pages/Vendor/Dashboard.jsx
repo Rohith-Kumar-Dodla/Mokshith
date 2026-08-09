@@ -76,30 +76,49 @@ const VendorDashboard = () => {
               value={summary.totalOrders}
               icon={<FiShoppingBag className="w-5 h-5 sm:w-6 sm:h-6" />}
               color="blue"
+              to="/vendor/orders"
             />
             <AnalyticsCard
               title="Delivered Orders"
               value={deliveredCount}
               icon={<FiCheckCircle className="w-5 h-5 sm:w-6 sm:h-6" />}
               color="green"
+              to="/vendor/orders?status=delivered"
+            />
+            <AnalyticsCard
+              title="Total Spending"
+              value={`₹${summary.totalSpending.toLocaleString('en-IN')}`}
+              icon={<FiDollarSign className="w-5 h-5 sm:w-6 sm:h-6" />}
+              color="green"
+              to="/vendor/orders"
+            />
+            <AnalyticsCard
+              title="This Month Spending"
+              value={`₹${summary.thisMonthSpending.toLocaleString('en-IN')}`}
+              icon={<FiTrendingUp className="w-5 h-5 sm:w-6 sm:h-6" />}
+              color="blue"
+              to="/vendor/orders"
             />
             <AnalyticsCard
               title="Wishlist Products"
               value={wishlistCount}
               icon={<FiHeart className="w-5 h-5 sm:w-6 sm:h-6" />}
               color="red"
+              to="/vendor/wishlist"
             />
             <AnalyticsCard
               title="Pending Orders"
               value={pendingCount}
               icon={<FiClock className="w-5 h-5 sm:w-6 sm:h-6" />}
               color="yellow"
+              to="/vendor/orders?status=pending"
             />
             <AnalyticsCard
               title="Processing Orders"
               value={processingCount}
               icon={<FiClock className="w-5 h-5 sm:w-6 sm:h-6" />}
               color="yellow"
+              to="/vendor/orders?status=processing"
             />
           </div>
 

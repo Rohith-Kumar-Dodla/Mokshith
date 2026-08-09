@@ -46,6 +46,11 @@ const deliveryService = {
     return response.data;
   },
 
+  rejectAssignment: async (shipmentId, payload = {}) => {
+    const response = await api.post(`/logistics/${shipmentId}/reject`, payload);
+    return response.data;
+  },
+
   pickUpDelivery: async (shipmentId) => {
     const response = await api.post(`/logistics/${shipmentId}/pick`);
     return response.data;

@@ -24,3 +24,9 @@ export const collectCodPaymentSchema = Joi.object({
     id: Joi.string().hex().length(24).required(),
   }),
 });
+
+export const rejectDeliverySchema = Joi.object({
+  body: Joi.object({
+    reason: Joi.string().trim().max(500).optional().allow('', null),
+  }).default({}),
+});

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiCamera, FiCheck, FiX, FiCreditCard, FiDollarSign } from 'react-icons/fi';
 import OrderDetailsCard from '../../components/delivery/OrderDetailsCard';
 import TimelineTracker from '../../components/delivery/TimelineTracker';
@@ -44,9 +44,11 @@ function buildUpiQrUrl(upiId, amount, note) {
 
 const OrderDetails = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const {
     loadShipment,
     acceptDelivery,
+    rejectAssignment,
     pickUpDelivery,
     startDelivery,
     markAsDelivered,
@@ -68,6 +70,9 @@ const OrderDetails = () => {
   const [cashProofUrl, setCashProofUrl] = useState('');
   const [cashProofPreview, setCashProofPreview] = useState('');
   const [uploadingProof, setUploadingProof] = useState(false);
+  const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejectInFlight, setRejectInFlight] = useState(false);
 
   const refreshOrder = async () => {
     const shipment = await loadShipment(id);
@@ -119,7 +124,7 @@ const OrderDetails = () => {
   );
 
   const handleLifecycleAction = async () => {
-    if (!nextAction) return;
+    if (!nextAction || rejectInFlight) return;
     setActionError(null);
     setSuccessMessage(null);
     try {
@@ -131,6 +136,27 @@ const OrderDetails = () => {
       setSuccessMessage(`${nextAction.label} successful.`);
     } catch (updateError) {
       setActionError(updateError.message);
+    }
+  };
+
+  const handleRejectAssignment = async () => {
+    if (rejectInFlight || actionLoading || status !== 'assigned') return;
+
+    setRejectInFlight(true);
+    setActionError(null);
+    setSuccessMessage(null);
+
+    try {
+      await rejectAssignment(id, { reason: rejectReason.trim() || undefined });
+      setShowRejectConfirm(false);
+      setSuccessMessage('Delivery assignment rejected. The order is now available for reassignment.');
+      window.setTimeout(() => {
+        navigate('/delivery/assigned-orders', { replace: true });
+      }, 900);
+    } catch (updateError) {
+      setActionError(updateError.message);
+    } finally {
+      setRejectInFlight(false);
     }
   };
 
@@ -358,13 +384,70 @@ const OrderDetails = () => {
             Complete each delivery step in order. Current status:{' '}
             <span className="font-medium text-gray-900">{status.replace(/_/g, ' ')}</span>
           </p>
-          <button
-            onClick={handleLifecycleAction}
-            disabled={actionLoading}
-            className={`inline-flex items-center px-4 sm:px-6 py-2.5 h-10 sm:h-12 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors disabled:opacity-50 ${nextAction.className}`}
-          >
-            {actionLoading ? 'Updating...' : nextAction.label}
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={handleLifecycleAction}
+              disabled={actionLoading || rejectInFlight}
+              className={`inline-flex items-center justify-center px-4 sm:px-6 py-2.5 h-10 sm:h-12 text-white rounded-lg text-xs sm:text-sm font-medium transition-colors disabled:opacity-50 ${nextAction.className}`}
+            >
+              {actionLoading ? 'Updating...' : nextAction.label}
+            </button>
+            {status === 'assigned' && (
+              <button
+                type="button"
+                onClick={() => setShowRejectConfirm(true)}
+                disabled={actionLoading || rejectInFlight}
+                className="inline-flex items-center justify-center px-4 sm:px-6 py-2.5 h-10 sm:h-12 border border-red-300 text-red-700 rounded-lg text-xs sm:text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
+              >
+                Reject
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showRejectConfirm && (
+        <div className="bg-white rounded-xl border border-red-200 p-4 sm:p-6 space-y-4">
+          <div>
+            <h3 className="text-sm sm:text-base font-semibold text-gray-900">Reject Delivery Assignment?</h3>
+            <p className="text-sm text-gray-600 mt-2">
+              You will no longer be assigned to this delivery. The order will become available for reassignment.
+              This does not cancel the customer order.
+            </p>
+          </div>
+          <div>
+            <label htmlFor="reject-reason" className="block text-sm font-medium text-gray-700 mb-1">
+              Reason (optional)
+            </label>
+            <textarea
+              id="reject-reason"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              rows={3}
+              maxLength={500}
+              placeholder="Why are you rejecting this assignment?"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+            />
+          </div>
+          <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={() => setShowRejectConfirm(false)}
+              disabled={rejectInFlight}
+              className="px-4 py-2.5 h-11 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleRejectAssignment}
+              disabled={rejectInFlight || actionLoading}
+              className="px-4 py-2.5 h-11 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50"
+            >
+              {rejectInFlight ? 'Rejecting…' : 'Reject Assignment'}
+            </button>
+          </div>
         </div>
       )}
 

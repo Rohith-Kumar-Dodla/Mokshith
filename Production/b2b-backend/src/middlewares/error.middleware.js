@@ -6,50 +6,59 @@ export const errorHandler = (err, req, res, next) => {
   error.message = err.message;
   error.statusCode = err.statusCode || 500;
 
-  // 🔥 Log for developers (sanitized in production)
+  // 🔥 Log for developers (full technical detail; classification happens below)
   const logData = {
     message: err.message,
-    statusCode: error.statusCode,
+    statusCode: err.statusCode || 500,
     path: req.originalUrl,
     method: req.method,
     ip: req.ip,
+    correlationId: req.correlationId,
+    stack: err.stack,
   };
 
-  // Only include stack trace in development
-  if (process.env.NODE_ENV === 'development') {
-    logData.stack = err.stack;
-  }
-
-  // Log based on severity
-  if (error.statusCode >= 500) {
+  // Classification-aware client messages below; log immediately with stack for ops
+  if ((err.statusCode || 500) >= 500) {
     logger.error(logData);
-  } else if (error.statusCode >= 400) {
-    logger.warn(logData);
+  } else if ((err.statusCode || 500) >= 400 || err.name === 'CastError' || err.name === 'ValidationError') {
+    logger.warn({ ...logData, stack: undefined });
   }
 
-  // 🔥 Mongoose bad ObjectId
+  // 🔥 Mongoose bad ObjectId — never expose path/value internals to clients
   if (err.name === 'CastError') {
-    const message = `Invalid ${err.path}: ${err.value}`;
-    error = new AppError(message, 400);
+    error = new AppError('Please check the submitted identifiers and try again.', 400);
+    error.code = 'INVALID_ID';
   }
 
   // 🔥 Mongoose duplicate key
   if (err.code === 11000) {
-    const field = Object.keys(err.keyValue)[0];
+    const field = Object.keys(err.keyValue || {})[0];
     const friendlyField =
       field === 'phone' || field === 'mobile'
         ? 'mobile number'
         : field === 'email'
           ? 'email address'
           : field;
-    const message = `This ${friendlyField} is already registered`;
+    const message = field
+      ? `This ${friendlyField} is already registered`
+      : 'This record already exists';
     error = new AppError(message, 400);
+    error.code = 'DUPLICATE_ENTRY';
   }
 
-  // 🔥 Mongoose validation error
+  // 🔥 Mongoose validation error — keep logs detailed, clients get safe text
   if (err.name === 'ValidationError') {
-    const message = Object.values(err.errors).map((val) => val.message).join(', ');
-    error = new AppError(message, 400);
+    const detail = Object.values(err.errors || {})
+      .map((val) => val.message)
+      .join(', ');
+    logger.warn({
+      message: 'Mongoose validation failed',
+      detail,
+      path: req.originalUrl,
+      correlationId: req.correlationId,
+    });
+    error = new AppError('Please check the highlighted fields and try again.', 400);
+    error.code = 'VALIDATION_ERROR';
   }
 
   // 🔥 JWT Errors
@@ -88,10 +97,21 @@ export const errorHandler = (err, req, res, next) => {
 
   const statusCode = error.statusCode || 500;
 
-  // Don't expose internal error details in production
-  const message = statusCode === 500 && process.env.NODE_ENV === 'production'
-    ? 'Internal server error'
-    : error.message || 'Server Error';
+  // Don't expose internal error details for server faults or infra exceptions
+  const isProduction = process.env.NODE_ENV === 'production';
+  const looksInternal =
+    /mongo|mongoose|redis|econn|etimedout|bullmq|stack|node_modules/i.test(String(error.message || ''));
+
+  let message =
+    (statusCode >= 500 && isProduction) || looksInternal
+      ? statusCode >= 500
+        ? 'Internal server error'
+        : 'We could not process this request. Please try again.'
+      : error.message || 'Server Error';
+
+  if (statusCode === 500 && isProduction) {
+    message = 'Internal server error';
+  }
 
   // 🔥 Enhanced error response for better frontend integration
   const errorResponse = {
@@ -100,13 +120,16 @@ export const errorHandler = (err, req, res, next) => {
     error: {
       statusCode,
       timestamp: new Date().toISOString(),
-      path: req.originalUrl
+      path: req.originalUrl,
+      ...(req.correlationId ? { correlationId: req.correlationId } : {}),
     },
     data: null,
   };
 
   // Include error code for specific error types (useful for frontend)
-  if (err.name === 'ValidationError') {
+  if (error.code && typeof error.code === 'string') {
+    errorResponse.error.code = error.code;
+  } else if (err.name === 'ValidationError') {
     errorResponse.error.code = 'VALIDATION_ERROR';
   } else if (err.name === 'CastError') {
     errorResponse.error.code = 'INVALID_ID';

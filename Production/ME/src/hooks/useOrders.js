@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { getUserFacingErrorMessage } from '../utils/apiResponse';
 import orderService from '../services/orderService';
 import { computeOrderStats, mapBackendOrder } from '../utils/orderMapper';
 import { patchMappedOrderFromStatusEvent } from '../utils/orderStatusSync';
@@ -29,7 +30,7 @@ export function useOrders({ autoLoad = true } = {}) {
       return mappedOrders;
     } catch (loadError) {
       setOrders([]);
-      setError(loadError?.response?.data?.message || loadError.message || 'Failed to load orders');
+      setError(getUserFacingErrorMessage(loadError, 'Failed to load orders');
       return [];
     } finally {
       setLoading(false);
@@ -82,7 +83,7 @@ export function useOrderDetails(orderId, { autoLoad = true } = {}) {
       return mappedOrder;
     } catch (loadError) {
       setOrder(null);
-      setError(loadError?.response?.data?.message || loadError.message || 'Failed to load order');
+      setError(getUserFacingErrorMessage(loadError, 'Failed to load order');
       return null;
     } finally {
       setLoading(false);

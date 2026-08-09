@@ -226,7 +226,6 @@ const ProductDetails = () => {
                  product.status === 'low_stock' ? 'Low Stock' :
                  'Out of Stock'}
               </span>
-              <span className="text-xs sm:text-sm text-gray-500">({product.stock} available)</span>
             </div>
 
             <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6">{product.description}</p>
@@ -384,10 +383,6 @@ const ProductDetails = () => {
                 <div className="bg-gray-50 p-2 sm:p-3 rounded-lg">
                   <span className="text-xs sm:text-sm text-gray-500">Minimum Order Quantity</span>
                   <p className="text-xs sm:text-sm font-medium text-gray-900">{product.minimumOrderQuantity} {product.unit}</p>
-                </div>
-                <div className="bg-gray-50 p-2 sm:p-3 rounded-lg">
-                  <span className="text-xs sm:text-sm text-gray-500">Available Stock</span>
-                  <p className="text-xs sm:text-sm font-medium text-gray-900">{product.stock} {product.unit}</p>
                 </div>
                 <div className="bg-gray-50 p-2 sm:p-3 rounded-lg">
                   <span className="text-xs sm:text-sm text-gray-500">Area</span>

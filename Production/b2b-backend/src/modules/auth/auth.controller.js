@@ -65,8 +65,8 @@ export const login = asyncHandler(async (req, res) => {
 
     const user = result.user;
 
-    // Log success
-    await Audit.create({
+    // Log success (non-blocking — must not add login latency)
+    Audit.create({
       userId: user._id,
       userEmail: user.email,
       role: user.role,
@@ -76,6 +76,8 @@ export const login = asyncHandler(async (req, res) => {
       details: `User logged in: ${user.mobile}`,
       ip: req.ip,
       severity: 'INFO'
+    }).catch((auditError) => {
+      logger.warn('Login audit write failed', { error: auditError.message, correlationId: req.correlationId });
     });
 
     trackAuthAttempt(user._id, true, req);
@@ -87,17 +89,19 @@ export const login = asyncHandler(async (req, res) => {
       ...result,
       csrfToken
     }, 'Login successful');
-  } catch (error) {
-    // Log failure
-    await Audit.create({
+    } catch (error) {
+    // Log failure (non-blocking)
+    Audit.create({
       userEmail: req.body.mobile,
       action: 'LOGIN_FAILED',
       entity: 'USER',
       details: `Failed login attempt for: ${req.body.mobile}. Reason: ${error.message}`,
       ip: req.ip,
       severity: 'WARNING'
+    }).catch((auditError) => {
+      logger.warn('Login failure audit write failed', { error: auditError.message });
     });
-    
+
     trackAuthAttempt(null, false, req);
     throw error;
   }

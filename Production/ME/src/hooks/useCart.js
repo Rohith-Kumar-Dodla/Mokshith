@@ -3,7 +3,7 @@ import cartService from '../services/cartService';
 import { mapBackendCart } from '../utils/cartMapper';
 import { calculateCartTotals } from '../utils/pricingCalculator';
 
-import { unwrapApiData } from '../utils/apiResponse';
+import { unwrapApiData, getUserFacingErrorMessage } from '../utils/apiResponse';
 
 function extractCartPayload(response) {
   return unwrapApiData(response);
@@ -32,7 +32,7 @@ export function useCart({ autoLoad = true } = {}) {
     } catch (loadError) {
       setCart(mapBackendCart(null));
       setError(
-        loadError?.response?.data?.message || loadError.message || 'Failed to load cart'
+        getUserFacingErrorMessage(loadError, 'Failed to load cart')
       );
       return mapBackendCart(null);
     } finally {
@@ -60,7 +60,7 @@ export function useCart({ autoLoad = true } = {}) {
         return applyCartResponse(response);
       } catch (addError) {
         const message =
-          addError?.response?.data?.message || addError.message || 'Failed to add item to cart';
+          getUserFacingErrorMessage(addError, 'Failed to add item to cart');
         setError(message);
         throw new Error(message);
       } finally {
@@ -81,9 +81,7 @@ export function useCart({ autoLoad = true } = {}) {
         return applyCartResponse(response);
       } catch (removeError) {
         const message =
-          removeError?.response?.data?.message ||
-          removeError.message ||
-          'Failed to remove item from cart';
+          getUserFacingErrorMessage(removeError, 'Failed to remove item from cart');
         setError(message);
         throw new Error(message);
       } finally {

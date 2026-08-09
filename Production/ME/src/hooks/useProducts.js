@@ -7,7 +7,7 @@ import {
   mapBackendProduct,
   mapBackendProducts,
 } from '../utils/productMapper';
-import { unwrapApiData } from '../utils/apiResponse';
+import { unwrapApiData, getUserFacingErrorMessage } from '../utils/apiResponse';
 
 const DEFAULT_LIMIT = 100;
 
@@ -64,7 +64,7 @@ export function useProducts() {
         setProducts([]);
         setPagination(null);
       }
-      setError(fetchError?.response?.data?.message || fetchError.message || 'Failed to load products');
+      setError(getUserFacingErrorMessage(fetchError, 'Failed to load products');
     } finally {
       setLoading(false);
     }
@@ -111,7 +111,7 @@ export function useProducts() {
   const [successMessage, setSuccessMessage] = useState(null);
 
   const getActionErrorMessage = (actionError, fallback) =>
-    actionError?.response?.data?.message || actionError?.message || fallback;
+    getUserFacingErrorMessage(actionError, fallback;
 
   const upsertProduct = useCallback((product) => {
     const mapped = mapBackendProduct(product);

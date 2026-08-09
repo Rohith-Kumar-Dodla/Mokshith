@@ -45,6 +45,7 @@ const Products = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [imageFile, setImageFile] = useState(null);
+  const [uploadedImage, setUploadedImage] = useState(null);
   const [formError, setFormError] = useState(null);
 
   const categoryOptions = [
@@ -75,6 +76,7 @@ const Products = () => {
   const resetFormState = () => {
     setFormData(EMPTY_FORM);
     setImageFile(null);
+    setUploadedImage(null);
     setFormError(null);
     setSelectedProduct(null);
   };
@@ -106,6 +108,7 @@ const Products = () => {
       isActive: product.status !== 'inactive' && product.status !== 'out_of_stock',
     });
     setImageFile(null);
+    setUploadedImage(null);
     setFormError(null);
     clearMessages();
     setIsAddModalOpen(true);
@@ -151,6 +154,13 @@ const Products = () => {
       moq: Number(formData.moq) || 1,
       isActive: formData.isActive,
     };
+
+    if (uploadedImage?.url) {
+      payload.imageUrl = uploadedImage.url;
+      if (uploadedImage.publicId) {
+        payload.imagePublicId = uploadedImage.publicId;
+      }
+    }
 
     try {
       if (selectedProduct) {
@@ -383,9 +393,15 @@ const Products = () => {
                 key={selectedProduct?.id || 'new-product'}
                 label="Product Image"
                 value={imageFile}
-                previewUrl={selectedProduct?.storedImage || ''}
+                previewUrl={uploadedImage?.url || selectedProduct?.storedImage || ''}
                 onChange={setImageFile}
-                onClear={() => setImageFile(null)}
+                onUploaded={setUploadedImage}
+                onClear={() => {
+                  setImageFile(null);
+                  setUploadedImage(null);
+                }}
+                uploadFolder="mokshith/products"
+                autoUpload
                 disabled={saving}
               />
             </div>

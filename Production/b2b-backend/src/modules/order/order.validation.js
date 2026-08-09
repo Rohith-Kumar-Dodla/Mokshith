@@ -47,3 +47,26 @@ export const getOrderByIdSchema = Joi.object({
     id: Joi.string().pattern(objectIdPattern).required(),
   }),
 });
+
+export const getOrdersQuerySchema = Joi.object({
+  query: Joi.object({
+    page: Joi.number().integer().min(1).optional(),
+    limit: Joi.number().integer().min(1).max(100).optional(),
+    search: Joi.string().trim().max(200).allow('').optional(),
+    status: Joi.string().trim().max(50).allow('all', '').optional(),
+    startDate: Joi.string().trim().max(40).allow('').optional(),
+    endDate: Joi.string().trim().max(40).allow('').optional(),
+    paymentMethod: Joi.string()
+      .uppercase()
+      .valid('COD', 'ONLINE', 'CREDIT', 'RAZORPAY', 'UPI', 'CARD', 'HYBRID', 'BANK_TRANSFER', 'ALL')
+      .optional(),
+    paymentStatus: Joi.string()
+      .uppercase()
+      .valid('PENDING', 'PAID', 'FAILED', 'REJECTED', 'REFUNDED', 'ALL')
+      .optional(),
+    paymentCompleted: Joi.alternatives()
+      .try(Joi.boolean(), Joi.string().valid('true', 'false', '1', '0'))
+      .optional(),
+    _refresh: Joi.any().optional(),
+  }).unknown(true),
+});

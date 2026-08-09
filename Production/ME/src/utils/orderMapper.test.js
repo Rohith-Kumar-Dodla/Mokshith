@@ -4,6 +4,8 @@ import {
   mapBackendOrderStatus,
   computeOrderStats,
   buildOrderTimeline,
+  isPaymentCompletedOrder,
+  formatPaymentMethodLabel,
 } from './orderMapper';
 
 describe('orderMapper', () => {
@@ -14,6 +16,38 @@ describe('orderMapper', () => {
     expect(mapBackendOrderStatus('ACCEPTED')).toBe('accepted');
     expect(mapBackendOrderStatus('PICKED_UP')).toBe('picked_up');
     expect(mapBackendOrderStatus('PENDING_PAYMENT')).toBe('pending');
+    expect(mapBackendOrderStatus('PROCESSING')).toBe('processing');
+    expect(mapBackendOrderStatus('SHIPPED')).toBe('shipped');
+    expect(mapBackendOrderStatus('DELIVERED')).toBe('delivered');
+    expect(mapBackendOrderStatus('COMPLETED')).toBe('completed');
+  });
+
+  it('does not show Estimated Delivery Processing for COMPLETED orders', () => {
+    const completed = mapBackendOrder({
+      _id: 'order-done',
+      status: 'COMPLETED',
+      paymentStatus: 'PAID',
+      paymentMethod: 'COD',
+      totalAmount: 500,
+      createdAt: '2026-06-01T10:00:00.000Z',
+      updatedAt: '2026-06-03T10:00:00.000Z',
+      items: [],
+    });
+
+    expect(completed.status).toBe('completed');
+    expect(completed.estimatedDelivery).toBeNull();
+    expect(completed.deliveryDate).not.toBeNull();
+
+    const processing = mapBackendOrder({
+      _id: 'order-proc',
+      status: 'PROCESSING',
+      paymentStatus: 'PAID',
+      paymentMethod: 'ONLINE',
+      totalAmount: 500,
+      createdAt: '2026-06-01T10:00:00.000Z',
+      items: [],
+    });
+    expect(processing.estimatedDelivery).toBe('Processing');
   });
 
   it('maps backend order document', () => {
@@ -72,5 +106,34 @@ describe('orderMapper', () => {
     expect(stats.pendingOrders).toBe(1);
     expect(stats.deliveredOrders).toBe(1);
     expect(stats.totalSpending).toBe(600);
+  });
+
+  it('classifies payment-completed online and COD orders correctly', () => {
+    expect(isPaymentCompletedOrder({
+      paymentStatus: 'paid',
+      paymentMethod: 'ONLINE',
+      backendStatus: 'CONFIRMED',
+    })).toBe(true);
+
+    expect(isPaymentCompletedOrder({
+      paymentStatus: 'pending',
+      paymentMethod: 'ONLINE',
+      backendStatus: 'PENDING',
+    })).toBe(false);
+
+    expect(isPaymentCompletedOrder({
+      paymentStatus: 'pending',
+      paymentMethod: 'COD',
+      backendStatus: 'DELIVERED',
+    })).toBe(true);
+
+    expect(isPaymentCompletedOrder({
+      paymentStatus: 'pending',
+      paymentMethod: 'COD',
+      backendStatus: 'CONFIRMED',
+    })).toBe(false);
+
+    expect(formatPaymentMethodLabel('COD')).toBe('COD');
+    expect(formatPaymentMethodLabel('ONLINE')).toBe('ONLINE');
   });
 });

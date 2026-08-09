@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { getUserFacingErrorMessage } from '../../utils/apiResponse';
+import { useSearchParams } from 'react-router-dom';
 import { FiEye, FiCheck, FiX, FiMapPin, FiPhone, FiMail, FiCalendar, FiUsers, FiClock } from 'react-icons/fi';
 import PageHeader from '../../components/admin/PageHeader';
 import Card from '../../components/admin/Card';
@@ -10,13 +12,34 @@ import Modal from '../../components/admin/Modal';
 import adminService from '../../services/adminService';
 import { mapVendorUser } from '../../utils/vendorMapper';
 
+const KPI_STATUS = {
+  total: 'all',
+  active: 'approved',
+  pending: 'pending',
+  suspended: 'suspended',
+};
+
 const Vendors = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const statusFromUrl = searchParams.get('status');
+  const initialStatus = ['approved', 'pending', 'rejected', 'suspended', 'all'].includes(statusFromUrl)
+    ? statusFromUrl
+    : statusFromUrl === 'active'
+      ? 'approved'
+      : 'all';
+
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState(initialStatus);
+  const [activeKpi, setActiveKpi] = useState(
+    initialStatus === 'approved' ? 'active'
+      : initialStatus === 'pending' ? 'pending'
+        : initialStatus === 'suspended' || initialStatus === 'rejected' ? 'suspended'
+          : 'total'
+  );
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState(null);
 
@@ -29,7 +52,7 @@ const Vendors = () => {
       const users = Array.isArray(payload) ? payload : payload?.users || [];
       setVendors(users.map(mapVendorUser));
     } catch (err) {
-      setError(err?.response?.data?.message || err?.message || 'Failed to load vendors');
+      setError(getUserFacingErrorMessage(err, 'Failed to load vendors');
       setVendors([]);
     } finally {
       setLoading(false);
@@ -39,6 +62,29 @@ const Vendors = () => {
   useEffect(() => {
     loadVendors();
   }, [loadVendors]);
+
+  useEffect(() => {
+    const next = searchParams.get('status');
+    if (!next || next === 'all') {
+      setSelectedStatus('all');
+      setActiveKpi('total');
+      return;
+    }
+    if (next === 'active' || next === 'approved') {
+      setSelectedStatus('approved');
+      setActiveKpi('active');
+      return;
+    }
+    if (next === 'pending') {
+      setSelectedStatus('pending');
+      setActiveKpi('pending');
+      return;
+    }
+    if (next === 'suspended' || next === 'rejected') {
+      setSelectedStatus(next);
+      setActiveKpi('suspended');
+    }
+  }, [searchParams]);
 
   const statusOptions = [
     { value: 'all', label: 'All Status' },
@@ -52,15 +98,45 @@ const Vendors = () => {
     const matchesSearch = vendor.shopName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       vendor.ownerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       String(vendor.id).toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = selectedStatus === 'all' || vendor.status === selectedStatus;
+
+    let matchesStatus = true;
+    if (activeKpi === 'suspended') {
+      matchesStatus = vendor.status === 'suspended' || vendor.status === 'rejected';
+    } else if (selectedStatus !== 'all') {
+      matchesStatus = vendor.status === selectedStatus;
+    }
+
     return matchesSearch && matchesStatus;
-  }), [vendors, searchTerm, selectedStatus]);
+  }), [vendors, searchTerm, selectedStatus, activeKpi]);
+
+  const applyKpi = (kpiKey) => {
+    setActiveKpi(kpiKey);
+    const status = KPI_STATUS[kpiKey] || 'all';
+    setSelectedStatus(status);
+    const next = new URLSearchParams(searchParams);
+    if (status === 'all') next.delete('status');
+    else next.set('status', status === 'approved' ? 'active' : status);
+    setSearchParams(next, { replace: true });
+  };
+
+  const handleStatusFilter = (value) => {
+    setSelectedStatus(value);
+    if (value === 'all') setActiveKpi('total');
+    else if (value === 'approved') setActiveKpi('active');
+    else if (value === 'pending') setActiveKpi('pending');
+    else if (value === 'suspended' || value === 'rejected') setActiveKpi('suspended');
+
+    const next = new URLSearchParams(searchParams);
+    if (value === 'all') next.delete('status');
+    else next.set('status', value === 'approved' ? 'active' : value);
+    setSearchParams(next, { replace: true });
+  };
 
   const summaryCards = [
-    { title: 'Total Vendors', value: String(vendors.length), icon: FiUsers, color: 'blue' },
-    { title: 'Active Vendors', value: String(vendors.filter((v) => v.status === 'approved').length), icon: FiCheck, color: 'green' },
-    { title: 'Pending Approval', value: String(vendors.filter((v) => v.status === 'pending').length), icon: FiClock, color: 'orange' },
-    { title: 'Suspended Vendors', value: String(vendors.filter((v) => v.status === 'suspended' || v.status === 'rejected').length), icon: FiX, color: 'red' },
+    { key: 'total', title: 'Total Vendors', value: String(vendors.length), icon: FiUsers, color: 'blue' },
+    { key: 'active', title: 'Active Vendors', value: String(vendors.filter((v) => v.status === 'approved').length), icon: FiCheck, color: 'green' },
+    { key: 'pending', title: 'Pending Approval', value: String(vendors.filter((v) => v.status === 'pending').length), icon: FiClock, color: 'orange' },
+    { key: 'suspended', title: 'Suspended Vendors', value: String(vendors.filter((v) => v.status === 'suspended' || v.status === 'rejected').length), icon: FiX, color: 'red' },
   ];
 
   const handleViewVendor = (vendor) => {
@@ -77,7 +153,7 @@ const Vendors = () => {
       else if (action === 'suspend') await adminService.updateUserStatus(vendorId, 'SUSPENDED');
       await loadVendors();
     } catch (err) {
-      setError(err?.response?.data?.message || err?.message || 'Action failed');
+      setError(getUserFacingErrorMessage(err, 'Action failed');
     } finally {
       setActionLoading(false);
     }
@@ -97,7 +173,7 @@ const Vendors = () => {
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-        {summaryCards.map((card, index) => {
+        {summaryCards.map((card) => {
           const colorClasses = {
             blue: { bg: 'bg-blue-100', icon: 'text-blue-500' },
             green: { bg: 'bg-green-100', icon: 'text-green-500' },
@@ -105,16 +181,28 @@ const Vendors = () => {
             red: { bg: 'bg-red-100', icon: 'text-red-500' },
           };
           const colors = colorClasses[card.color];
+          const active = activeKpi === card.key;
           return (
-            <Card key={index} className="hover:shadow-md transition-shadow p-3 sm:p-6">
-              <div className="flex items-start justify-between">
-                <div className={`p-2 sm:p-3 rounded-lg ${colors.bg}`}>
-                  <card.icon size={18} className={colors.icon} />
+            <button
+              key={card.key}
+              type="button"
+              onClick={() => applyKpi(card.key)}
+              aria-pressed={active}
+              aria-label={`Show ${card.title}`}
+              className={`text-left rounded-xl border transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                active ? 'border-blue-400 bg-blue-50 shadow-sm' : 'border-transparent'
+              }`}
+            >
+              <Card className={`hover:shadow-md transition-shadow p-3 sm:p-6 ${active ? 'bg-transparent shadow-none' : ''}`}>
+                <div className="flex items-start justify-between">
+                  <div className={`p-2 sm:p-3 rounded-lg ${colors.bg}`}>
+                    <card.icon size={18} className={colors.icon} />
+                  </div>
                 </div>
-              </div>
-              <p className="text-gray-600 text-xs sm:text-sm mt-3 sm:mt-4">{card.title}</p>
-              <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{card.value}</p>
-            </Card>
+                <p className="text-gray-600 text-xs sm:text-sm mt-3 sm:mt-4">{card.title}</p>
+                <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{card.value}</p>
+              </Card>
+            </button>
           );
         })}
       </div>
@@ -133,7 +221,7 @@ const Vendors = () => {
             label="Status"
             options={statusOptions}
             selected={selectedStatus}
-            onSelect={setSelectedStatus}
+            onSelect={handleStatusFilter}
           />
         </div>
       </Card>
@@ -173,7 +261,7 @@ const Vendors = () => {
                         <button
                           type="button"
                           onClick={() => handleViewVendor(vendor)}
-                          className="p-2 hover:bg-blue-100 rounded-lg transition-colors"
+                          className="p-2 hover:bg-blue-100 rounded-lg transition-colors min-h-[44px] min-w-[44px]"
                           title="View Profile"
                         >
                           <FiEye size={14} className="text-blue-600" />
@@ -184,7 +272,7 @@ const Vendors = () => {
                               type="button"
                               disabled={actionLoading}
                               onClick={() => runVendorAction(vendor.id, 'approve')}
-                              className="p-2 hover:bg-green-100 rounded-lg transition-colors disabled:opacity-50"
+                              className="p-2 hover:bg-green-100 rounded-lg transition-colors disabled:opacity-50 min-h-[44px] min-w-[44px]"
                               title="Approve"
                             >
                               <FiCheck size={14} className="text-green-600" />
@@ -193,7 +281,7 @@ const Vendors = () => {
                               type="button"
                               disabled={actionLoading}
                               onClick={() => runVendorAction(vendor.id, 'reject')}
-                              className="p-2 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-50"
+                              className="p-2 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-50 min-h-[44px] min-w-[44px]"
                               title="Reject"
                             >
                               <FiX size={14} className="text-red-600" />
@@ -205,7 +293,7 @@ const Vendors = () => {
                             type="button"
                             disabled={actionLoading}
                             onClick={() => runVendorAction(vendor.id, 'suspend')}
-                            className="p-2 hover:bg-orange-100 rounded-lg transition-colors disabled:opacity-50"
+                            className="p-2 hover:bg-orange-100 rounded-lg transition-colors disabled:opacity-50 min-h-[44px] min-w-[44px]"
                             title="Suspend"
                           >
                             <FiX size={14} className="text-orange-600" />
