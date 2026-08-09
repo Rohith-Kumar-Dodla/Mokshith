@@ -11,10 +11,14 @@ const __dirname = path.dirname(__filename);
 const backendDir = path.resolve(__dirname, '..', '..', 'b2b-backend');
 const frontendDir = path.resolve(__dirname, '..');
 
-function spawnProcess(cmd, args, opts) {
-  const p = spawn(cmd, args, { shell: true, stdio: 'inherit', ...opts });
+function spawnProcess(cmdLine, opts) {
+  const p = spawn(cmdLine, {
+    shell: true,
+    stdio: 'inherit',
+    ...opts,
+  });
   p.on('error', (err) => {
-    console.error(`Failed to start ${cmd} ${args.join(' ')}`, err);
+    console.error(`Failed to start ${cmdLine}`, err);
     process.exit(1);
   });
   return p;
@@ -69,13 +73,13 @@ async function main() {
   const backendLiveUrl = 'http://localhost:5000/health/live';
 
   console.log('Starting backend in', backendDir);
-  spawnProcess('npm', ['run', 'dev'], { cwd: backendDir, env: process.env });
+  spawnProcess('npm run dev', { cwd: backendDir, env: process.env });
 
   await waitFor(backendLiveUrl, 'Backend');
 
   try {
     console.log('Seeding QA data...');
-    const seed = spawn('npm', ['run', 'db:seed:qa'], {
+    const seed = spawn('npm run db:seed:qa', {
       shell: true,
       cwd: backendDir,
       stdio: 'inherit',
@@ -89,7 +93,7 @@ async function main() {
   const env = Object.assign({}, process.env);
   env.VITE_API_BASE_URL = apiBase;
   console.log('Starting frontend in', frontendDir, 'with VITE_API_BASE_URL=', env.VITE_API_BASE_URL);
-  spawnProcess('npm', ['run', 'dev'], { cwd: frontendDir, env });
+  spawnProcess('npm run dev', { cwd: frontendDir, env });
 
   await waitFor('http://localhost:5173', 'Frontend');
   console.log('Dev stack ready for Playwright.');
