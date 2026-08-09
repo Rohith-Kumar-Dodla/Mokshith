@@ -66,7 +66,7 @@ const AdminManagement = () => {
         lastLogin: u.lastLogin,
       })));
     } catch (err) {
-      setError(getUserFacingErrorMessage(err, 'Failed to load admins');
+      setError(getUserFacingErrorMessage(err, 'Failed to load admins'));
       setAdmins([]);
     } finally {
       setLoading(false);
@@ -85,7 +85,7 @@ const AdminManagement = () => {
       if (action === 'deactivate') await adminService.updateUserStatus(id, 'INACTIVE');
       await loadAdmins();
     } catch (err) {
-      setError(getUserFacingErrorMessage(err, 'Action failed');
+      setError(getUserFacingErrorMessage(err, 'Action failed'));
     } finally {
       setActionLoading(false);
     }

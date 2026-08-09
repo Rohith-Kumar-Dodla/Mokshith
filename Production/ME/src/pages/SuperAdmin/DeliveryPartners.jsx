@@ -41,7 +41,7 @@ const DeliveryPartners = () => {
         const users = Array.isArray(payload) ? payload : payload?.users || [];
         setPartners(users.map(mapPartner));
       } catch (err) {
-        setError(getUserFacingErrorMessage(err, 'Failed to load delivery partners');
+        setError(getUserFacingErrorMessage(err, 'Failed to load delivery partners'));
         setPartners([]);
       } finally {
         setLoading(false);

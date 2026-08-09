@@ -29,7 +29,7 @@ const ForgotPassword = () => {
         setDevResetUrl(payload.resetUrl);
       }
     } catch (err) {
-      setError(getUserFacingErrorMessage(err, 'Failed to send reset link');
+      setError(getUserFacingErrorMessage(err, 'Failed to send reset link'));
     } finally {
       setLoading(false);
     }

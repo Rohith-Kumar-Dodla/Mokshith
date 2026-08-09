@@ -31,7 +31,7 @@ const Reports = () => {
         setStats(statsPayload?.data ?? statsPayload);
         setAnalytics((prev) => prev); // keep analytics null for Admin
       } catch (err) {
-        setError(getUserFacingErrorMessage(err, 'Failed to load report data');
+        setError(getUserFacingErrorMessage(err, 'Failed to load report data'));
       } finally {
         setLoading(false);
       }
@@ -126,7 +126,7 @@ const Reports = () => {
         );
       }
     } catch (err) {
-      setError(getUserFacingErrorMessage(err, 'Export failed');
+      setError(getUserFacingErrorMessage(err, 'Export failed'));
     } finally {
       setExporting('');
     }

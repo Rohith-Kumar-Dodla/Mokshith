@@ -178,7 +178,7 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
       setPagination(pag);
       hasLoadedOnceRef.current = true;
     } catch (loadError) {
-      setError(getUserFacingErrorMessage(loadError, 'Failed to load orders');
+      setError(getUserFacingErrorMessage(loadError, 'Failed to load orders'));
       setOrders([]);
       setPagination(null);
     } finally {
@@ -261,7 +261,7 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
       await loadOrders({ silent: true });
       await loadKpiCounts();
     } catch (updateError) {
-      setError(getUserFacingErrorMessage(updateError, 'Failed to update status');
+      setError(getUserFacingErrorMessage(updateError, 'Failed to update status'));
     } finally {
       setStatusUpdating(false);
     }

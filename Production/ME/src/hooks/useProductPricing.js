@@ -32,7 +32,7 @@ export function useProductPricing(product, quantity) {
       } catch (error) {
         if (!cancelled) {
           setApiPricing(null);
-          setPricingError(getUserFacingErrorMessage(error, 'Failed to calculate price');
+          setPricingError(getUserFacingErrorMessage(error, 'Failed to calculate price'));
         }
       } finally {
         if (!cancelled) {

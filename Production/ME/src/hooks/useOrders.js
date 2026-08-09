@@ -30,7 +30,7 @@ export function useOrders({ autoLoad = true } = {}) {
       return mappedOrders;
     } catch (loadError) {
       setOrders([]);
-      setError(getUserFacingErrorMessage(loadError, 'Failed to load orders');
+      setError(getUserFacingErrorMessage(loadError, 'Failed to load orders'));
       return [];
     } finally {
       setLoading(false);
@@ -83,7 +83,7 @@ export function useOrderDetails(orderId, { autoLoad = true } = {}) {
       return mappedOrder;
     } catch (loadError) {
       setOrder(null);
-      setError(getUserFacingErrorMessage(loadError, 'Failed to load order');
+      setError(getUserFacingErrorMessage(loadError, 'Failed to load order'));
       return null;
     } finally {
       setLoading(false);

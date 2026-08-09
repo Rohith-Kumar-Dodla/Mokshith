@@ -49,7 +49,7 @@ export function useProductDetails(productId) {
     } catch (fetchError) {
       setProduct(null);
       setRelatedProducts([]);
-      setError(getUserFacingErrorMessage(fetchError, 'Failed to load product');
+      setError(getUserFacingErrorMessage(fetchError, 'Failed to load product'));
     } finally {
       setLoading(false);
     }

@@ -115,7 +115,7 @@ const ImageUpload = ({
       // File already stored remotely — clear file so submit uses imageUrl (avoids double upload)
       onChange?.(null);
     } catch (err) {
-      setUploadError(getUserFacingErrorMessage(err, 'Image upload failed');
+      setUploadError(getUserFacingErrorMessage(err, 'Image upload failed'));
       // Keep local preview + file so user can still save via multipart fallback
     } finally {
       setUploading(false);

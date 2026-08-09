@@ -52,7 +52,7 @@ const Vendors = () => {
       const users = Array.isArray(payload) ? payload : payload?.users || [];
       setVendors(users.map(mapVendorUser));
     } catch (err) {
-      setError(getUserFacingErrorMessage(err, 'Failed to load vendors');
+      setError(getUserFacingErrorMessage(err, 'Failed to load vendors'));
       setVendors([]);
     } finally {
       setLoading(false);
@@ -153,7 +153,7 @@ const Vendors = () => {
       else if (action === 'suspend') await adminService.updateUserStatus(vendorId, 'SUSPENDED');
       await loadVendors();
     } catch (err) {
-      setError(getUserFacingErrorMessage(err, 'Action failed');
+      setError(getUserFacingErrorMessage(err, 'Action failed'));
     } finally {
       setActionLoading(false);
     }

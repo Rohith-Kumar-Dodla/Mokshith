@@ -53,7 +53,7 @@ const AdminApprovals = () => {
       const payload = response.data ?? response;
       setUsers(Array.isArray(payload) ? payload : []);
     } catch (err) {
-      setError(getUserFacingErrorMessage(err, 'Failed to load pending registrations');
+      setError(getUserFacingErrorMessage(err, 'Failed to load pending registrations'));
       setUsers([]);
     } finally {
       setLoading(false);
@@ -74,7 +74,7 @@ const AdminApprovals = () => {
       await adminApprovalService.approve(user.id);
       await loadPendingUsers();
     } catch (err) {
-      setError(getUserFacingErrorMessage(err, 'Failed to approve user');
+      setError(getUserFacingErrorMessage(err, 'Failed to approve user'));
     } finally {
       setActionId(null);
     }
@@ -90,7 +90,7 @@ const AdminApprovals = () => {
       await adminApprovalService.reject(user.id);
       await loadPendingUsers();
     } catch (err) {
-      setError(getUserFacingErrorMessage(err, 'Failed to reject user');
+      setError(getUserFacingErrorMessage(err, 'Failed to reject user'));
     } finally {
       setActionId(null);
     }

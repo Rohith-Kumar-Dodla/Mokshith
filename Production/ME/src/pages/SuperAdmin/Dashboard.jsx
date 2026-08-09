@@ -56,7 +56,7 @@ const SuperAdminDashboard = () => {
         }));
         setActivities(auditActivities);
       } catch (err) {
-        setError(getUserFacingErrorMessage(err, 'Failed to load dashboard data');
+        setError(getUserFacingErrorMessage(err, 'Failed to load dashboard data'));
       } finally {
         setLoading(false);
       }

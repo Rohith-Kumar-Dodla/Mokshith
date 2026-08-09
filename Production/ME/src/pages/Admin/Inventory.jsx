@@ -47,7 +47,7 @@ const Inventory = () => {
         setStats(mapInventoryStats(null));
       }
     } catch (loadError) {
-      setError(getUserFacingErrorMessage(loadError, 'Failed to load inventory');
+      setError(getUserFacingErrorMessage(loadError, 'Failed to load inventory'));
     } finally {
       setLoading(false);
     }
@@ -119,7 +119,7 @@ const Inventory = () => {
       setIsStockModalOpen(false);
       await loadInventory();
     } catch (submitError) {
-      setSaveError(getUserFacingErrorMessage(submitError, 'Failed to update stock');
+      setSaveError(getUserFacingErrorMessage(submitError, 'Failed to update stock'));
     } finally {
       setSaving(false);
     }

@@ -31,7 +31,7 @@ const Platform = () => {
         setStats(statsResponse.data ?? statsResponse);
         setMetrics(metricsResponse.data ?? metricsResponse);
       } catch (err) {
-        setError(getUserFacingErrorMessage(err, 'Failed to load platform data');
+        setError(getUserFacingErrorMessage(err, 'Failed to load platform data'));
       } finally {
         setLoading(false);
       }
