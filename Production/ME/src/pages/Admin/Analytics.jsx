@@ -38,7 +38,7 @@ const Analytics = () => {
         setAnalytics(null);
         setDeliveryAnalytics(deliveryPayload?.data ?? deliveryPayload);
       } catch (err) {
-        setError(getUserFacingErrorMessage(err, 'Failed to load analytics');
+        setError(getUserFacingErrorMessage(err, 'Failed to load analytics'));
       } finally {
         setLoading(false);
       }

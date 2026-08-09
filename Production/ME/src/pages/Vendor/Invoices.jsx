@@ -44,7 +44,7 @@ const Invoices = () => {
       const list = payload?.data ?? payload;
       setInvoices((Array.isArray(list) ? list : []).map(mapInvoice));
     } catch (err) {
-      setError(getUserFacingErrorMessage(err, 'Failed to load invoices');
+      setError(getUserFacingErrorMessage(err, 'Failed to load invoices'));
       setInvoices([]);
     } finally {
       setLoading(false);
@@ -86,7 +86,7 @@ const Invoices = () => {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      setError(getUserFacingErrorMessage(err, 'Failed to download invoice');
+      setError(getUserFacingErrorMessage(err, 'Failed to download invoice'));
     } finally {
       setDownloadingId(null);
     }

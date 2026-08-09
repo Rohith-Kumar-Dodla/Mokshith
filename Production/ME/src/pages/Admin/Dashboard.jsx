@@ -31,7 +31,7 @@ const AdminDashboard = () => {
         // intentionally do not fetch financial analytics here; Admin should not receive financial data
         setAnalytics(null);
       } catch (err) {
-        setError(getUserFacingErrorMessage(err, 'Failed to load dashboard');
+        setError(getUserFacingErrorMessage(err, 'Failed to load dashboard'));
       } finally {
         setLoading(false);
       }

@@ -174,7 +174,7 @@ export default function SuperAdminOrderManagement({
       setPagination(pag);
       hasLoadedOnceRef.current = true;
     } catch (loadError) {
-      setError(getUserFacingErrorMessage(loadError, 'Failed to load orders');
+      setError(getUserFacingErrorMessage(loadError, 'Failed to load orders'));
       setOrders([]);
       setPagination(null);
     } finally {

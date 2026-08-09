@@ -64,7 +64,7 @@ export function useProducts() {
         setProducts([]);
         setPagination(null);
       }
-      setError(getUserFacingErrorMessage(fetchError, 'Failed to load products');
+      setError(getUserFacingErrorMessage(fetchError, 'Failed to load products'));
     } finally {
       setLoading(false);
     }
@@ -111,7 +111,7 @@ export function useProducts() {
   const [successMessage, setSuccessMessage] = useState(null);
 
   const getActionErrorMessage = (actionError, fallback) =>
-    getUserFacingErrorMessage(actionError, fallback;
+    getUserFacingErrorMessage(actionError, fallback);
 
   const upsertProduct = useCallback((product) => {
     const mapped = mapBackendProduct(product);
