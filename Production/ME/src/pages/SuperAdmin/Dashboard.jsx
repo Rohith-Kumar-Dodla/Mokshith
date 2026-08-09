@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { getUserFacingErrorMessage } from '../../utils/apiResponse';
 import { Link } from 'react-router-dom';
 import { FiUsers, FiShoppingBag, FiTruck, FiPackage, FiDollarSign, FiTrendingUp, FiActivity, FiClock, FiMonitor, FiBarChart, FiFileText } from 'react-icons/fi';
 import DashboardCard from '../../components/superadmin/DashboardCard';
@@ -55,7 +56,7 @@ const SuperAdminDashboard = () => {
         }));
         setActivities(auditActivities);
       } catch (err) {
-        setError(err?.response?.data?.message || err?.message || 'Failed to load dashboard data');
+        setError(getUserFacingErrorMessage(err, 'Failed to load dashboard data');
       } finally {
         setLoading(false);
       }
@@ -66,20 +67,29 @@ const SuperAdminDashboard = () => {
 
   const quickActions = [
     { title: 'Monitor Platform', icon: FiMonitor, color: 'blue', link: '/super-admin/platform' },
-    { title: 'Admin Approvals', icon: FiBarChart, color: 'green', link: '/super-admin/admin-approvals' },
-    { title: 'View Vendors', icon: FiShoppingBag, color: 'purple', link: '/super-admin/vendors' },
-    { title: 'View Deliveries', icon: FiTruck, color: 'orange', link: '/super-admin/delivery-partners' },
+    { title: 'Admin Approvals', icon: FiBarChart, color: 'green', link: '/super-admin/user-management?tab=approvals' },
+    { title: 'View Vendors', icon: FiShoppingBag, color: 'purple', link: '/super-admin/user-management?tab=vendors' },
+    { title: 'View Deliveries', icon: FiTruck, color: 'orange', link: '/super-admin/user-management?tab=delivery' },
     { title: 'View Orders', icon: FiPackage, color: 'teal', link: '/super-admin/orders' },
     { title: 'Generate Report', icon: FiFileText, color: 'red', link: '/super-admin/analytics' },
   ];
 
   const platformHealth = [
-    { title: 'Pending Approvals', value: String(stats?.pendingApprovals ?? metrics?.pendingApprovals ?? 0), icon: FiClock, color: 'orange' },
-    { title: 'Orders Today', value: String(metrics?.ordersToday ?? 0), icon: FiPackage, color: 'green' },
+    { title: 'Pending Approvals', value: String(stats?.pendingApprovals ?? metrics?.pendingApprovals ?? 0), icon: FiClock, color: 'orange', to: '/super-admin/user-management?tab=approvals' },
+    { title: 'Orders Today', value: String(metrics?.ordersToday ?? 0), icon: FiPackage, color: 'green', to: '/super-admin/orders' },
     { title: 'Revenue Today', value: formatRevenue(metrics?.revenueToday ?? 0), icon: FiDollarSign, color: 'purple' },
-    { title: 'Total Users', value: String(stats?.users ?? metrics?.totalUsers ?? 0), icon: FiUsers, color: 'blue' },
-    { title: 'Active Vendors', value: String(metrics?.activeVendors ?? stats?.vendors ?? 0), icon: FiShoppingBag, color: 'teal' },
+    { title: 'Total Users', value: String(stats?.users ?? metrics?.totalUsers ?? 0), icon: FiUsers, color: 'blue', to: '/super-admin/user-management' },
+    { title: 'Active Vendors', value: String(metrics?.activeVendors ?? stats?.vendors ?? 0), icon: FiShoppingBag, color: 'teal', to: '/super-admin/user-management?tab=vendors' },
     { title: 'System Status', value: 'Live', icon: FiActivity, color: 'green' },
+  ];
+
+  const kpiCards = [
+    { title: 'Total Admins', value: String(stats?.admins ?? 0), icon: FiUsers, color: 'green', to: '/super-admin/user-management?tab=admins' },
+    { title: 'Total Vendors', value: String(stats?.vendors ?? 0), icon: FiShoppingBag, color: 'green', to: '/super-admin/user-management?tab=vendors' },
+    { title: 'Delivery Partners', value: String(stats?.deliveryPartners ?? 0), icon: FiTruck, color: 'purple', to: '/super-admin/user-management?tab=delivery' },
+    { title: 'Total Products', value: String(stats?.products ?? 0), icon: FiPackage, color: 'orange' },
+    { title: 'Total Orders', value: String(stats?.orders ?? 0), icon: FiTrendingUp, color: 'teal', to: '/super-admin/orders' },
+    { title: 'Total Revenue', value: formatRevenue(stats?.revenue ?? 0), icon: FiDollarSign, color: 'red' },
   ];
 
   if (loading) {
@@ -101,20 +111,41 @@ const SuperAdminDashboard = () => {
         )}
 
         <div className="space-y-3">
-          {platformHealth.map((item, idx) => (
-            <div key={idx} className="bg-white rounded-lg shadow-sm border border-gray-100 p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-gray-50">
-                    <item.icon size={20} />
+          {kpiCards.map((item) => (
+            item.to ? (
+              <Link
+                key={item.title}
+                to={item.to}
+                aria-label={`View ${item.title}`}
+                className="bg-white rounded-lg shadow-sm border border-gray-100 p-3 block hover:border-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-gray-50">
+                      <item.icon size={20} />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">{item.title}</p>
+                      <p className="text-lg font-bold text-gray-900">{item.value}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-500">{item.title}</p>
-                    <p className="text-lg font-bold text-gray-900">{item.value}</p>
+                </div>
+              </Link>
+            ) : (
+              <div key={item.title} className="bg-white rounded-lg shadow-sm border border-gray-100 p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-gray-50">
+                      <item.icon size={20} />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">{item.title}</p>
+                      <p className="text-lg font-bold text-gray-900">{item.value}</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )
           ))}
         </div>
 
@@ -122,7 +153,7 @@ const SuperAdminDashboard = () => {
           <h2 className="text-sm font-semibold text-gray-900 mb-2">Quick Actions</h2>
           <div className="grid grid-cols-3 gap-2">
             {quickActions.map((action) => (
-              <Link key={action.title} to={action.link} className="flex flex-col items-center gap-1 p-2 bg-gray-50 rounded-md">
+              <Link key={action.title} to={action.link} className="flex flex-col items-center gap-1 p-2 bg-gray-50 rounded-md min-h-[72px]">
                 <div className={`p-2 rounded-md ${QUICK_ACTION_COLORS[action.color]}`}><action.icon size={18} /></div>
                 <span className="text-xs text-gray-700 text-center">{action.title}</span>
               </Link>
@@ -152,48 +183,17 @@ const SuperAdminDashboard = () => {
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-6">
-        <DashboardCard
-          title="Total Admins"
-          value={String(stats?.admins ?? 0)}
-          growth={0}
-          icon={FiUsers}
-          color="green"
-        />
-        <DashboardCard
-          title="Total Vendors"
-          value={String(stats?.vendors ?? 0)}
-          growth={0}
-          icon={FiShoppingBag}
-          color="green"
-        />
-        <DashboardCard
-          title="Delivery Partners"
-          value={String(stats?.deliveryPartners ?? 0)}
-          growth={0}
-          icon={FiTruck}
-          color="purple"
-        />
-        <DashboardCard
-          title="Total Products"
-          value={String(stats?.products ?? 0)}
-          growth={0}
-          icon={FiPackage}
-          color="orange"
-        />
-        <DashboardCard
-          title="Total Orders"
-          value={String(stats?.orders ?? 0)}
-          growth={0}
-          icon={FiTrendingUp}
-          color="teal"
-        />
-        <DashboardCard
-          title="Total Revenue"
-          value={formatRevenue(stats?.revenue ?? 0)}
-          growth={0}
-          icon={FiDollarSign}
-          color="red"
-        />
+        {kpiCards.map((card) => (
+          <DashboardCard
+            key={card.title}
+            title={card.title}
+            value={card.value}
+            growth={0}
+            icon={card.icon}
+            color={card.color}
+            to={card.to}
+          />
+        ))}
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 min-w-0">
@@ -217,15 +217,34 @@ const SuperAdminDashboard = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 min-w-0">
         <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Platform Health</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6">
-          {platformHealth.map((item) => (
-            <div key={item.title} className="text-center min-w-0">
-              <div className="p-3 sm:p-4 bg-gray-50 rounded-xl inline-block mb-2 sm:mb-3">
-                <item.icon className="text-gray-600" size={24} />
+          {platformHealth.map((item) => {
+            const inner = (
+              <>
+                <div className="p-3 sm:p-4 bg-gray-50 rounded-xl inline-block mb-2 sm:mb-3">
+                  <item.icon className="text-gray-600" size={24} />
+                </div>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 truncate">{item.value}</p>
+                <p className="text-xs sm:text-sm text-gray-500">{item.title}</p>
+              </>
+            );
+            if (item.to) {
+              return (
+                <Link
+                  key={item.title}
+                  to={item.to}
+                  aria-label={`View ${item.title}`}
+                  className="text-center min-w-0 rounded-xl p-2 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                >
+                  {inner}
+                </Link>
+              );
+            }
+            return (
+              <div key={item.title} className="text-center min-w-0">
+                {inner}
               </div>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 truncate">{item.value}</p>
-              <p className="text-xs sm:text-sm text-gray-500">{item.title}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

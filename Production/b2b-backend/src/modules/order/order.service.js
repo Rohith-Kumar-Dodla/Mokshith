@@ -383,6 +383,22 @@ async function enrichOrdersWithDeliveryPartner(orders) {
   });
 }
 
+/**
+ * Payment-completed orders for Super Admin "Completed" KPI:
+ * - Any order with paymentStatus PAID (online / credit / bank-transfer approved / etc.)
+ * - COD orders that reached DELIVERED or COMPLETED (cash collected on delivery;
+ *   COD paymentStatus remains PENDING in this codebase by design)
+ */
+export const buildPaymentCompletedFilter = () => ({
+  $or: [
+    { paymentStatus: PAYMENT_STATUS.PAID },
+    {
+      paymentMethod: 'COD',
+      status: { $in: [ORDER_STATUS.DELIVERED, ORDER_STATUS.COMPLETED] },
+    },
+  ],
+});
+
 export const getOrders = async (user, query = {}) => {
   const {
     page = 1,
@@ -391,9 +407,13 @@ export const getOrders = async (user, query = {}) => {
     status,
     startDate,
     endDate,
+    paymentMethod,
+    paymentStatus,
+    paymentCompleted,
   } = query;
 
   const filter = {};
+  const andConditions = [];
 
   if (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
     filter.userId = user.id;
@@ -406,10 +426,23 @@ export const getOrders = async (user, query = {}) => {
     filter.status = status.toUpperCase();
   }
 
+  const isAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
+
+  if (isAdmin && paymentMethod && String(paymentMethod).toLowerCase() !== 'all') {
+    filter.paymentMethod = String(paymentMethod).toUpperCase();
+  }
+
+  if (isAdmin && paymentStatus && String(paymentStatus).toLowerCase() !== 'all') {
+    filter.paymentStatus = String(paymentStatus).toUpperCase();
+  }
+
+  if (isAdmin && (paymentCompleted === true || paymentCompleted === 'true' || paymentCompleted === '1')) {
+    andConditions.push(buildPaymentCompletedFilter());
+  }
+
   if (search) {
     // Sanitize search input to prevent ReDoS / regex injection
     const sanitized = String(search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const searchRegex = { $regex: sanitized, $options: 'i' };
     filter.$or = [{ _id: search.match(/^[0-9a-fA-F]{24}$/) ? search : undefined }].filter(Boolean);
     if (!filter.$or.length) {
       delete filter.$or;
@@ -426,7 +459,6 @@ export const getOrders = async (user, query = {}) => {
     }
   }
 
-  const isAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
   const pageNum = Math.max(1, Number(page) || 1);
   const limitNum = Math.min(100, Math.max(1, Number(limit) || 20));
   const skip = (pageNum - 1) * limitNum;
@@ -451,9 +483,13 @@ export const getOrders = async (user, query = {}) => {
     }
   }
 
+  const finalFilter = andConditions.length
+    ? { $and: [filter, ...andConditions] }
+    : filter;
+
   const [orders, total] = await Promise.all([
-    orderRepo.findOrders(filter, { skip, limit: limitNum }),
-    orderRepo.countOrders(filter),
+    orderRepo.findOrders(finalFilter, { skip, limit: limitNum }),
+    orderRepo.countOrders(finalFilter),
   ]);
 
   const enriched = await enrichOrdersWithDeliveryPartner(orders);

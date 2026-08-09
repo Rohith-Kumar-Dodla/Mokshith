@@ -127,7 +127,7 @@ describe('AuthContext', () => {
       act(async () => {
         await result.current.login('9876543210', 'wrong');
       })
-    ).rejects.toThrow('Invalid credentials');
+    ).rejects.toThrow('Unable to sign in. Please check your credentials and try again.');
   });
 
   it('register creates pending vendor via API', async () => {

@@ -18,8 +18,12 @@ export const createCategory = asyncHandler(async (req, res) => {
 
   if (req.file) {
     data = await applyUploadedImage(data, req.file, 'mokshith/categories');
-    delete data.imageUrl;
+  } else if (data.imageUrl) {
+    // Pre-uploaded via /upload — persist URL on the category `image` field
+    data.image = data.imageUrl;
+    data.imagePublicId = data.imagePublicId || null;
   }
+  delete data.imageUrl;
 
   const category = await service.createCategory(data);
   successResponse(res, category, 'Category created');

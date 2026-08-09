@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import PageHeader from '../../components/vendor/PageHeader';
 import OrderCard from '../../components/vendor/OrderCard';
 import SearchBar from '../../components/vendor/SearchBar';
@@ -15,14 +15,29 @@ const STATUS_OPTIONS = [
   { value: 'processing', label: 'Processing' },
   { value: 'dispatched', label: 'Dispatched' },
   { value: 'delivered', label: 'Delivered' },
+  { value: 'completed', label: 'Completed' },
   { value: 'cancelled', label: 'Cancelled' },
 ];
 
 const Orders = () => {
   const navigate = useNavigate();
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const statusFromUrl = searchParams.get('status');
+  const initialStatus = STATUS_OPTIONS.some((option) => option.value === statusFromUrl)
+    ? statusFromUrl
+    : 'all';
+  const [filterStatus, setFilterStatus] = useState(initialStatus);
   const [searchTerm, setSearchTerm] = useState('');
   const { loading, error, orders, stats } = useOrders();
+
+  useEffect(() => {
+    const next = searchParams.get('status');
+    if (STATUS_OPTIONS.some((option) => option.value === next)) {
+      setFilterStatus(next);
+    } else if (!next) {
+      setFilterStatus('all');
+    }
+  }, [searchParams]);
 
   const statusCounts = useMemo(() => ({
     all: stats.totalOrders,
@@ -31,8 +46,9 @@ const Orders = () => {
     processing: stats.processingOrders,
     dispatched: stats.dispatchedOrders,
     delivered: stats.deliveredOrders,
+    completed: orders.filter((order) => order.status === 'completed').length,
     cancelled: stats.cancelledOrders,
-  }), [stats]);
+  }), [stats, orders]);
 
   const filteredOrders = useMemo(() => {
     let result = filterStatus === 'all'
@@ -50,6 +66,14 @@ const Orders = () => {
 
     return result;
   }, [orders, filterStatus, searchTerm]);
+
+  const handleStatusChange = (value) => {
+    setFilterStatus(value);
+    const next = new URLSearchParams(searchParams);
+    if (value === 'all') next.delete('status');
+    else next.set('status', value);
+    setSearchParams(next, { replace: true });
+  };
 
   const handleDownloadInvoice = useCallback(async (order) => {
     try {
@@ -111,7 +135,7 @@ const Orders = () => {
             <select
               id="order-status-filter"
               value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
+              onChange={(e) => handleStatusChange(e.target.value)}
               className="w-full h-10 sm:h-12 px-3 sm:px-4 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             >
               {STATUS_OPTIONS.map((option) => (
@@ -128,7 +152,7 @@ const Orders = () => {
             <button
               key={status}
               type="button"
-              onClick={() => setFilterStatus(status)}
+              onClick={() => handleStatusChange(status)}
               className={`px-3 sm:px-4 py-2 h-10 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                 filterStatus === status
                   ? 'bg-blue-600 text-white'

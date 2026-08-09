@@ -23,6 +23,8 @@ const StatusBadge = ({ status }) => {
           borderColor: 'border-yellow-200'
         };
       case 'inactive':
+      case 'rejected':
+      case 'delivery_partner_rejected':
       case 'cancelled':
       case 'suspended':
       case 'out_of_stock':
@@ -60,12 +62,16 @@ const StatusBadge = ({ status }) => {
   };
 
   const config = getStatusConfig(status);
+  const label =
+    String(status || '').toLowerCase() === 'delivery_partner_rejected'
+      ? 'Delivery Partner Rejected'
+      : status?.charAt(0).toUpperCase() + status?.slice(1)?.replace(/_/g, ' ');
 
   return (
     <span
       className={`inline-flex items-center px-2 sm:px-2.5 py-0.5 rounded-full text-xs font-medium border ${config.bgColor} ${config.textColor} ${config.borderColor}`}
     >
-      {status?.charAt(0).toUpperCase() + status?.slice(1)?.replace(/_/g, ' ')}
+      {label}
     </span>
   );
 };

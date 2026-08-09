@@ -1,4 +1,5 @@
 import Logistics from './logistics.model.js';
+import { DELIVERY_STATUS } from '../../constants/deliveryStatus.js';
 
 export const createShipment = (data) =>
   Logistics.create(data);
@@ -8,6 +9,12 @@ export const findByOrder = (orderId) =>
 
 export const updateShipment = (id, data) =>
   Logistics.findByIdAndUpdate(id, data, { new: true });
+
+/**
+ * Conditional atomic update for race-safe transitions (ownership + status).
+ */
+export const updateShipmentIf = (filter, data) =>
+  Logistics.findOneAndUpdate(filter, data, { new: true });
 
 export const findById = (id) =>
   Logistics.findById(id)
@@ -19,7 +26,8 @@ export const findById = (id) =>
       },
     })
     .populate('warehouseId')
-    .populate('deliveryPartnerId', 'name email mobile');
+    .populate('deliveryPartnerId', 'name email mobile')
+    .populate('lastRejectedPartnerId', 'name email mobile');
 
 export const findAll = (filter = {}) =>
   Logistics.find(filter)
@@ -34,7 +42,16 @@ export const findAll = (filter = {}) =>
     .populate('deliveryPartnerId', 'name email mobile');
 
 export const findAllActive = () =>
-  Logistics.find({ status: { $nin: ['DELIVERED', 'COMPLETED', 'CANCELLED', 'FAILED'] } })
+  Logistics.find({
+    status: {
+      $nin: [
+        DELIVERY_STATUS.DELIVERED,
+        DELIVERY_STATUS.COMPLETED,
+        DELIVERY_STATUS.CANCELLED,
+        DELIVERY_STATUS.FAILED,
+      ],
+    },
+  })
     .populate({
       path: 'orderId',
       populate: {
@@ -43,7 +60,8 @@ export const findAllActive = () =>
       },
     })
     .populate('warehouseId')
-    .populate('deliveryPartnerId', 'name email mobile');
+    .populate('deliveryPartnerId', 'name email mobile')
+    .populate('lastRejectedPartnerId', 'name email mobile');
 
 export const findAllDelivered = () =>
   Logistics.find({ status: { $in: ['DELIVERED', 'COMPLETED'] } })

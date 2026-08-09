@@ -533,6 +533,78 @@ describe('Order Module - Integration Tests', () => {
       expect(orders[0].status).toBe(ORDER_STATUS.CONFIRMED);
     });
 
+    it('should filter admin orders by paymentMethod COD', async () => {
+      const response = await request
+        .get('/api/v1/orders?paymentMethod=COD')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      const orders = response.body.data.orders;
+      expect(orders.length).toBeGreaterThanOrEqual(1);
+      expect(orders.every((o) => o.paymentMethod === 'COD')).toBe(true);
+    });
+
+    it('should filter paymentCompleted including paid online and delivered COD', async () => {
+      await Order.create({
+        userId: testUser._id,
+        items: [
+          {
+            productId: testProduct1._id,
+            name: testProduct1.name,
+            price: testProduct1.price,
+            quantity: 1,
+          },
+        ],
+        totalAmount: 1180,
+        paymentMethod: 'ONLINE',
+        address: validShippingAddress,
+        status: ORDER_STATUS.CONFIRMED,
+        paymentStatus: PAYMENT_STATUS.PAID,
+      });
+
+      await Order.create({
+        userId: testUser._id,
+        items: [
+          {
+            productId: testProduct1._id,
+            name: testProduct1.name,
+            price: testProduct1.price,
+            quantity: 1,
+          },
+        ],
+        totalAmount: 1180,
+        paymentMethod: 'COD',
+        address: validShippingAddress,
+        status: ORDER_STATUS.DELIVERED,
+        paymentStatus: PAYMENT_STATUS.PENDING,
+      });
+
+      const response = await request
+        .get('/api/v1/orders?paymentCompleted=true')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      const orders = response.body.data.orders;
+      expect(orders.length).toBeGreaterThanOrEqual(2);
+      expect(
+        orders.every(
+          (o) =>
+            o.paymentStatus === PAYMENT_STATUS.PAID ||
+            (o.paymentMethod === 'COD' &&
+              [ORDER_STATUS.DELIVERED, ORDER_STATUS.COMPLETED].includes(o.status))
+        )
+      ).toBe(true);
+      expect(orders.some((o) => o.paymentMethod === 'ONLINE' && o.paymentStatus === PAYMENT_STATUS.PAID)).toBe(true);
+      expect(orders.some((o) => o.paymentMethod === 'COD' && o.status === ORDER_STATUS.DELIVERED)).toBe(true);
+      expect(
+        orders.every(
+          (o) =>
+            !(o.paymentMethod === 'ONLINE' && o.paymentStatus === PAYMENT_STATUS.PENDING)
+        )
+      ).toBe(true);
+    });
+
     it('should not show other users orders', async () => {
       // Create another user's order
       const otherUser = await User.create({

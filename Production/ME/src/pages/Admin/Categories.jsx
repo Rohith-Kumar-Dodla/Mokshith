@@ -36,11 +36,13 @@ const Categories = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [imageFile, setImageFile] = useState(null);
+  const [uploadedImage, setUploadedImage] = useState(null);
   const [formError, setFormError] = useState(null);
 
   const resetForm = () => {
     setFormData(EMPTY_FORM);
     setImageFile(null);
+    setUploadedImage(null);
     setFormError(null);
     setSelectedCategory(null);
     clearMessages();
@@ -64,6 +66,7 @@ const Categories = () => {
       isActive: category.status !== 'inactive',
     });
     setImageFile(null);
+    setUploadedImage(null);
     setFormError(null);
     clearMessages();
     setIsAddModalOpen(true);
@@ -97,6 +100,13 @@ const Categories = () => {
       description: formData.description.trim(),
       isActive: formData.isActive,
     };
+
+    if (uploadedImage?.url) {
+      payload.imageUrl = uploadedImage.url;
+      if (uploadedImage.publicId) {
+        payload.imagePublicId = uploadedImage.publicId;
+      }
+    }
 
     try {
       if (selectedCategory) {
@@ -291,9 +301,15 @@ const Categories = () => {
             key={selectedCategory?.id || 'new-category'}
             label="Category Image"
             value={imageFile}
-            previewUrl={selectedCategory?.storedImage || ''}
+            previewUrl={uploadedImage?.url || selectedCategory?.storedImage || ''}
             onChange={setImageFile}
-            onClear={() => setImageFile(null)}
+            onUploaded={setUploadedImage}
+            onClear={() => {
+              setImageFile(null);
+              setUploadedImage(null);
+            }}
+            uploadFolder="mokshith/categories"
+            autoUpload
             disabled={saving}
           />
 

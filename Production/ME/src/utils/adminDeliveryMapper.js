@@ -18,6 +18,9 @@ export function mapAdminDeliveryQueue(payload) {
   return unwrapList(payload).map((shipment) => {
     const order = getOrderFromShipment(shipment);
     const partner = shipment.deliveryPartnerId;
+    const backendStatus = String(shipment.status || 'ASSIGNED').toUpperCase();
+    const isRejectedAssignment = backendStatus === 'REJECTED';
+    const partnerId = getPartnerId(partner);
 
     return {
       id: shipment._id || shipment.id,
@@ -26,12 +29,23 @@ export function mapAdminDeliveryQueue(payload) {
       area: order?.address?.city || order?.shippingAddress?.city || shipment.address || '—',
       items: order?.items?.length || 0,
       amount: Number(order?.totalAmount || 0),
-      status: String(shipment.status || 'ASSIGNED').toLowerCase(),
-      deliveryPartnerId: getPartnerId(partner),
-      deliveryPartnerName:
-        typeof partner === 'object' ? partner.name : null,
+      status: isRejectedAssignment ? 'delivery_partner_rejected' : backendStatus.toLowerCase(),
+      backendStatus,
+      deliveryPartnerId: partnerId,
+      deliveryPartnerName: isRejectedAssignment
+        ? null
+        : typeof partner === 'object'
+          ? partner.name
+          : null,
+      assignedPartnerLabel: isRejectedAssignment || !partnerId
+        ? 'Unassigned'
+        : (typeof partner === 'object' ? partner.name : 'Assigned'),
+      lastRejectedPartnerId: getPartnerId(shipment.lastRejectedPartnerId),
+      rejectedAt: shipment.rejectedAt || null,
+      rejectionReason: shipment.rejectionReason || null,
       date: shipment.createdAt,
       needsShipment: false,
+      isRejectedAssignment,
     };
   });
 }

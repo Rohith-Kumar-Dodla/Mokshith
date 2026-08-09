@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { FiTruck, FiUser, FiMapPin, FiStar, FiClock, FiCheck, FiRefreshCw } from 'react-icons/fi';
 import PageHeader from '../../components/admin/PageHeader';
 import Card from '../../components/admin/Card';
@@ -8,8 +9,12 @@ import Modal from '../../components/admin/Modal';
 import useDeliveryAssignment from '../../hooks/useDeliveryAssignment';
 
 const DeliveryAssignment = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab');
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('unassigned');
+  const [activeTab, setActiveTab] = useState(
+    ['unassigned', 'active', 'completed', 'partners'].includes(tabFromUrl) ? tabFromUrl : 'unassigned'
+  );
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [selectedPartner, setSelectedPartner] = useState(null);
@@ -27,6 +32,13 @@ const DeliveryAssignment = () => {
     reassignPartner,
   } = useDeliveryAssignment();
 
+  useEffect(() => {
+    const next = searchParams.get('tab');
+    if (['unassigned', 'active', 'completed', 'partners'].includes(next) && next !== activeTab) {
+      setActiveTab(next);
+    }
+  }, [searchParams, activeTab]);
+
   const availablePartners = partners.filter((partner) => partner.status === 'active');
   const isInitialLoad =
     loading &&
@@ -34,6 +46,14 @@ const DeliveryAssignment = () => {
     activeDeliveries.length === 0 &&
     history.length === 0 &&
     partners.length === 0;
+
+  const selectTab = (id) => {
+    setActiveTab(id);
+    const next = new URLSearchParams(searchParams);
+    if (id === 'unassigned') next.delete('tab');
+    else next.set('tab', id);
+    setSearchParams(next, { replace: true });
+  };
 
   const tabItems = {
     unassigned: unassignedItems,
@@ -47,6 +67,15 @@ const DeliveryAssignment = () => {
       String(order.id).toLowerCase().includes(term) ||
       String(order.orderId || '').toLowerCase().includes(term) ||
       String(order.vendor).toLowerCase().includes(term)
+    );
+  });
+
+  const filteredPartners = partners.filter((partner) => {
+    const term = searchTerm.toLowerCase();
+    return (
+      String(partner.name || '').toLowerCase().includes(term) ||
+      String(partner.phone || '').toLowerCase().includes(term) ||
+      String(partner.id || '').toLowerCase().includes(term)
     );
   });
 
@@ -102,12 +131,13 @@ const DeliveryAssignment = () => {
           { id: 'unassigned', label: 'Unassigned', count: unassignedItems.length },
           { id: 'active', label: 'Active', count: activeDeliveries.length },
           { id: 'completed', label: 'Completed', count: history.length },
+          { id: 'partners', label: 'All Partners', count: partners.length },
         ].map((tab) => (
           <button
             key={tab.id}
             type="button"
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            onClick={() => selectTab(tab.id)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] ${
               activeTab === tab.id ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
@@ -116,6 +146,50 @@ const DeliveryAssignment = () => {
         ))}
       </div>
 
+      {activeTab === 'partners' ? (
+        <Card className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">All Delivery Partners</h2>
+            <span className="text-xs sm:text-sm font-medium text-gray-600">{filteredPartners.length} partners</span>
+          </div>
+          <div className="mb-4">
+            <SearchBar
+              placeholder="Search delivery partners..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onClear={() => setSearchTerm('')}
+            />
+          </div>
+          {loading && partners.length === 0 ? (
+            <p className="text-sm text-gray-500">Loading partners...</p>
+          ) : filteredPartners.length === 0 ? (
+            <p className="text-sm text-gray-500">No delivery partners found.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              {filteredPartners.map((partner) => (
+                <Card key={partner.id} className="hover:shadow-md transition-shadow p-3 sm:p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm sm:text-base font-bold flex-shrink-0">
+                        {(partner.name || '?').charAt(0)}
+                      </div>
+                      <div>
+                        <h3 className="text-sm sm:text-base font-semibold text-gray-900">{partner.name}</h3>
+                        <p className="text-xs text-gray-500">{partner.phone || '—'}</p>
+                      </div>
+                    </div>
+                    <StatusBadge status={partner.status} />
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-600">
+                    <FiMapPin size={12} />
+                    <span>{partner.area || partner.assignedArea || '—'}</span>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </Card>
+      ) : (
       <Card className="p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
           <h2 className="text-lg sm:text-xl font-bold text-gray-900">
@@ -172,13 +246,20 @@ const DeliveryAssignment = () => {
                           <span>{new Date(order.date).toLocaleDateString('en-IN')}</span>
                         </div>
                       )}
-                      {order.deliveryPartnerName && (
-                        <div className="flex items-center gap-1">
-                          <FiUser size={12} />
-                          <span>{order.deliveryPartnerName}</span>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-1">
+                        <FiUser size={12} />
+                        <span>
+                          Assigned Partner:{' '}
+                          {order.assignedPartnerLabel || order.deliveryPartnerName || 'Unassigned'}
+                        </span>
+                      </div>
                     </div>
+                    {order.isRejectedAssignment && (
+                      <p className="text-xs text-red-700 mt-2 font-medium">
+                        Delivery Partner Rejected
+                        {order.rejectionReason ? ` — ${order.rejectionReason}` : ''}
+                      </p>
+                    )}
                   </div>
                   <div className="text-right">
                     <p className="text-lg sm:text-2xl font-bold text-gray-900">₹{Number(order.amount || 0).toLocaleString('en-IN')}</p>
@@ -189,7 +270,11 @@ const DeliveryAssignment = () => {
                         className="mt-2 inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 h-10 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-sm"
                       >
                         <FiTruck size={14} />
-                        <span>{activeTab === 'active' ? 'Reassign' : 'Assign Delivery'}</span>
+                        <span>
+                          {order.isRejectedAssignment || activeTab === 'unassigned'
+                            ? 'Assign Delivery Partner'
+                            : 'Reassign'}
+                        </span>
                       </button>
                     )}
                   </div>
@@ -210,7 +295,9 @@ const DeliveryAssignment = () => {
           </div>
         )}
       </Card>
+      )}
 
+      {activeTab !== 'partners' && (
       <Card className="p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
           <h2 className="text-lg sm:text-xl font-bold text-gray-900">Available Delivery Partners</h2>
@@ -263,6 +350,7 @@ const DeliveryAssignment = () => {
           </div>
         )}
       </Card>
+      )}
 
       <Modal
         isOpen={isAssignModalOpen}

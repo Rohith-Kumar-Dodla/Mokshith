@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getUserFacingErrorMessage } from '../../utils/apiResponse';
 import { useParams, Link } from 'react-router-dom';
 import { FiArrowLeft, FiDownload, FiPrinter, FiTruck, FiMapPin, FiPhone, FiDollarSign } from 'react-icons/fi';
 import PageHeader from '../../components/vendor/PageHeader';
@@ -48,9 +49,7 @@ const OrderDetails = () => {
       window.URL.revokeObjectURL(url);
     } catch (downloadError) {
       setInvoiceError(
-        downloadError?.response?.data?.message ||
-        downloadError.message ||
-        'Failed to download invoice'
+        getUserFacingErrorMessage(downloadError, 'Failed to download invoice')
       );
     }
   };

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { getUserFacingErrorMessage } from '../utils/apiResponse';
 import deliveryService from '../services/deliveryService';
 import adminService from '../services/adminService';
 import orderService from '../services/orderService';
@@ -8,8 +9,6 @@ import {
   mapAdminDeliveryHistory,
 } from '../utils/adminDeliveryMapper';
 
-const getErrorMessage = (error, fallback) =>
-  error?.response?.data?.message || error?.message || fallback;
 
 export function useDeliveryAssignment({ autoLoad = true } = {}) {
   const [queue, setQueue] = useState([]);
@@ -71,7 +70,7 @@ export function useDeliveryAssignment({ autoLoad = true } = {}) {
           }))
       );
     } catch (loadError) {
-      setError(getErrorMessage(loadError, 'Failed to load delivery assignment data'));
+      setError(getUserFacingErrorMessage(loadError, 'Failed to load delivery assignment data'));
     } finally {
       if (!silent) {
         setLoading(false);
@@ -87,7 +86,9 @@ export function useDeliveryAssignment({ autoLoad = true } = {}) {
 
   const unassignedItems = useMemo(() => {
     const fromQueue = queue.filter((item) => !item.deliveryPartnerId);
-    return [...pendingOrders, ...fromQueue.filter((item) => !item.needsShipment)];
+    // Prefer rejected assignments at the top of unassigned list
+    const sorted = [...fromQueue].sort((a, b) => Number(b.isRejectedAssignment) - Number(a.isRejectedAssignment));
+    return [...sorted.filter((item) => !item.needsShipment), ...pendingOrders];
   }, [queue, pendingOrders]);
 
   const activeDeliveries = useMemo(
@@ -114,7 +115,7 @@ export function useDeliveryAssignment({ autoLoad = true } = {}) {
         }
         await refreshAll({ silent: true });
       } catch (actionError) {
-        const message = getErrorMessage(actionError, 'Failed to assign delivery partner');
+        const message = getUserFacingErrorMessage(actionError, 'Failed to assign delivery partner');
         setError(message);
         throw new Error(message);
       } finally {
@@ -132,7 +133,7 @@ export function useDeliveryAssignment({ autoLoad = true } = {}) {
         await deliveryService.reassignDeliveryPartner(shipmentId, partnerId);
         await refreshAll({ silent: true });
       } catch (actionError) {
-        const message = getErrorMessage(actionError, 'Failed to reassign delivery partner');
+        const message = getUserFacingErrorMessage(actionError, 'Failed to reassign delivery partner');
         setError(message);
         throw new Error(message);
       } finally {

@@ -44,6 +44,13 @@ export const acceptDelivery = asyncHandler(async (req, res) => {
   successResponse(res, shipment, 'Delivery accepted');
 });
 
+export const rejectAssignment = asyncHandler(async (req, res) => {
+  const shipment = await service.rejectAssignment(req.params.id, req.user._id, {
+    reason: req.body?.reason,
+  });
+  successResponse(res, shipment, 'Delivery assignment rejected. The order is now available for reassignment.');
+});
+
 export const pickUpDelivery = asyncHandler(async (req, res) => {
   const shipment = await service.updateStatus(req.params.id, 'PICKED', req.user._id);
   successResponse(res, shipment, 'Order picked up');

@@ -38,6 +38,6 @@ export default defineConfig({
     command: 'node ./tools/start-dev-with-backend.cjs',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
-    timeout: 180000,
+    timeout: 300000,
   },
 });

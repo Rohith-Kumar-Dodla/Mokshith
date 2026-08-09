@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import categoryService from '../services/categoryService';
 import { mapBackendCategories, mapBackendCategory } from '../utils/categoryMapper';
-import { unwrapApiData, unwrapApiList } from '../utils/apiResponse';
+import { unwrapApiData, unwrapApiList, getUserFacingErrorMessage } from '../utils/apiResponse';
 
-const getErrorMessage = (error, fallback) =>
-  error?.response?.data?.message || error?.message || fallback;
 
 export function useCategories() {
   const [categories, setCategories] = useState([]);
@@ -31,7 +29,7 @@ export function useCategories() {
       if (!preserveOnError) {
         setCategories([]);
       }
-      setError(getErrorMessage(fetchError, 'Failed to load categories'));
+      setError(getUserFacingErrorMessage(fetchError, 'Failed to load categories'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -75,7 +73,7 @@ export function useCategories() {
       await fetchCategories({ bustCache: true, preserveOnError: true });
       return true;
     } catch (saveError) {
-      const message = getErrorMessage(saveError, 'Failed to create category');
+      const message = getUserFacingErrorMessage(saveError, 'Failed to create category');
       setActionError(message);
       throw new Error(message);
     } finally {
@@ -97,7 +95,7 @@ export function useCategories() {
       await fetchCategories({ bustCache: true, preserveOnError: true });
       return true;
     } catch (saveError) {
-      const message = getErrorMessage(saveError, 'Failed to update category');
+      const message = getUserFacingErrorMessage(saveError, 'Failed to update category');
       setActionError(message);
       throw new Error(message);
     } finally {
@@ -116,7 +114,7 @@ export function useCategories() {
       await fetchCategories({ bustCache: true, preserveOnError: true });
       return true;
     } catch (saveError) {
-      const message = getErrorMessage(saveError, 'Failed to delete category');
+      const message = getUserFacingErrorMessage(saveError, 'Failed to delete category');
       setActionError(message);
       throw new Error(message);
     } finally {

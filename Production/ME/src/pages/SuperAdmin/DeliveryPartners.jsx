@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { getUserFacingErrorMessage } from '../../utils/apiResponse';
 import { FiEye, FiCheck, FiX } from 'react-icons/fi';
 import PageHeader from '../../components/superadmin/PageHeader';
 import SearchBar from '../../components/superadmin/SearchBar';
@@ -40,7 +41,7 @@ const DeliveryPartners = () => {
         const users = Array.isArray(payload) ? payload : payload?.users || [];
         setPartners(users.map(mapPartner));
       } catch (err) {
-        setError(err?.response?.data?.message || err?.message || 'Failed to load delivery partners');
+        setError(getUserFacingErrorMessage(err, 'Failed to load delivery partners');
         setPartners([]);
       } finally {
         setLoading(false);
@@ -182,7 +183,8 @@ const DeliveryPartners = () => {
             options={statusOptions}
             selected={statusFilter}
             onSelect={setStatusFilter}
-            label="Filter by Status"
+            label="Filter"
+            onClear={() => setStatusFilter('all')}
           />
         </div>
       </div>

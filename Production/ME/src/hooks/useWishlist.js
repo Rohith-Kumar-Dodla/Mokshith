@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { getUserFacingErrorMessage } from '../utils/apiResponse';
 import wishlistService from '../services/wishlistService';
 import { mapBackendWishlist } from '../utils/wishlistMapper';
 
@@ -28,7 +29,7 @@ export function useWishlist({ autoLoad = true } = {}) {
     } catch (loadError) {
       setWishlist(mapBackendWishlist(null));
       setError(
-        loadError?.response?.data?.message || loadError.message || 'Failed to load wishlist'
+        getUserFacingErrorMessage(loadError, 'Failed to load wishlist')
       );
       return mapBackendWishlist(null);
     } finally {
@@ -54,7 +55,7 @@ export function useWishlist({ autoLoad = true } = {}) {
         return mapped;
       } catch (addError) {
         const message =
-          addError?.response?.data?.message || addError.message || 'Failed to add to wishlist';
+          getUserFacingErrorMessage(addError, 'Failed to add to wishlist');
         setError(message);
         throw new Error(message);
       } finally {
@@ -74,9 +75,7 @@ export function useWishlist({ autoLoad = true } = {}) {
         return applyWishlistResponse(response);
       } catch (removeError) {
         const message =
-          removeError?.response?.data?.message ||
-          removeError.message ||
-          'Failed to remove from wishlist';
+          getUserFacingErrorMessage(removeError, 'Failed to remove from wishlist');
         setError(message);
         throw new Error(message);
       } finally {
@@ -95,7 +94,7 @@ export function useWishlist({ autoLoad = true } = {}) {
       return applyWishlistResponse({ items: [] });
     } catch (clearError) {
       const message =
-        clearError?.response?.data?.message || clearError.message || 'Failed to clear wishlist';
+        getUserFacingErrorMessage(clearError, 'Failed to clear wishlist');
       setError(message);
       throw new Error(message);
     } finally {

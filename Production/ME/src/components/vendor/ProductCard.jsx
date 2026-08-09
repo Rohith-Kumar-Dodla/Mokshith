@@ -3,7 +3,16 @@ import { Link } from 'react-router-dom';
 import { FiShoppingCart, FiHeart, FiEye, FiStar, FiPlus, FiMinus } from 'react-icons/fi';
 import { getProductImageKey } from '../../utils/productMapper';
 
-const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) => {
+const ProductCard = ({
+  product,
+  onAddToCart,
+  onAddToWishlist,
+  onViewDetails,
+  selectable = false,
+  selected = false,
+  onToggleSelect,
+  hideAddToCart = false,
+}) => {
   const productId = product.id || product._id;
   const imageSrc = product.imageUrl || product.image || '';
   const imageKey = getProductImageKey(product);
@@ -13,6 +22,7 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) =
   const [quantity, setQuantity] = useState(product.minimumOrderQuantity ?? product.moq ?? 1);
   const unitPrice = Number(product.price ?? 0);
   const totalPrice = useMemo(() => unitPrice * quantity, [unitPrice, quantity]);
+  const canSelect = selectable && product.status !== 'out_of_stock';
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -64,7 +74,11 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) =
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300">
+    <div
+      className={`bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition-shadow duration-300 ${
+        selected ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-100'
+      }`}
+    >
       <div className="relative h-36 sm:h-48 bg-gray-100">
         <img
           key={imageKey}
@@ -74,7 +88,21 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) =
           decoding="async"
           className="w-full h-full img-responsive object-cover"
         />
-        <div className="absolute top-2 sm:top-3 left-2 sm:left-3">
+        {selectable && (
+          <div className="absolute top-2 sm:top-3 left-2 sm:left-3 z-10">
+            <label className="inline-flex items-center min-h-[36px] min-w-[36px] bg-white/95 rounded-md shadow px-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={selected}
+                disabled={!canSelect}
+                onChange={() => onToggleSelect?.(product)}
+                aria-label={`Select ${product.name}`}
+                className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+              />
+            </label>
+          </div>
+        )}
+        <div className={`absolute top-2 sm:top-3 ${selectable ? 'left-14 sm:left-16' : 'left-2 sm:left-3'}`}>
           <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(product.status)}`}>
             {getStatusText(product.status)}
           </span>
@@ -91,6 +119,7 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) =
             onClick={() => onAddToWishlist && onAddToWishlist(product)}
             className="p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center"
             title="Add to Wishlist"
+            type="button"
           >
             <FiHeart className="w-4 h-4 text-gray-600" />
           </button>
@@ -99,6 +128,7 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) =
               onClick={() => onViewDetails(product)}
               className="p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center"
               title="View Details"
+              type="button"
             >
               <FiEye className="w-4 h-4 text-gray-600" />
             </button>
@@ -178,21 +208,26 @@ const ProductCard = ({ product, onAddToCart, onAddToWishlist, onViewDetails }) =
           >
             <FiPlus className="w-4 h-4" />
           </button>
-          <span className="text-xs text-gray-500 ml-auto">Stock: {product.stock}</span>
+          <span className="text-xs text-gray-500 ml-auto">
+            MOQ: {product.minimumOrderQuantity} {product.unit} · Stock: {product.stock}
+          </span>
         </div>
 
-        <button
-          onClick={handleAddToCartClick}
-          disabled={product.status === 'out_of_stock'}
-          className={`w-full py-2.5 h-10 sm:h-12 px-4 rounded-lg text-xs sm:text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
-            product.status === 'out_of_stock'
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
-          }`}
-        >
-          <FiShoppingCart className="w-4 h-4" />
-          {product.status === 'out_of_stock' ? 'Out of Stock' : 'Add to Cart'}
-        </button>
+        {!hideAddToCart && (
+          <button
+            type="button"
+            onClick={handleAddToCartClick}
+            disabled={product.status === 'out_of_stock'}
+            className={`w-full py-2.5 h-10 sm:h-12 px-4 rounded-lg text-xs sm:text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+              product.status === 'out_of_stock'
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
+          >
+            <FiShoppingCart className="w-4 h-4" />
+            {product.status === 'out_of_stock' ? 'Out of Stock' : 'Add to Cart'}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -208,6 +243,8 @@ export default React.memo(ProductCard, (prev, next) => {
     prevProduct?.name === nextProduct?.name &&
     prevProduct?.price === nextProduct?.price &&
     prevProduct?.status === nextProduct?.status &&
-    prevProduct?.stock === nextProduct?.stock
+    prev.selected === next.selected &&
+    prev.selectable === next.selectable &&
+    prev.hideAddToCart === next.hideAddToCart
   );
 });

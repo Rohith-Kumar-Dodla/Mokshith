@@ -53,13 +53,24 @@ export const apiLimiter = rateLimit({
     message: 'Too many requests, try again later',
   },
   skip: (req) => {
-    // Always skip in test env
+    // Always skip health probes
+    if (req.path === '/health' || req.path.startsWith('/health/') || req.path.endsWith('/health/live') || req.path.endsWith('/health/ready')) {
+      return true;
+    }
+
+    // Test env only — NEVER honor client test headers or loopback bypass in production
     if (process.env.NODE_ENV === 'test') return true;
-    // Allow explicit test header from automated test runners
-    if (req.headers && (req.headers['x-playwright-test'] === '1' || req.headers['x-automated-test'] === '1')) return true;
-    // Allow localhost/loopback (CI local runs) to bypass rate limiting for automated tests
-    if (req.ip === '127.0.0.1' || req.ip === '::1') return true;
-    return req.path === '/health' || req.path.startsWith('/health/') || req.path.endsWith('/health/live') || req.path.endsWith('/health/ready');
+
+    if (process.env.NODE_ENV !== 'production') {
+      if (req.headers && (req.headers['x-playwright-test'] === '1' || req.headers['x-automated-test'] === '1')) {
+        return true;
+      }
+      if (req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1') {
+        return true;
+      }
+    }
+
+    return false;
   },
 });
 
@@ -96,10 +107,16 @@ export const authLimiter = rateLimit({
   skipSuccessfulRequests: true,
   // RE-ENABLE BEFORE PRODUCTION: auth rate limiting disabled when AUTH_STRICT_MODE=false
   skip: (req) => {
-    // Disable auth rate limiter during tests to avoid interfering with integration tests
     if (process.env.NODE_ENV === 'test') return true;
-    if (req.headers && (req.headers['x-playwright-test'] === '1' || req.headers['x-automated-test'] === '1')) return true;
-    if (req.ip === '127.0.0.1' || req.ip === '::1') return true;
+    // Never honor automated-test headers in production
+    if (process.env.NODE_ENV !== 'production') {
+      if (req.headers && (req.headers['x-playwright-test'] === '1' || req.headers['x-automated-test'] === '1')) {
+        return true;
+      }
+      if (req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1') {
+        return true;
+      }
+    }
     return !isAuthStrictMode();
   },
 });

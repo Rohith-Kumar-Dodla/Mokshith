@@ -138,15 +138,26 @@ const OrderCard = ({
           <p className="text-base sm:text-lg font-bold text-gray-900">₹{order.amount.toFixed(2)}</p>
         </div>
         <div className="sm:text-right min-w-0">
-          {order.status === 'delivered' ? (
+          {order.status === 'delivered' || order.status === 'completed' ? (
             <>
-              <p className="text-xs sm:text-sm text-gray-500">Delivered on</p>
-              <p className="text-xs sm:text-sm font-medium text-gray-900">{order.deliveryDate || 'Delivered'}</p>
+              <p className="text-xs sm:text-sm text-gray-500">
+                {order.status === 'completed' ? 'Completed on' : 'Delivered on'}
+              </p>
+              <p className="text-xs sm:text-sm font-medium text-gray-900">
+                {order.deliveryDate || order.orderDate || '—'}
+              </p>
             </>
-          ) : (
+          ) : order.estimatedDelivery ? (
             <>
               <p className="text-xs sm:text-sm text-gray-500">Estimated Delivery</p>
               <p className="text-xs sm:text-sm font-medium text-gray-900">{order.estimatedDelivery}</p>
+            </>
+          ) : (
+            <>
+              <p className="text-xs sm:text-sm text-gray-500">Status</p>
+              <p className="text-xs sm:text-sm font-medium text-gray-900 capitalize">
+                {String(order.status || '—').replace(/_/g, ' ')}
+              </p>
             </>
           )}
         </div>

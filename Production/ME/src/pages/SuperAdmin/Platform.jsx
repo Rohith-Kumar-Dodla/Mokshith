@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { getUserFacingErrorMessage } from '../../utils/apiResponse';
+import { Link } from 'react-router-dom';
 import { FiActivity, FiUsers, FiTruck, FiPackage, FiDollarSign, FiTrendingUp, FiServer, FiDatabase, FiWifi, FiShield } from 'react-icons/fi';
 import PageHeader from '../../components/superadmin/PageHeader';
 import DashboardCard from '../../components/superadmin/DashboardCard';
@@ -29,7 +31,7 @@ const Platform = () => {
         setStats(statsResponse.data ?? statsResponse);
         setMetrics(metricsResponse.data ?? metricsResponse);
       } catch (err) {
-        setError(err?.response?.data?.message || err?.message || 'Failed to load platform data');
+        setError(getUserFacingErrorMessage(err, 'Failed to load platform data');
       } finally {
         setLoading(false);
       }
@@ -39,21 +41,22 @@ const Platform = () => {
   }, []);
 
   const platformStats = [
-    { title: 'Total Vendors', value: String(stats?.vendors ?? metrics?.activeVendors ?? 0), icon: FiUsers, color: 'blue' },
-    { title: 'Delivery Partners', value: String(stats?.deliveryPartners ?? 0), icon: FiTruck, color: 'purple' },
+    { title: 'Total Vendors', value: String(stats?.vendors ?? metrics?.activeVendors ?? 0), icon: FiUsers, color: 'blue', to: '/super-admin/user-management?tab=vendors' },
+    { title: 'Delivery Partners', value: String(stats?.deliveryPartners ?? 0), icon: FiTruck, color: 'purple', to: '/super-admin/user-management?tab=delivery' },
     { title: 'Total Products', value: String(stats?.products ?? 0), icon: FiPackage, color: 'orange' },
-    { title: 'Total Orders', value: String(stats?.orders ?? 0), icon: FiTrendingUp, color: 'teal' },
+    { title: 'Total Orders', value: String(stats?.orders ?? 0), icon: FiTrendingUp, color: 'teal', to: '/super-admin/orders' },
     { title: 'Total Revenue', value: formatRevenue(stats?.revenue ?? 0), icon: FiDollarSign, color: 'green' },
-    { title: 'Pending Approvals', value: String(stats?.pendingApprovals ?? metrics?.pendingApprovals ?? 0), icon: FiActivity, color: 'blue' },
+    { title: 'Pending Approvals', value: String(stats?.pendingApprovals ?? metrics?.pendingApprovals ?? 0), icon: FiActivity, color: 'blue', to: '/super-admin/user-management?tab=approvals' },
   ];
 
+  // Cosmetic / non-authoritative health tiles — intentionally non-clickable
   const healthMetrics = [
     { title: 'System Status', value: 'Operational', icon: FiActivity, color: 'green' },
     { title: 'Server Uptime', value: 'Monitoring unavailable', icon: FiServer, color: 'blue' },
     { title: 'Database Status', value: 'Connected', icon: FiDatabase, color: 'green' },
     { title: 'API Response', value: metrics ? 'Healthy' : 'Unavailable', icon: FiWifi, color: 'green' },
     { title: 'Security Status', value: 'Protected', icon: FiShield, color: 'green' },
-    { title: 'Orders Today', value: String(metrics?.ordersToday ?? 0), icon: FiPackage, color: 'orange' },
+    { title: 'Orders Today', value: String(metrics?.ordersToday ?? 0), icon: FiPackage, color: 'orange', to: '/super-admin/orders' },
   ];
 
   if (loading) {
@@ -82,6 +85,7 @@ const Platform = () => {
             growth={0}
             icon={stat.icon}
             color={stat.color}
+            to={stat.to}
           />
         ))}
       </div>
@@ -89,15 +93,34 @@ const Platform = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 min-w-0">
         <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Platform Health</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 sm:gap-6">
-          {healthMetrics.map((item) => (
-            <div key={item.title} className="text-center min-w-0">
-              <div className="p-3 sm:p-4 bg-gray-50 rounded-xl inline-block mb-2 sm:mb-3">
-                <item.icon className="text-gray-600" size={24} />
+          {healthMetrics.map((item) => {
+            const body = (
+              <>
+                <div className="p-3 sm:p-4 bg-gray-50 rounded-xl inline-block mb-2 sm:mb-3">
+                  <item.icon className="text-gray-600" size={24} />
+                </div>
+                <p className="text-sm sm:text-base font-bold text-gray-900 leading-snug">{item.value}</p>
+                <p className="text-xs sm:text-sm text-gray-500 mt-1">{item.title}</p>
+              </>
+            );
+            if (item.to) {
+              return (
+                <Link
+                  key={item.title}
+                  to={item.to}
+                  aria-label={`View ${item.title}`}
+                  className="text-center min-w-0 rounded-xl p-2 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 block"
+                >
+                  {body}
+                </Link>
+              );
+            }
+            return (
+              <div key={item.title} className="text-center min-w-0">
+                {body}
               </div>
-              <p className="text-sm sm:text-base font-bold text-gray-900 leading-snug">{item.value}</p>
-              <p className="text-xs sm:text-sm text-gray-500 mt-1">{item.title}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

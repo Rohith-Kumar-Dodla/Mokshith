@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { FiGrid, FiList, FiFilter } from 'react-icons/fi';
+import React, { useMemo, useState } from 'react';
+import { FiGrid, FiList, FiFilter, FiShoppingCart } from 'react-icons/fi';
 import PageHeader from '../../components/vendor/PageHeader';
 import ProductCard from '../../components/vendor/ProductCard';
 import SearchBar from '../../components/vendor/SearchBar';
@@ -13,6 +13,8 @@ const Products = () => {
   const [viewMode, setViewMode] = useState('grid');
   const [showFilters, setShowFilters] = useState(false);
   const [toast, setToast] = useState(null);
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [bulkAdding, setBulkAdding] = useState(false);
   const { addToCart, actionLoading } = useCart({ autoLoad: false });
   const { addToWishlist, actionLoading: wishlistLoading } = useWishlist({ autoLoad: false });
   const {
@@ -27,31 +29,30 @@ const Products = () => {
   } = useProducts();
   const { categories } = useCategories();
 
+  const selectedCount = selectedIds.size;
+  const selectedProducts = useMemo(
+    () => filteredProducts.filter((product) => selectedIds.has(product.id || product._id)),
+    [filteredProducts, selectedIds]
+  );
+
   const showToast = (type, message) => {
     setToast({ type, message });
     window.setTimeout(() => setToast(null), 4000);
   };
 
-  const handleAddToCart = async (product) => {
+  const getAddQuantity = (product) =>
+    Number(product.minimumOrderQuantity ?? product.moq ?? 1);
+
+  const toggleSelect = (product) => {
     const productId = product.id || product._id;
-    const quantity = Number(product.selectedQuantity ?? product.minimumOrderQuantity ?? product.moq ?? 1);
+    if (product.status === 'out_of_stock') return;
 
-    if (quantity < 1) {
-      showToast('error', 'Invalid quantity for this product');
-      return;
-    }
-
-    if (product.status === 'out_of_stock') {
-      showToast('error', 'Product is out of stock');
-      return;
-    }
-
-    try {
-      await addToCart(productId, quantity);
-      showToast('success', `${product.name} added to cart (qty: ${quantity})`);
-    } catch (addError) {
-      showToast('error', addError.message || 'Failed to add product to cart');
-    }
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(productId)) next.delete(productId);
+      else next.add(productId);
+      return next;
+    });
   };
 
   const handleAddToWishlist = async (product) => {
@@ -62,6 +63,60 @@ const Products = () => {
       showToast('success', `${product.name} added to wishlist`);
     } catch (wishlistError) {
       showToast('error', wishlistError.message || 'Failed to add to wishlist');
+    }
+  };
+
+  const handleGlobalAddToCart = async () => {
+    if (selectedProducts.length === 0 || bulkAdding) return;
+
+    setBulkAdding(true);
+    const successes = [];
+    const failures = [];
+
+    try {
+      for (const product of selectedProducts) {
+        const productId = product.id || product._id;
+        const quantity = getAddQuantity(product);
+
+        if (quantity < 1) {
+          failures.push(`${product.name}: invalid quantity`);
+          continue;
+        }
+        if (product.status === 'out_of_stock') {
+          failures.push(`${product.name}: out of stock`);
+          continue;
+        }
+
+        try {
+          await addToCart(productId, quantity);
+          successes.push(product.name);
+        } catch (addError) {
+          failures.push(`${product.name}: ${addError.message || 'failed'}`);
+        }
+      }
+
+      if (successes.length > 0 && failures.length === 0) {
+        showToast('success', `Added ${successes.length} product(s) to cart`);
+        setSelectedIds(new Set());
+      } else if (successes.length > 0) {
+        showToast(
+          'error',
+          `Added ${successes.length}. Failed: ${failures.join('; ')}`
+        );
+        setSelectedIds((prev) => {
+          const next = new Set(prev);
+          filteredProducts.forEach((product) => {
+            if (successes.includes(product.name)) {
+              next.delete(product.id || product._id);
+            }
+          });
+          return next;
+        });
+      } else {
+        showToast('error', failures.join('; ') || 'Failed to add products to cart');
+      }
+    } finally {
+      setBulkAdding(false);
     }
   };
 
@@ -83,7 +138,7 @@ const Products = () => {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6 pb-24 sm:pb-6">
       {toast && (
         <div
           className={`rounded-lg border p-3 sm:p-4 ${
@@ -154,10 +209,20 @@ const Products = () => {
         )}
 
         <div className={`flex-1 ${showFilters ? '' : 'w-full'}`}>
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
             <p className="text-xs sm:text-sm text-gray-600">
               Showing {filteredProducts.length} of {products.length} products
+              {selectedCount > 0 ? ` · Selected: ${selectedCount}` : ''}
             </p>
+            {selectedCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setSelectedIds(new Set())}
+                className="text-xs sm:text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Clear selection
+              </button>
+            )}
           </div>
 
           {filteredProducts.length === 0 ? (
@@ -172,70 +237,98 @@ const Products = () => {
                 <ProductCard
                   key={product.id}
                   product={product}
-                  onAddToCart={handleAddToCart}
+                  selectable
+                  selected={selectedIds.has(product.id || product._id)}
+                  onToggleSelect={toggleSelect}
+                  hideAddToCart
                   onAddToWishlist={handleAddToWishlist}
                 />
               ))}
             </div>
           ) : (
             <div className="space-y-3 sm:space-y-4">
-              {filteredProducts.map((product) => (
-                <div key={product.id} className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4 flex flex-col sm:flex-row gap-3 sm:gap-4">
-                  <div className="w-full sm:w-32 h-32 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
-                    <img
-                      src={product.imageUrl || product.image}
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-1">{product.name}</h3>
-                        <p className="text-xs sm:text-sm text-gray-500">{product.category}</p>
-                        {product.brand && (
-                          <p className="text-xs text-gray-400">{product.brand}</p>
+              {filteredProducts.map((product) => {
+                const productId = product.id || product._id;
+                const selected = selectedIds.has(productId);
+                return (
+                  <div
+                    key={productId}
+                    className={`bg-white rounded-lg border p-3 sm:p-4 flex flex-col sm:flex-row gap-3 sm:gap-4 ${
+                      selected ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-200'
+                    }`}
+                  >
+                    <label className="flex items-start pt-1">
+                      <input
+                        type="checkbox"
+                        checked={selected}
+                        disabled={product.status === 'out_of_stock'}
+                        onChange={() => toggleSelect(product)}
+                        aria-label={`Select ${product.name}`}
+                        className="w-4 h-4 mt-1 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                      />
+                    </label>
+                    <div className="w-full sm:w-32 h-32 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
+                      <img
+                        src={product.imageUrl || product.image}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-1">{product.name}</h3>
+                          <p className="text-xs sm:text-sm text-gray-500">{product.category}</p>
+                          {product.brand && (
+                            <p className="text-xs text-gray-400">{product.brand}</p>
+                          )}
+                        </div>
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          product.status === 'active' ? 'bg-green-100 text-green-800' :
+                          product.status === 'low_stock' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {product.status === 'active' ? 'In Stock' :
+                           product.status === 'low_stock' ? 'Low Stock' :
+                           'Out of Stock'}
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-2 mb-2">
+                        <span className="text-lg sm:text-xl font-bold text-gray-900">₹{product.price.toFixed(2)}</span>
+                        {product.mrp && (
+                          <span className="text-xs sm:text-sm text-gray-400 line-through">₹{product.mrp.toFixed(2)}</span>
                         )}
                       </div>
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        product.status === 'active' ? 'bg-green-100 text-green-800' :
-                        product.status === 'low_stock' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {product.status === 'active' ? 'In Stock' :
-                         product.status === 'low_stock' ? 'Low Stock' :
-                         'Out of Stock'}
-                      </span>
-                    </div>
-                    <div className="flex items-baseline gap-2 mb-2">
-                      <span className="text-lg sm:text-xl font-bold text-gray-900">₹{product.price.toFixed(2)}</span>
-                      {product.mrp && (
-                        <span className="text-xs sm:text-sm text-gray-400 line-through">₹{product.mrp.toFixed(2)}</span>
-                      )}
-                    </div>
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                       <div className="text-xs text-gray-500">
-                        MOQ: {product.minimumOrderQuantity} {product.unit} • Stock: {product.stock}
+                        MOQ: {product.minimumOrderQuantity} {product.unit}
                       </div>
-                      <button
-                        onClick={() => handleAddToCart(product)}
-                        disabled={product.status === 'out_of_stock' || actionLoading}
-                        className={`px-3 sm:px-4 py-2.5 h-10 sm:h-12 rounded-lg text-xs sm:text-sm font-medium ${
-                          product.status === 'out_of_stock' || actionLoading
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : 'bg-blue-600 text-white hover:bg-blue-700'
-                        }`}
-                      >
-                        {product.status === 'out_of_stock' ? 'Out of Stock' : actionLoading ? 'Adding...' : 'Add to Cart'}
-                      </button>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
       </div>
+
+      {selectedCount > 0 && (
+        <div className="fixed bottom-0 inset-x-0 z-40 border-t border-gray-200 bg-white/95 backdrop-blur px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg sm:static sm:border sm:rounded-lg sm:shadow-sm sm:mt-2 sm:bg-white">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <p className="text-sm font-medium text-gray-800">
+              Selected: {selectedCount} product{selectedCount === 1 ? '' : 's'}
+            </p>
+            <button
+              type="button"
+              onClick={handleGlobalAddToCart}
+              disabled={bulkAdding || actionLoading || wishlistLoading}
+              className="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 h-11 sm:h-12 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+            >
+              <FiShoppingCart className="w-4 h-4" />
+              {bulkAdding ? 'Adding…' : 'Add to Cart'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

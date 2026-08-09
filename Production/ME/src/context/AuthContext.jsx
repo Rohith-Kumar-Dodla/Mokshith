@@ -1,7 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import authService from '../services/authService';
+import api from '../services/api';
 import { mapLoginError } from '../utils/loginErrorMapper';
+import { getUserFacingErrorMessage } from '../utils/apiResponse';
 import { clearAuthStorage, getCsrfToken, getRefreshToken, persistSession } from '../utils/authStorage';
+import { fetchCsrfToken } from '../utils/csrf';
 import { mapBackendRoleToFrontend } from '../utils/roleMap';
 
 const AuthContext = createContext(null);
@@ -13,9 +16,6 @@ export const useAuth = () => {
   }
   return context;
 };
-
-const getErrorMessage = (error, fallback) =>
-  error?.response?.data?.message || error?.message || fallback;
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -55,21 +55,9 @@ export const AuthProvider = ({ children }) => {
     return response.data;
   }, []);
 
+  /** Single-flight CSRF via shared csrf.js (never a parallel authService fetch). */
   const ensureCsrfToken = useCallback(async (force = false) => {
-    if (!force && getCsrfToken()) {
-      return;
-    }
-
-    try {
-      const response = await authService.getCsrfToken();
-      const payload = response?.data ?? response;
-      const token = payload?.csrfToken ?? payload?.data?.csrfToken;
-      if (token) {
-        persistSession({ csrfToken: token });
-      }
-    } catch {
-      // CSRF will be fetched again before the next state-changing request.
-    }
+    await fetchCsrfToken(api, force);
   }, []);
 
   const restoreSession = useCallback(async () => {
@@ -109,6 +97,26 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, [restoreSession]);
 
+  // Listen for forced session replacement (another device). Do not broadcast local logout.
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key !== 'session_replaced') return;
+      clearSession();
+      try {
+        const payload = JSON.parse(localStorage.getItem('session_replaced'));
+        const message =
+          payload?.message ||
+          'Your account was signed in from another device. Please sign in again.';
+        window.alert(message);
+      } catch {
+        window.alert('Your account was signed in from another device. Please sign in again.');
+      }
+    };
+
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [clearSession]);
+
   const login = async (mobile, password) => {
     try {
       const response = await authService.login({ mobile, password });
@@ -132,7 +140,7 @@ export const AuthProvider = ({ children }) => {
       const { user: sessionUser, accessToken, refreshToken, csrfToken } = payload;
       return applyUserSession(sessionUser, { accessToken, refreshToken, csrfToken });
     } catch (error) {
-      throw new Error(getErrorMessage(error, 'Invalid verification code'));
+      throw new Error(getUserFacingErrorMessage(error, 'Invalid verification code'));
     }
   };
 
@@ -161,7 +169,9 @@ export const AuthProvider = ({ children }) => {
         role: 'vendor',
       };
     } catch (error) {
-      throw new Error(getErrorMessage(error, 'Registration failed'));
+      throw new Error(
+        getUserFacingErrorMessage(error, 'Unable to create your account. Please try again.')
+      );
     }
   };
 
@@ -171,15 +181,7 @@ export const AuthProvider = ({ children }) => {
     try {
       if (refreshToken) {
         if (!getCsrfToken()) {
-          try {
-            const csrfResponse = await authService.getCsrfToken();
-            const csrfPayload = csrfResponse.data ?? csrfResponse;
-            if (csrfPayload?.csrfToken) {
-              persistSession({ csrfToken: csrfPayload.csrfToken });
-            }
-          } catch {
-            // Continue with local logout if CSRF refresh fails.
-          }
+          await ensureCsrfToken(true);
         }
         await authService.logout(refreshToken);
       }

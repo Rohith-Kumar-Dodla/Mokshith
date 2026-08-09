@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { getUserFacingErrorMessage } from '../../utils/apiResponse';
 import { FiFileText, FiDownload, FiPackage, FiUsers, FiTruck } from 'react-icons/fi';
 import PageHeader from '../../components/admin/PageHeader';
 import Card from '../../components/admin/Card';
@@ -30,7 +31,7 @@ const Reports = () => {
         setStats(statsPayload?.data ?? statsPayload);
         setAnalytics((prev) => prev); // keep analytics null for Admin
       } catch (err) {
-        setError(err?.response?.data?.message || err?.message || 'Failed to load report data');
+        setError(getUserFacingErrorMessage(err, 'Failed to load report data');
       } finally {
         setLoading(false);
       }
@@ -125,7 +126,7 @@ const Reports = () => {
         );
       }
     } catch (err) {
-      setError(err?.response?.data?.message || err?.message || 'Export failed');
+      setError(getUserFacingErrorMessage(err, 'Export failed');
     } finally {
       setExporting('');
     }

@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import DeliveryCard from '../../components/delivery/DeliveryCard';
 import SearchBar from '../../components/delivery/SearchBar';
 import FilterPanel from '../../components/delivery/FilterPanel';
 import useDelivery from '../../hooks/useDelivery';
 
 const AssignedOrders = () => {
+  const [searchParams] = useSearchParams();
   const { assignments, loading, error, refreshAll } = useDelivery();
 
   useEffect(() => {
@@ -17,11 +19,18 @@ const AssignedOrders = () => {
     return () => window.clearInterval(intervalId);
   }, [refreshAll]);
   const [searchTerm, setSearchTerm] = useState('');
+  const statusFromUrl = searchParams.get('status');
   const [filters, setFilters] = useState({
-    status: 'all',
+    status: statusFromUrl || 'all',
     priority: 'all',
     date: '',
   });
+
+  useEffect(() => {
+    if (statusFromUrl) {
+      setFilters((prev) => ({ ...prev, status: statusFromUrl }));
+    }
+  }, [statusFromUrl]);
 
   const handleSearch = (term) => {
     setSearchTerm(term);

@@ -334,10 +334,10 @@ export const getSystemStats = async () => {
 
 export const getMetrics = async () => {
   const totalUsers = await User.countDocuments({ isDeleted: { $ne: true } });
-  const activeVendors = await User.countDocuments({ 
-    role: ROLES.VENDOR, 
+  const activeVendors = await User.countDocuments({
+    role: { $in: [ROLES.VENDOR, ROLES.B2B_CUSTOMER] },
     status: USER_STATUS.ACTIVE,
-    isDeleted: { $ne: true }
+    isDeleted: { $ne: true },
   });
   
   const startOfToday = new Date();

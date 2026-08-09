@@ -12,12 +12,25 @@ vi.mock('react-router-dom', () => ({
 vi.mock('../services/orderService', () => ({
   default: {
     createOrder: vi.fn(),
+    getAllOrders: vi.fn(),
   },
+}));
+
+vi.mock('../services/api', () => ({
+  default: {},
+}));
+
+vi.mock('../utils/csrf', () => ({
+  fetchCsrfToken: vi.fn().mockResolvedValue('csrf-token'),
 }));
 
 describe('useCheckout', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    if (typeof window !== 'undefined') {
+      window.__b2bPlaceOrderInFlight = false;
+      window.__b2bCreateOrderInFlight = null;
+    }
     orderService.createOrder.mockResolvedValue({
       data: {
         _id: 'order-1',
@@ -27,6 +40,7 @@ describe('useCheckout', () => {
         totalAmount: 1180,
         createdAt: '2026-06-01T10:00:00.000Z',
         items: [],
+        idempotencyKey: 'order-stable-key',
       },
     });
   });
@@ -70,11 +84,11 @@ describe('useCheckout', () => {
           state: 'Telangana',
           pincode: '500001',
         },
+        idempotencyKey: 'order-stable-key',
       });
     });
 
     expect(orderService.createOrder).toHaveBeenCalled();
-    // Navigate includes orderId query param and state with order/payment info
     expect(navigateMock).toHaveBeenCalledWith(
       expect.stringMatching(/^\/vendor\/order-success\?orderId=order-1$/),
       expect.objectContaining({
@@ -83,6 +97,54 @@ describe('useCheckout', () => {
           paymentMethodId: 'cod',
         }),
       })
+    );
+  });
+
+  it('reconciles success when create times out but order exists', async () => {
+    const timeoutError = Object.assign(new Error('timeout of 10000ms exceeded'), {
+      code: 'ECONNABORTED',
+    });
+
+    orderService.createOrder
+      .mockRejectedValueOnce(timeoutError)
+      .mockResolvedValueOnce({
+        data: {
+          _id: 'order-1',
+          status: 'CONFIRMED',
+          paymentStatus: 'PENDING',
+          paymentMethod: 'COD',
+          totalAmount: 1180,
+          createdAt: '2026-06-01T10:00:00.000Z',
+          items: [],
+          idempotencyKey: 'order-stable-key',
+        },
+      });
+
+    const { result } = renderHook(() => useCheckout());
+
+    await act(async () => {
+      await result.current.placeOrder({
+        paymentMethodId: 'cod',
+        formData: {
+          businessName: 'Fresh Mart',
+          contactPerson: 'Rajesh',
+          phone: '9876543210',
+          deliveryAddress: '12 Market Road',
+          city: 'Hyderabad',
+          state: 'Telangana',
+          pincode: '500001',
+        },
+        idempotencyKey: 'order-stable-key',
+      });
+    });
+
+    expect(orderService.createOrder).toHaveBeenCalledTimes(2);
+    expect(orderService.createOrder.mock.calls.every(
+      ([payload]) => payload.idempotencyKey === 'order-stable-key'
+    )).toBe(true);
+    expect(navigateMock).toHaveBeenCalledWith(
+      expect.stringMatching(/^\/vendor\/order-success\?orderId=order-1$/),
+      expect.any(Object)
     );
   });
 });

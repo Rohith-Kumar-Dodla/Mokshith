@@ -9,6 +9,7 @@ import { logger } from '../../config/logger.js';
 import { syncOrderStatusFromLogistics } from '../order/orderStatusSync.js';
 import { PAYMENT_STATUS } from '../../constants/paymentStatus.js';
 import mongoose from 'mongoose';
+import { logAction } from '../audit/audit.service.js';
 
 const LOGISTICS_TRANSITIONS = {
   [DELIVERY_STATUS.PENDING]: [DELIVERY_STATUS.ASSIGNED],
@@ -38,6 +39,24 @@ async function assertCodPaymentCollected(order, nextStatus) {
     );
   }
 }
+
+const REASSIGNABLE_STATUSES = new Set([
+  DELIVERY_STATUS.PENDING,
+  DELIVERY_STATUS.REJECTED,
+  DELIVERY_STATUS.ASSIGNED,
+]);
+
+const TERMINAL_ASSIGNMENT_STATUSES = new Set([
+  DELIVERY_STATUS.DELIVERED,
+  DELIVERY_STATUS.COMPLETED,
+]);
+
+const ACTIVE_WORKLOAD_STATUSES = [
+  DELIVERY_STATUS.ASSIGNED,
+  DELIVERY_STATUS.ACCEPTED,
+  DELIVERY_STATUS.PICKED,
+  DELIVERY_STATUS.OUT_FOR_DELIVERY,
+];
 
 const DELIVERY_NOTIFICATIONS = {
   [DELIVERY_STATUS.ASSIGNED]: {
@@ -168,7 +187,7 @@ export const autoAssignDelivery = async (orderId) => {
   const partnerWorkload = await Promise.all(activePartners.map(async (partner) => {
     const activeOrdersCount = await Shipment.countDocuments({
       deliveryPartnerId: partner._id,
-      status: { $in: ['ASSIGNED', 'PICKED', 'OUT_FOR_DELIVERY'] }
+      status: { $in: ACTIVE_WORKLOAD_STATUSES },
     });
     return { partner, activeOrdersCount };
   }));
@@ -405,7 +424,14 @@ export const getShipmentById = async (id) => {
 export const getMyAssignments = async (deliveryBoyId) => {
   const filter = {
     deliveryPartnerId: deliveryBoyId,
-    status: { $nin: [DELIVERY_STATUS.COMPLETED, DELIVERY_STATUS.CANCELLED, DELIVERY_STATUS.FAILED] },
+    status: {
+      $nin: [
+        DELIVERY_STATUS.COMPLETED,
+        DELIVERY_STATUS.CANCELLED,
+        DELIVERY_STATUS.FAILED,
+        DELIVERY_STATUS.REJECTED,
+      ],
+    },
   };
   return await repo.findAll(filter);
 };
@@ -416,12 +442,118 @@ export const updateLocation = async (id, location) => {
   return shipment;
 };
 
+/**
+ * Delivery partner rejects an ASSIGNED assignment.
+ * Clears active deliveryPartnerId and sets status REJECTED.
+ * Does NOT cancel/fail the customer order or touch payment/inventory.
+ */
+export const rejectAssignment = async (shipmentId, userId, { reason } = {}) => {
+  if (!userId) throw new AppError('Unauthorized', 401);
+
+  const updated = await repo.updateShipmentIf(
+    {
+      _id: shipmentId,
+      deliveryPartnerId: userId,
+      status: DELIVERY_STATUS.ASSIGNED,
+    },
+    {
+      $set: {
+        status: DELIVERY_STATUS.REJECTED,
+        lastRejectedPartnerId: userId,
+        rejectedAt: new Date(),
+        rejectionReason: reason ? String(reason).trim().slice(0, 500) : null,
+      },
+      $unset: { deliveryPartnerId: 1 },
+    }
+  );
+
+  if (!updated) {
+    const existing = await repo.findById(shipmentId);
+    if (!existing) throw new AppError('Shipment not found', 404);
+
+    // Prefer status conflict when assignment already moved (incl. concurrent reject)
+    if (existing.status !== DELIVERY_STATUS.ASSIGNED) {
+      throw new AppError(
+        `Cannot reject assignment in status ${existing.status}. Only ASSIGNED assignments can be rejected.`,
+        409
+      );
+    }
+
+    const partnerId = existing.deliveryPartnerId?._id || existing.deliveryPartnerId;
+    if (!partnerId || String(partnerId) !== String(userId)) {
+      throw new AppError('You are not assigned to this delivery', 403);
+    }
+    throw new AppError('Assignment could not be rejected due to a concurrent update. Please retry.', 409);
+  }
+
+  const populated = await repo.findById(updated._id);
+
+  try {
+    await logAction({
+      userId,
+      action: 'DELIVERY_ASSIGNMENT_REJECTED',
+      entity: 'Logistics',
+      entityId: populated._id,
+      details: 'Delivery partner rejected assignment; order remains valid and unassigned',
+      data: {
+        orderId: resolveOrderId(populated.orderId),
+        previousStatus: DELIVERY_STATUS.ASSIGNED,
+        status: DELIVERY_STATUS.REJECTED,
+        reason: populated.rejectionReason || null,
+      },
+      severity: 'INFO',
+    });
+  } catch (auditError) {
+    logger.warn('Failed to audit delivery assignment rejection', {
+      shipmentId,
+      error: auditError.message,
+    });
+  }
+
+  if (global.io) {
+    global.io.emit('delivery:assignmentRejected', {
+      shipmentId: populated._id,
+      orderId: resolveOrderId(populated.orderId),
+      logisticsStatus: DELIVERY_STATUS.REJECTED,
+      rejectedBy: userId,
+    });
+    emitDeliveryStatusUpdate(populated, null);
+  }
+
+  const User = mongoose.model('User');
+  const admins = await User.find({ role: { $in: ['ADMIN', 'SUPER_ADMIN'] } }).select('_id').lean();
+  await Promise.all(
+    admins.map((admin) =>
+      sendNotification({
+        userId: admin._id,
+        title: 'Delivery Assignment Rejected',
+        message: `A delivery partner rejected assignment for order #${resolveOrderId(populated.orderId)}. Reassignment is required.`,
+        type: 'ORDER',
+      }).catch((err) => {
+        logger.warn('Admin rejection notification failed', { error: err.message });
+      })
+    )
+  );
+
+  return populated;
+};
+
 export const assignDeliveryPartner = async (shipmentId, deliveryPartnerId) => {
   const shipment = await repo.findById(shipmentId);
   if (!shipment) throw new AppError('Shipment not found', 404);
 
-  if ([DELIVERY_STATUS.DELIVERED, DELIVERY_STATUS.COMPLETED].includes(shipment.status)) {
+  if (TERMINAL_ASSIGNMENT_STATUSES.has(shipment.status)) {
     throw new AppError('Cannot assign partner to a completed delivery', 400);
+  }
+
+  if (
+    [DELIVERY_STATUS.PICKED, DELIVERY_STATUS.OUT_FOR_DELIVERY].includes(shipment.status)
+  ) {
+    throw new AppError('Cannot reassign a delivery that is already in transit', 400);
+  }
+
+  if (![...REASSIGNABLE_STATUSES, DELIVERY_STATUS.ACCEPTED].includes(shipment.status)) {
+    throw new AppError(`Cannot assign partner when delivery status is ${shipment.status}`, 400);
   }
 
   const User = mongoose.model('User');
@@ -433,10 +565,35 @@ export const assignDeliveryPartner = async (shipmentId, deliveryPartnerId) => {
 
   if (!partner) throw new AppError('Delivery partner not found or inactive', 404);
 
-  const updated = await repo.updateShipment(shipmentId, {
-    deliveryPartnerId,
-    status: shipment.status === DELIVERY_STATUS.PENDING ? DELIVERY_STATUS.ASSIGNED : shipment.status,
-  });
+  // Atomic: do not overwrite in-transit / concurrent reject→reassign races incorrectly
+  const updated = await repo.updateShipmentIf(
+    {
+      _id: shipmentId,
+      status: {
+        $in: [
+          DELIVERY_STATUS.PENDING,
+          DELIVERY_STATUS.REJECTED,
+          DELIVERY_STATUS.ASSIGNED,
+          DELIVERY_STATUS.ACCEPTED,
+        ],
+      },
+    },
+    {
+      $set: {
+        deliveryPartnerId,
+        status: DELIVERY_STATUS.ASSIGNED,
+        rejectionReason: null,
+        rejectedAt: null,
+      },
+    }
+  );
+
+  if (!updated) {
+    throw new AppError(
+      'Assignment could not be updated due to a concurrent status change. Please refresh and retry.',
+      409
+    );
+  }
 
   const populated = await repo.findById(updated._id);
   const linkedOrderId = resolveOrderId(populated.orderId);
@@ -458,8 +615,12 @@ export const reassignDeliveryPartner = async (shipmentId, deliveryPartnerId) => 
   const shipment = await repo.findById(shipmentId);
   if (!shipment) throw new AppError('Shipment not found', 404);
 
-  if ([DELIVERY_STATUS.DELIVERED, DELIVERY_STATUS.COMPLETED].includes(shipment.status)) {
+  if (TERMINAL_ASSIGNMENT_STATUSES.has(shipment.status)) {
     throw new AppError('Cannot reassign a completed delivery', 400);
+  }
+
+  if ([DELIVERY_STATUS.PICKED, DELIVERY_STATUS.OUT_FOR_DELIVERY].includes(shipment.status)) {
+    throw new AppError('Cannot reassign a delivery that is already in transit', 400);
   }
 
   return assignDeliveryPartner(shipmentId, deliveryPartnerId);
@@ -471,7 +632,18 @@ export const getDeliveryAnalytics = async (user) => {
 
   const [statusCounts, activeCount, completedCount, failedCount] = await Promise.all([
     repo.countByStatus(partnerFilter),
-    Logistics.countDocuments({ ...partnerFilter, status: { $nin: ['DELIVERED', 'COMPLETED', 'CANCELLED', 'FAILED'] } }),
+    Logistics.countDocuments({
+      ...partnerFilter,
+      status: {
+        $nin: [
+          DELIVERY_STATUS.DELIVERED,
+          DELIVERY_STATUS.COMPLETED,
+          DELIVERY_STATUS.CANCELLED,
+          DELIVERY_STATUS.FAILED,
+          DELIVERY_STATUS.REJECTED,
+        ],
+      },
+    }),
     Logistics.countDocuments({ ...partnerFilter, status: { $in: ['DELIVERED', 'COMPLETED'] } }),
     Logistics.countDocuments({ ...partnerFilter, status: { $in: ['CANCELLED', 'FAILED'] } }),
   ]);

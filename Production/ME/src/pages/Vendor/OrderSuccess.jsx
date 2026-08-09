@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import orderService from '../../services/orderService';
+import { mapBackendOrder } from '../../utils/orderMapper';
 import { FiCheckCircle, FiShoppingBag, FiTruck, FiFileText } from 'react-icons/fi';
 
 const OrderSuccess = () => {
@@ -19,7 +20,13 @@ const OrderSuccess = () => {
   const paymentMethodId = statePaymentMethodId || (order && order.paymentMethod);
   const isBankTransfer = paymentMethodId === 'bank_transfer' || paymentMethodId === 'BANK_TRANSFER';
   const orderNumber = order?.orderNumber || order?.id || '—';
-  const estimatedDelivery = order?.estimatedDelivery || 'Processing';
+  const isTerminal =
+    order?.status === 'delivered' ||
+    order?.status === 'completed' ||
+    ['DELIVERED', 'COMPLETED', 'CANCELLED', 'FAILED', 'REFUNDED', 'RETURNED'].includes(
+      String(order?.backendStatus || order?.status || '').toUpperCase()
+    );
+  const estimatedDelivery = order?.estimatedDelivery;
 
   useEffect(() => {
     let mounted = true;
@@ -29,7 +36,7 @@ const OrderSuccess = () => {
         try {
           const resp = await orderService.getOrderById(orderIdFromQuery);
           const payload = resp?.data ?? resp;
-          if (mounted) setOrder(payload);
+          if (mounted) setOrder(mapBackendOrder(payload));
         } catch (err) {
           if (mounted) setError('Unable to load order details');
         } finally {
@@ -75,10 +82,19 @@ const OrderSuccess = () => {
               <p className="text-xs sm:text-sm text-gray-500">Order Number</p>
               <p className="text-base sm:text-lg font-bold text-gray-900">{orderNumber}</p>
             </div>
-            <div>
-              <p className="text-xs sm:text-sm text-gray-500">Estimated Delivery</p>
-              <p className="text-base sm:text-lg font-semibold text-gray-900">{estimatedDelivery}</p>
-            </div>
+            {isTerminal ? (
+              <div>
+                <p className="text-xs sm:text-sm text-gray-500">Order Status</p>
+                <p className="text-base sm:text-lg font-semibold text-gray-900 capitalize">
+                  {String(order?.status || order?.backendStatus || 'Completed').replace(/_/g, ' ')}
+                </p>
+              </div>
+            ) : estimatedDelivery ? (
+              <div>
+                <p className="text-xs sm:text-sm text-gray-500">Estimated Delivery</p>
+                <p className="text-base sm:text-lg font-semibold text-gray-900">{estimatedDelivery}</p>
+              </div>
+            ) : null}
             {order?.amount ? (
               <div>
                 <p className="text-xs sm:text-sm text-gray-500">Order Total</p>
