@@ -8,9 +8,15 @@ import SearchBar from '../../components/admin/SearchBar';
 import FilterDropdown from '../../components/admin/FilterDropdown';
 import Modal from '../../components/admin/Modal';
 import ImageUpload from '../../components/common/ImageUpload';
+import BulkPricingEditor from '../../components/admin/BulkPricingEditor';
 import useProducts from '../../hooks/useProducts';
 import useCategories from '../../hooks/useCategories';
 import { getProductImageKey } from '../../utils/productMapper';
+import {
+  tiersToDiscountForm,
+  discountFormToTiers,
+  validateBulkDiscountForm,
+} from '../../utils/bulkPricingUtils';
 
 const EMPTY_FORM = {
   name: '',
@@ -20,6 +26,7 @@ const EMPTY_FORM = {
   stock: '',
   moq: '1',
   isActive: true,
+  bulkDiscountTiers: [{ minQuantity: '', discountAmount: '' }],
 };
 
 const Products = () => {
@@ -106,6 +113,7 @@ const Products = () => {
       stock: String(product.stock ?? ''),
       moq: String(product.minimumOrderQuantity ?? 1),
       isActive: product.status !== 'inactive' && product.status !== 'out_of_stock',
+      bulkDiscountTiers: tiersToDiscountForm(product.bulkPricing, product.price),
     });
     setImageFile(null);
     setUploadedImage(null);
@@ -145,6 +153,15 @@ const Products = () => {
       return;
     }
 
+    const bulkValidationError = validateBulkDiscountForm(
+      formData.bulkDiscountTiers,
+      Number(formData.price)
+    );
+    if (bulkValidationError) {
+      setFormError(bulkValidationError);
+      return;
+    }
+
     const payload = {
       name: formData.name.trim(),
       description: formData.description.trim(),
@@ -154,6 +171,9 @@ const Products = () => {
       moq: Number(formData.moq) || 1,
       isActive: formData.isActive,
     };
+
+    const bulkPricing = discountFormToTiers(formData.bulkDiscountTiers, Number(formData.price));
+    payload.bulkPricing = bulkPricing;
 
     if (uploadedImage?.url) {
       payload.imageUrl = uploadedImage.url;
@@ -405,6 +425,12 @@ const Products = () => {
                 disabled={saving}
               />
             </div>
+            <BulkPricingEditor
+              tiers={formData.bulkDiscountTiers}
+              basePrice={Number(formData.price) || 0}
+              onChange={(bulkDiscountTiers) => setFormData({ ...formData, bulkDiscountTiers })}
+              disabled={saving}
+            />
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
@@ -453,6 +479,22 @@ const Products = () => {
                 <p className="text-xs sm:text-base font-semibold text-gray-900">{selectedProduct.minimumOrderQuantity}</p>
               </div>
             </div>
+            {selectedProduct.bulkPricing?.length > 0 && (
+              <div className="border border-gray-200 rounded-lg p-4">
+                <p className="text-sm font-semibold text-gray-900 mb-2">Bulk Discounts</p>
+                <ul className="space-y-1">
+                  {selectedProduct.bulkPricing.map((tier, index) => {
+                    const minQty = tier.minQuantity ?? tier.minQty;
+                    const discount = Math.max(selectedProduct.price - tier.price, 0);
+                    return (
+                      <li key={index} className="text-sm text-gray-700">
+                        Buy {minQty}+ → ₹{tier.price.toFixed(2)}/item (Save ₹{discount.toFixed(2)}/item)
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
           </div>
         )}
       </Modal>

@@ -20,6 +20,27 @@ export const loadProduct = asyncHandler(async (req, res, next) => {
   next();
 });
 
+function parseBulkPricingField(value) {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  return undefined;
+}
+
 function normalizeProductBody(body = {}) {
   const data = { ...body };
 
@@ -28,6 +49,10 @@ function normalizeProductBody(body = {}) {
   if (data.moq !== undefined && data.moq !== '') data.moq = Number(data.moq);
   if (data.isActive === 'true') data.isActive = true;
   if (data.isActive === 'false') data.isActive = false;
+
+  if ('bulkPricing' in data) {
+    data.bulkPricing = parseBulkPricingField(data.bulkPricing);
+  }
 
   return data;
 }

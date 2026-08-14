@@ -62,6 +62,18 @@ const CartItem = ({
             )}
           </div>
 
+          {item.unitPrice !== item.bulkPrice && (
+            <div className="text-xs text-gray-600 mb-2 space-y-0.5">
+              <p>Regular price: ₹{item.unitPrice.toFixed(2)}/item</p>
+              <p className="text-green-600">
+                Bulk discount: ₹{(item.unitPrice - item.bulkPrice).toFixed(2)}/item
+              </p>
+              <p className="font-medium text-gray-900">
+                Final price: ₹{item.bulkPrice.toFixed(2)}/item
+              </p>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">

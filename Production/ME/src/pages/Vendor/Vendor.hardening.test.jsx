@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import VendorDashboard from './Dashboard';
 import Products from './Products';
@@ -153,13 +153,17 @@ describe('Vendor Products selection and stock display', () => {
 
     expect(screen.queryByText(/Stock:\s*99/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Stock:\s*40/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /^Add to Cart$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Add Selected to Cart/i })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /^Add to Cart$/i }).length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByLabelText('Select Rice 25kg'));
     fireEvent.click(screen.getByLabelText('Select Oil 15L'));
 
-    expect(screen.getAllByText(/Selected:\s*2/i).length).toBeGreaterThan(0);
-    fireEvent.click(screen.getByRole('button', { name: /Add to Cart/i }));
+    expect(screen.getAllByText(/2 products selected/i).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button', { name: /Add Selected to Cart \(2\)/i }));
+
+    expect(screen.getByRole('dialog', { name: /Selected Products/i })).toBeInTheDocument();
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^Add to Cart$/i }));
 
     await waitFor(() => {
       expect(addToCart).toHaveBeenCalledTimes(2);

@@ -12,6 +12,7 @@ const ProductCard = ({
   selected = false,
   onToggleSelect,
   hideAddToCart = false,
+  hideStock = false,
 }) => {
   const productId = product.id || product._id;
   const imageSrc = product.imageUrl || product.image || '';
@@ -209,7 +210,8 @@ const ProductCard = ({
             <FiPlus className="w-4 h-4" />
           </button>
           <span className="text-xs text-gray-500 ml-auto">
-            MOQ: {product.minimumOrderQuantity} {product.unit} · Stock: {product.stock}
+            MOQ: {product.minimumOrderQuantity} {product.unit}
+            {!hideStock ? ` · Stock: ${product.stock}` : ''}
           </span>
         </div>
 
@@ -245,6 +247,7 @@ export default React.memo(ProductCard, (prev, next) => {
     prevProduct?.status === nextProduct?.status &&
     prev.selected === next.selected &&
     prev.selectable === next.selectable &&
-    prev.hideAddToCart === next.hideAddToCart
+    prev.hideAddToCart === next.hideAddToCart &&
+    prev.hideStock === next.hideStock
   );
 });
