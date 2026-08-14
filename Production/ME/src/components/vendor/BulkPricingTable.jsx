@@ -2,7 +2,7 @@ import React from 'react';
 
 const getMinQty = (tier) => tier.minQty ?? tier.minQuantity ?? 0;
 
-const BulkPricingTable = ({ bulkPricing }) => {
+const BulkPricingTable = ({ bulkPricing, basePrice, currentQuantity }) => {
   if (!bulkPricing || bulkPricing.length === 0) {
     return null;
   }
@@ -10,61 +10,62 @@ const BulkPricingTable = ({ bulkPricing }) => {
   const normalizedTiers = bulkPricing.map((tier) => ({
     ...tier,
     minQty: getMinQty(tier),
-    maxQty: tier.maxQty ?? null,
     price: Number(tier.price ?? 0),
     discount: Number(tier.discount ?? 0),
   }));
 
+  const qty = Number(currentQuantity ?? 0);
+  const activeTierIndex = [...normalizedTiers]
+    .reverse()
+    .findIndex((tier) => qty >= tier.minQty);
+  const activeIndex =
+    activeTierIndex >= 0 ? normalizedTiers.length - 1 - activeTierIndex : -1;
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
       <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-        <h3 className="font-semibold text-gray-900">Bulk Pricing</h3>
+        <h3 className="font-semibold text-gray-900">Bulk Offers</h3>
+        {basePrice > 0 && (
+          <p className="text-xs text-gray-600 mt-0.5">Base price: ₹{Number(basePrice).toFixed(2)}/item</p>
+        )}
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-gray-50">
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                Quantity Range
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                Price per Unit
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                You Save
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {normalizedTiers.map((tier, index) => (
-              <tr key={index} className={index === normalizedTiers.length - 1 ? 'bg-green-50' : ''}>
-                <td className="px-4 py-3 text-sm text-gray-900">
-                  {tier.minQty} - {tier.maxQty ? tier.maxQty : 'Above'} units
-                </td>
-                <td className="px-4 py-3 text-sm font-semibold text-gray-900">
-                  ₹{tier.price.toFixed(2)}
-                </td>
-                <td className="px-4 py-3 text-sm">
-                  {tier.discount > 0 ? (
-                    <span className="text-green-600 font-medium">
-                      {tier.discount}% off
-                    </span>
-                  ) : (
-                    <span className="text-gray-500">-</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="divide-y divide-gray-200">
+        {normalizedTiers.map((tier, index) => {
+          const savingsPerUnit = basePrice > 0 ? Math.max(basePrice - tier.price, 0) : 0;
+          const isActive = index === activeIndex && qty >= tier.minQty;
+
+          return (
+            <div
+              key={index}
+              className={`px-4 py-3 flex items-center justify-between ${
+                isActive ? 'bg-green-50 border-l-4 border-l-green-500' : ''
+              }`}
+            >
+              <div>
+                <p className={`text-sm font-medium ${isActive ? 'text-green-800' : 'text-gray-900'}`}>
+                  Buy {tier.minQty}+
+                </p>
+                {isActive && (
+                  <p className="text-xs text-green-600 mt-0.5">Currently applied</p>
+                )}
+              </div>
+              <div className="text-right">
+                <p className={`text-sm font-semibold ${isActive ? 'text-green-800' : 'text-gray-900'}`}>
+                  ₹{tier.price.toFixed(2)}/item
+                </p>
+                {savingsPerUnit > 0 && (
+                  <p className="text-xs text-green-600">Save ₹{savingsPerUnit.toFixed(2)}/item</p>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
-      {normalizedTiers.length > 0 && (
-        <div className="px-4 py-2 bg-green-50 border-t border-green-100">
-          <p className="text-xs text-green-700">
-            Best price: ₹{normalizedTiers[normalizedTiers.length - 1].price.toFixed(2)} per unit ({normalizedTiers[normalizedTiers.length - 1].discount}% discount)
-          </p>
-        </div>
-      )}
+      <div className="px-4 py-2 bg-gray-50 border-t border-gray-100">
+        <p className="text-xs text-gray-500">
+          Customers automatically get the best applicable discount based on quantity.
+        </p>
+      </div>
     </div>
   );
 };

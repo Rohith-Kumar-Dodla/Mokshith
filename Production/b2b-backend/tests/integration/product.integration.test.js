@@ -515,6 +515,81 @@ describe('Product Module - Integration Tests', () => {
       expect(response.body.data.bulkPricing[0].minQuantity).toBe(10);
     });
 
+    it('should reject duplicate bulk pricing quantities', async () => {
+      const productData = {
+        name: 'Duplicate Bulk Product',
+        price: 100,
+        categoryId: testCategory._id.toString(),
+        bulkPricing: [
+          { minQuantity: 5, price: 90 },
+          { minQuantity: 5, price: 80 },
+        ],
+      };
+
+      const response = await request
+        .post('/api/v1/products')
+        .set('Authorization', `Bearer ${adminSession.accessToken}`)
+        .send(productData)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toMatch(/duplicate/i);
+    });
+
+    it('should reject bulk tier price equal to base price', async () => {
+      const productData = {
+        name: 'Invalid Bulk Product',
+        price: 100,
+        categoryId: testCategory._id.toString(),
+        bulkPricing: [{ minQuantity: 5, price: 100 }],
+      };
+
+      const response = await request
+        .post('/api/v1/products')
+        .set('Authorization', `Bearer ${adminSession.accessToken}`)
+        .send(productData)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should allow creating product without bulk pricing', async () => {
+      const productData = {
+        name: 'No Bulk Product',
+        price: 100,
+        categoryId: testCategory._id.toString(),
+      };
+
+      const response = await request
+        .post('/api/v1/products')
+        .set('Authorization', `Bearer ${adminSession.accessToken}`)
+        .send(productData)
+        .expect(200);
+
+      expect(response.body.data.bulkPricing ?? []).toEqual([]);
+    });
+
+    it('should allow clearing bulk pricing on update', async () => {
+      const created = await request
+        .post('/api/v1/products')
+        .set('Authorization', `Bearer ${adminSession.accessToken}`)
+        .send({
+          name: 'Clear Bulk Product',
+          price: 100,
+          categoryId: testCategory._id.toString(),
+          bulkPricing: [{ minQuantity: 5, price: 90 }],
+        })
+        .expect(200);
+
+      const response = await request
+        .put(`/api/v1/products/${created.body.data._id}`)
+        .set('Authorization', `Bearer ${adminSession.accessToken}`)
+        .send({ bulkPricing: [] })
+        .expect(200);
+
+      expect(response.body.data.bulkPricing).toEqual([]);
+    });
+
     it('should handle product variants', async () => {
       const productData = {
         name: 'Variant Product',

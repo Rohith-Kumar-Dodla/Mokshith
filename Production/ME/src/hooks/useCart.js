@@ -5,8 +5,15 @@ import { calculateCartTotals } from '../utils/pricingCalculator';
 
 import { unwrapApiData, getUserFacingErrorMessage } from '../utils/apiResponse';
 
+export const CART_UPDATED_EVENT = 'mokshith:cart-updated';
+
 function extractCartPayload(response) {
   return unwrapApiData(response);
+}
+
+function emitCartUpdated() {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new Event(CART_UPDATED_EVENT));
 }
 
 export function useCart({ autoLoad = true } = {}) {
@@ -15,6 +22,7 @@ export function useCart({ autoLoad = true } = {}) {
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const addInFlightRef = useRef(false);
+  const skipReloadRef = useRef(false);
 
   const applyCartResponse = useCallback((response) => {
     const mappedCart = mapBackendCart(extractCartPayload(response));
@@ -46,6 +54,21 @@ export function useCart({ autoLoad = true } = {}) {
     }
   }, [autoLoad, loadCart]);
 
+  useEffect(() => {
+    if (!autoLoad) return undefined;
+
+    const onCartUpdated = () => {
+      if (skipReloadRef.current) {
+        skipReloadRef.current = false;
+        return;
+      }
+      loadCart();
+    };
+
+    window.addEventListener(CART_UPDATED_EVENT, onCartUpdated);
+    return () => window.removeEventListener(CART_UPDATED_EVENT, onCartUpdated);
+  }, [autoLoad, loadCart]);
+
   const addToCart = useCallback(
     async (productId, quantity) => {
       if (addInFlightRef.current) {
@@ -57,7 +80,10 @@ export function useCart({ autoLoad = true } = {}) {
 
       try {
         const response = await cartService.addToCart(productId, quantity);
-        return applyCartResponse(response);
+        const mappedCart = applyCartResponse(response);
+        skipReloadRef.current = true;
+        emitCartUpdated();
+        return mappedCart;
       } catch (addError) {
         const message =
           getUserFacingErrorMessage(addError, 'Failed to add item to cart');
@@ -78,7 +104,10 @@ export function useCart({ autoLoad = true } = {}) {
 
       try {
         const response = await cartService.removeFromCart(productId);
-        return applyCartResponse(response);
+        const mappedCart = applyCartResponse(response);
+        skipReloadRef.current = true;
+        emitCartUpdated();
+        return mappedCart;
       } catch (removeError) {
         const message =
           getUserFacingErrorMessage(removeError, 'Failed to remove item from cart');
