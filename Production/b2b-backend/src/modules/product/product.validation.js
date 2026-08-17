@@ -15,8 +15,8 @@ export const createProductSchema = Joi.object({
     imageUrl: Joi.string().optional(),
     bulkPricing: Joi.array().items(
       Joi.object({
-        minQuantity: Joi.number().required(),
-        price: Joi.number().required()
+        minQuantity: Joi.number().integer().min(1).required(),
+        price: Joi.number().greater(0).required(),
       })
     ).optional(),
     variants: Joi.array().items(
@@ -46,8 +46,8 @@ export const updateProductSchema = Joi.object({
     imageUrl: Joi.string().allow('').optional(),
     bulkPricing: Joi.array().items(
       Joi.object({
-        minQuantity: Joi.number().required(),
-        price: Joi.number().required()
+        minQuantity: Joi.number().integer().min(1).required(),
+        price: Joi.number().greater(0).required(),
       })
     ).optional(),
     variants: Joi.array().items(

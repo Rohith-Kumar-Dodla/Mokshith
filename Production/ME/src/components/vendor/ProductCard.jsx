@@ -14,6 +14,7 @@ const ProductCard = ({
   selected = false,
   onToggleSelect,
   hideAddToCart = false,
+  hideStock = false,
 }) => {
   const productId = product.id || product._id;
   const imageSrc = product.imageUrl || product.image || '';
@@ -259,6 +260,7 @@ export default React.memo(ProductCard, (prev, next) => {
     JSON.stringify(prevProduct?.bulkPricing) === JSON.stringify(nextProduct?.bulkPricing) &&
     prev.selected === next.selected &&
     prev.selectable === next.selectable &&
-    prev.hideAddToCart === next.hideAddToCart
+    prev.hideAddToCart === next.hideAddToCart &&
+    prev.hideStock === next.hideStock
   );
 });

@@ -26,6 +26,7 @@ import { vendorAddressToShippingAddress } from '../../utils/vendorAddress.utils.
 import { ORDER_STATUS } from '../../constants/orderStatus.js';
 import { PAYMENT_STATUS } from '../../constants/paymentStatus.js';
 import { logger } from '../../config/logger.js';
+import { calculateLinePricing } from '../../utils/bulkPricing.utils.js';
 
 import mongoose from 'mongoose';
 import { getTransactionSupport } from '../../config/db.js';
@@ -111,7 +112,7 @@ export const createOrder = async (userId, data) => {
   // 🔥 1. Bulk fetch all products at once (Performance optimization)
   const productIds = finalItems.map(item => item.productId || item.id || item.productId?._id);
   const products = await Product.find({ _id: { $in: productIds } })
-    .select('_id name price basePrice weight minOrderQty moq isActive catalogScope')
+    .select('_id name price basePrice weight minOrderQty moq isActive catalogScope bulkPricing')
     .lean();
   
   if (products.length !== productIds.length) {
@@ -154,18 +155,9 @@ export const createOrder = async (userId, data) => {
     await checkStock(product._id, item.quantity);
 
     const productPrice = product.price || product.basePrice || 0;
-    
-    // 🔥 Feature 3: Bulk Quantity Discount Logic
-    let discountPercent = 0;
-    if (item.quantity >= 20) discountPercent = 20;
-    else if (item.quantity >= 15) discountPercent = 15;
-    else if (item.quantity >= 10) discountPercent = 10;
-    else if (item.quantity >= 5) discountPercent = 5;
+    const linePricing = calculateLinePricing(product, item.quantity);
 
-    const discountAmount = (productPrice * item.quantity) * (discountPercent / 100);
-    const itemTotal = (productPrice * item.quantity) - discountAmount;
-
-    totalAmount += itemTotal;
+    totalAmount += linePricing.itemTotal;
     totalWeight += (product.weight || 0) * item.quantity;
 
     items.push({
@@ -173,9 +165,9 @@ export const createOrder = async (userId, data) => {
       name: product.name,
       price: productPrice,
       quantity: item.quantity,
-      discountPercent,
-      discountAmount,
-      finalPrice: itemTotal / item.quantity
+      discountPercent: linePricing.discountPercent,
+      discountAmount: linePricing.discountAmount,
+      finalPrice: linePricing.unitPrice,
     });
   }
 

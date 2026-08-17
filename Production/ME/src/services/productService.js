@@ -7,7 +7,11 @@ function buildProductFormData(data, imageFile) {
       return;
     }
     if (value !== undefined && value !== null && value !== '') {
-      formData.append(key, value);
+      if (key === 'bulkPricing' && Array.isArray(value)) {
+        formData.append(key, JSON.stringify(value));
+      } else {
+        formData.append(key, value);
+      }
     }
   });
   if (imageFile) {

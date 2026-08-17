@@ -200,8 +200,19 @@ const ProductDetails = () => {
             </div>
 
             <div className="bg-gray-50 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
-              <div className="flex items-baseline gap-2 sm:gap-3">
-                <span className="text-2xl sm:text-3xl font-bold text-gray-900">₹{currentBulkPrice.toFixed(2)}</span>
+              <div className="flex items-baseline gap-2 sm:gap-3 flex-wrap">
+                {bulkApplied && product.price !== currentBulkPrice ? (
+                  <>
+                    <span className="text-base sm:text-lg text-gray-400 line-through">₹{product.price.toFixed(2)}</span>
+                    <span className="text-2xl sm:text-3xl font-bold text-gray-900">₹{currentBulkPrice.toFixed(2)}</span>
+                    <span className="text-xs sm:text-sm text-gray-600">/ item</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-2xl sm:text-3xl font-bold text-gray-900">₹{currentBulkPrice.toFixed(2)}</span>
+                    <span className="text-xs sm:text-sm text-gray-600">/ item</span>
+                  </>
+                )}
                 {product.mrp && (
                   <>
                     <span className="text-base sm:text-xl text-gray-400 line-through">₹{product.mrp.toFixed(2)}</span>
@@ -268,10 +279,15 @@ const ProductDetails = () => {
                   {pricingLoading ? '...' : `₹${currentTotal.toFixed(2)}`}
                 </span>
               </div>
+              {!pricingLoading && bulkApplied && (
+                <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                  ₹{currentBulkPrice.toFixed(2)} × {quantity} = ₹{currentTotal.toFixed(2)}
+                </p>
+              )}
               {bulkApplied && (
                 <p className="text-xs sm:text-sm text-green-600 mt-1">
                   <FiCheck className="inline w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
-                  Bulk pricing applied
+                  Bulk pricing applied — you save ₹{((product.price - currentBulkPrice) * quantity).toFixed(2)}
                 </p>
               )}
             </div>
@@ -437,7 +453,11 @@ const ProductDetails = () => {
         </div>
       </div>
 
-      <BulkPricingTable bulkPricing={product.bulkPricing} />
+      <BulkPricingTable
+        bulkPricing={product.bulkPricing}
+        basePrice={product.price}
+        currentQuantity={quantity}
+      />
 
       {relatedProducts.length > 0 && (
         <div>

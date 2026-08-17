@@ -5,6 +5,7 @@ import { parsePaginationParams, buildPaginationMeta } from '../../utils/paginati
 import { transformProductsArray } from '../../utils/cdn.js';
 import { CATALOG_SCOPE } from '../../constants/catalogScope.js';
 import { assertCustomerCatalogProduct } from './productCatalog.utils.js';
+import { validateBulkPricingTiers } from '../../utils/bulkPricing.utils.js';
 
 function serializeProduct(product) {
   if (!product) {
@@ -29,10 +30,26 @@ import {
   syncProductStockToInventory,
 } from '../inventory/inventory.service.js';
 
+function applyBulkPricingValidation(data, basePriceOverride) {
+  if (data.bulkPricing === undefined) {
+    return data;
+  }
+
+  const basePrice = basePriceOverride ?? data.price;
+  try {
+    data.bulkPricing = validateBulkPricingTiers(data.bulkPricing, basePrice);
+  } catch (err) {
+    throw new AppError(err.message, 400);
+  }
+  return data;
+}
+
 export const createProduct = async (data) => {
   if (data.price <= 0) {
     throw new AppError('Price must be greater than 0', 400);
   }
+
+  applyBulkPricingValidation(data);
 
   const product = await repo.createProduct({
     ...data,
@@ -109,6 +126,11 @@ export const updateProduct = async (id, data) => {
   const product = await repo.findById(id);
 
   if (!product) throw new AppError('Product not found', 404);
+
+  if (data.bulkPricing !== undefined) {
+    const effectivePrice = data.price ?? product.price;
+    applyBulkPricingValidation(data, effectivePrice);
+  }
 
   const updatedProduct = await repo.updateProduct(id, data);
 
