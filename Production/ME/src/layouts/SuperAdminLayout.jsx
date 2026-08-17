@@ -12,6 +12,8 @@ import {
   FiUserCheck,
   FiUserPlus,
   FiTool,
+  FiBriefcase,
+  FiClipboard,
 } from 'react-icons/fi';
 import NotificationDrawer from '../components/superadmin/NotificationDrawer';
 import PortalSidebar from '../components/common/PortalSidebar';
@@ -34,13 +36,20 @@ const SuperAdminLayout = () => {
     { path: '/super-admin/platform', icon: FiMonitor, label: 'Platform Monitoring' },
     { path: '/super-admin/user-management', icon: FiUserCheck, label: 'User Management' },
     { path: '/super-admin/staff-onboarding', icon: FiUserPlus, label: 'Staff Onboarding' },
+    { path: '/super-admin/suppliers', icon: FiBriefcase, label: 'Suppliers' },
+    { path: '/super-admin/procurement/demand', icon: FiClipboard, label: 'Procurement' },
     { path: '/super-admin/orders', icon: FiPackage, label: 'Orders' },
     { path: '/super-admin/analytics', icon: FiBarChart2, label: 'Analytics' },
     { path: '/super-admin/system-settings', icon: FiTool, label: 'System Settings' },
     { path: '/super-admin/settings', icon: FiSettings, label: 'Settings' },
   ];
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => {
+    if (path === '/super-admin/procurement/demand') {
+      return location.pathname.startsWith('/super-admin/procurement');
+    }
+    return location.pathname === path;
+  };
   const displayName = user?.name || 'Super Admin';
   const displayEmail = user?.email || 'superadmin@mokshith.com';
   const initials = displayName

@@ -26,4 +26,9 @@ describe('roleMap', () => {
     expect(getDashboardRoute('vendor')).toBe('/vendor/dashboard');
     expect(getDashboardRoute('delivery')).toBe('/delivery/dashboard');
   });
+
+  it('does not map SUPPLIER to an existing dashboard in Phase 1.1', () => {
+    expect(mapBackendRoleToFrontend('SUPPLIER')).toBeNull();
+    expect(getDashboardRoute(mapBackendRoleToFrontend('SUPPLIER'))).toBe('/');
+  });
 });

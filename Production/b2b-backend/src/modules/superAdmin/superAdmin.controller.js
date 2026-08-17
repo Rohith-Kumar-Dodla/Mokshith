@@ -1,5 +1,9 @@
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import * as service from './superAdmin.service.js';
+import * as supplierService from '../supplier/supplier.service.js';
+import * as supplierProductService from '../supplier/supplierProduct.service.js';
+import * as procurementDemandService from '../procurement/procurementDemand.service.js';
+import * as procurementPlanService from '../procurement/procurementPlan.service.js';
 import { successResponse } from '../../utils/responseHandler.js';
 
 export const getUsers = asyncHandler(async (req, res) => {
@@ -106,4 +110,169 @@ export const deleteCategory = asyncHandler(async (req, res) => {
 export const updateCategory = asyncHandler(async (req, res) => {
   const category = await service.updateCategory(req.params.id, req.body);
   successResponse(res, category, 'Category updated successfully');
+});
+
+export const getSuppliers = asyncHandler(async (req, res) => {
+  const suppliers = await supplierService.listSuppliers(req.query);
+  successResponse(res, suppliers);
+});
+
+export const getSupplier = asyncHandler(async (req, res) => {
+  const supplier = await supplierService.getSupplierById(req.params.id);
+  successResponse(res, supplier);
+});
+
+export const createSupplier = asyncHandler(async (req, res) => {
+  const supplier = await supplierService.createSupplier(req.body, req.user?._id, req.ip);
+  successResponse(res, supplier, 'Supplier created successfully', 201);
+});
+
+export const updateSupplier = asyncHandler(async (req, res) => {
+  const supplier = await supplierService.updateSupplier(
+    req.params.id,
+    req.body,
+    req.user?._id,
+    req.ip
+  );
+  successResponse(res, supplier, 'Supplier updated successfully');
+});
+
+export const updateSupplierStatus = asyncHandler(async (req, res) => {
+  const supplier = await supplierService.updateSupplierStatus(
+    req.params.id,
+    req.body.status,
+    req.user?._id,
+    req.ip
+  );
+  successResponse(res, supplier, 'Supplier status updated successfully');
+});
+
+export const getSupplierProducts = asyncHandler(async (req, res) => {
+  const mappings = await supplierProductService.listSupplierProducts(req.params.id, req.query);
+  successResponse(res, mappings);
+});
+
+export const getSupplierProduct = asyncHandler(async (req, res) => {
+  const mapping = await supplierProductService.getSupplierProduct(
+    req.params.id,
+    req.params.mappingId
+  );
+  successResponse(res, mapping);
+});
+
+export const createSupplierProduct = asyncHandler(async (req, res) => {
+  const mapping = await supplierProductService.createSupplierProduct(
+    req.params.id,
+    req.body,
+    req.user?._id,
+    req.ip
+  );
+  successResponse(res, mapping, 'Supplier product mapped successfully', 201);
+});
+
+export const updateSupplierProduct = asyncHandler(async (req, res) => {
+  const mapping = await supplierProductService.updateSupplierProduct(
+    req.params.id,
+    req.params.mappingId,
+    req.body,
+    req.user?._id,
+    req.ip
+  );
+  successResponse(res, mapping, 'Supplier product updated successfully');
+});
+
+export const updateSupplierProductStatus = asyncHandler(async (req, res) => {
+  const mapping = await supplierProductService.updateSupplierProductStatus(
+    req.params.id,
+    req.params.mappingId,
+    req.body.status,
+    req.user?._id,
+    req.ip
+  );
+  successResponse(res, mapping, 'Supplier product status updated successfully');
+});
+
+export const updateSupplierProductPrice = asyncHandler(async (req, res) => {
+  const mapping = await supplierProductService.setSupplierProductPrice(
+    req.params.id,
+    req.params.mappingId,
+    req.body.price,
+    req.user?._id,
+    req.ip
+  );
+  successResponse(res, mapping, 'Supplier price updated successfully');
+});
+
+export const getSupplierProductPriceHistory = asyncHandler(async (req, res) => {
+  const history = await supplierProductService.listSupplierProductPriceHistory(
+    req.params.id,
+    req.params.mappingId,
+    req.query
+  );
+  successResponse(res, history);
+});
+
+export const getSupplierComparison = asyncHandler(async (req, res) => {
+  const comparison = await supplierProductService.compareSuppliersForProduct(req.params.productId);
+  successResponse(res, comparison);
+});
+
+export const getProcurementDemand = asyncHandler(async (req, res) => {
+  const demand = await procurementDemandService.getProcurementDemand({ date: req.query.date });
+  successResponse(res, demand);
+});
+
+export const getProcurementPlanByDate = asyncHandler(async (req, res) => {
+  const result = await procurementPlanService.getProcurementPlanByDate(req.query.date);
+  successResponse(res, result);
+});
+
+export const createProcurementPlan = asyncHandler(async (req, res) => {
+  const result = await procurementPlanService.createProcurementPlan(
+    req.body.date,
+    req.user?._id,
+    req.ip
+  );
+  successResponse(res, result, 'Procurement plan saved as draft', 201);
+});
+
+export const getProcurementPlan = asyncHandler(async (req, res) => {
+  const result = await procurementPlanService.getProcurementPlanById(req.params.id);
+  successResponse(res, result);
+});
+
+export const updateProcurementPlan = asyncHandler(async (req, res) => {
+  const result = await procurementPlanService.updateProcurementPlan(
+    req.params.id,
+    req.body,
+    req.user?._id,
+    req.ip
+  );
+  successResponse(res, result, 'Procurement plan updated');
+});
+
+export const confirmProcurementPlan = asyncHandler(async (req, res) => {
+  const result = await procurementPlanService.confirmProcurementPlan(
+    req.params.id,
+    req.user?._id,
+    req.ip
+  );
+  successResponse(res, result, 'Procurement plan confirmed');
+});
+
+export const cancelProcurementPlan = asyncHandler(async (req, res) => {
+  const result = await procurementPlanService.cancelProcurementPlan(
+    req.params.id,
+    req.user?._id,
+    req.ip
+  );
+  successResponse(res, result, 'Procurement plan cancelled');
+});
+
+export const getProcurementPlanSupplierOptions = asyncHandler(async (req, res) => {
+  const comparison = await procurementPlanService.getPlanSupplierOptions(
+    req.params.id,
+    req.params.productId
+  );
+  successResponse(res, comparison);
 });
