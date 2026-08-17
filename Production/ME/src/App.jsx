@@ -30,6 +30,10 @@ const SuperAdminAnalytics = lazy(() => import('./pages/SuperAdmin/Analytics'));
 const SuperAdminSettings = lazy(() => import('./pages/SuperAdmin/Settings'));
 const SystemSettings = lazy(() => import('./pages/SuperAdmin/SystemSettings'));
 const StaffOnboarding = lazy(() => import('./pages/SuperAdmin/StaffOnboarding'));
+const SuperAdminSuppliers = lazy(() => import('./pages/SuperAdmin/Suppliers'));
+const SuperAdminSupplierComparison = lazy(() => import('./pages/SuperAdmin/SupplierComparison'));
+const SuperAdminProcurementDemand = lazy(() => import('./pages/SuperAdmin/ProcurementDemand'));
+const SuperAdminProcurementPlan = lazy(() => import('./pages/SuperAdmin/ProcurementPlan'));
 
 const AdminLayout = lazy(() => import('./layouts/AdminLayout'));
 const AdminDashboard = lazy(() => import('./pages/Admin/Dashboard'));
@@ -95,6 +99,10 @@ function App() {
                 <Route path="delivery-partners" element={<Navigate to="/super-admin/user-management?tab=delivery" replace />} />
                 <Route path="user-management" element={<UserManagement />} />
                 <Route path="staff-onboarding" element={<StaffOnboarding />} />
+                <Route path="suppliers/comparison" element={<SuperAdminSupplierComparison />} />
+                <Route path="suppliers" element={<SuperAdminSuppliers />} />
+                <Route path="procurement/demand" element={<SuperAdminProcurementDemand />} />
+                <Route path="procurement/plans" element={<SuperAdminProcurementPlan />} />
                 <Route path="orders" element={<SuperAdminOrders />} />
                 <Route path="payment-verifications" element={<Navigate to="/super-admin/orders" replace />} />
                 <Route path="analytics" element={<SuperAdminAnalytics />} />
