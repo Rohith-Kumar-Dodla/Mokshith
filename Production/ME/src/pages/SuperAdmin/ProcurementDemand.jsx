@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { getUserFacingErrorMessage } from '../../utils/apiResponse';
 import PageHeader from '../../components/superadmin/PageHeader';
 import DataTable from '../../components/superadmin/DataTable';
+import ProcurementSubNav from './ProcurementSubNav';
 import superAdminService from '../../services/superAdminService';
 
 const pad = (value) => String(value).padStart(2, '0');
@@ -49,14 +50,24 @@ function ProcurementDemand() {
         title="Procurement Demand"
         subtitle="Live required quantities from existing customer orders. This does not create a purchase plan."
         actions={date ? (
-          <Link
-            to={`/super-admin/procurement/plans?date=${date}`}
-            className="inline-flex items-center px-4 py-2.5 min-h-[44px] bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
-          >
-            Plan Procurement
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to={`/super-admin/procurement/purchase-requests/new?date=${date}`}
+              className="inline-flex items-center px-4 py-2.5 min-h-[44px] bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700"
+            >
+              Create Purchase Request
+            </Link>
+            <Link
+              to={`/super-admin/procurement/plans?date=${date}`}
+              className="inline-flex items-center px-4 py-2.5 min-h-[44px] bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+            >
+              Plan Procurement
+            </Link>
+          </div>
         ) : null}
       />
+
+      <ProcurementSubNav />
 
       <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
         <label className="text-sm font-medium text-gray-700" htmlFor="procurement-date">

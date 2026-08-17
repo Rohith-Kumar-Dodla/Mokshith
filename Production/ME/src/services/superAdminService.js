@@ -103,6 +103,29 @@ const superAdminService = {
     return unwrap(response);
   },
 
+  getSupplierCategories: async (supplierId, params = {}) => {
+    const response = await api.get(`/super-admin/suppliers/${supplierId}/categories`, { params });
+    return unwrap(response);
+  },
+
+  createSupplierCategory: async (supplierId, payload) => {
+    const response = await api.post(`/super-admin/suppliers/${supplierId}/categories`, payload);
+    return unwrap(response);
+  },
+
+  updateSupplierCategoryStatus: async (supplierId, mappingId, status) => {
+    const response = await api.patch(
+      `/super-admin/suppliers/${supplierId}/categories/${mappingId}/status`,
+      { status }
+    );
+    return unwrap(response);
+  },
+
+  getCategories: async () => {
+    const response = await api.get('/super-admin/categories');
+    return unwrap(response);
+  },
+
   getSupplierProduct: async (supplierId, mappingId) => {
     const response = await api.get(`/super-admin/suppliers/${supplierId}/products/${mappingId}`);
     return unwrap(response);
@@ -139,6 +162,11 @@ const superAdminService = {
       `/super-admin/suppliers/${supplierId}/products/${mappingId}/price-history`,
       { params }
     );
+    return unwrap(response);
+  },
+
+  searchSupplierProducts: async (supplierId, params = {}) => {
+    const response = await api.get(`/super-admin/suppliers/${supplierId}/products/search`, { params });
     return unwrap(response);
   },
 
@@ -185,6 +213,59 @@ const superAdminService = {
   getProcurementPlanSupplierOptions: async (planId, productId) => {
     const response = await api.get(
       `/super-admin/procurement/plans/${planId}/products/${productId}/suppliers`
+    );
+    return unwrap(response);
+  },
+
+  getDemandProductSupplierAllocation: async (date, productId) => {
+    const response = await api.get(
+      `/super-admin/procurement/demand/${date}/products/${productId}/suppliers`
+    );
+    return unwrap(response);
+  },
+
+  listPurchaseRequests: async (params = {}) => {
+    const response = await api.get('/super-admin/procurement/purchase-requests', { params });
+    return unwrap(response);
+  },
+
+  getPurchaseRequest: async (id) => {
+    const response = await api.get(`/super-admin/procurement/purchase-requests/${id}`);
+    return unwrap(response);
+  },
+
+  createPurchaseRequest: async (payload) => {
+    const response = await api.post('/super-admin/procurement/purchase-requests', payload);
+    return unwrap(response);
+  },
+
+  updatePurchaseRequest: async (id, payload) => {
+    const response = await api.patch(`/super-admin/procurement/purchase-requests/${id}`, payload);
+    return unwrap(response);
+  },
+
+  submitPurchaseRequest: async (id, payload = {}) => {
+    const response = await api.patch(`/super-admin/procurement/purchase-requests/${id}/submit`, payload);
+    return unwrap(response);
+  },
+
+  cancelPurchaseRequest: async (id) => {
+    const response = await api.patch(`/super-admin/procurement/purchase-requests/${id}/cancel`);
+    return unwrap(response);
+  },
+
+  acknowledgePurchaseRequest: async (id, payload) => {
+    const response = await api.patch(
+      `/super-admin/procurement/purchase-requests/${id}/acknowledge`,
+      payload
+    );
+    return unwrap(response);
+  },
+
+  receivePurchaseRequest: async (id, payload) => {
+    const response = await api.patch(
+      `/super-admin/procurement/purchase-requests/${id}/receive`,
+      payload
     );
     return unwrap(response);
   },

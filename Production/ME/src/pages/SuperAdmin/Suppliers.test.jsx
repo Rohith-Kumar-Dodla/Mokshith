@@ -11,6 +11,7 @@ vi.mock('../../services/superAdminService', () => ({
     updateSupplier: vi.fn(),
     updateSupplierStatus: vi.fn(),
     getSupplierProducts: vi.fn(),
+    getSupplierCategories: vi.fn(),
     createSupplierProduct: vi.fn(),
     updateSupplierProduct: vi.fn(),
     updateSupplierProductStatus: vi.fn(),
@@ -32,6 +33,13 @@ const sampleSupplier = {
   gstNumber: '27AAPFU0939F1Z5',
   notes: 'Preferred supplier',
   status: 'PENDING',
+  catalogSummary: {
+    productCount: 0,
+    categoryCount: 0,
+    pricesConfigured: 0,
+    pricesNotSet: 0,
+    activeProductCount: 0,
+  },
   createdAt: '2026-08-01T00:00:00.000Z',
   updatedAt: '2026-08-01T00:00:00.000Z',
 };
@@ -60,22 +68,25 @@ describe('Super Admin Suppliers page', () => {
     superAdminService.getSupplierProducts.mockResolvedValue({
       data: { mappings: [], pages: 1, total: 0, page: 1 },
     });
+    superAdminService.getSupplierCategories.mockResolvedValue({
+      data: { categories: [], total: 0 },
+    });
   });
 
   it('loads the supplier list', async () => {
     renderPage();
     expect(screen.getByRole('heading', { name: 'Suppliers' })).toBeInTheDocument();
     await waitFor(() => {
-      expect(screen.getByText('Sunrise Staples')).toBeInTheDocument();
+      expect(screen.getAllByText('Sunrise Staples').length).toBeGreaterThan(0);
     });
-    expect(screen.getByText('Sunrise Staples Pvt Ltd')).toBeInTheDocument();
+    expect(screen.getAllByText('Sunrise Staples Pvt Ltd').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: 'Add Supplier' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Compare Suppliers' })).toBeInTheDocument();
   });
 
   it('shows validation messages on the add supplier form', async () => {
     renderPage();
-    await waitFor(() => screen.getByText('Sunrise Staples'));
+    await waitFor(() => screen.getAllByText('Sunrise Staples'));
 
     fireEvent.click(screen.getByRole('button', { name: 'Add Supplier' }));
     expect(screen.getByRole('heading', { name: 'Add Supplier' })).toBeInTheDocument();
@@ -91,7 +102,7 @@ describe('Super Admin Suppliers page', () => {
 
   it('creates a supplier from the add form', async () => {
     renderPage();
-    await waitFor(() => screen.getByText('Sunrise Staples'));
+    await waitFor(() => screen.getAllByText('Sunrise Staples'));
 
     fireEvent.click(screen.getByRole('button', { name: 'Add Supplier' }));
     fireEvent.change(screen.getByPlaceholderText('Supplier Name *'), { target: { value: 'New Supplier' } });
@@ -110,7 +121,7 @@ describe('Super Admin Suppliers page', () => {
 
   it('edits a supplier', async () => {
     renderPage();
-    await waitFor(() => screen.getByText('Sunrise Staples'));
+    await waitFor(() => screen.getAllByText('Sunrise Staples'));
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     fireEvent.change(screen.getByPlaceholderText('Contact Person'), { target: { value: 'Ravi Kumar' } });
@@ -126,7 +137,7 @@ describe('Super Admin Suppliers page', () => {
 
   it('runs status actions and opens the detail view', async () => {
     renderPage();
-    await waitFor(() => screen.getByText('Sunrise Staples'));
+    await waitFor(() => screen.getAllByText('Sunrise Staples'));
 
     fireEvent.click(screen.getByRole('button', { name: 'Approve' }));
     await waitFor(() => {
@@ -139,14 +150,15 @@ describe('Super Admin Suppliers page', () => {
     expect(screen.getByRole('button', { name: 'Products' })).toBeInTheDocument();
   });
 
-  it('shows Products tab and blocks add mapping for a pending supplier', async () => {
+  it('shows Products tab as read-only catalog for a pending supplier', async () => {
     renderPage();
-    await waitFor(() => screen.getByText('Sunrise Staples'));
+    await waitFor(() => screen.getAllByText('Sunrise Staples'));
     fireEvent.click(screen.getByRole('button', { name: 'View' }));
     fireEvent.click(screen.getByRole('button', { name: 'Products' }));
     await waitFor(() => expect(superAdminService.getSupplierProducts).toHaveBeenCalled());
-    expect(screen.queryByRole('button', { name: 'Add Product' })).not.toBeInTheDocument();
-    expect(screen.getByText(/Only active suppliers can receive new product mappings/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Create Supplier Product' })).not.toBeInTheDocument();
+    expect(screen.getByText(/Only ACTIVE suppliers can receive new supplier products/i)).toBeInTheDocument();
+    expect(screen.getByText('No supplier products configured.')).toBeInTheDocument();
   });
 
   it('shows an error when the list fails to load', async () => {

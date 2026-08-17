@@ -3,6 +3,8 @@ import Supplier from './supplier.model.js';
 import Audit from '../audit/audit.model.js';
 import AppError from '../../errors/AppError.js';
 import { ROLES } from '../../constants/roles.js';
+import { aggregateSupplierCatalogSummaries } from './supplierProduct.service.js';
+import { aggregateSupplierCategoryCounts } from './supplierCategory.service.js';
 import {
   SUPPLIER_STATUS,
   SUPPLIER_STATUS_TRANSITIONS,
@@ -123,6 +125,44 @@ const ensureUniqueSupplierFields = async ({
   }
 };
 
+const attachCatalogSummaries = async (suppliers) => {
+  const supplierList = Array.isArray(suppliers) ? suppliers : [suppliers];
+  if (supplierList.length === 0) return suppliers;
+
+  const summaries = await aggregateSupplierCatalogSummaries(
+    supplierList.map((supplier) => supplier._id)
+  );
+  const categorySummaries = await aggregateSupplierCategoryCounts(
+    supplierList.map((supplier) => supplier._id)
+  );
+
+  const emptySummary = {
+    productCount: 0,
+    activeProductCount: 0,
+    categoryCount: 0,
+    activeCategoryCount: 0,
+    pricesConfigured: 0,
+    pricesNotSet: 0,
+  };
+
+  return supplierList.map((supplier) => {
+    const plain = supplier?.toObject ? supplier.toObject() : supplier;
+    const productSummary = summaries.get(String(plain._id)) || {};
+    const categorySummary = categorySummaries.get(String(plain._id)) || {};
+    return {
+      ...plain,
+      catalogSummary: {
+        productCount: productSummary.productCount || 0,
+        activeProductCount: productSummary.activeProductCount || 0,
+        categoryCount: categorySummary.categoryCount || 0,
+        activeCategoryCount: categorySummary.activeCategoryCount || 0,
+        pricesConfigured: productSummary.pricesConfigured || 0,
+        pricesNotSet: productSummary.pricesNotSet || 0,
+      },
+    };
+  });
+};
+
 const writeAudit = async ({
   actorId,
   ip,
@@ -166,8 +206,10 @@ export const listSuppliers = async ({ page = 1, limit = 10, search = '', status 
     Supplier.countDocuments(filter),
   ]);
 
+  const suppliersWithSummary = await attachCatalogSummaries(suppliers);
+
   return {
-    suppliers,
+    suppliers: suppliersWithSummary,
     total,
     page: Number(page),
     pages: Math.ceil(total / Number(limit)) || 1,
@@ -180,7 +222,8 @@ export const getSupplierById = async (id) => {
   if (!supplier) {
     throw new AppError('Supplier not found', 404);
   }
-  return supplier;
+  const [withSummary] = await attachCatalogSummaries([supplier]);
+  return withSummary;
 };
 
 export const createSupplier = async (data, actorId, ip) => {

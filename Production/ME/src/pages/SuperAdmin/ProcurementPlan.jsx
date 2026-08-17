@@ -4,6 +4,7 @@ import { getUserFacingErrorMessage } from '../../utils/apiResponse';
 import PageHeader from '../../components/superadmin/PageHeader';
 import StatusBadge from '../../components/superadmin/StatusBadge';
 import Modal from '../../components/superadmin/Modal';
+import ProcurementSubNav from './ProcurementSubNav';
 import superAdminService from '../../services/superAdminService';
 import { toDateInputValue } from './ProcurementDemand';
 
@@ -198,6 +199,8 @@ function ProcurementPlan() {
           </Link>
         )}
       />
+
+      <ProcurementSubNav />
 
       <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
         <label className="text-sm font-medium text-gray-700" htmlFor="plan-date">Date</label>

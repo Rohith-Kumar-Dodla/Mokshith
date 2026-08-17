@@ -21,6 +21,7 @@ import {
 import {
   listSupplierProductsSchema,
   createSupplierProductSchema,
+  searchSupplierProductsSchema,
   updateSupplierProductSchema,
   updateSupplierProductStatusSchema,
   supplierProductIdSchema,
@@ -29,12 +30,26 @@ import {
   supplierComparisonSchema,
 } from '../supplier/supplierProduct.validation.js';
 import {
+  listSupplierCategoriesSchema,
+  createSupplierCategorySchema,
+  supplierCategoryIdSchema,
+  updateSupplierCategoryStatusSchema,
+} from '../supplier/supplierCategory.validation.js';
+import {
   procurementDemandQuerySchema,
   procurementPlanDateQuerySchema,
   createProcurementPlanSchema,
   procurementPlanIdSchema,
   updateProcurementPlanSchema,
   planSupplierOptionsSchema,
+  demandProductSupplierAllocationSchema,
+  listPurchaseRequestsSchema,
+  purchaseRequestIdSchema,
+  createPurchaseRequestSchema,
+  updatePurchaseRequestSchema,
+  submitPurchaseRequestSchema,
+  acknowledgePurchaseRequestSchema,
+  receivePurchaseRequestSchema,
 } from '../procurement/procurement.validation.js';
 
 const router = express.Router();
@@ -99,8 +114,78 @@ router.post(
   validate(createProcurementPlanSchema),
   controller.createProcurementPlan
 );
+router.get(
+  '/procurement/demand/:date/products/:productId/suppliers',
+  validate(demandProductSupplierAllocationSchema),
+  controller.getDemandProductSupplierAllocation
+);
+router.get(
+  '/procurement/purchase-requests',
+  validate(listPurchaseRequestsSchema),
+  controller.listPurchaseRequests
+);
+router.post(
+  '/procurement/purchase-requests',
+  validate(createPurchaseRequestSchema),
+  controller.createPurchaseRequest
+);
+router.get(
+  '/procurement/purchase-requests/:id',
+  validate(purchaseRequestIdSchema),
+  controller.getPurchaseRequest
+);
+router.patch(
+  '/procurement/purchase-requests/:id',
+  validate(updatePurchaseRequestSchema),
+  controller.updatePurchaseRequest
+);
+router.patch(
+  '/procurement/purchase-requests/:id/submit',
+  validate(submitPurchaseRequestSchema),
+  controller.submitPurchaseRequest
+);
+router.patch(
+  '/procurement/purchase-requests/:id/cancel',
+  validate(purchaseRequestIdSchema),
+  controller.cancelPurchaseRequest
+);
+router.patch(
+  '/procurement/purchase-requests/:id/acknowledge',
+  validate(acknowledgePurchaseRequestSchema),
+  controller.acknowledgePurchaseRequest
+);
+router.patch(
+  '/procurement/purchase-requests/:id/receive',
+  validate(receivePurchaseRequestSchema),
+  controller.receivePurchaseRequest
+);
 router.get('/suppliers', validate(listSuppliersSchema), controller.getSuppliers);
 router.post('/suppliers', validate(createSupplierSchema), controller.createSupplier);
+router.get(
+  '/suppliers/:id/categories',
+  validate(listSupplierCategoriesSchema),
+  controller.getSupplierCategories
+);
+router.post(
+  '/suppliers/:id/categories',
+  validate(createSupplierCategorySchema),
+  controller.createSupplierCategory
+);
+router.patch(
+  '/suppliers/:id/categories/:mappingId/status',
+  validate(updateSupplierCategoryStatusSchema),
+  controller.updateSupplierCategoryStatus
+);
+router.get(
+  '/suppliers/:id/categories/:mappingId',
+  validate(supplierCategoryIdSchema),
+  controller.getSupplierCategory
+);
+router.get(
+  '/suppliers/:id/products/search',
+  validate(searchSupplierProductsSchema),
+  controller.searchSupplierProducts
+);
 router.get('/suppliers/:id/products', validate(listSupplierProductsSchema), controller.getSupplierProducts);
 router.post('/suppliers/:id/products', validate(createSupplierProductSchema), controller.createSupplierProduct);
 router.patch(
