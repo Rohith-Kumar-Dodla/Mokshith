@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { CATALOG_SCOPE } from '../../constants/catalogScope.js';
 
 const productSchema = new mongoose.Schema(
   {
@@ -49,6 +50,13 @@ const productSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true,
+      index: true,
+    },
+
+    catalogScope: {
+      type: String,
+      enum: Object.values(CATALOG_SCOPE),
+      default: CATALOG_SCOPE.CUSTOMER,
       index: true,
     },
 

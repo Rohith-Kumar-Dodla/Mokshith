@@ -1,5 +1,6 @@
 import Category from './category.model.js';
 import Product from '../product/product.model.js';
+import { CUSTOMER_CATALOG_SCOPE_FILTER } from '../../constants/catalogScope.js';
 
 export const createCategory = async (data) => Category.create(data);
 
@@ -9,6 +10,7 @@ async function attachProductCounts(categories = []) {
   }
 
   const counts = await Product.aggregate([
+    { $match: CUSTOMER_CATALOG_SCOPE_FILTER },
     { $group: { _id: '$categoryId', productCount: { $sum: 1 } } },
   ]);
 

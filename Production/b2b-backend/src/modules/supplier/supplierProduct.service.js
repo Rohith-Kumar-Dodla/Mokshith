@@ -8,6 +8,7 @@ import Audit from '../audit/audit.model.js';
 import AppError from '../../errors/AppError.js';
 import { SUPPLIER_STATUS } from '../../constants/supplierStatus.js';
 import { SUPPLIER_PRODUCT_STATUS } from '../../constants/supplierProductStatus.js';
+import { CATALOG_SCOPE } from '../../constants/catalogScope.js';
 import { createProduct as createCanonicalProduct } from '../product/product.service.js';
 import { getTransactionSupport } from '../../config/db.js';
 import { formatCurrency } from '../../utils/currency.utils.js';
@@ -60,6 +61,7 @@ const serializeMapping = (doc) => {
       name: plain.productId.name,
       unit: plain.productId.unit,
       isActive: plain.productId.isActive,
+      catalogScope: plain.productId.catalogScope || 'CUSTOMER',
       categoryId: plain.productId.categoryId?._id || plain.productId.categoryId || null,
       category: plain.productId.categoryId && typeof plain.productId.categoryId === 'object'
         ? {
@@ -112,7 +114,7 @@ export const isSupplierPriceConfigured = (value) => {
 
 const populateProduct = (query) => query.populate({
   path: 'productId',
-  select: 'name unit isActive categoryId',
+  select: 'name unit isActive categoryId catalogScope',
   populate: { path: 'categoryId', select: 'name' },
 });
 
@@ -501,6 +503,7 @@ export const createSupplierProductWithNewProduct = async (supplierId, data, acto
     moq: productInput.moq != null ? Number(productInput.moq) : 1,
     isActive: productInput.isActive !== false,
     imageUrl: productInput.imageUrl || undefined,
+    catalogScope: CATALOG_SCOPE.SUPPLIER_ONLY,
   };
 
   let createdProduct = null;
