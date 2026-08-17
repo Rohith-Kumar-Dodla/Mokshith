@@ -9,7 +9,10 @@ import DataTable from '../../components/superadmin/DataTable';
 import StatusBadge from '../../components/superadmin/StatusBadge';
 import Modal from '../../components/superadmin/Modal';
 import superAdminService from '../../services/superAdminService';
-import SupplierProductsPanel from './SupplierProductsPanel';
+import SupplierSummaryCard from './SupplierSummaryCard';
+import SupplierProductsCatalog from './SupplierProductsCatalog';
+import SupplierCategoriesPanel from './SupplierCategoriesPanel';
+import SupplierActivationBanner from './SupplierActivationBanner';
 
 const GST_PATTERN = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -59,6 +62,13 @@ const mapSupplier = (supplier) => ({
   rawStatus: supplier.status || 'PENDING',
   createdAt: supplier.createdAt,
   updatedAt: supplier.updatedAt,
+  catalogSummary: supplier.catalogSummary || {
+    productCount: 0,
+    categoryCount: 0,
+    pricesConfigured: 0,
+    pricesNotSet: 0,
+    activeProductCount: 0,
+  },
 });
 
 const validateSupplierForm = (form) => {
@@ -97,6 +107,7 @@ function Suppliers() {
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState('');
   const [viewTab, setViewTab] = useState('overview');
+  const [productsCategoryFilter, setProductsCategoryFilter] = useState('all');
 
   const loadRows = useCallback(async () => {
     setLoading(true);
@@ -154,7 +165,62 @@ function Suppliers() {
   const openViewModal = (row) => {
     setSelectedRow(row);
     setViewTab('overview');
+    setProductsCategoryFilter('all');
     setModalMode('view');
+  };
+
+  const openViewFromCard = (row) => {
+    openViewModal(row);
+  };
+
+  const handleViewProductsForCategory = (categoryId) => {
+    setProductsCategoryFilter(categoryId);
+    setViewTab('products');
+  };
+
+  const refreshSelectedSupplierSummary = useCallback(async () => {
+    if (!selectedRow?.id) return;
+    try {
+      const response = await superAdminService.getSupplier(selectedRow.id);
+      const payload = response?.data ?? response;
+      const refreshed = mapSupplier(payload);
+      setSelectedRow(refreshed);
+      setRows((current) => current.map((row) => (row.id === refreshed.id ? refreshed : row)));
+      return refreshed;
+    } catch {
+      // Keep existing summary if refresh fails.
+      return selectedRow;
+    }
+  }, [selectedRow?.id, selectedRow]);
+
+  const handleActivateSelectedSupplier = async () => {
+    if (!selectedRow?.id) return;
+    setActionLoading(true);
+    setError('');
+    try {
+      await superAdminService.updateSupplierStatus(selectedRow.id, 'ACTIVE');
+      await refreshSelectedSupplierSummary();
+      await loadRows();
+    } catch (err) {
+      setError(getUserFacingErrorMessage(err, 'Status update failed'));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleApproveSelectedSupplier = async () => {
+    if (!selectedRow?.id) return;
+    setActionLoading(true);
+    setError('');
+    try {
+      await superAdminService.updateSupplierStatus(selectedRow.id, 'APPROVED');
+      await refreshSelectedSupplierSummary();
+      await loadRows();
+    } catch (err) {
+      setError(getUserFacingErrorMessage(err, 'Status update failed'));
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const closeModal = () => {
@@ -287,6 +353,23 @@ function Suppliers() {
         </div>
       )}
 
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold text-gray-900">Supplier Overview</h2>
+        {loading ? (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {[1, 2, 3].map((key) => (
+              <SupplierSummaryCard key={key} supplier={{}} loading />
+            ))}
+          </div>
+        ) : rows.length === 0 ? null : (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {rows.map((row) => (
+              <SupplierSummaryCard key={row.id} supplier={row} onView={openViewFromCard} />
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden p-4 sm:p-6">
         {loading ? (
           <p className="text-sm text-gray-500">Loading suppliers...</p>
@@ -319,7 +402,7 @@ function Suppliers() {
       >
         {modalMode === 'view' && selectedRow && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => setViewTab('overview')}
@@ -334,24 +417,83 @@ function Suppliers() {
               >
                 Products
               </button>
+              <button
+                type="button"
+                onClick={() => setViewTab('categories')}
+                className={`px-3 py-2.5 min-h-[44px] text-sm rounded-lg font-medium ${viewTab === 'categories' ? 'bg-blue-600 text-white' : 'border border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+              >
+                Categories
+              </button>
             </div>
 
             {viewTab === 'overview' ? (
-              <div className="space-y-3 text-sm">
-                <p><span className="font-medium">Supplier name:</span> {selectedRow.supplierName}</p>
-                <p><span className="font-medium">Company:</span> {selectedRow.companyName}</p>
-                <p><span className="font-medium">Contact person:</span> {selectedRow.contactPerson}</p>
-                <p><span className="font-medium">Phone:</span> {selectedRow.phone}</p>
-                <p><span className="font-medium">Email:</span> {selectedRow.email}</p>
-                <p><span className="font-medium">Address:</span> {selectedRow.businessAddress}</p>
-                <p><span className="font-medium">GST:</span> {selectedRow.gstNumber}</p>
-                <p><span className="font-medium">Notes:</span> {selectedRow.notes}</p>
-                <p><span className="font-medium">Status:</span> {selectedRow.rawStatus}</p>
-                <p><span className="font-medium">Created:</span> {formatDate(selectedRow.createdAt)}</p>
-                <p><span className="font-medium">Updated:</span> {formatDate(selectedRow.updatedAt)}</p>
+              <div className="space-y-4">
+                <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+                  <div>
+                    <p className="text-gray-500">Products</p>
+                    <p className="font-semibold text-gray-900">{selectedRow.catalogSummary.productCount}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Categories</p>
+                    <p className="font-semibold text-gray-900">{selectedRow.catalogSummary.categoryCount}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Prices Configured</p>
+                    <p className="font-semibold text-gray-900">{selectedRow.catalogSummary.pricesConfigured}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Prices Not Set</p>
+                    <p className={`font-semibold ${selectedRow.catalogSummary.pricesNotSet > 0 ? 'text-amber-700' : 'text-gray-900'}`}>
+                      {selectedRow.catalogSummary.pricesNotSet}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3 text-sm">
+                  <p><span className="font-medium">Supplier name:</span> {selectedRow.supplierName}</p>
+                  <p><span className="font-medium">Company:</span> {selectedRow.companyName}</p>
+                  <p><span className="font-medium">Contact person:</span> {selectedRow.contactPerson}</p>
+                  <p><span className="font-medium">Phone:</span> {selectedRow.phone}</p>
+                  <p><span className="font-medium">Email:</span> {selectedRow.email}</p>
+                  <p><span className="font-medium">Address:</span> {selectedRow.businessAddress}</p>
+                  <p><span className="font-medium">GST:</span> {selectedRow.gstNumber}</p>
+                  <p><span className="font-medium">Notes:</span> {selectedRow.notes}</p>
+                  <p className="flex items-center gap-2">
+                    <span className="font-medium">Status:</span>
+                    <StatusBadge status={selectedRow.status} />
+                    <span className="text-gray-700">{selectedRow.rawStatus}</span>
+                  </p>
+                  {selectedRow.rawStatus !== 'ACTIVE' && (
+                    <SupplierActivationBanner
+                      supplier={selectedRow}
+                      context="overview"
+                      onActivateSupplier={handleActivateSelectedSupplier}
+                      onApproveSupplier={handleApproveSelectedSupplier}
+                      actionLoading={actionLoading}
+                    />
+                  )}
+                  <p><span className="font-medium">Created:</span> {formatDate(selectedRow.createdAt)}</p>
+                  <p><span className="font-medium">Updated:</span> {formatDate(selectedRow.updatedAt)}</p>
+                </div>
               </div>
+            ) : viewTab === 'products' ? (
+              <SupplierProductsCatalog
+                supplier={selectedRow}
+                categoryFilter={productsCategoryFilter}
+                onCatalogChange={refreshSelectedSupplierSummary}
+                onActivateSupplier={handleActivateSelectedSupplier}
+                onApproveSupplier={handleApproveSelectedSupplier}
+                supplierActionLoading={actionLoading}
+              />
             ) : (
-              <SupplierProductsPanel supplier={selectedRow} />
+              <SupplierCategoriesPanel
+                supplier={selectedRow}
+                onViewProductsForCategory={handleViewProductsForCategory}
+                onCatalogChange={refreshSelectedSupplierSummary}
+                onActivateSupplier={handleActivateSelectedSupplier}
+                onApproveSupplier={handleApproveSelectedSupplier}
+                supplierActionLoading={actionLoading}
+              />
             )}
           </div>
         )}

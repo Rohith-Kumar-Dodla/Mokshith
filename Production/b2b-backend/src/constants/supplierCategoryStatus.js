@@ -1,0 +1,4 @@
+export const SUPPLIER_CATEGORY_STATUS = {
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE',
+};

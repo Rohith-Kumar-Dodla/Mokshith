@@ -47,6 +47,8 @@ describe('Procurement demand page', () => {
 
     await waitFor(() => expect(superAdminService.getProcurementDemand).toHaveBeenCalled());
     expect(screen.getByRole('link', { name: 'Plan Procurement' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Create Purchase Request' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Purchase Requests' })).toBeInTheDocument();
     expect(screen.getByText("Today's Orders")).toBeInTheDocument();
     expect(screen.getByText('Products Required')).toBeInTheDocument();
     expect(screen.getByText('Sunflower Oil')).toBeInTheDocument();
@@ -54,7 +56,6 @@ describe('Procurement demand page', () => {
     expect(screen.getByText('Rice')).toBeInTheDocument();
     expect(screen.getByText('150')).toBeInTheDocument();
     expect(screen.queryByText(/select supplier/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/purchase request/i)).not.toBeInTheDocument();
   });
 
   it('reloads when the date changes', async () => {
