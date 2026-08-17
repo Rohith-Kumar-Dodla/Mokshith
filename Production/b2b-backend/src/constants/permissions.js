@@ -280,6 +280,9 @@ export const ROLE_PERMISSIONS = {
     // Notifications
     PERMISSIONS.NOTIFICATIONS_READ,
   ],
+
+  // Phase 1.1: role foundation only. No Admin/Vendor/Delivery permissions.
+  SUPPLIER: [],
 };
 
 /**

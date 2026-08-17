@@ -29,7 +29,7 @@ const passwordField = () => (isAuthStrictMode() ? strictPasswordField() : relaxe
 export const updateUserRoleSchema = Joi.object({
   body: Joi.object({
     role: Joi.string()
-      .valid(...Object.values(ROLES))
+      .valid(...Object.values(ROLES).filter((role) => role !== ROLES.SUPPLIER))
       .required(),
   }),
 });
