@@ -156,6 +156,7 @@ describe('Super Admin supplier product creation - Phase 4.3', () => {
     expect(product).toBeTruthy();
     expect(product.price).toBe(1800);
     expect(product.moq).toBe(1);
+    expect(product.catalogScope).toBe('SUPPLIER_ONLY');
 
     const inventory = await Inventory.findOne({ productId: product._id });
     expect(inventory).toBeTruthy();

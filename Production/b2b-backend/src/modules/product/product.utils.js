@@ -1,10 +1,15 @@
+import { CUSTOMER_CATALOG_SCOPE_FILTER } from '../../constants/catalogScope.js';
+
 // 🔥 Escape regex special characters to prevent ReDoS attacks
 const escapeRegex = (str) => {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 };
 
 export const buildProductFilter = ({ categoryId, search }) => {
-  const filter = { isActive: true };
+  const filter = {
+    isActive: true,
+    ...CUSTOMER_CATALOG_SCOPE_FILTER,
+  };
 
   if (categoryId) {
     filter.categoryId = categoryId;

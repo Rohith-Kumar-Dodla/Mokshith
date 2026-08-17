@@ -447,10 +447,7 @@ const Products = () => {
                           <span className="text-xs sm:text-sm text-gray-400 line-through">₹{product.mrp.toFixed(2)}</span>
                         )}
                       </div>
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div className="text-xs text-gray-500">
-                          MOQ: {product.minimumOrderQuantity} {product.unit}
-                        </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-2">
                         <button
                           type="button"
                           onClick={() => handleSingleAddToCart(product)}

@@ -3,6 +3,8 @@ import AppError from '../../errors/AppError.js';
 import { buildProductFilter } from './product.utils.js';
 import { parsePaginationParams, buildPaginationMeta } from '../../utils/pagination.js';
 import { transformProductsArray } from '../../utils/cdn.js';
+import { CATALOG_SCOPE } from '../../constants/catalogScope.js';
+import { assertCustomerCatalogProduct } from './productCatalog.utils.js';
 import { validateBulkPricingTiers } from '../../utils/bulkPricing.utils.js';
 
 function serializeProduct(product) {
@@ -49,7 +51,10 @@ export const createProduct = async (data) => {
 
   applyBulkPricingValidation(data);
 
-  const product = await repo.createProduct(data);
+  const product = await repo.createProduct({
+    ...data,
+    catalogScope: data.catalogScope || CATALOG_SCOPE.CUSTOMER,
+  });
 
   productCache.data = null;
 
@@ -111,6 +116,8 @@ export const getProductById = async (id) => {
   const product = await repo.findById(id);
 
   if (!product) throw new AppError('Product not found', 404);
+
+  assertCustomerCatalogProduct(product);
 
   return serializeProduct(product);
 };
