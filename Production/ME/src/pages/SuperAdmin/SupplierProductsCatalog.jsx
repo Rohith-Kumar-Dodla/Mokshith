@@ -30,6 +30,7 @@ const inputClass =
 const mapMapping = (mapping) => ({
   id: mapping._id || mapping.id,
   productName: mapping.product?.name || '—',
+  catalogScope: mapping.product?.catalogScope || 'CUSTOMER',
   categoryName: mapping.product?.category?.name || '—',
   categoryId: mapping.product?.categoryId || mapping.product?.category?._id || null,
   minimumOrderQuantity: mapping.minimumOrderQuantity,
@@ -170,10 +171,10 @@ function SupplierProductsCatalog({
     {
       key: 'productName',
       label: 'Product',
-      render: (value) => (
+      render: (value, row) => (
         <div className="space-y-1">
           <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-700">
-            Supplier Product
+            {row.catalogScope === 'SUPPLIER_ONLY' ? 'Supplier Only Product' : 'Supplier Product'}
           </span>
           <p className="font-medium text-gray-900">{value}</p>
         </div>

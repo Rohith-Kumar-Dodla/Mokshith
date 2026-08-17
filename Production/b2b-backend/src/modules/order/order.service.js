@@ -111,7 +111,7 @@ export const createOrder = async (userId, data) => {
   // 🔥 1. Bulk fetch all products at once (Performance optimization)
   const productIds = finalItems.map(item => item.productId || item.id || item.productId?._id);
   const products = await Product.find({ _id: { $in: productIds } })
-    .select('_id name price basePrice weight minOrderQty moq isActive')
+    .select('_id name price basePrice weight minOrderQty moq isActive catalogScope')
     .lean();
   
   if (products.length !== productIds.length) {
@@ -133,6 +133,10 @@ export const createOrder = async (userId, data) => {
     if (!product) throw new AppError(`Product not found`, 404);
 
     if (product.isActive === false) {
+      throw new AppError(`Product ${product.name} is not available`, 400);
+    }
+
+    if (product.catalogScope === 'SUPPLIER_ONLY') {
       throw new AppError(`Product ${product.name} is not available`, 400);
     }
 

@@ -299,9 +299,6 @@ const Products = () => {
                           <span className="text-xs sm:text-sm text-gray-400 line-through">₹{product.mrp.toFixed(2)}</span>
                         )}
                       </div>
-                      <div className="text-xs text-gray-500">
-                        MOQ: {product.minimumOrderQuantity} {product.unit}
-                      </div>
                     </div>
                   </div>
                 );

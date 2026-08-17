@@ -2,6 +2,7 @@ import * as repo from './wishlist.repository.js';
 import Product from '../product/product.model.js';
 import AppError from '../../errors/AppError.js';
 import mongoose from 'mongoose';
+import { isSupplierOnlyProduct } from '../product/productCatalog.utils.js';
 
 export const addToWishlist = async (userId, productId) => {
   if (!mongoose.Types.ObjectId.isValid(productId)) {
@@ -12,6 +13,10 @@ export const addToWishlist = async (userId, productId) => {
 
   const product = await Product.findById(productId);
   if (!product) throw new AppError('Product not found', 404);
+
+  if (isSupplierOnlyProduct(product)) {
+    throw new AppError('Product is not available', 400);
+  }
 
   if (!wishlist) {
     return repo.createWishlist({

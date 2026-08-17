@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiShoppingCart, FiHeart, FiEye, FiStar, FiPlus, FiMinus } from 'react-icons/fi';
 import { getProductImageKey } from '../../utils/productMapper';
+import { resolveEffectiveUnitPrice } from '../../utils/pricingCalculator';
+import BulkOfferPreview from './BulkOfferPreview';
 
 const ProductCard = ({
   product,
@@ -20,8 +22,12 @@ const ProductCard = ({
   const reviews = product.reviews ?? 0;
   const brand = product.brand || null;
   const [quantity, setQuantity] = useState(product.minimumOrderQuantity ?? product.moq ?? 1);
-  const unitPrice = Number(product.price ?? 0);
-  const totalPrice = useMemo(() => unitPrice * quantity, [unitPrice, quantity]);
+  const pricing = useMemo(
+    () => resolveEffectiveUnitPrice({ apiPricing: null, product, quantity }),
+    [product, quantity]
+  );
+  const unitPrice = pricing.unitPrice;
+  const totalPrice = pricing.total;
   const canSelect = selectable && product.status !== 'out_of_stock';
 
   const getStatusColor = (status) => {
@@ -61,7 +67,7 @@ const ProductCard = ({
     const newQuantity = quantity + delta;
     const minQty = product.minimumOrderQuantity ?? product.moq ?? 1;
     const maxStock = product.stock ?? 999;
-    
+
     if (newQuantity >= minQty && newQuantity <= maxStock) {
       setQuantity(newQuantity);
     }
@@ -72,6 +78,8 @@ const ProductCard = ({
       onAddToCart({ ...product, selectedQuantity: quantity });
     }
   };
+
+  const hasBulkOffers = Array.isArray(product.bulkPricing) && product.bulkPricing.length > 0;
 
   return (
     <div
@@ -172,13 +180,13 @@ const ProductCard = ({
         <div className="mb-2 sm:mb-3">
           <div className="flex items-baseline gap-2">
             <span className="text-lg sm:text-xl font-bold text-gray-900">
-              {quantity > 1 ? `Total: ₹${totalPrice.toFixed(2)}` : `₹${totalPrice.toFixed(2)}`}
+              {quantity > 1 || pricing.bulkApplied ? `Total: ₹${totalPrice.toFixed(2)}` : `₹${totalPrice.toFixed(2)}`}
             </span>
             {product.mrp && (
               <span className="text-xs sm:text-sm text-gray-400 line-through">₹{product.mrp.toFixed(2)}</span>
             )}
           </div>
-          {quantity > 1 && (
+          {(quantity > 1 || pricing.bulkApplied) && (
             <p className="text-xs text-gray-500 mt-0.5">
               {quantity} × ₹{unitPrice.toFixed(2)} = ₹{totalPrice.toFixed(2)}
             </p>
@@ -189,6 +197,14 @@ const ProductCard = ({
             </p>
           )}
         </div>
+
+        {hasBulkOffers && (
+          <BulkOfferPreview
+            bulkPricing={product.bulkPricing}
+            basePrice={product.price}
+            quantity={quantity}
+          />
+        )}
 
         <div className="flex items-center gap-2 mb-2 sm:mb-3">
           <button
@@ -208,9 +224,6 @@ const ProductCard = ({
           >
             <FiPlus className="w-4 h-4" />
           </button>
-          <span className="text-xs text-gray-500 ml-auto">
-            MOQ: {product.minimumOrderQuantity} {product.unit} · Stock: {product.stock}
-          </span>
         </div>
 
         {!hideAddToCart && (
@@ -243,6 +256,7 @@ export default React.memo(ProductCard, (prev, next) => {
     prevProduct?.name === nextProduct?.name &&
     prevProduct?.price === nextProduct?.price &&
     prevProduct?.status === nextProduct?.status &&
+    JSON.stringify(prevProduct?.bulkPricing) === JSON.stringify(nextProduct?.bulkPricing) &&
     prev.selected === next.selected &&
     prev.selectable === next.selectable &&
     prev.hideAddToCart === next.hideAddToCart

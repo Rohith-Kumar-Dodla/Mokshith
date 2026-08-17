@@ -4,6 +4,7 @@ import AppError from '../../errors/AppError.js';
 import { checkStock } from '../inventory/inventory.service.js';
 import mongoose from 'mongoose';
 import { logger } from '../../config/logger.js';
+import { isSupplierOnlyProduct } from '../product/productCatalog.utils.js';
 import {
   normalizeProductRef,
   pruneStaleCartItems,
@@ -51,7 +52,7 @@ export const addToCart = async (user, { productId, quantity }) => {
   }
 
   const product = await Product.findById(productId)
-    .select('name minOrderQty moq stock price basePrice isActive categoryId')
+    .select('name minOrderQty moq stock price basePrice isActive categoryId catalogScope')
     .lean();
 
   logger.debug('Add to cart product lookup', {
@@ -67,6 +68,10 @@ export const addToCart = async (user, { productId, quantity }) => {
   }
 
   if (!product.isActive) {
+    throw new AppError('Product is not available', 400);
+  }
+
+  if (isSupplierOnlyProduct(product)) {
     throw new AppError('Product is not available', 400);
   }
 
