@@ -44,7 +44,7 @@ const startServer = async () => {
     io = new Server(httpServer, {
       cors: {
         origin: process.env.NODE_ENV === 'production' 
-          ? process.env.FRONTEND_URL || "https://mokshith-entreprises.vercel.app"
+          ? process.env.FRONTEND_URL || "https://dailydropp.com"
           : "*",
         methods: ["GET", "POST", "PATCH"],
         credentials: true
