@@ -230,7 +230,8 @@ const Inventory = () => {
               <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-700 whitespace-nowrap">Product</th>
                 <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-700 whitespace-nowrap">Category</th>
-                <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-700 whitespace-nowrap">Current Stock</th>
+                <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-700 whitespace-nowrap">Available / Total</th>
+                <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-700 whitespace-nowrap">Reserved</th>
                 <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-700 whitespace-nowrap">Reorder Level</th>
                 <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-700 whitespace-nowrap">Status</th>
                 <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-700 whitespace-nowrap">Last Updated</th>
@@ -248,9 +249,10 @@ const Inventory = () => {
                   </td>
                   <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-700">{item.category}</td>
                   <td className="px-4 sm:px-6 py-3 sm:py-4">
-                    <span className="text-xs sm:text-sm font-semibold text-gray-900">{item.currentStock}</span>
-                    <span className="text-xs text-gray-500"> / {item.maxStock}</span>
+                    <span className="text-xs sm:text-sm font-semibold text-gray-900">{item.availableStock}</span>
+                    <span className="text-xs text-gray-500"> / {item.currentStock}</span>
                   </td>
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-700">{item.reservedStock}</td>
                   <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-700">{item.reorderLevel}</td>
                   <td className="px-4 sm:px-6 py-3 sm:py-4">
                     <StatusBadge status={item.status} />

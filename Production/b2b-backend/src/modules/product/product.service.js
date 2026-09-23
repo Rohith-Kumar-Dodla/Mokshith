@@ -27,7 +27,8 @@ const productCache = {
 import { onProductCreated } from './product.events.js';
 import {
   ensureProductInventory,
-  syncProductStockToInventory,
+  syncProductStockFromInventory,
+  setDefaultWarehouseStock,
 } from '../inventory/inventory.service.js';
 
 function applyBulkPricingValidation(data, basePriceOverride) {
@@ -59,6 +60,7 @@ export const createProduct = async (data) => {
   productCache.data = null;
 
   await ensureProductInventory(product);
+  await syncProductStockFromInventory(product._id);
 
   try {
     onProductCreated(product);
@@ -127,24 +129,31 @@ export const updateProduct = async (id, data) => {
 
   if (!product) throw new AppError('Product not found', 404);
 
-  if (data.bulkPricing !== undefined) {
-    const effectivePrice = data.price ?? product.price;
-    applyBulkPricingValidation(data, effectivePrice);
+  const requestedStock = data.stock;
+  const productData = { ...data };
+  delete productData.stock;
+
+  if (productData.bulkPricing !== undefined) {
+    const effectivePrice = productData.price ?? product.price;
+    applyBulkPricingValidation(productData, effectivePrice);
   }
 
-  const updatedProduct = await repo.updateProduct(id, data);
+  const updatedProduct = await repo.updateProduct(id, productData);
 
   if (!updatedProduct) throw new AppError('Product not found', 404);
 
-  if (data.stock !== undefined) {
-    await syncProductStockToInventory(updatedProduct);
+  if (requestedStock !== undefined) {
+    await setDefaultWarehouseStock(id, Number(requestedStock));
   } else {
     await ensureProductInventory(updatedProduct);
   }
 
+  await syncProductStockFromInventory(id);
+
   productCache.data = null;
 
-  return serializeProduct(updatedProduct);
+  const refreshedProduct = await repo.findById(id);
+  return serializeProduct(refreshedProduct);
 };
 
 export const deleteProduct = async (id) => {
@@ -164,14 +173,14 @@ export const updateStock = async (id, stock) => {
     throw new AppError('Stock cannot be negative', 400);
   }
 
-  const product = await repo.updateProduct(id, { stock });
-
+  const product = await repo.findById(id);
   if (!product) throw new AppError('Product not found', 404);
 
-  await syncProductStockToInventory(product);
+  await setDefaultWarehouseStock(id, Number(stock));
+  const updatedProduct = await repo.findById(id);
   productCache.data = null;
 
-  return product;
+  return serializeProduct(updatedProduct);
 };
 
 export const updateStatus = async (id, isActive) => {

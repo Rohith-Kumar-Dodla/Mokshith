@@ -27,6 +27,8 @@ export function mapBackendInventoryItem(item) {
     warehouseId: warehouse?._id || item.warehouseId,
     warehouseName: warehouse?.name || '—',
     currentStock: stock,
+    reservedStock: Number(item.reservedStock ?? 0),
+    availableStock: Math.max(stock - Number(item.reservedStock ?? 0), 0),
     reorderLevel: Number(item.reorderLevel ?? LOW_STOCK_THRESHOLD),
     maxStock: Math.max(stock, LOW_STOCK_THRESHOLD * 2),
     status: deriveStatus(stock),

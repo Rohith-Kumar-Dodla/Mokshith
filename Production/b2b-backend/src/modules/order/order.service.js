@@ -25,6 +25,7 @@ import { vendorAddressToShippingAddress } from '../../utils/vendorAddress.utils.
 
 import { ORDER_STATUS } from '../../constants/orderStatus.js';
 import { PAYMENT_STATUS } from '../../constants/paymentStatus.js';
+import { DELIVERY_STATUS } from '../../constants/deliveryStatus.js';
 import { logger } from '../../config/logger.js';
 import { calculateLinePricing } from '../../utils/bulkPricing.utils.js';
 
@@ -58,7 +59,7 @@ export const createOrder = async (userId, data) => {
     resolvedShippingAddress = vendorAddressToShippingAddress(user);
     if (!resolvedShippingAddress) {
       throw new AppError(
-        'Delivery address not found. Please complete your business address in vendor settings.',
+        'Shipping address not found. Please complete your business address in vendor settings.',
         400
       );
     }
@@ -406,6 +407,7 @@ export const getOrders = async (user, query = {}) => {
     paymentMethod,
     paymentStatus,
     paymentCompleted,
+    deliveryStatus,
   } = query;
 
   const filter = {};
@@ -434,6 +436,35 @@ export const getOrders = async (user, query = {}) => {
 
   if (isAdmin && (paymentCompleted === true || paymentCompleted === 'true' || paymentCompleted === '1')) {
     andConditions.push(buildPaymentCompletedFilter());
+  }
+
+  if (isAdmin && deliveryStatus && String(deliveryStatus).toLowerCase() !== 'all') {
+    const normalizedDeliveryStatus = String(deliveryStatus).toUpperCase();
+
+    if (normalizedDeliveryStatus === 'UNASSIGNED') {
+      const unassignedShipments = await Logistics.find({
+        $or: [{ deliveryPartnerId: { $exists: false } }, { deliveryPartnerId: null }],
+        status: { $in: [DELIVERY_STATUS.PENDING, DELIVERY_STATUS.REJECTED] },
+      }).select('_id').lean();
+
+      andConditions.push({
+        $or: [
+          { shipmentId: { $exists: false } },
+          { shipmentId: null },
+          { shipmentId: { $in: unassignedShipments.map((shipment) => shipment._id) } },
+        ],
+      });
+    } else {
+      const deliveryStatuses = normalizedDeliveryStatus === 'ASSIGNED'
+        ? [DELIVERY_STATUS.ASSIGNED, DELIVERY_STATUS.ACCEPTED]
+        : normalizedDeliveryStatus === 'DELIVERED'
+          ? [DELIVERY_STATUS.DELIVERED, DELIVERY_STATUS.COMPLETED]
+          : [normalizedDeliveryStatus];
+
+      const matchingShipments = await Logistics.find({ status: { $in: deliveryStatuses } })
+        .select('_id').lean();
+      andConditions.push({ shipmentId: { $in: matchingShipments.map((shipment) => shipment._id) } });
+    }
   }
 
   if (search) {

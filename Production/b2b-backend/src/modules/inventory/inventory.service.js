@@ -93,6 +93,59 @@ export async function syncProductStockToInventory(product) {
 }
 
 /**
+ * Product.stock is a compatibility summary. Fulfillment availability lives in
+ * Inventory, so all summary writes flow from the warehouse records.
+ */
+export async function syncProductStockFromInventory(productId) {
+  const items = await repo.findByProduct(productId);
+  const totalStock = items.reduce((sum, item) => sum + Number(item.stock || 0), 0);
+
+  await Product.findByIdAndUpdate(productId, { $set: { stock: totalStock } });
+  return totalStock;
+}
+
+/**
+ * Set the legacy/default warehouse stock through the Inventory service. This
+ * preserves the existing Product edit API while keeping Inventory authoritative.
+ */
+export async function setDefaultWarehouseStock(productId, stock) {
+  if (!Number.isInteger(stock) || stock < 0) {
+    throw new AppError('Stock must be a non-negative integer', 400);
+  }
+
+  const warehouse = await getOrCreateDefaultWarehouse();
+  let inventory = await repo.findInventory(productId, warehouse._id);
+
+  if (!inventory) {
+    inventory = await repo.createInventory({
+      productId,
+      warehouseId: warehouse._id,
+      stock,
+      reservedStock: 0,
+      reorderLevel: DEFAULT_REORDER_LEVEL,
+    });
+  } else {
+    if (stock < Number(inventory.reservedStock || 0)) {
+      throw new AppError('Stock cannot be lower than reserved stock', 400);
+    }
+
+    const updated = await mongoose.model('Inventory').findOneAndUpdate(
+      { _id: inventory._id, version: inventory.version },
+      { $set: { stock, updatedAt: new Date() }, $inc: { version: 1 } },
+      { new: true }
+    );
+
+    if (!updated) {
+      throw new AppError('Inventory changed concurrently. Please retry.', 409);
+    }
+    inventory = updated;
+  }
+
+  await syncProductStockFromInventory(productId);
+  return inventory;
+}
+
+/**
  * Backfill inventory records for products created before auto-provisioning existed.
  */
 export async function backfillMissingProductInventory() {
@@ -142,17 +195,27 @@ export const addStock = async ({ productId, warehouseId, stock }) => {
   let inventory = await repo.findInventory(productId, warehouseId);
 
   if (!inventory) {
-    return repo.createInventory({
+    const created = await repo.createInventory({
       productId,
       warehouseId,
       stock,
       reservedStock: 0,
       reorderLevel: DEFAULT_REORDER_LEVEL,
     });
+    await syncProductStockFromInventory(productId);
+    return created;
   }
 
-  inventory.stock += stock;
-  return inventory.save();
+  const updated = await mongoose.model('Inventory').findOneAndUpdate(
+    { _id: inventory._id },
+    { $inc: { stock }, $set: { updatedAt: new Date() } },
+    { new: true }
+  );
+  if (!updated) {
+    throw new AppError('Inventory changed concurrently. Please retry.', 409);
+  }
+  await syncProductStockFromInventory(productId);
+  return updated;
 };
 
 export const getLowStockItems = async () => {
@@ -174,29 +237,45 @@ export const updateStock = async ({ productId, warehouseId, stock, type = 'SET' 
 
   if (!inventory) {
     if (type === 'SET') {
-      return repo.createInventory({
+      const created = await repo.createInventory({
         productId,
         warehouseId,
         stock,
         reservedStock: 0,
         reorderLevel: DEFAULT_REORDER_LEVEL,
       });
+      await syncProductStockFromInventory(productId);
+      return created;
     }
     throw new AppError('Inventory record not found', 404);
   }
 
+  let filter = { _id: inventory._id, version: inventory.version };
+  let update;
   if (type === 'ADD') {
-    inventory.stock += stock;
+    update = { $inc: { stock, version: 1 }, $set: { updatedAt: new Date() } };
   } else if (type === 'SUBTRACT') {
     if (inventory.stock < stock) {
       throw new AppError('Insufficient stock', 400);
     }
-    inventory.stock -= stock;
+    filter.stock = { $gte: stock };
+    update = { $inc: { stock: -stock, version: 1 }, $set: { updatedAt: new Date() } };
   } else {
-    inventory.stock = stock;
+    if (stock < Number(inventory.reservedStock || 0)) {
+      throw new AppError('Stock cannot be lower than reserved stock', 400);
+    }
+    update = { $set: { stock, updatedAt: new Date() }, $inc: { version: 1 } };
   }
 
-  return inventory.save();
+  const updated = await mongoose.model('Inventory').findOneAndUpdate(filter, update, { new: true });
+  if (!updated) {
+    if (type === 'SUBTRACT') {
+      throw new AppError('Inventory changed concurrently. Please retry.', 409);
+    }
+    throw new AppError('Inventory changed concurrently. Please retry.', 409);
+  }
+  await syncProductStockFromInventory(productId);
+  return updated;
 };
 
 // ✅ Check Stock Availability

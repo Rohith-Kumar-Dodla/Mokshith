@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { getUserFacingErrorMessage } from '../../utils/apiResponse';
 import { useSearchParams } from 'react-router-dom';
-import { FiEye, FiPackage, FiCheckCircle, FiDollarSign, FiCheck, FiRefreshCw } from 'react-icons/fi';
+import { FiEye, FiPackage, FiCheckCircle, FiDollarSign, FiCheck, FiRefreshCw, FiMapPin, FiUser } from 'react-icons/fi';
 import Card from './Card';
 import StatusBadge from './StatusBadge';
 import SearchBar from './SearchBar';
@@ -19,15 +19,25 @@ import { getOrderStatusLabel } from '../../utils/orderStatusSync';
 
 const ADMIN_STATUS_OPTIONS = [
   { value: 'all', label: 'All Status' },
+  { value: 'CREATED', label: 'Created' },
+  { value: 'PENDING_PAYMENT', label: 'Pending Payment' },
   { value: 'PENDING', label: 'Pending' },
   { value: 'CONFIRMED', label: 'Confirmed' },
   { value: 'PROCESSING', label: 'Processing' },
   { value: 'PACKED', label: 'Packed' },
   { value: 'READY_TO_DISPATCH', label: 'Ready To Dispatch' },
+  { value: 'ASSIGNED', label: 'Assigned' },
+  { value: 'ACCEPTED', label: 'Accepted' },
+  { value: 'OUT_FOR_PICKUP', label: 'Out For Pickup' },
+  { value: 'PICKED_UP', label: 'Picked Up' },
   { value: 'SHIPPED', label: 'Shipped' },
   { value: 'OUT_FOR_DELIVERY', label: 'Out For Delivery' },
   { value: 'DELIVERED', label: 'Delivered' },
   { value: 'COMPLETED', label: 'Completed' },
+  { value: 'FAILED', label: 'Failed' },
+  { value: 'DELIVERY_FAILED', label: 'Delivery Failed' },
+  { value: 'CUSTOMER_UNAVAILABLE', label: 'Customer Unavailable' },
+  { value: 'REJECTED', label: 'Rejected' },
   { value: 'CANCELLED', label: 'Cancelled' },
   { value: 'RETURNED', label: 'Returned' },
   { value: 'REFUNDED', label: 'Refunded' },
@@ -52,6 +62,15 @@ const PAYMENT_STATUS_OPTIONS = [
   { value: 'FAILED', label: 'Failed' },
   { value: 'REJECTED', label: 'Rejected' },
   { value: 'REFUNDED', label: 'Refunded' },
+];
+
+const DELIVERY_STATUS_OPTIONS = [
+  { value: 'all', label: 'All Delivery States' },
+  { value: 'UNASSIGNED', label: 'Unassigned' },
+  { value: 'ASSIGNED', label: 'Assigned' },
+  { value: 'OUT_FOR_DELIVERY', label: 'Out For Delivery' },
+  { value: 'DELIVERED', label: 'Delivered' },
+  { value: 'REJECTED', label: 'Rejected' },
 ];
 
 const NEXT_STATUS_MAP = {
@@ -107,6 +126,7 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [paymentMethodFilter, setPaymentMethodFilter] = useState('all');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
+  const [deliveryStatusFilter, setDeliveryStatusFilter] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [page, setPage] = useState(1);
@@ -126,6 +146,7 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
       startDate: startDate || undefined,
       endDate: endDate || undefined,
       paymentStatus: paymentStatusFilter !== 'all' ? paymentStatusFilter : undefined,
+      deliveryStatus: deliveryStatusFilter !== 'all' ? deliveryStatusFilter : undefined,
     };
 
     if (kpiFilter === KPI_KEYS.completed) {
@@ -145,6 +166,7 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
     startDate,
     endDate,
     paymentStatusFilter,
+    deliveryStatusFilter,
     paymentMethodFilter,
     kpiFilter,
   ]);
@@ -188,7 +210,7 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, selectedStatus, startDate, endDate, paymentMethodFilter, paymentStatusFilter, kpiFilter]);
+  }, [debouncedSearch, selectedStatus, startDate, endDate, paymentMethodFilter, paymentStatusFilter, deliveryStatusFilter, kpiFilter]);
 
   useEffect(() => {
     loadOrders({ silent: hasLoadedOnceRef.current });
@@ -330,6 +352,7 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
               <FilterDropdown label="Payment Method" options={PAYMENT_METHOD_OPTIONS} selected={paymentMethodFilter} onSelect={setPaymentMethodFilter} />
             )}
             <FilterDropdown label="Payment Status" options={PAYMENT_STATUS_OPTIONS} selected={paymentStatusFilter} onSelect={setPaymentStatusFilter} />
+            <FilterDropdown label="Delivery" options={DELIVERY_STATUS_OPTIONS} selected={deliveryStatusFilter} onSelect={setDeliveryStatusFilter} />
             <div className="hidden md:flex items-center gap-2 sm:gap-3">
               <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-3 py-2 border rounded-lg text-sm min-h-[44px]" aria-label="Start date" />
               <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-3 py-2 border rounded-lg text-sm min-h-[44px]" aria-label="End date" />
@@ -430,6 +453,40 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
                 </div>
               </div>
             )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-2 text-xs font-semibold text-gray-600 mb-1"><FiUser size={14} /> Customer</div>
+                <p className="text-sm font-medium text-gray-900">{selectedOrder.raw?.userId?.name || selectedOrder.vendor || '—'}</p>
+                <p className="text-xs text-gray-600">{selectedOrder.raw?.userId?.email || '—'}</p>
+                <p className="text-xs text-gray-600">{selectedOrder.raw?.userId?.mobile || '—'}</p>
+              </div>
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-2 text-xs font-semibold text-gray-600 mb-1"><FiMapPin size={14} /> Delivery</div>
+                <p className="text-sm text-gray-900">{selectedOrder.raw?.shippingAddress?.addressLine || selectedOrder.raw?.address?.addressLine || '—'}</p>
+                <p className="text-xs text-gray-600">{[selectedOrder.raw?.shippingAddress?.city || selectedOrder.raw?.address?.city, selectedOrder.raw?.shippingAddress?.state || selectedOrder.raw?.address?.state, selectedOrder.raw?.shippingAddress?.pincode || selectedOrder.raw?.address?.pincode].filter(Boolean).join(', ') || '—'}</p>
+                <p className="text-xs text-gray-600">Partner: {selectedOrder.deliveryPartner || 'Not Assigned'}</p>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-semibold mb-2">Products</h4>
+              <div className="border rounded-lg divide-y">
+                {(selectedOrder.raw?.items || []).map((item, idx) => (
+                  <div key={`${item.productId?._id || item.productId || idx}`} className="flex items-center justify-between gap-3 p-3 text-xs sm:text-sm">
+                    <div className="min-w-0">
+                      <p className="font-medium text-gray-900 truncate">{item.name || item.productId?.name || 'Product'}</p>
+                      <p className="text-gray-500">Qty {item.quantity} · Unit ₹{Number(item.finalPrice ?? item.price ?? 0).toLocaleString('en-IN')}</p>
+                      {item.discount !== undefined && item.discount !== null && (
+                        <p className="text-emerald-700">Discount ₹{Number(item.discount).toLocaleString('en-IN')}</p>
+                      )}
+                    </div>
+                    <span className="font-semibold text-gray-900">₹{(Number(item.finalPrice ?? item.price ?? 0) * Number(item.quantity || 0)).toLocaleString('en-IN')}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-end pt-3 text-sm font-semibold">Order total: ₹{Number(selectedOrder.raw?.totalAmount ?? selectedOrder.amount ?? 0).toLocaleString('en-IN')}</div>
+            </div>
 
             {nextStatuses.length > 0 && (
               <div>

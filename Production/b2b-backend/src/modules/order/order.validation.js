@@ -67,6 +67,22 @@ export const getOrdersQuerySchema = Joi.object({
     paymentCompleted: Joi.alternatives()
       .try(Joi.boolean(), Joi.string().valid('true', 'false', '1', '0'))
       .optional(),
+    deliveryStatus: Joi.string()
+      .uppercase()
+      .valid(
+        'ALL',
+        'UNASSIGNED',
+        'ASSIGNED',
+        'ACCEPTED',
+        'PICKED',
+        'OUT_FOR_DELIVERY',
+        'DELIVERED',
+        'COMPLETED',
+        'CANCELLED',
+        'FAILED',
+        'REJECTED'
+      )
+      .optional(),
     _refresh: Joi.any().optional(),
   }).unknown(true),
 });
