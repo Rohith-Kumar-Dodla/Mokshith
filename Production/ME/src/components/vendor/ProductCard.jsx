@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { FiShoppingCart, FiHeart, FiEye, FiStar, FiPlus, FiMinus } from 'react-icons/fi';
 import { getProductImageKey } from '../../utils/productMapper';
 import { resolveEffectiveUnitPrice } from '../../utils/pricingCalculator';
-import BulkOfferPreview from './BulkOfferPreview';
 
 const ProductCard = ({
   product,
@@ -30,32 +29,6 @@ const ProductCard = ({
   const unitPrice = pricing.unitPrice;
   const totalPrice = pricing.total;
   const canSelect = selectable && product.status !== 'out_of_stock';
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800';
-      case 'low_stock':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'out_of_stock':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'active':
-        return 'In Stock';
-      case 'low_stock':
-        return 'Low Stock';
-      case 'out_of_stock':
-        return 'Out of Stock';
-      default:
-        return status;
-    }
-  };
 
   const calculateDiscount = () => {
     if (product.mrp && product.price) {
@@ -111,11 +84,6 @@ const ProductCard = ({
             </label>
           </div>
         )}
-        <div className={`absolute top-2 sm:top-3 ${selectable ? 'left-14 sm:left-16' : 'left-2 sm:left-3'}`}>
-          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(product.status)}`}>
-            {getStatusText(product.status)}
-          </span>
-        </div>
         {calculateDiscount() > 0 && (
           <div className="absolute top-2 sm:top-3 right-2 sm:right-3">
             <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-500 text-white">
@@ -160,6 +128,11 @@ const ProductCard = ({
           {product.name}
         </h3>
 
+        <div className="mb-2 flex flex-wrap gap-1.5" aria-label="Available offers">
+          {product.promotionEligibility?.special && <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">Special Discount</span>}
+          {product.promotionEligibility?.bulk && <span className="rounded-full bg-orange-100 px-2 py-1 text-xs font-semibold text-orange-700">Bulk Discount</span>}
+        </div>
+
         {brand && (
           <p className="text-xs text-gray-500 mb-2">{brand}</p>
         )}
@@ -187,6 +160,9 @@ const ProductCard = ({
               <span className="text-xs sm:text-sm text-gray-400 line-through">₹{product.mrp.toFixed(2)}</span>
             )}
           </div>
+          {product.promotionalPrice != null && product.promotionalPrice < product.price && (
+            <p className="text-xs text-green-700 font-semibold mt-1">Promo price from ₹{product.promotionalPrice.toFixed(2)}</p>
+          )}
           {(quantity > 1 || pricing.bulkApplied) && (
             <p className="text-xs text-gray-500 mt-0.5">
               {quantity} × ₹{unitPrice.toFixed(2)} = ₹{totalPrice.toFixed(2)}
@@ -198,14 +174,6 @@ const ProductCard = ({
             </p>
           )}
         </div>
-
-        {hasBulkOffers && (
-          <BulkOfferPreview
-            bulkPricing={product.bulkPricing}
-            basePrice={product.price}
-            quantity={quantity}
-          />
-        )}
 
         <div className="flex items-center gap-2 mb-2 sm:mb-3">
           <button

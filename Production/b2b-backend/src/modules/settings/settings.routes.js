@@ -21,7 +21,7 @@ router.put('/', protect, csrfProtection, validate(updateUserSettingsSchema), use
 router.post(
   '/platform',
   protect,
-  authorize('ADMIN', 'SUPER_ADMIN'),
+  authorize('SUPER_ADMIN'),
   csrfProtection,
   validate(updateSettingSchema),
   platformController.updateSetting
@@ -30,13 +30,13 @@ router.post(
 router.get(
   '/platform',
   protect,
-  authorize('ADMIN', 'SUPER_ADMIN'),
+  authorize('SUPER_ADMIN'),
   platformController.getAllSettings
 );
 
-router.get('/platform/:key', protect, authorize('ADMIN', 'SUPER_ADMIN'), platformController.getSetting);
+router.get('/platform/:key', protect, authorize('SUPER_ADMIN'), platformController.getSetting);
 
 // Legacy key lookup (admin)
-router.get('/:key', protect, authorize('ADMIN', 'SUPER_ADMIN'), platformController.getSetting);
+router.get('/:key', protect, authorize('SUPER_ADMIN'), platformController.getSetting);
 
 export default router;

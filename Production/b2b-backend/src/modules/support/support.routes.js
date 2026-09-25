@@ -8,14 +8,15 @@ import {
   replyTicketSchema,
   updateTicketStatusSchema,
   listTicketsSchema,
+  assignTicketSchema,
 } from './support.validation.js';
 
 const router = express.Router();
 
 router.get('/contact', protect, controller.getContactInfo);
 
-router.post('/', protect, authorize('VENDOR', 'B2B_CUSTOMER'), validate(createTicketSchema), controller.createTicket);
-router.get('/my-tickets', protect, authorize('VENDOR', 'B2B_CUSTOMER'), controller.getMyTickets);
+router.post('/', protect, authorize('VENDOR', 'B2B_CUSTOMER', 'B2C_CUSTOMER'), validate(createTicketSchema), controller.createTicket);
+router.get('/my-tickets', protect, authorize('VENDOR', 'B2B_CUSTOMER', 'B2C_CUSTOMER'), controller.getMyTickets);
 
 router.get(
   '/all',
@@ -34,5 +35,7 @@ router.patch(
   validate(updateTicketStatusSchema),
   controller.updateTicketStatus
 );
+router.get('/assignees', protect, authorize('ADMIN', 'SUPER_ADMIN'), controller.getAssignableAdmins);
+router.patch('/:id/assign', protect, authorize('ADMIN', 'SUPER_ADMIN'), validate(assignTicketSchema), controller.assignTicket);
 
 export default router;

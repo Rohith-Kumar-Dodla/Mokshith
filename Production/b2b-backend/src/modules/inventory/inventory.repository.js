@@ -15,6 +15,9 @@ export const createInventory = (data) =>
 export const updateInventory = (id, data) =>
   Inventory.findByIdAndUpdate(id, data, { new: true });
 
+export const updateOneAtomic = (filter, update) =>
+  Inventory.findOneAndUpdate(filter, update, { new: true, runValidators: true });
+
 /**
  * List inventory newest-first with a bounded limit.
  * Unbounded find()+populate over multi-thousand rows exceeds client timeouts
@@ -28,10 +31,11 @@ export const findAll = ({ limit = DEFAULT_INVENTORY_LIST_LIMIT, skip = 0 } = {})
   const safeSkip = Math.max(Number(skip) || 0, 0);
 
   return Inventory.find()
+    .populate({ path: 'productId', select: 'name sku isActive', match: { isActive: true } })
     .sort({ updatedAt: -1, _id: -1 })
     .skip(safeSkip)
     .limit(safeLimit)
-    .populate('productId', 'name sku')
+    .populate({ path: 'productId', select: 'name sku isActive', match: { isActive: true } })
     .populate('warehouseId', 'name location')
     .select('-__v')
     .maxTimeMS(LIST_QUERY_MAX_TIME_MS)

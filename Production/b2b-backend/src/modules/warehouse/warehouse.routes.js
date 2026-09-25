@@ -10,7 +10,7 @@ const router = express.Router();
 router.post(
   '/',
   protect,
-  authorize('ADMIN'),
+  authorize('ADMIN', 'SUPER_ADMIN'),
   validate(createWarehouseSchema),
   controller.createWarehouse
 );
@@ -20,7 +20,7 @@ router.get('/', protect, controller.getWarehouses);
 router.put(
   '/:id',
   protect,
-  authorize('ADMIN'),
+  authorize('ADMIN', 'SUPER_ADMIN'),
   validate(updateWarehouseSchema),
   controller.updateWarehouse
 );
@@ -28,7 +28,7 @@ router.put(
 router.delete(
   '/:id',
   protect,
-  authorize('ADMIN'),
+  authorize('ADMIN', 'SUPER_ADMIN'),
   controller.deleteWarehouse
 );
 

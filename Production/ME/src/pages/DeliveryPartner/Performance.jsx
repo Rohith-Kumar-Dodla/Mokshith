@@ -19,11 +19,11 @@ const Performance = () => {
 
   const metricCards = [
     { title: 'Success Rate', value: `${metrics.successRate}%`, icon: <FiCheckCircle size={24} />, subtitle: 'Excellent performance', color: 'green' },
-    { title: 'Average Rating', value: metrics.averageRating, icon: <FiStar size={24} />, subtitle: 'Out of 5 stars', color: 'orange' },
-    { title: 'On-Time Deliveries', value: `${metrics.onTimeDeliveries}%`, icon: <FiClock size={24} />, subtitle: 'Timeliness score', color: 'blue' },
+    { title: 'Average Rating', value: metrics.averageRating ?? 'Unavailable', icon: <FiStar size={24} />, subtitle: 'Server metric unavailable', color: 'orange' },
+    { title: 'On-Time Deliveries', value: metrics.onTimeDeliveries == null ? 'Unavailable' : `${metrics.onTimeDeliveries}%`, icon: <FiClock size={24} />, subtitle: 'Server metric unavailable', color: 'blue' },
     { title: 'Completed Deliveries', value: metrics.completedDeliveries, icon: <FiTrendingUp size={24} />, subtitle: 'Total completed', color: 'purple' },
     { title: 'Cancelled Deliveries', value: metrics.cancelledDeliveries, icon: <FiCheckCircle size={24} />, subtitle: 'Total cancelled', color: 'red' },
-    { title: 'Customer Satisfaction', value: `${metrics.customerSatisfaction}%`, icon: <FiSmile size={24} />, subtitle: 'Satisfaction rate', color: 'green' },
+    { title: 'Customer Satisfaction', value: metrics.customerSatisfaction == null ? 'Unavailable' : `${metrics.customerSatisfaction}%`, icon: <FiSmile size={24} />, subtitle: 'Server metric unavailable', color: 'green' },
   ];
 
   const deliveryTrendData = useMemo(

@@ -14,6 +14,11 @@ const logisticsSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Warehouse',
     },
+    pickupWarehouseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Warehouse', default: null },
+    pickupWarehouseName: { type: String, default: '' },
+    pickupAddress: { type: String, default: '' },
+    pickupLatitude: { type: Number, min: -90, max: 90, default: null },
+    pickupLongitude: { type: Number, min: -180, max: 180, default: null },
 
     deliveryPartnerId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -66,6 +71,17 @@ const logisticsSchema = new mongoose.Schema(
       maxlength: 500,
       default: null,
     },
+    currentOfferId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'DeliveryOffer',
+      default: null,
+      index: true,
+    },
+    currentOfferVersion: { type: Number, default: 0 },
+    rejectionCount: { type: Number, default: 0, min: 0 },
+    distanceKm: { type: Number, default: null, min: 0 },
+    distanceUnit: { type: String, enum: ['KM'], default: 'KM' },
+    deliveryAmount: { type: Number, default: null, min: 0 },
   },
   { timestamps: true }
 );

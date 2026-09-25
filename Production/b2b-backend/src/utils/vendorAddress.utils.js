@@ -29,6 +29,9 @@ export const vendorAddressToShippingAddress = (user = {}) => {
     city: vendorAddress.city,
     state: vendorAddress.state,
     pincode: String(vendorAddress.pincode).replace(/\D/g, '').slice(0, 6),
+    location: vendorAddress.location?.latitude != null && vendorAddress.location?.longitude != null
+      ? { latitude: vendorAddress.location.latitude, longitude: vendorAddress.location.longitude }
+      : undefined,
   };
 };
 

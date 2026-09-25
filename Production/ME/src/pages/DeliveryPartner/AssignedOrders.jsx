@@ -4,10 +4,11 @@ import DeliveryCard from '../../components/delivery/DeliveryCard';
 import SearchBar from '../../components/delivery/SearchBar';
 import FilterPanel from '../../components/delivery/FilterPanel';
 import useDelivery from '../../hooks/useDelivery';
+import DeliveryOfferCard from '../../components/delivery/DeliveryOfferCard';
 
 const AssignedOrders = () => {
   const [searchParams] = useSearchParams();
-  const { assignments, loading, error, refreshAll } = useDelivery();
+  const { assignments, offers, loading, error, actionLoading, acceptOffer, rejectOffer, refreshAll } = useDelivery();
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -101,6 +102,24 @@ const AssignedOrders = () => {
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Assigned Deliveries</h1>
         <p className="text-xs sm:text-sm text-gray-600 mt-1">View and manage your assigned orders</p>
       </div>
+      {error ? <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
+
+      {offers.filter((offer) => offer.status === 'OFFERED').length > 0 ? (
+        <section className="space-y-3" aria-label="New delivery offers">
+          <div><h2 className="text-lg font-bold text-gray-900">New delivery offers</h2><p className="text-sm text-gray-600">Review the earnings and route before accepting.</p></div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {offers.filter((offer) => offer.status === 'OFFERED').map((offer) => (
+              <DeliveryOfferCard
+                key={offer._id}
+                offer={offer}
+                actionLoading={actionLoading}
+                onAccept={() => acceptOffer(offer.logisticsId?._id || offer.logisticsId, offer._id)}
+                onReject={(payload) => rejectOffer(offer.logisticsId?._id || offer.logisticsId, offer._id, payload)}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-4">
         <div className="bg-white rounded-xl border border-gray-200 p-2 sm:p-4">

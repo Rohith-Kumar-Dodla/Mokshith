@@ -5,15 +5,14 @@ import {
   FiBox,
   FiFolder,
   FiPackage,
-  FiShoppingBag,
   FiTruck,
-  FiFileText,
-  FiBarChart2,
   FiSettings,
   FiMenu,
   FiX,
   FiBell,
   FiLifeBuoy,
+  FiTag,
+  FiUser,
 } from 'react-icons/fi';
 import NotificationDrawer from '../components/admin/NotificationDrawer';
 import PortalSidebar from '../components/common/PortalSidebar';
@@ -28,25 +27,24 @@ const AdminLayout = () => {
   const location = useLocation();
   const { requestLogout, LogoutConfirmDialog } = useLogoutConfirm();
   const { mobileMenuOpen, toggleMobileMenu, closeMobileMenu } = useMobileSidebar();
-  const { notifications, unreadCount } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const { user } = useAuth();
 
   const displayName = user?.name || 'Admin';
   const initials = displayName.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'AD';
 
   const menuItems = [
-    { path: '/admin/dashboard', icon: FiGrid, label: 'Dashboard' },
+    { path: '/admin/dashboard', icon: FiGrid, label: 'Home' },
     { path: '/admin/categories', icon: FiFolder, label: 'Categories' },
     { path: '/admin/products', icon: FiBox, label: 'Products' },
+    { path: '/admin/discounts', icon: FiTag, label: 'Discounts' },
     { path: '/admin/inventory', icon: FiPackage, label: 'Inventory' },
-    { path: '/admin/vendors', icon: FiShoppingBag, label: 'Vendors' },
     { path: '/admin/orders', icon: FiTruck, label: 'Orders' },
-    // Payment Verifications moved to Super Admin
-    { path: '/admin/delivery-assignment', icon: FiTruck, label: 'Delivery Assignment' },
-    { path: '/admin/reports', icon: FiFileText, label: 'Reports' },
-    { path: '/admin/analytics', icon: FiBarChart2, label: 'Analytics' },
+    { path: '/admin/delivery-assignment', icon: FiTruck, label: 'Delivery Partners' },
     { path: '/admin/support', icon: FiLifeBuoy, label: 'Support' },
+    { path: '/admin/notifications', icon: FiBell, label: 'Notifications' },
     { path: '/admin/settings', icon: FiSettings, label: 'Settings' },
+    { path: '/admin/profile', icon: FiUser, label: 'Profile' },
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -125,6 +123,8 @@ const AdminLayout = () => {
         isOpen={notificationOpen}
         onClose={() => setNotificationOpen(false)}
         notifications={notifications}
+        onMarkAsRead={markAsRead}
+        onMarkAllAsRead={markAllAsRead}
       />
 
       <LogoutConfirmDialog />

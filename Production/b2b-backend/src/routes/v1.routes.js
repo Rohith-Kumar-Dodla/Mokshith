@@ -26,6 +26,7 @@ import warehouseRoutes from '../modules/warehouse/warehouse.routes.js';
 import inventoryRoutes from '../modules/inventory/inventory.routes.js';
 import shipmentRoutes from '../modules/shipment/shipment.routes.js';
 import logisticsRoutes from '../modules/logistics/logistics.routes.js';
+import supplierOrderRoutes from '../modules/procurement/supplierOrder.routes.js';
 
 // Support
 import notificationRoutes from '../modules/notification/notification.routes.js';
@@ -81,6 +82,7 @@ router.use('/warehouses', authenticate, injectCsrfToken, warehouseRoutes);
 router.use('/inventory', authenticate, injectCsrfToken, inventoryRoutes);
 router.use('/shipments', authenticate, injectCsrfToken, shipmentRoutes);
 router.use('/logistics', authenticate, injectCsrfToken, logisticsRoutes);
+router.use('/supplier-orders', authenticate, injectCsrfToken, supplierOrderRoutes);
 
 // 🔔 Support
 router.use('/notifications', authenticate, injectCsrfToken, notificationRoutes);

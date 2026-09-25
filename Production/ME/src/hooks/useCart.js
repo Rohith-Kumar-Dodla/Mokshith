@@ -131,6 +131,7 @@ export function useCart({ autoLoad = true } = {}) {
     cart,
     cartItems,
     subtotal: totals.subtotal,
+    originalSubtotal: totals.originalSubtotal,
     discount: totals.discount,
     bulkDiscount: totals.bulkDiscount,
     tax: totals.tax,

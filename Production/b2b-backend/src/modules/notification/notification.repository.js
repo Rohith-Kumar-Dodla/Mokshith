@@ -6,8 +6,8 @@ export const createNotification = (data) =>
 export const findByUser = (userId) =>
   Notification.find({ userId }).sort({ createdAt: -1 });
 
-export const markAsRead = (id) =>
-  Notification.findByIdAndUpdate(id, { isRead: true }, { new: true });
+export const markAsRead = (id, userId) =>
+  Notification.findOneAndUpdate({ _id: id, userId }, { isRead: true }, { new: true });
 
 export const markAllAsRead = (userId) =>
   Notification.updateMany({ userId, isRead: false }, { isRead: true });

@@ -7,10 +7,6 @@ export const EMPTY_VENDOR_ADDRESS = {
   state: '',
   country: 'India',
   pincode: '',
-  location: {
-    latitude: '',
-    longitude: '',
-  },
 };
 
 export const formatVendorAddressLine = (vendorAddress = {}) => {
@@ -51,10 +47,6 @@ export const mapUserVendorAddress = (user = {}) => {
     return {
       ...EMPTY_VENDOR_ADDRESS,
       ...user.vendorAddress,
-      location: {
-        ...EMPTY_VENDOR_ADDRESS.location,
-        ...(user.vendorAddress.location || {}),
-      },
     };
   }
 
@@ -72,15 +64,6 @@ export const buildVendorAddressPayload = (addressForm) => {
     country: addressForm.country?.trim() || 'India',
     pincode: String(addressForm.pincode || '').replace(/\D/g, '').slice(0, 6),
   };
-
-  const latitude = addressForm.location?.latitude;
-  const longitude = addressForm.location?.longitude;
-  if (latitude !== '' && latitude != null && longitude !== '' && longitude != null) {
-    payload.location = {
-      latitude: Number(latitude),
-      longitude: Number(longitude),
-    };
-  }
 
   return payload;
 };

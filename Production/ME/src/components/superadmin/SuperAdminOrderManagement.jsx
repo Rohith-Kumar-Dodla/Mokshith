@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getUserFacingErrorMessage } from '../../utils/apiResponse';
+import ProcurementPanel from '../admin/ProcurementPanel';
 import { useSearchParams } from 'react-router-dom';
 import { FiEye, FiPackage, FiCheckCircle, FiDollarSign, FiRefreshCw } from 'react-icons/fi';
 import PageHeader from '../superadmin/PageHeader';
@@ -474,6 +475,7 @@ export default function SuperAdminOrderManagement({
                 <p className="text-sm font-medium">₹{selectedOrder.amount?.toLocaleString()}</p>
               </div>
             </div>
+            <ProcurementPanel orderId={selectedOrder.raw?._id || selectedOrder.id} />
           </div>
         )}
       </Modal>

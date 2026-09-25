@@ -3,7 +3,7 @@ import Promotion from './promotion.model.js';
 export const create = (data) => Promotion.create(data);
 
 export const findAll = () =>
-  Promotion.find().sort({ createdAt: -1 });
+  Promotion.find().populate('productIds', 'name sku price').sort({ createdAt: -1 });
 
 export const findById = (id) => Promotion.findById(id);
 
@@ -18,3 +18,14 @@ export const findByCode = (code) =>
     code: code.toUpperCase(),
     isActive: true,
   });
+
+export const findEligibleForProducts = (productIds, now = new Date()) =>
+  Promotion.find({
+    isActive: true,
+    productIds: { $in: productIds },
+    $or: [{ startAt: null }, { startAt: { $lte: now } }],
+    $and: [
+      { $or: [{ endAt: null }, { endAt: { $gt: now } }] },
+      { $or: [{ expiresAt: null }, { expiresAt: { $gt: now } }] },
+    ],
+  }).lean();

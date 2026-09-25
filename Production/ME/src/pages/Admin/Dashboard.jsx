@@ -1,274 +1,111 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { getUserFacingErrorMessage } from '../../utils/apiResponse';
 import { Link } from 'react-router-dom';
-import { FiBox, FiShoppingCart, FiTruck, FiUsers, FiCheckCircle, FiPlus, FiPackage, FiTrendingUp, FiUserPlus, FiFileText, FiArrowRight, FiGrid } from 'react-icons/fi';
+import { FiAlertTriangle, FiArrowRight, FiCheckCircle, FiClock, FiDollarSign, FiPackage, FiRefreshCw, FiTruck } from 'react-icons/fi';
 import Card from '../../components/admin/Card';
+import PageHeader from '../../components/admin/PageHeader';
+import StatusBadge from '../../components/admin/StatusBadge';
 import adminService from '../../services/adminService';
-import analyticsService from '../../services/analyticsService';
-import useNotifications from '../../hooks/useNotifications';
+import deliveryService from '../../services/deliveryService';
+import inventoryService from '../../services/inventoryService';
+import orderService from '../../services/orderService';
+import { getUserFacingErrorMessage, unwrapApiList } from '../../utils/apiResponse';
+import { extractAdminOrdersResponse, formatPaymentMethodLabel } from '../../utils/orderMapper';
 
-const formatCurrency = (value) => {
-  const amount = Number(value || 0);
-  if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
-  if (amount >= 1000) return `₹${(amount / 1000).toFixed(1)}K`;
-  return `₹${amount.toLocaleString('en-IN')}`;
-};
+const unwrapData = (payload) => payload?.data ?? payload ?? {};
+const formatCurrency = (value) => `₹${Number(value || 0).toLocaleString('en-IN')}`;
+const formatDate = (value) => (value ? new Date(value).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—');
+const getOrderId = (order) => order?._id || order?.id;
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
-  const [analytics, setAnalytics] = useState(null);
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [attention, setAttention] = useState({ unassigned: [], rejected: [], lowStock: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const { notifications } = useNotifications();
 
-  useEffect(() => {
-    const loadDashboard = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const statsPayload = await adminService.getStats();
-        setStats(statsPayload?.data ?? statsPayload);
-        // intentionally do not fetch financial analytics here; Admin should not receive financial data
-        setAnalytics(null);
-      } catch (err) {
-        setError(getUserFacingErrorMessage(err, 'Failed to load dashboard'));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadDashboard();
-  }, []);
-
-  const dashboard = analytics?.dashboard || {};
-  const summaryCards = useMemo(() => [
-    { title: 'Total Orders', value: String(stats?.totalOrders ?? dashboard.totalOrders ?? '—'), icon: FiShoppingCart, change: `${dashboard.ordersGrowth >= 0 ? '+' : ''}${dashboard.ordersGrowth ?? 0}%`, color: 'orange', to: '/admin/orders' },
-    { title: 'Total Vendors', value: String(stats?.totalVendors ?? '—'), icon: FiUsers, change: '+0%', color: 'green', to: '/admin/vendors' },
-    { title: 'Delivery Partners', value: String(stats?.totalDeliveryPartners ?? '—'), icon: FiTruck, change: '+0%', color: 'red', to: '/admin/delivery-assignment?tab=partners' },
-    { title: 'Pending Deliveries', value: String(dashboard.pendingDeliveries ?? '—'), icon: FiTruck, change: '—', color: 'red' },
-    // Revenue removed from Admin view (financials are Super Admin-only)
-    { title: 'Pending Approvals', value: String(stats?.pendingApprovals ?? '—'), icon: FiUserPlus, change: '—', color: 'purple', to: '/admin/vendors?status=pending' },
-    { title: 'Total Admins', value: String(stats?.totalAdmins ?? '—'), icon: FiGrid, change: '—', color: 'blue' },
-    { title: 'Active Customers', value: String(dashboard.activeCustomers ?? '—'), icon: FiUsers, change: '—', color: 'blue' },
-  ], [stats, dashboard]);
-
-  const quickActions = [
-    { title: 'Add Product', icon: FiPlus, description: 'Add new product to catalog', color: 'blue', path: '/admin/products' },
-    { title: 'Update Inventory', icon: FiPackage, description: 'Manage stock levels', color: 'green', path: '/admin/inventory' },
-    { title: 'Approve Vendor', icon: FiUserPlus, description: 'Review vendor applications', color: 'purple', path: '/admin/vendors' },
-    { title: 'Assign Delivery', icon: FiTruck, description: 'Assign delivery partners', color: 'orange', path: '/admin/delivery-assignment' },
-    { title: 'View Orders', icon: FiShoppingCart, description: 'View all orders', color: 'blue', path: '/admin/orders' },
-    { title: 'Generate Report', icon: FiFileText, description: 'Download reports', color: 'red', path: '/admin/reports' },
-  ];
-
-  const todayPerformance = [
-    { title: 'Total Orders', value: String(stats?.totalOrders ?? '—'), icon: FiShoppingCart, trend: `${dashboard.ordersGrowth >= 0 ? '+' : ''}${dashboard.ordersGrowth ?? 0}%` },
-    { title: 'Total Users', value: String(stats?.totalUsers ?? '—'), icon: FiCheckCircle, trend: '—' },
-    { title: 'Pending Deliveries', value: String(dashboard.pendingDeliveries ?? '—'), icon: FiTruck, trend: '—' },
-    { title: 'Total Vendors', value: String(stats?.totalVendors ?? '—'), icon: FiUserPlus, trend: '—' },
-    // Revenue removed from Admin view
-  ];
-
-  const recentActivities = notifications.slice(0, 6).map((notification) => ({
-    id: notification.id,
-    title: notification.title,
-    description: notification.message,
-    time: notification.time,
-    icon: FiPackage,
-    color: notification.isRead ? 'blue' : 'green',
-  }));
-
-  const getColorClasses = (color) => {
-    const colors = {
-      blue: { bg: 'bg-blue-100', text: 'text-blue-600', icon: 'text-blue-500' },
-      green: { bg: 'bg-green-100', text: 'text-green-600', icon: 'text-green-500' },
-      purple: { bg: 'bg-purple-100', text: 'text-purple-600', icon: 'text-purple-500' },
-      orange: { bg: 'bg-orange-100', text: 'text-orange-600', icon: 'text-orange-500' },
-      red: { bg: 'bg-red-100', text: 'text-red-600', icon: 'text-red-500' },
-    };
-    return colors[color] || colors.blue;
+  const loadDashboard = async () => {
+    setLoading(true);
+    setError('');
+    const results = await Promise.allSettled([
+      adminService.getStats(),
+      orderService.getAllOrders({ page: 1, limit: 5 }),
+      deliveryService.getDeliveryQueue(),
+      inventoryService.getLowStockItems(),
+    ]);
+    const [statsResult, ordersResult, queueResult, lowStockResult] = results;
+    const failures = results.filter((result) => result.status === 'rejected');
+    if (failures.length) setError(getUserFacingErrorMessage(failures[0].reason, 'Unable to load the Admin dashboard'));
+    if (statsResult.status === 'fulfilled') setStats(unwrapData(statsResult.value));
+    if (ordersResult.status === 'fulfilled') setRecentOrders(extractAdminOrdersResponse(ordersResult.value).orders.slice(0, 5));
+    if (queueResult.status === 'fulfilled') {
+      const queue = unwrapApiList(queueResult.value);
+      setAttention((current) => ({
+        ...current,
+        unassigned: queue.filter((item) => !item.deliveryPartnerId && ['PENDING', 'REJECTED'].includes(String(item.status).toUpperCase())),
+        rejected: queue.filter((item) => String(item.status).toUpperCase() === 'REJECTED'),
+      }));
+    }
+    if (lowStockResult.status === 'fulfilled') setAttention((current) => ({ ...current, lowStock: unwrapApiList(lowStockResult.value) }));
+    setLoading(false);
   };
+
+  useEffect(() => { loadDashboard(); }, []);
+
+  const cards = useMemo(() => [
+    { label: 'Total Orders', value: stats?.totalOrders, icon: FiPackage, to: '/admin/orders' },
+    { label: 'Pending Orders', value: stats?.pendingOrders, icon: FiClock, to: '/admin/orders?status=PENDING' },
+    { label: 'COD Orders', value: stats?.codOrders, icon: FiDollarSign, to: '/admin/orders?paymentMethod=COD' },
+    { label: 'Paid Orders', value: stats?.paidOrders, icon: FiCheckCircle, to: '/admin/orders?paymentStatus=PAID' },
+    { label: 'Unassigned Deliveries', value: stats?.unassignedDeliveries, icon: FiTruck, to: '/admin/orders?deliveryFilter=unassigned' },
+    { label: 'Active Deliveries', value: stats?.activeDeliveries, icon: FiTruck, to: '/admin/orders?deliveryFilter=active' },
+    { label: 'Low Stock', value: stats?.lowStock, icon: FiAlertTriangle, to: '/admin/inventory' },
+    { label: 'Delivery Attention', value: stats?.deliveryRejections, icon: FiAlertTriangle, to: '/admin/orders?deliveryFilter=attention' },
+  ], [stats]);
+
+  const unassigned = attention.unassigned.slice(0, 3);
+  const rejected = attention.rejected.slice(0, 2);
+  const lowStock = attention.lowStock.slice(0, 2);
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Marketplace Operations Dashboard.</h1>
-        <p className="text-sm sm:text-base text-gray-600 mt-1">Manage products, vendors, inventory, and deliveries across the entire marketplace.</p>
-      </div>
-
-      {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
-      {loading && (
-        <p className="text-sm text-gray-500">Loading dashboard...</p>
-      )}
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-        {summaryCards.map((card, index) => {
-          const colors = getColorClasses(card.color);
-          const content = (
-            <>
-              <div className="flex items-start justify-between">
-                <div className={`p-2 sm:p-3 rounded-lg ${colors.bg}`}>
-                  <card.icon className={`w-4 h-4 sm:w-6 sm:h-6 ${colors.icon}`} />
-                </div>
-                <span className={`text-xs sm:text-sm font-semibold ${card.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
-                  {card.change}
-                </span>
-              </div>
-              <p className="text-gray-600 text-xs sm:text-sm mt-3 sm:mt-4">{card.title}</p>
-              <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{card.value}</p>
-            </>
-          );
-
-          if (card.to) {
-            return (
-              <Link
-                key={index}
-                to={card.to}
-                aria-label={`View ${card.title}`}
-                className="block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-              >
-                <Card className="hover:shadow-md transition-shadow p-4 sm:p-6 cursor-pointer hover:border-blue-200 border border-transparent h-full">
-                  {content}
+      <PageHeader title="Home" subtitle="Monitor orders, payments, inventory and delivery operations." actions={(
+        <button type="button" onClick={loadDashboard} disabled={loading} className="inline-flex items-center gap-2 min-h-[44px] px-4 py-2 border rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50">
+          <FiRefreshCw size={16} /> Refresh
+        </button>
+      )} />
+      {error && <Card className="p-4 text-sm text-red-700 bg-red-50 border border-red-200">{error}</Card>}
+      {loading && !stats ? (
+        <Card className="p-8 text-center text-sm text-gray-600" aria-live="polite">Loading operational dashboard...</Card>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            {cards.map((card) => (
+              <Link key={card.label} to={card.to} className="block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                <Card className="h-full p-4 sm:p-5 hover:border-blue-200 hover:shadow-md transition-shadow">
+                  <div className="flex items-start justify-between gap-2"><div className="rounded-lg bg-blue-50 p-2 text-blue-600"><card.icon size={20} aria-hidden="true" /></div><FiArrowRight className="text-gray-400" size={16} aria-hidden="true" /></div>
+                  <p className="mt-4 text-xs sm:text-sm text-gray-600">{card.label}</p><p className="mt-1 text-xl sm:text-2xl font-bold text-gray-900">{card.value ?? '—'}</p>
                 </Card>
               </Link>
-            );
-          }
-
-          return (
-            <Card key={index} className="hover:shadow-md transition-shadow p-4 sm:p-6">
-              {content}
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Quick Actions */}
-      <div>
-        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          {quickActions.map((action, index) => {
-            const colors = getColorClasses(action.color);
-            return (
-              <Card key={index} className="hover:shadow-md transition-shadow cursor-pointer group p-4 sm:p-6 min-h-[88px]">
-                <Link to={action.path} className="flex items-start gap-3 sm:gap-4">
-                  <div className={`p-2 sm:p-3 rounded-lg ${colors.bg} group-hover:scale-110 transition-transform flex-shrink-0`}>
-                    <action.icon className={`w-4 h-4 sm:w-5 sm:h-5 ${colors.icon}`} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm sm:text-base font-semibold text-gray-900 truncate">{action.title}</h3>
-                    <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1 line-clamp-2">{action.description}</p>
-                  </div>
-                  <FiArrowRight className="text-gray-400 group-hover:text-gray-600 transition-colors flex-shrink-0 w-4 h-4 sm:w-5 sm:h-5" />
-                </Link>
-              </Card>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Today's Performance */}
-      <div>
-        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Today's Performance</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-          {todayPerformance.map((perf, index) => (
-            <Card key={index} className="text-center p-3 sm:p-4">
-              <div className="flex justify-center mb-2 sm:mb-3">
-                <div className="p-2 sm:p-3 rounded-lg bg-blue-100">
-                  <perf.icon className="w-4 h-4 sm:w-6 sm:h-6 text-blue-600" />
-                </div>
-              </div>
-              <p className="text-gray-600 text-xs sm:text-sm">{perf.title}</p>
-              <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{perf.value}</p>
-              <span className="text-xs sm:text-sm font-semibold text-green-600">{perf.trend}</span>
-            </Card>
-          ))}
-        </div>
-      </div>
-
-      {/* Recent Activities */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-        <Card className="p-4 sm:p-6">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Recent Activities</h2>
-          <div className="space-y-3 sm:space-y-4">
-            {recentActivities.length === 0 ? (
-              <p className="text-sm text-gray-500">No recent notifications.</p>
-            ) : recentActivities.map((activity) => {
-              const colors = getColorClasses(activity.color);
-              return (
-                <div key={activity.id} className="flex items-start gap-3 sm:gap-4 p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                  <div className={`p-2 rounded-lg ${colors.bg} flex-shrink-0`}>
-                    <activity.icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${colors.icon}`} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 text-xs sm:text-sm">{activity.title}</h3>
-                    <p className="text-gray-600 text-xs sm:text-sm mt-0.5 sm:mt-1 line-clamp-2">{activity.description}</p>
-                    <p className="text-gray-400 text-xs mt-0.5 sm:mt-1">{activity.time}</p>
-                  </div>
-                </div>
-              );
-            })}
+            ))}
           </div>
-        </Card>
 
-        {/* Marketplace Overview */}
-        <Card className="p-4 sm:p-6">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Marketplace Overview</h2>
-          <div className="space-y-3 sm:space-y-4">
-            <div className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="p-2 rounded-lg bg-blue-100 flex-shrink-0">
-                  <FiGrid className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
-                </div>
-                <span className="text-xs sm:text-sm font-medium text-gray-700">Marketplace Status</span>
-              </div>
-              <span className="text-xs sm:text-sm font-bold text-green-600">Active</span>
+          <Card className="p-4 sm:p-6">
+            <div className="flex items-center justify-between gap-3 mb-4"><div><h2 className="text-lg font-bold text-gray-900">Operational attention</h2><p className="text-sm text-gray-600">Items that may need Admin action.</p></div><FiAlertTriangle className="text-amber-500" aria-hidden="true" /></div>
+            <div className="space-y-3">
+              {unassigned.length === 0 && rejected.length === 0 && lowStock.length === 0 ? <p className="text-sm text-gray-500">No operational attention items.</p> : <>
+                {unassigned.map((item) => <div key={`unassigned-${item._id}`} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-gray-100 p-3"><div><p className="font-semibold text-gray-900">Order #{String(item.orderId?._id || item.orderId).slice(-8).toUpperCase()}</p><p className="text-xs text-gray-600">{item.address || 'Drop location unavailable'} · Unassigned</p></div><Link to="/admin/delivery-assignment" className="inline-flex items-center justify-center min-h-[40px] px-3 py-2 bg-blue-600 text-white rounded-lg text-sm">Assign Delivery</Link></div>)}
+                {rejected.map((item) => <div key={`rejected-${item._id}`} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-red-100 bg-red-50 p-3"><div><p className="font-semibold text-gray-900">Order #{String(item.orderId?._id || item.orderId).slice(-8).toUpperCase()}</p><p className="text-xs text-red-700">Delivery assignment rejected{item.rejectionReason ? ` — ${item.rejectionReason}` : ''}</p></div><Link to="/admin/delivery-assignment?tab=unassigned" className="inline-flex items-center justify-center min-h-[40px] px-3 py-2 border border-red-200 text-red-700 rounded-lg text-sm">Review</Link></div>)}
+                {lowStock.map((item) => <div key={`stock-${item._id || item.productId}`} className="flex items-center justify-between gap-3 rounded-lg border border-amber-100 bg-amber-50 p-3"><p className="text-sm text-gray-800">Low stock: {item.productId?.name || item.product?.name || 'Product'}</p><Link to="/admin/inventory" className="text-sm font-semibold text-blue-700">Review inventory</Link></div>)}
+              </>}
             </div>
-            <div className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="p-2 rounded-lg bg-purple-100 flex-shrink-0">
-                  <FiUsers className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
-                </div>
-                <span className="text-xs sm:text-sm font-medium text-gray-700">Active Vendors</span>
-              </div>
-              <span className="text-xs sm:text-sm font-bold text-gray-900">{stats?.totalVendors ?? '—'}</span>
-            </div>
-            <div className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="p-2 rounded-lg bg-green-100 flex-shrink-0">
-                  <FiTruck className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
-                </div>
-                <span className="text-xs sm:text-sm font-medium text-gray-700">Delivery Partners</span>
-              </div>
-              <span className="text-xs sm:text-sm font-bold text-gray-900">{stats?.totalDeliveryPartners ?? '—'}</span>
-            </div>
-            <div className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="p-2 rounded-lg bg-orange-100 flex-shrink-0">
-                  <FiBox className="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" />
-                </div>
-                <span className="text-xs sm:text-sm font-medium text-gray-700">Total Orders</span>
-              </div>
-              <span className="text-xs sm:text-sm font-bold text-gray-900">{stats?.totalOrders ?? '—'}</span>
-            </div>
-            <div className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="p-2 rounded-lg bg-blue-100 flex-shrink-0">
-                  <FiPackage className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
-                </div>
-                <span className="text-xs sm:text-sm font-medium text-gray-700">Pending Approvals</span>
-              </div>
-              <span className="text-xs sm:text-sm font-bold text-gray-900">{stats?.pendingApprovals ?? '—'}</span>
-            </div>
-          </div>
-        </Card>
-      </div>
+          </Card>
+
+          <Card className="overflow-hidden p-0">
+            <div className="flex items-center justify-between gap-3 p-4 sm:p-6"><div><h2 className="text-lg font-bold text-gray-900">Recent orders</h2><p className="text-sm text-gray-600">Latest orders requiring operational visibility.</p></div><Link to="/admin/orders" className="text-sm font-semibold text-blue-700">View all</Link></div>
+            {recentOrders.length === 0 ? <p className="px-4 pb-6 text-sm text-gray-500">No recent orders.</p> : <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-sm"><thead className="bg-gray-50 border-y"><tr>{['Order', 'Customer', 'Amount', 'Payment', 'Status', 'Delivery', 'Created', 'Action'].map((heading) => <th key={heading} className="px-4 sm:px-6 py-3 text-left font-semibold text-gray-700">{heading}</th>)}</tr></thead><tbody>{recentOrders.map((order) => <tr key={getOrderId(order)} className="border-b last:border-b-0"><td className="px-4 sm:px-6 py-3 font-semibold">#{String(getOrderId(order)).slice(-8).toUpperCase()}</td><td className="px-4 sm:px-6 py-3">{order.userId?.name || order.userId?.businessName || 'Customer'}</td><td className="px-4 sm:px-6 py-3">{formatCurrency(order.totalAmount)}</td><td className="px-4 sm:px-6 py-3">{formatPaymentMethodLabel(order.paymentMethod)}<br /><span className="text-xs text-gray-500">{order.paymentStatus || '—'}</span></td><td className="px-4 sm:px-6 py-3"><StatusBadge status={String(order.status || '').toLowerCase()} /></td><td className="px-4 sm:px-6 py-3"><StatusBadge status={String(order.logisticsStatus || order.shipmentId?.status || 'unassigned').toLowerCase()} /></td><td className="px-4 sm:px-6 py-3 whitespace-nowrap">{formatDate(order.createdAt)}</td><td className="px-4 sm:px-6 py-3"><Link to="/admin/orders" className="text-blue-700 font-semibold">Open</Link></td></tr>)}</tbody></table></div>}
+          </Card>
+        </>
+      )}
     </div>
   );
 };

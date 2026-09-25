@@ -107,7 +107,7 @@ const Cart = () => {
                   <span className="font-medium text-gray-900">₹{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-xs sm:text-sm">
-                  <span className="text-gray-600">Bulk Discount</span>
+                  <span className="text-gray-600">Special + Bulk Discounts</span>
                   <span className="font-medium text-green-600">-₹{discount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-xs sm:text-sm">

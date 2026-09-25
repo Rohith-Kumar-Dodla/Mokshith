@@ -22,6 +22,14 @@ const supportService = {
     const response = await api.get('/support/all', { params });
     return unwrap(response);
   },
+  getAssignableAdmins: async () => {
+    const response = await api.get('/support/assignees');
+    return response.data?.data ?? response.data;
+  },
+  assignTicket: async (id, assigneeId) => {
+    const response = await api.patch(`/support/${id}/assign`, { assigneeId });
+    return response.data?.data ?? response.data;
+  },
 
   getTicketById: async (id) => {
     const response = await api.get(`/support/${id}`);

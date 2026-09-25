@@ -98,7 +98,7 @@ export function useSettings({ autoLoad = true } = {}) {
       setSessions(sessionsList.map(mapSession).filter(Boolean));
       return { profile: profileData, settings: settingsData };
     } catch (loadError) {
-      setError(getUserFacingErrorMessage(loadError, 'Failed to load settings'));
+      setError(loadError?.message || getUserFacingErrorMessage(loadError, 'Failed to load settings'));
       return null;
     } finally {
       setLoading(false);

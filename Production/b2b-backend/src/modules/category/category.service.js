@@ -1,5 +1,6 @@
 import * as repo from './category.repository.js';
 import AppError from '../../errors/AppError.js';
+import Product from '../product/product.model.js';
 
 const generateSlug = (name) =>
   name
@@ -68,6 +69,10 @@ export const deleteCategory = async (id) => {
   const category = await repo.findById(id);
   if (!category) throw new AppError('Category not found', 404);
 
+  const productCount = await Product.countDocuments({ categoryId: id });
+  if (productCount > 0) {
+    throw new AppError('Category cannot be deleted while products reference it. Deactivate it instead.', 409);
+  }
   await repo.deleteCategory(id);
   return category;
 };

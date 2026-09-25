@@ -5,6 +5,8 @@ import { checkStock } from '../inventory/inventory.service.js';
 import mongoose from 'mongoose';
 import { logger } from '../../config/logger.js';
 import { isSupplierOnlyProduct } from '../product/productCatalog.utils.js';
+import { calculateLinePricing, applyBestProductPromotion } from '../../utils/bulkPricing.utils.js';
+import { getEligiblePromotions } from '../promotion/promotion.service.js';
 import {
   normalizeProductRef,
   pruneStaleCartItems,
@@ -28,6 +30,55 @@ async function loadUserCart(userId) {
   }
 
   return cart;
+}
+
+/**
+ * Cart pricing is deliberately resolved from current Product/Promotion state on
+ * every read. Cart documents contain intent (product + quantity), never prices.
+ */
+async function withAuthoritativePricing(cart) {
+  if (!cart) return cart;
+  const plain = cart.toObject ? cart.toObject() : cart;
+  const validItems = (plain.items || []).filter((item) => item.productId?.isActive !== false);
+  const products = validItems.map((item) => item.productId).filter(Boolean);
+  const promotions = await getEligiblePromotions(products.map((product) => product._id));
+  let subtotal = 0;
+  let discount = 0;
+  const items = validItems.map((item) => {
+    const pricing = applyBestProductPromotion(
+      item.productId,
+      item.quantity,
+      calculateLinePricing(item.productId, item.quantity),
+      promotions
+    );
+    subtotal += pricing.basePrice * Number(item.quantity);
+    discount += pricing.discountAmount;
+    return {
+      ...item,
+      pricing: {
+        originalUnitPrice: pricing.basePrice,
+        finalUnitPrice: pricing.unitPrice,
+        discountAmount: pricing.discountAmount,
+        specialDiscountAmount: pricing.specialDiscountAmount || 0,
+        bulkDiscountAmount: pricing.bulkDiscountAmount || 0,
+        discountPercent: pricing.discountPercent,
+        itemSubtotal: pricing.itemTotal,
+        pricingSource: pricing.pricingSource,
+        promotionId: pricing.promotion?._id || null,
+        promotionName: pricing.promotion?.name || null,
+        promotionCode: pricing.promotion?.code || null,
+        specialPromotionId: pricing.specialPromotion?._id || null,
+        bulkPromotionId: pricing.bulkPromotion?._id || null,
+      },
+    };
+  });
+  const discountedSubtotal = subtotal - discount;
+  const tax = discountedSubtotal * 0.18;
+  return {
+    ...plain,
+    items,
+    pricing: { subtotal, discount, discountedSubtotal, tax, delivery: 0, grandTotal: discountedSubtotal + tax },
+  };
 }
 
 export const addToCart = async (user, { productId, quantity }) => {
@@ -94,7 +145,7 @@ export const addToCart = async (user, { productId, quantity }) => {
       userId,
       items: [{ productId, quantity }],
     });
-    return repo.findCartByUser(userId);
+    return withAuthoritativePricing(await repo.findCartByUser(userId));
   }
 
   if (existingItem) {
@@ -107,7 +158,7 @@ export const addToCart = async (user, { productId, quantity }) => {
   }
 
   await cart.save();
-  return repo.findCartByUser(userId);
+  return withAuthoritativePricing(await repo.findCartByUser(userId));
 };
 
 export const getCart = async (user) => {
@@ -117,7 +168,7 @@ export const getCart = async (user) => {
     throw new AppError('User not authenticated', 401);
   }
 
-  return loadUserCart(userId);
+  return withAuthoritativePricing(await loadUserCart(userId));
 };
 
 export const removeFromCart = async (user, productId) => {
@@ -143,5 +194,5 @@ export const removeFromCart = async (user, productId) => {
   );
 
   await cart.save();
-  return repo.findCartByUser(userId);
+  return withAuthoritativePricing(await repo.findCartByUser(userId));
 };

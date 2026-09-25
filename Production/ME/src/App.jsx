@@ -42,6 +42,9 @@ const AdminDashboard = lazy(() => import('./pages/Admin/Dashboard'));
 const Products = lazy(() => import('./pages/Admin/Products'));
 const Categories = lazy(() => import('./pages/Admin/Categories'));
 const Inventory = lazy(() => import('./pages/Admin/Inventory'));
+const AdminDiscounts = lazy(() => import('./pages/Admin/Discounts'));
+const AdminNotifications = lazy(() => import('./pages/Admin/Notifications'));
+const AdminProfile = lazy(() => import('./pages/Admin/Profile'));
 const AdminVendors = lazy(() => import('./pages/Admin/Vendors'));
 const AdminOrders = lazy(() => import('./pages/Admin/Orders'));
 const DeliveryAssignment = lazy(() => import('./pages/Admin/DeliveryAssignment'));
@@ -121,13 +124,16 @@ function App() {
                 <Route path="categories" element={<Categories />} />
                 <Route path="products" element={<Products />} />
                 <Route path="inventory" element={<Inventory />} />
+                <Route path="discounts" element={<AdminDiscounts />} />
                 <Route path="vendors" element={<AdminVendors />} />
                 <Route path="orders" element={<AdminOrders />} />
                 <Route path="delivery-assignment" element={<DeliveryAssignment />} />
                 <Route path="reports" element={<Reports />} />
                 <Route path="analytics" element={<AdminAnalytics />} />
                 <Route path="support" element={<AdminSupport />} />
+                <Route path="notifications" element={<AdminNotifications />} />
                 <Route path="settings" element={<AdminSettings />} />
+                <Route path="profile" element={<AdminProfile />} />
               </Route>
 
               <Route path="/vendor/*" element={<ProtectedRoute requiredRole="vendor"><VendorLayout /></ProtectedRoute>}>
@@ -154,6 +160,7 @@ function App() {
                 <Route index element={<Navigate to="/delivery/dashboard" replace />} />
                 <Route path="dashboard" element={<DeliveryDashboard />} />
                 <Route path="assigned-orders" element={<AssignedOrders />} />
+                <Route path="deliveries" element={<AssignedOrders />} />
                 <Route path="order-details/:id" element={<OrderDetails />} />
                 <Route path="history" element={<DeliveryHistory />} />
                 <Route path="earnings" element={<DeliveryEarnings />} />

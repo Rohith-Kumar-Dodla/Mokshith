@@ -4,8 +4,8 @@ import AdminOrderManagement from '../../components/admin/AdminOrderManagement';
 const Orders = () => (
   <AdminOrderManagement
     PageHeader={PageHeader}
-    title="Area Orders"
-    subtitle="Monitor and manage orders within your assigned area"
+    title="Orders"
+    subtitle="Monitor orders, payments and delivery operations"
   />
 );
 

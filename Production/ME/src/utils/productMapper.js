@@ -95,11 +95,27 @@ export function mapBackendProduct(product) {
     product.vendorId?.name ||
     product.companyId?.name ||
     null;
+  const activePromotion = (product.activePromotions || [])[0] || null;
+  const specialPromotions = (product.activePromotions || []).filter((promotion) => promotion.promotionKind === 'SPECIAL' || !promotion.promotionKind);
+  const bulkPromotions = (product.activePromotions || []).filter((promotion) => promotion.promotionKind === 'BULK');
+  const promotionalPrice = activePromotion
+    ? activePromotion.discountType === 'PERCENTAGE'
+      ? Math.max(price * (1 - Number(activePromotion.value || 0) / 100), 0)
+      : Math.max(price - Number(activePromotion.value || 0), 0)
+    : null;
 
   return {
     ...product,
     _id: product._id,
     id: product._id || product.id,
+    sku: product.sku || '',
+    activePromotions: product.activePromotions || [],
+    activePromotion,
+    promotionEligibility: {
+      special: specialPromotions.length > 0,
+      bulk: bulkPromotions.length > 0 || (Array.isArray(product.bulkPricing) && product.bulkPricing.length > 0),
+    },
+    promotionalPrice,
     category: categoryName,
     categoryId: categoryRefId,
     status: deriveProductStatus(stock, moq, product.isActive),

@@ -7,17 +7,26 @@ import StatusBadge from '../../components/admin/StatusBadge';
 import SearchBar from '../../components/admin/SearchBar';
 import Modal from '../../components/admin/Modal';
 import useDeliveryAssignment from '../../hooks/useDeliveryAssignment';
+import deliveryService from '../../services/deliveryService';
+import { mapAdminDeliveryQueue } from '../../utils/adminDeliveryMapper';
 
 const DeliveryAssignment = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromUrl = searchParams.get('tab');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(() => searchParams.get('orderId') || '');
   const [activeTab, setActiveTab] = useState(
     ['unassigned', 'active', 'completed', 'partners'].includes(tabFromUrl) ? tabFromUrl : 'unassigned'
   );
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [selectedPartner, setSelectedPartner] = useState(null);
+  const [deliveryAmount, setDeliveryAmount] = useState('');
+  const [offerHistory, setOfferHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [assignmentError, setAssignmentError] = useState('');
+  const [distanceLoading, setDistanceLoading] = useState(false);
+  const [distanceError, setDistanceError] = useState('');
+  const [routeDistance, setRouteDistance] = useState(null);
 
   const {
     unassignedItems,
@@ -28,8 +37,7 @@ const DeliveryAssignment = () => {
     actionLoading,
     error,
     refreshAll,
-    assignPartner,
-    reassignPartner,
+    sendOffer,
   } = useDeliveryAssignment();
 
   useEffect(() => {
@@ -79,26 +87,79 @@ const DeliveryAssignment = () => {
     );
   });
 
-  const handleAssignDelivery = (order) => {
+  const handleAssignDelivery = async (order) => {
     setSelectedOrder(order);
     setSelectedPartner(null);
+    setDeliveryAmount(order.deliveryAmount || '');
+    setOfferHistory([]);
+    setAssignmentError('');
+    setRouteDistance(order.distanceKm ?? null);
+    setDistanceError('');
     setIsAssignModalOpen(true);
+    if (order.needsShipment) {
+      setDistanceLoading(true);
+      try {
+        await deliveryService.createShipment(order.orderId);
+        const refreshed = mapAdminDeliveryQueue(await deliveryService.getDeliveryQueue());
+        const shipment = refreshed.find((entry) => String(entry.orderId) === String(order.orderId));
+        if (shipment) setSelectedOrder({ ...order, ...shipment, needsShipment: false });
+        else throw new Error('Delivery record could not be resolved.');
+      } catch (error) {
+        setDistanceError(error?.message || 'Warehouse or customer coordinates are unavailable.');
+      } finally {
+        setDistanceLoading(false);
+      }
+    }
   };
+
+  useEffect(() => {
+    if (!selectedOrder?.id || selectedOrder.needsShipment) return undefined;
+    let active = true;
+    setDistanceLoading(true);
+    setDistanceError('');
+    deliveryService.getDeliveryDistance(selectedOrder.id)
+      .then((payload) => {
+        if (!active) return;
+        const route = payload?.data ?? payload;
+        setRouteDistance(route?.distance ?? null);
+      })
+      .catch((error) => {
+        if (active) {
+          setRouteDistance(null);
+          setDistanceError(error?.response?.data?.message || error?.message || 'Customer delivery coordinates unavailable.');
+        }
+      })
+      .finally(() => { if (active) setDistanceLoading(false); });
+    return () => { active = false; };
+  }, [selectedOrder?.id, selectedOrder?.needsShipment]);
+
+  useEffect(() => {
+    if (!selectedOrder?.id || selectedOrder.needsShipment) return undefined;
+    let active = true;
+    setHistoryLoading(true);
+    deliveryService.getOfferHistory(selectedOrder.id)
+      .then((payload) => {
+        if (active) setOfferHistory(payload?.data ?? payload ?? []);
+      })
+      .catch(() => {
+        if (active) setOfferHistory([]);
+      })
+      .finally(() => {
+        if (active) setHistoryLoading(false);
+      });
+    return () => { active = false; };
+  }, [selectedOrder]);
 
   const handleConfirmAssignment = async () => {
     if (!selectedOrder || !selectedPartner) return;
 
     try {
-      if (activeTab === 'active' && selectedOrder.deliveryPartnerId) {
-        await reassignPartner(selectedOrder.id, selectedPartner.id);
-      } else {
-        await assignPartner(selectedOrder, selectedPartner.id);
-      }
+      await sendOffer(selectedOrder, selectedPartner.id, deliveryAmount, activeTab === 'active');
       setIsAssignModalOpen(false);
       setSelectedOrder(null);
       setSelectedPartner(null);
-    } catch {
-      // Error surfaced via hook state.
+    } catch (error) {
+      setAssignmentError(error?.message || 'Assignment failed. Please retry.');
     }
   };
 
@@ -253,6 +314,8 @@ const DeliveryAssignment = () => {
                           {order.assignedPartnerLabel || order.deliveryPartnerName || 'Unassigned'}
                         </span>
                       </div>
+                      {order.distanceKm !== null && order.distanceKm !== undefined ? <span>Route: {order.distanceKm} {order.distanceUnit}</span> : <span>Route: unavailable</span>}
+                      {order.rejectionCount > 0 ? <span className="font-semibold text-red-700">Rejected: {order.rejectionCount}</span> : null}
                     </div>
                     {order.isRejectedAssignment && (
                       <p className="text-xs text-red-700 mt-2 font-medium">
@@ -355,7 +418,7 @@ const DeliveryAssignment = () => {
       <Modal
         isOpen={isAssignModalOpen}
         onClose={() => setIsAssignModalOpen(false)}
-        title={activeTab === 'active' ? 'Reassign Delivery Partner' : 'Assign Delivery Partner'}
+        title={activeTab === 'active' ? 'Send Replacement Offer' : 'Send Delivery Offer'}
         size="md"
       >
         {selectedOrder && (
@@ -366,6 +429,12 @@ const DeliveryAssignment = () => {
               </h3>
               <p className="text-xs sm:text-sm text-gray-600">{selectedOrder.vendor}</p>
               <p className="text-xs text-gray-500 mt-1">{selectedOrder.area} • {selectedOrder.items} items</p>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-600">
+                <span>Route distance<strong className="block text-sm text-gray-900">{distanceLoading ? 'Calculating...' : routeDistance == null ? 'Unavailable' : `${routeDistance} KM`}</strong></span>
+                <span>Rejected<strong className="block text-sm text-gray-900">{selectedOrder.rejectionCount || 0}</strong></span>
+              </div>
+              {distanceError && <p className="mt-2 text-xs text-red-700">{distanceError}</p>}
+              {selectedOrder.rejectionCount >= 3 ? <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"><strong>Delivery requires attention.</strong><br />{selectedOrder.rejectionCount} partners have rejected this order. Increase the amount before sending a replacement offer.</div> : null}
             </div>
 
             <div>
@@ -406,7 +475,19 @@ const DeliveryAssignment = () => {
               </div>
             </div>
 
+            <div>
+              <label htmlFor="delivery-amount" className="block text-sm font-medium text-gray-700 mb-1">Delivery amount (INR)</label>
+              <input id="delivery-amount" type="number" min="1" step="0.01" value={deliveryAmount} onChange={(event) => setDeliveryAmount(event.target.value)} placeholder="Enter amount" className="w-full min-h-[44px] rounded-lg border border-gray-200 px-3 text-sm" />
+              <p className="mt-1 text-xs text-gray-500">Set the delivery amount based on the calculated distance. The backend validates both the amount and route.</p>
+            </div>
+
+            <div className="rounded-lg border border-gray-200 p-3">
+              <h4 className="text-sm font-semibold text-gray-900">Delivery offer history</h4>
+              {historyLoading ? <p className="mt-2 text-xs text-gray-500">Loading history...</p> : offerHistory.length === 0 ? <p className="mt-2 text-xs text-gray-500">No offer attempts yet.</p> : <div className="mt-2 space-y-2">{offerHistory.map((offer) => <div key={offer._id} className="flex flex-wrap items-center justify-between gap-2 border-t pt-2 text-xs"><span>Attempt {offer.attemptNumber} · {offer.deliveryPartnerId?.name || 'Partner'}</span><span className="font-semibold">₹{Number(offer.deliveryAmount || 0).toLocaleString('en-IN')} · {offer.status}</span>{offer.rejectionReason ? <span className="w-full text-red-700">{offer.rejectionReason}</span> : null}</div>)}</div>}
+            </div>
+
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+              {assignmentError && <div role="alert" className="mr-auto self-center text-sm text-red-700">{assignmentError}</div>}
               <button
                 type="button"
                 onClick={() => setIsAssignModalOpen(false)}
@@ -417,7 +498,7 @@ const DeliveryAssignment = () => {
               <button
                 type="button"
                 onClick={handleConfirmAssignment}
-                disabled={!selectedPartner || actionLoading}
+                disabled={!selectedPartner || !deliveryAmount || Number(deliveryAmount) <= 0 || actionLoading || distanceLoading}
                 className="px-4 sm:px-6 py-2.5 h-12 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 <FiCheck size={14} className="inline mr-1 sm:mr-2" />

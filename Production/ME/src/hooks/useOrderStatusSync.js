@@ -37,12 +37,20 @@ export function useOrderStatusSync(onStatusUpdated) {
       handlerRef.current?.(event);
     };
 
-    socket.on('order:statusUpdated', handleUpdate);
-    socket.on('delivery:statusUpdated', handleUpdate);
+    const events = [
+      'order:statusUpdated',
+      'delivery:statusUpdated',
+      'delivery:assigned',
+      'delivery:assignmentRejected',
+      'delivery:offerCreated',
+      'delivery:offerAccepted',
+      'delivery:offerRejected',
+      'delivery:offerExpired',
+    ];
+    events.forEach((eventName) => socket.on(eventName, handleUpdate));
 
     return () => {
-      socket.off('order:statusUpdated', handleUpdate);
-      socket.off('delivery:statusUpdated', handleUpdate);
+      events.forEach((eventName) => socket.off(eventName, handleUpdate));
     };
   }, []);
 }
