@@ -103,6 +103,7 @@ export default function SuperAdminOrderManagement({
   const [page, setPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const hasLoadedOnceRef = useRef(false);
 
   const activeFilterCount = useMemo(() => {
@@ -316,47 +317,12 @@ export default function SuperAdminOrderManagement({
                 onSearch={setSearchInput}
               />
             </div>
-            <div className="flex flex-wrap gap-2">
-              <FilterDropdown
-                label="Filter"
-                options={STATUS_OPTIONS}
-                selected={selectedStatus}
-                onSelect={setSelectedStatus}
-                onClear={() => setSelectedStatus('all')}
-              />
-              {kpiFilter !== KPI_KEYS.cod && (
-                <FilterDropdown
-                  label="Payment Method"
-                  options={PAYMENT_METHOD_OPTIONS}
-                  selected={paymentMethodFilter}
-                  onSelect={setPaymentMethodFilter}
-                  onClear={() => setPaymentMethodFilter('all')}
-                />
-              )}
-              <FilterDropdown
-                label="Payment Status"
-                options={PAYMENT_STATUS_OPTIONS}
-                selected={paymentStatusFilter}
-                onSelect={setPaymentStatusFilter}
-                onClear={() => setPaymentStatusFilter('all')}
-              />
+            <div className="relative">
+              <button type="button" onClick={() => setFiltersOpen((open) => !open)} aria-expanded={filtersOpen} className="min-h-[44px] rounded-lg border px-4 text-sm">Filters{activeFilterCount ? ` (${activeFilterCount})` : ''}</button>
+              {filtersOpen && <div className="absolute right-0 z-20 mt-2 grid w-[min(22rem,calc(100vw-2rem))] gap-3 rounded-lg border bg-white p-4 shadow-xl"><FilterDropdown label="Order status" options={STATUS_OPTIONS} selected={selectedStatus} onSelect={setSelectedStatus} onClear={() => setSelectedStatus('all')} />{kpiFilter !== KPI_KEYS.cod && <FilterDropdown label="Payment method" options={PAYMENT_METHOD_OPTIONS} selected={paymentMethodFilter} onSelect={setPaymentMethodFilter} onClear={() => setPaymentMethodFilter('all')} />}<FilterDropdown label="Payment status" options={PAYMENT_STATUS_OPTIONS} selected={paymentStatusFilter} onSelect={setPaymentStatusFilter} onClear={() => setPaymentStatusFilter('all')} /><div className="grid grid-cols-2 gap-2"><input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} aria-label="Start date" className="min-h-[44px] rounded border px-2 text-sm" /><input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} aria-label="End date" className="min-h-[44px] rounded border px-2 text-sm" /></div><button type="button" onClick={() => { clearFilters(); setFiltersOpen(false); }} className="text-left text-sm font-medium text-blue-700">Clear filters</button></div>}
             </div>
           </div>
           <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 items-stretch sm:items-center">
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="px-3 py-2 border rounded-lg text-sm min-h-[44px]"
-              aria-label="Start date"
-            />
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="px-3 py-2 border rounded-lg text-sm min-h-[44px]"
-              aria-label="End date"
-            />
             {activeFilterCount > 0 && (
               <button
                 type="button"

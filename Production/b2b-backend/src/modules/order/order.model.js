@@ -36,6 +36,11 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    subtotal: { type: Number, default: 0 },
+    discountAmount: { type: Number, default: 0 },
+    specialDiscountAmount: { type: Number, default: 0 },
+    bulkDiscountAmount: { type: Number, default: 0 },
+    taxAmount: { type: Number, default: 0 },
 
     totalWeight: {
       type: Number,
@@ -144,6 +149,7 @@ const orderSchema = new mongoose.Schema(
       sparse: true,
       index: true,
     },
+    supplierAllocationLock: { type: Boolean, default: false },
 
     metadata: {
       type: Object,

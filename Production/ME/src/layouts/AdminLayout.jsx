@@ -13,6 +13,7 @@ import {
   FiLifeBuoy,
   FiTag,
   FiUser,
+  FiShare2,
 } from 'react-icons/fi';
 import NotificationDrawer from '../components/admin/NotificationDrawer';
 import PortalSidebar from '../components/common/PortalSidebar';
@@ -40,6 +41,7 @@ const AdminLayout = () => {
     { path: '/admin/discounts', icon: FiTag, label: 'Discounts' },
     { path: '/admin/inventory', icon: FiPackage, label: 'Inventory' },
     { path: '/admin/orders', icon: FiTruck, label: 'Orders' },
+    { path: '/admin/supplier-allocation', icon: FiShare2, label: 'Supplier Allocation' },
     { path: '/admin/delivery-assignment', icon: FiTruck, label: 'Delivery Partners' },
     { path: '/admin/support', icon: FiLifeBuoy, label: 'Support' },
     { path: '/admin/notifications', icon: FiBell, label: 'Notifications' },

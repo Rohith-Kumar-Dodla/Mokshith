@@ -10,6 +10,7 @@ import {
   createDeliveryAgentSchema,
   updateDeliveryAgentSchema,
   listStaffSchema,
+  createSupplierAccountSchema,
 } from './superAdmin.validation.js';
 import {
   createSupplierSchema,
@@ -66,6 +67,7 @@ router.delete('/admins/:id', controller.deleteAdmin);
 
 router.get('/delivery-agents', validate(listStaffSchema), controller.getDeliveryAgents);
 router.post('/delivery-agents', validate(createDeliveryAgentSchema), controller.createDeliveryAgent);
+router.post('/suppliers/onboard', validate(createSupplierAccountSchema), controller.createSupplierAccount);
 router.patch('/delivery-agents/:id', validate(updateDeliveryAgentSchema), controller.updateDeliveryAgent);
 router.delete('/delivery-agents/:id', controller.deleteDeliveryAgent);
 

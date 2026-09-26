@@ -6,6 +6,7 @@ import {
   FiUserCheck,
   FiShoppingBag,
   FiTruck,
+  FiBriefcase,
   FiSearch,
   FiPlus,
 } from 'react-icons/fi';
@@ -22,12 +23,14 @@ import DataTable from '../../components/superadmin/DataTable';
 import StatusBadge from '../../components/superadmin/StatusBadge';
 import Modal from '../../components/superadmin/Modal';
 import adminService from '../../services/adminService';
+import superAdminService from '../../services/superAdminService';
 
 const SECTION_KEYS = [
   { key: 'approvals', label: 'User Approvals', icon: FiUserCheck },
   { key: 'admins', label: 'Admin Management', icon: FiUsers },
   { key: 'vendors', label: 'Vendor Management', icon: FiShoppingBag },
   { key: 'delivery', label: 'Delivery Partners', icon: FiTruck },
+  { key: 'suppliers', label: 'Supplier Management', icon: FiBriefcase },
 ];
 
 const VALID_TABS = new Set(SECTION_KEYS.map((s) => s.key));
@@ -198,6 +201,72 @@ const AdminManagement = () => {
           <DataTable columns={columns} data={filtered} />
         )}
       </div>
+    </div>
+  );
+};
+
+const SupplierManagement = () => {
+  const [suppliers, setSuppliers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const loadSuppliers = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await superAdminService.getSuppliers({ page: 1, limit: 100, search: searchTerm || undefined, status: statusFilter });
+      const payload = response?.data ?? response;
+      setSuppliers(Array.isArray(payload) ? payload : payload?.suppliers || []);
+    } catch (err) {
+      setError(getUserFacingErrorMessage(err, 'Failed to load suppliers'));
+      setSuppliers([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchTerm, statusFilter]);
+
+  useEffect(() => { loadSuppliers(); }, [loadSuppliers]);
+
+  const toggleStatus = async (supplier) => {
+    const nextStatus = String(supplier.status).toUpperCase() === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    setActionLoading(true);
+    setError('');
+    try {
+      await superAdminService.updateSupplierStatus(supplier._id || supplier.id, nextStatus);
+      await loadSuppliers();
+    } catch (err) {
+      setError(getUserFacingErrorMessage(err, 'Unable to update supplier status'));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const rows = suppliers.filter((supplier) => {
+    const needle = searchTerm.toLowerCase();
+    return !needle || `${supplier.supplierName || ''} ${supplier.companyName || ''} ${supplier.contactPerson || ''} ${supplier.email || ''}`.toLowerCase().includes(needle);
+  });
+
+  const columns = [
+    { key: 'supplierName', label: 'Supplier' },
+    { key: 'companyName', label: 'Company' },
+    { key: 'contactPerson', label: 'Contact' },
+    { key: 'email', label: 'Email' },
+    { key: 'status', label: 'Status', render: (value) => <StatusBadge status={String(value || 'INACTIVE').toLowerCase()} /> },
+    { key: 'actions', label: 'Actions', render: (_, row) => <button type="button" disabled={actionLoading} onClick={() => toggleStatus(row)} className="min-h-[44px] rounded-lg border border-gray-200 px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-50">{String(row.status).toUpperCase() === 'ACTIVE' ? 'Deactivate' : 'Activate'}</button> },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <PageHeader title="Supplier Management" subtitle="Manage supplier accounts linked to the existing Supplier records." />
+      {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+      <div className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm sm:flex-row sm:items-center">
+        <div className="flex-1"><SearchBar placeholder="Search suppliers..." value={searchTerm} onSearch={setSearchTerm} /></div>
+        <FilterDropdown options={[{ label: 'All Status', value: 'all' }, { label: 'Active', value: 'ACTIVE' }, { label: 'Inactive', value: 'INACTIVE' }]} selected={statusFilter} onSelect={setStatusFilter} label="Filter" onClear={() => setStatusFilter('all')} />
+      </div>
+      <div className="overflow-hidden rounded-xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">{loading ? <p className="text-sm text-gray-500">Loading suppliers...</p> : rows.length === 0 ? <p className="text-sm text-gray-500">No suppliers found.</p> : <DataTable columns={columns} data={rows} />}</div>
     </div>
   );
 };
@@ -463,6 +532,7 @@ const UserManagement = () => {
               {section === 'admins' && <AdminManagement />}
               {section === 'vendors' && <Vendors />}
               {section === 'delivery' && <DeliveryPartners />}
+              {section === 'suppliers' && <SupplierManagement />}
             </div>
           </div>
         </div>

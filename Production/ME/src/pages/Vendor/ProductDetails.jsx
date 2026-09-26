@@ -240,19 +240,6 @@ const ProductDetails = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 sm:gap-2 mb-3 sm:mb-4">
-              <span className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full ${
-                product.status === 'active' ? 'bg-green-500' :
-                product.status === 'low_stock' ? 'bg-yellow-500' :
-                'bg-red-500'
-              }`} />
-              <span className="text-xs sm:text-sm font-medium text-gray-700">
-                {product.status === 'active' ? 'In Stock' :
-                 product.status === 'low_stock' ? 'Low Stock' :
-                 'Out of Stock'}
-              </span>
-            </div>
-
             <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6">{product.description}</p>
 
             <div className="mb-4 sm:mb-6">

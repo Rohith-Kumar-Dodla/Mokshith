@@ -49,42 +49,43 @@ export const createInvoicePDF = async (invoice, order, user) => {
 
       doc.pipe(stream);
 
-      // Header
+        // Header and metadata use independent columns so long IDs cannot overlap.
       try {
-        doc
-          .fillColor('#444444')
-          .fontSize(20)
-          .text('MOKSHITH ENTERPRISES', 50, 50)
-          .fontSize(10)
-          .text('123 B2B Business Hub, Industrial Area', 50, 75)
-          .text('Hyderabad, Telangana - 500001', 50, 90)
-          .text('GSTIN: 36AAAAA0000A1Z5', 50, 105)
-          .moveDown();
+        doc.fillColor('#1f2937').font('Helvetica-Bold').fontSize(20).text('MOKSHITH ENTERPRISES', 50, 50);
+        doc.font('Helvetica').fontSize(10)
+          .text('123 B2B Business Hub', 50, 78)
+          .text('Industrial Area', 50, 92)
+          .text('Hyderabad, Telangana - 500001', 50, 106)
+          .text('GSTIN: 36AAAAA0000A1Z5', 50, 120);
 
-        // Invoice Details
-        doc
-          .fontSize(12)
-          .text(`Invoice Number: ${invoice.invoiceNumber}`, 400, 50)
-          .text(`Date: ${new Date().toLocaleDateString()}`, 400, 65)
-          .text(`Order ID: ${String(order._id || 'N/A')}`, 400, 80)
-          .moveDown();
+        const metadata = [
+          ['Invoice Number', invoice.invoiceNumber || 'N/A'],
+          ['Invoice Date', new Date(invoice.createdAt || Date.now()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })],
+          ['Order ID', String(order._id || 'N/A')],
+        ];
+        doc.roundedRect(330, 50, 215, 88, 5).fillAndStroke('#f8fafc', '#cbd5e1');
+        metadata.forEach(([label, value], index) => {
+          const y = 62 + index * 24;
+          doc.fillColor('#64748b').font('Helvetica-Bold').fontSize(8).text(label.toUpperCase(), 342, y, { width: 85 });
+          doc.fillColor('#111827').font('Helvetica').fontSize(9).text(String(value), 430, y, { width: 103, ellipsis: true });
+        });
 
         // Bill To
-        const recipientName = user?.name || order.address?.name || order.shippingAddress?.name || 'Business Partner';
-        const companyName = user?.companyName || 'Corporate Entity';
-        const address = order.shippingAddress?.addressLine1 || order.address?.addressLine || 'Address not provided';
+        const billTo = order.shippingAddress || order.address || {};
+        const recipientName = billTo.name || 'Business Partner';
+        const companyName = billTo.businessName || 'Business Customer';
+        const address = [billTo.addressLine, billTo.city, billTo.state, billTo.pincode].filter(Boolean).join(', ') || 'Address not provided';
 
         doc
           .fontSize(12)
-          .text('BILL TO:', 50, 150)
+          .text('BILL TO:', 50, 165)
           .fontSize(10)
-          .text(String(recipientName), 50, 165)
-          .text(String(companyName), 50, 180)
-          .text(String(address), 50, 195)
-          .moveDown();
+          .text(String(recipientName), 50, 180)
+          .text(String(companyName), 50, 195)
+          .text(String(address), 50, 210, { width: 250 });
 
         // Table Header
-        const tableTop = 250;
+        const tableTop = 270;
         doc.font('Helvetica-Bold');
         doc.text('Item', 50, tableTop);
         doc.text('Qty', 220, tableTop);
@@ -103,7 +104,7 @@ export const createInvoicePDF = async (invoice, order, user) => {
         itemsToDisplay.forEach(item => {
           // Safety checks for numeric values
           const qty = Number(item.quantity) || 0;
-          const price = Number(item.price) || 0;
+          const price = Number(item.finalPrice ?? item.price) || 0;
           const gstRate = Number(item.gstRate) || 18;
           const basePrice = Number(item.basePrice) || (price / 1.18);
           const taxPerUnit = Number(item.taxPerUnit) || (price - basePrice);
@@ -134,14 +135,28 @@ export const createInvoicePDF = async (invoice, order, user) => {
         const gstLabel = Number(invoice.gst) || 18;
 
         doc.text('Subtotal:', 350, footerTop + 15);
-        doc.text(`₹${subtotal.toLocaleString('en-IN')}`, 450, footerTop + 15);
+        doc.text(`₹${subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 450, footerTop + 15);
+
+        const specialDiscount = Number(order.specialDiscountAmount || 0);
+        const bulkDiscount = Number(order.bulkDiscountAmount || 0);
+        let discountRow = footerTop + 30;
+        if (specialDiscount > 0) {
+          doc.text('Special Discount:', 350, discountRow);
+          doc.text(`-₹${specialDiscount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 450, discountRow);
+          discountRow += 15;
+        }
+        if (bulkDiscount > 0) {
+          doc.text('Bulk Discount:', 350, discountRow);
+          doc.text(`-₹${bulkDiscount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 450, discountRow);
+          discountRow += 15;
+        }
         
-        doc.text(`GST (${gstLabel}%):`, 350, footerTop + 30);
-        doc.text(`₹${taxTotal.toLocaleString('en-IN')}`, 450, footerTop + 30);
+        doc.text(`GST (${gstLabel}%):`, 350, discountRow);
+        doc.text(`₹${taxTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 450, discountRow);
         
         doc.font('Helvetica-Bold');
-        doc.text('Grand Total:', 350, footerTop + 50);
-        doc.text(`₹${grandTotal.toLocaleString('en-IN')}`, 450, footerTop + 50);
+        doc.text('Grand Total:', 350, discountRow + 20);
+        doc.text(`₹${grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 450, discountRow + 20);
 
         doc.fontSize(10).font('Helvetica').text('Thank you for your business!', 50, 750, { align: 'center', width: 500 });
 

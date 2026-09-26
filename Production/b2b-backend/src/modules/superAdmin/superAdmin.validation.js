@@ -106,3 +106,18 @@ export const listStaffSchema = Joi.object({
     status: Joi.string().valid('all', ...Object.values(USER_STATUS)).optional(),
   }),
 });
+
+export const createSupplierAccountSchema = Joi.object({
+  body: Joi.object({
+    name: Joi.string().trim().min(2).max(100).required(),
+    email: Joi.string().email().required(),
+    mobile: Joi.string().pattern(/^[0-9]{10}$/).required(),
+    password: passwordField(),
+    supplierName: Joi.string().trim().min(1).max(100).required(),
+    companyName: Joi.string().trim().min(1).max(200).required(),
+    contactPerson: Joi.string().trim().max(100).optional().allow(''),
+    businessAddress: Joi.string().trim().max(500).optional().allow(''),
+    gstNumber: Joi.string().trim().max(30).optional().allow(''),
+    status: Joi.string().valid(...Object.values(USER_STATUS)).default(USER_STATUS.ACTIVE),
+  }),
+});

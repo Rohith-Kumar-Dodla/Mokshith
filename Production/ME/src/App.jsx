@@ -36,6 +36,7 @@ const SuperAdminProcurementDemand = lazy(() => import('./pages/SuperAdmin/Procur
 const SuperAdminProcurementPlan = lazy(() => import('./pages/SuperAdmin/ProcurementPlan'));
 const SuperAdminPurchaseRequests = lazy(() => import('./pages/SuperAdmin/PurchaseRequests'));
 const SuperAdminPurchaseRequestCreate = lazy(() => import('./pages/SuperAdmin/PurchaseRequestCreate'));
+const SupplierDashboardComingSoon = lazy(() => import('./pages/SupplierDashboard/ComingSoon'));
 
 const AdminLayout = lazy(() => import('./layouts/AdminLayout'));
 const AdminDashboard = lazy(() => import('./pages/Admin/Dashboard'));
@@ -51,6 +52,7 @@ const DeliveryAssignment = lazy(() => import('./pages/Admin/DeliveryAssignment')
 const Reports = lazy(() => import('./pages/Admin/Reports'));
 const AdminAnalytics = lazy(() => import('./pages/Admin/Analytics'));
 const AdminSettings = lazy(() => import('./pages/Admin/Settings'));
+const SupplierAllocation = lazy(() => import('./pages/Shared/SupplierAllocation'));
 
 const VendorLayout = lazy(() => import('./layouts/VendorLayout'));
 const VendorDashboard = lazy(() => import('./pages/Vendor/Dashboard'));
@@ -95,6 +97,8 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
 
+              <Route path="/supplier-dashboard" element={<ProtectedRoute requiredRole="super-admin"><SupplierDashboardComingSoon /></ProtectedRoute>} />
+
               <Route path="/super-admin/*" element={<ProtectedRoute requiredRole="super-admin"><SuperAdminLayout /></ProtectedRoute>}>
                 <Route index element={<Navigate to="/super-admin/dashboard" replace />} />
                 <Route path="dashboard" element={<SuperAdminDashboard />} />
@@ -112,6 +116,8 @@ function App() {
                 <Route path="procurement/purchase-requests/:id" element={<SuperAdminPurchaseRequests />} />
                 <Route path="procurement/purchase-requests" element={<SuperAdminPurchaseRequests />} />
                 <Route path="orders" element={<SuperAdminOrders />} />
+                <Route path="delivery-assignment" element={<DeliveryAssignment />} />
+                <Route path="supplier-allocation" element={<SupplierAllocation />} />
                 <Route path="payment-verifications" element={<Navigate to="/super-admin/orders" replace />} />
                 <Route path="analytics" element={<SuperAdminAnalytics />} />
                 <Route path="settings" element={<SuperAdminSettings />} />
@@ -127,6 +133,7 @@ function App() {
                 <Route path="discounts" element={<AdminDiscounts />} />
                 <Route path="vendors" element={<AdminVendors />} />
                 <Route path="orders" element={<AdminOrders />} />
+                <Route path="supplier-allocation" element={<SupplierAllocation />} />
                 <Route path="delivery-assignment" element={<DeliveryAssignment />} />
                 <Route path="reports" element={<Reports />} />
                 <Route path="analytics" element={<AdminAnalytics />} />

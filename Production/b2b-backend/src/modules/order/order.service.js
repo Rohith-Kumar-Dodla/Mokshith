@@ -127,6 +127,9 @@ export const createOrder = async (userId, data) => {
   const promotions = await getEligiblePromotions(products.map((product) => product._id));
 
   let totalAmount = 0;
+  let totalDiscountAmount = 0;
+  let totalSpecialDiscountAmount = 0;
+  let totalBulkDiscountAmount = 0;
   let totalWeight = 0;
   const items = [];
 
@@ -167,6 +170,9 @@ export const createOrder = async (userId, data) => {
     );
 
     totalAmount += linePricing.itemTotal;
+    totalDiscountAmount += Number(linePricing.discountAmount || 0);
+    totalSpecialDiscountAmount += Number(linePricing.specialDiscountAmount || 0);
+    totalBulkDiscountAmount += Number(linePricing.bulkDiscountAmount || 0);
     totalWeight += (product.weight || 0) * item.quantity;
 
     items.push({
@@ -199,6 +205,11 @@ export const createOrder = async (userId, data) => {
     userId,
     items,
     totalAmount: finalTotal,
+    subtotal: totalAmount,
+    discountAmount: totalDiscountAmount,
+    specialDiscountAmount: totalSpecialDiscountAmount,
+    bulkDiscountAmount: totalBulkDiscountAmount,
+    taxAmount: tax,
     totalWeight,
     commissionRate,
     commissionAmount,

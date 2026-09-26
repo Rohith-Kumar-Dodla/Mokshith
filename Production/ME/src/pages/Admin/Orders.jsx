@@ -6,6 +6,7 @@ const Orders = () => (
     PageHeader={PageHeader}
     title="Orders"
     subtitle="Monitor orders, payments and delivery operations"
+    deliveryAssignmentPath="/admin/delivery-assignment"
   />
 );
 

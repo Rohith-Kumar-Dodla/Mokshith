@@ -196,3 +196,35 @@ export const removeFromCart = async (user, productId) => {
   await cart.save();
   return withAuthoritativePricing(await repo.findCartByUser(userId));
 };
+
+export const updateQuantity = async (user, productId, quantity) => {
+  const userId = resolveUserId(user);
+  if (!userId) throw new AppError('User not authenticated', 401);
+  if (!mongoose.Types.ObjectId.isValid(productId)) throw new AppError('Invalid product ID', 400);
+
+  const nextQuantity = Number(quantity);
+  if (!Number.isInteger(nextQuantity) || nextQuantity < 1) {
+    throw new AppError('Quantity must be a positive whole number', 400);
+  }
+
+  const product = await Product.findById(productId)
+    .select('name minOrderQty moq stock isActive catalogScope')
+    .lean();
+  if (!product || product.isActive === false || isSupplierOnlyProduct(product)) {
+    throw new AppError('Product is not available', 400);
+  }
+
+  const minQty = Math.max(Number(product.minOrderQty ?? 1), Number(product.moq ?? 1));
+  if (nextQuantity < minQty) {
+    throw new AppError(`Minimum order quantity for ${product.name} is ${minQty}`, 400);
+  }
+  await checkStock(productId, nextQuantity);
+
+  const cart = await loadUserCart(userId);
+  if (!cart) throw new AppError('Cart not found', 404);
+  const item = cart.items.find((entry) => normalizeProductRef(entry.productId) === String(productId));
+  if (!item) throw new AppError('Cart item not found', 404);
+  item.quantity = nextQuantity;
+  await cart.save();
+  return withAuthoritativePricing(await repo.findCartByUser(userId));
+};

@@ -27,7 +27,6 @@ const ProductCard = ({
     [product, quantity]
   );
   const unitPrice = pricing.unitPrice;
-  const totalPrice = pricing.total;
   const canSelect = selectable && product.status !== 'out_of_stock';
 
   const calculateDiscount = () => {
@@ -154,25 +153,14 @@ const ProductCard = ({
         <div className="mb-2 sm:mb-3">
           <div className="flex items-baseline gap-2">
             <span className="text-lg sm:text-xl font-bold text-gray-900">
-              {quantity > 1 || pricing.bulkApplied ? `Total: ₹${totalPrice.toFixed(2)}` : `₹${totalPrice.toFixed(2)}`}
+              ₹{unitPrice.toFixed(2)}
             </span>
-            {product.mrp && (
+            <span className="text-xs text-gray-500">/ unit</span>
+            {product.mrp && product.mrp > product.price && (
               <span className="text-xs sm:text-sm text-gray-400 line-through">₹{product.mrp.toFixed(2)}</span>
             )}
           </div>
-          {product.promotionalPrice != null && product.promotionalPrice < product.price && (
-            <p className="text-xs text-green-700 font-semibold mt-1">Promo price from ₹{product.promotionalPrice.toFixed(2)}</p>
-          )}
-          {(quantity > 1 || pricing.bulkApplied) && (
-            <p className="text-xs text-gray-500 mt-0.5">
-              {quantity} × ₹{unitPrice.toFixed(2)} = ₹{totalPrice.toFixed(2)}
-            </p>
-          )}
-          {product.wholesalePrice && (
-            <p className="text-xs text-green-600 font-medium mt-0.5">
-              Wholesale: ₹{product.wholesalePrice.toFixed(2)}
-            </p>
-          )}
+          <p className="text-xs text-gray-500 mt-1">MOQ: {product.minimumOrderQuantity ?? product.moq ?? 1}</p>
         </div>
 
         <div className="flex items-center gap-2 mb-2 sm:mb-3">

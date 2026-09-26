@@ -13,7 +13,6 @@ import {
   FiMenu,
   FiX,
   FiBell,
-  FiLifeBuoy,
 } from 'react-icons/fi';
 import NotificationDrawer from '../components/vendor/NotificationDrawer';
 import PortalSidebar from '../components/common/PortalSidebar';
@@ -44,14 +43,12 @@ const VendorLayout = () => {
     .toUpperCase() || 'V';
 
   const menuItems = [
-    { path: '/vendor/dashboard', icon: FiGrid, label: 'Dashboard' },
+    { path: '/vendor/dashboard', icon: FiGrid, label: 'Home' },
     { path: '/vendor/categories', icon: FiFolder, label: 'Categories' },
     { path: '/vendor/products', icon: FiBox, label: 'Products' },
-    { path: '/vendor/cart', icon: FiShoppingCart, label: 'Cart' },
     { path: '/vendor/orders', icon: FiTruck, label: 'Orders' },
     { path: '/vendor/invoices', icon: FiFileText, label: 'Invoices' },
     { path: '/vendor/wishlist', icon: FiHeart, label: 'Wishlist' },
-    { path: '/vendor/support', icon: FiLifeBuoy, label: 'Support' },
     { path: '/vendor/profile', icon: FiUser, label: 'Profile' },
     { path: '/vendor/settings', icon: FiSettings, label: 'Settings' },
   ];

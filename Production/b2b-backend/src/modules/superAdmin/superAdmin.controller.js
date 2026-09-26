@@ -400,3 +400,8 @@ export const receivePurchaseRequest = asyncHandler(async (req, res) => {
   );
   successResponse(res, request, 'Goods received');
 });
+
+export const createSupplierAccount = asyncHandler(async (req, res) => {
+  const supplier = await service.createSupplierAccount(req.body, req.user?._id, req.ip);
+  successResponse(res, supplier, 'Supplier account created successfully', 201);
+});

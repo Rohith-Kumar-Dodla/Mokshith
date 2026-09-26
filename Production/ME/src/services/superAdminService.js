@@ -3,6 +3,10 @@ import api from './api';
 const unwrap = (response) => response?.data ?? response;
 
 const superAdminService = {
+  getSupplierAllocationMetrics: async () => {
+    const response = await api.get('/supplier-allocations/metrics');
+    return unwrap(response);
+  },
   getStats: async () => {
     const response = await api.get('/super-admin/stats');
     return unwrap(response);
@@ -50,6 +54,10 @@ const superAdminService = {
 
   createDeliveryAgent: async (payload) => {
     const response = await api.post('/super-admin/delivery-agents', payload);
+    return unwrap(response);
+  },
+  createSupplierAccount: async (payload) => {
+    const response = await api.post('/super-admin/suppliers/onboard', payload);
     return unwrap(response);
   },
 

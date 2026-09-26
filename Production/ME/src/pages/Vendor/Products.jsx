@@ -431,15 +431,6 @@ const Products = () => {
                             <p className="text-xs text-gray-400">{product.brand}</p>
                           )}
                         </div>
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          product.status === 'active' ? 'bg-green-100 text-green-800' :
-                          product.status === 'low_stock' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {product.status === 'active' ? 'In Stock' :
-                           product.status === 'low_stock' ? 'Low Stock' :
-                           'Out of Stock'}
-                        </span>
                       </div>
                       <div className="flex items-baseline gap-2 mb-2">
                         <span className="text-lg sm:text-xl font-bold text-gray-900">₹{product.price.toFixed(2)}</span>
@@ -459,7 +450,7 @@ const Products = () => {
                           }`}
                         >
                           <FiShoppingCart className="w-4 h-4" />
-                          {product.status === 'out_of_stock' ? 'Out of Stock' : 'Add to Cart'}
+                           {product.status === 'out_of_stock' ? 'Unavailable' : 'Add to Cart'}
                         </button>
                       </div>
                     </div>

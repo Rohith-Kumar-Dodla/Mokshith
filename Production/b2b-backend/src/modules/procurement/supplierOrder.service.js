@@ -94,7 +94,7 @@ export const listForOrder = async (orderId) => {
 
 const requireOrder = async (id) => { validId(id, 'supplier order'); const doc = await SupplierOrder.findById(id); if (!doc) throw new AppError('Supplier order not found', 404); return doc; };
 
-const buildMessage = (order) => ['Mokshith Enterprises', '', 'New Supplier Order', `Supplier Order: ${order.supplierOrderNumber}`, '', 'Items:', ...order.items.map((item) => `${item.productNameSnapshot}\nQuantity: ${item.quantity}\nSupplier Price: ₹${Number(item.unitSupplierPrice).toFixed(2)}\nSubtotal: ₹${Number(item.subtotal).toFixed(2)}`), '', 'Please confirm availability and expected collection readiness.', '', `Reference: ${order.supplierOrderNumber}`].join('\n');
+const buildMessage = (order) => ['Mokshith Enterprises', '', 'Supplier Order Request', `Reference: ${order.supplierOrderNumber}`, '', 'Please prepare the following items:', ...order.items.map((item, index) => `${index + 1}. ${item.productNameSnapshot} - Qty: ${item.quantity}`), '', `Delivery: ${order.warehouseDestination || 'Mokshith Enterprises Warehouse'}`, '', 'Please confirm when ready.'].join('\n');
 
 export const generateWhatsApp = async (id, actorId) => {
   const order = await requireOrder(id);

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getUserFacingErrorMessage } from '../../utils/apiResponse';
 import { Link } from 'react-router-dom';
-import { FiUsers, FiShoppingBag, FiTruck, FiPackage, FiDollarSign, FiTrendingUp, FiActivity, FiClock, FiMonitor, FiBarChart, FiFileText } from 'react-icons/fi';
+import { FiUsers, FiShoppingBag, FiTruck, FiPackage, FiDollarSign, FiTrendingUp, FiActivity, FiClock, FiMonitor, FiBarChart, FiFileText, FiBriefcase } from 'react-icons/fi';
 import DashboardCard from '../../components/superadmin/DashboardCard';
 import ActivityFeed from '../../components/superadmin/ActivityFeed';
 import PageHeader from '../../components/superadmin/PageHeader';
@@ -27,6 +27,7 @@ const QUICK_ACTION_COLORS = {
 const SuperAdminDashboard = () => {
   const [stats, setStats] = useState(null);
   const [metrics, setMetrics] = useState(null);
+  const [allocationMetrics, setAllocationMetrics] = useState(null);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -38,14 +39,16 @@ const SuperAdminDashboard = () => {
       setError('');
 
       try {
-        const [statsResponse, metricsResponse, auditResponse] = await Promise.all([
+        const [statsResponse, metricsResponse, auditResponse, allocationResponse] = await Promise.all([
           superAdminService.getStats(),
           superAdminService.getMetrics(),
           superAdminService.getAuditLogs({ limit: 5 }),
+          superAdminService.getSupplierAllocationMetrics(),
         ]);
 
         setStats(statsResponse.data ?? statsResponse);
         setMetrics(metricsResponse.data ?? metricsResponse);
+        setAllocationMetrics(allocationResponse.data ?? allocationResponse);
 
         const logs = auditResponse.data ?? auditResponse;
         const auditActivities = (Array.isArray(logs) ? logs : []).map((log) => ({
@@ -92,6 +95,23 @@ const SuperAdminDashboard = () => {
     { title: 'Total Revenue', value: formatRevenue(stats?.revenue ?? 0), icon: FiDollarSign, color: 'red' },
   ];
 
+  const operationalCards = [
+    { title: 'Pending Supplier Allocation', value: allocationMetrics?.pendingAllocation ?? 0, to: '/super-admin/supplier-allocation' },
+    { title: 'Partially Allocated', value: allocationMetrics?.partiallyAllocated ?? 0, to: '/super-admin/supplier-allocation' },
+    { title: 'Fully Allocated', value: allocationMetrics?.fullyAllocated ?? 0, to: '/super-admin/supplier-allocation' },
+    { title: 'Requests Pending', value: allocationMetrics?.requestsPending ?? 0, to: '/super-admin/supplier-allocation' },
+    { title: 'Requests Sent', value: allocationMetrics?.requestsSent ?? 0, to: '/super-admin/supplier-allocation' },
+    { title: 'Awaiting Warehouse', value: allocationMetrics?.awaitingWarehouse ?? 0, to: '/super-admin/supplier-allocation' },
+  ];
+
+  const supplierDashboardEntry = (
+    <Link to="/supplier-dashboard" className="group flex items-center gap-4 rounded-xl border border-blue-100 bg-blue-50/60 p-4 transition hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:p-5">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm"><FiBriefcase size={23} /></div>
+      <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h2 className="font-semibold text-gray-900">Supplier Dashboard</h2><span className="rounded-full bg-amber-100 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-700">Coming Soon</span></div><p className="mt-1 text-sm text-gray-600">Supplier operations will be available in the dedicated Supplier Dashboard.</p></div>
+      <span className="shrink-0 text-sm font-semibold text-blue-700">Open</span>
+    </Link>
+  );
+
   if (loading) {
     return <p className="text-sm text-gray-500">Loading dashboard...</p>;
   }
@@ -109,6 +129,8 @@ const SuperAdminDashboard = () => {
             {error}
           </div>
         )}
+
+        {supplierDashboardEntry}
 
         <div className="space-y-3">
           {kpiCards.map((item) => (
@@ -149,6 +171,10 @@ const SuperAdminDashboard = () => {
           ))}
         </div>
 
+        <div className="grid grid-cols-2 gap-2">
+          {operationalCards.map((item) => <Link key={item.title} to={item.to} className="rounded-lg border bg-white p-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"><p className="text-xs text-gray-500">{item.title}</p><p className="text-lg font-bold text-gray-900">{item.value}</p></Link>)}
+        </div>
+
         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-3">
           <h2 className="text-sm font-semibold text-gray-900 mb-2">Quick Actions</h2>
           <div className="grid grid-cols-3 gap-2">
@@ -182,6 +208,8 @@ const SuperAdminDashboard = () => {
         </div>
       )}
 
+      {supplierDashboardEntry}
+
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-6">
         {kpiCards.map((card) => (
           <DashboardCard
@@ -194,6 +222,11 @@ const SuperAdminDashboard = () => {
             to={card.to}
           />
         ))}
+      </div>
+
+      <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2"><h2 className="text-base font-semibold text-gray-900 sm:text-lg">Supplier operations</h2><Link to="/super-admin/supplier-allocation" className="text-sm font-medium text-blue-700">View allocations</Link></div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">{operationalCards.map((item) => <Link key={item.title} to={item.to} className="rounded-lg bg-gray-50 p-3 hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"><p className="text-xs text-gray-500">{item.title}</p><p className="mt-1 text-xl font-bold text-gray-900">{item.value}</p></Link>)}</div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 min-w-0">

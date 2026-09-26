@@ -17,6 +17,7 @@ import useDebouncedValue from '../../hooks/useDebouncedValue';
 import useOrderStatusSync from '../../hooks/useOrderStatusSync';
 import { getOrderStatusLabel } from '../../utils/orderStatusSync';
 import ProcurementPanel from './ProcurementPanel';
+import SupplierAllocationSummary from './SupplierAllocationSummary';
 
 const ADMIN_STATUS_OPTIONS = [
   { value: 'all', label: 'All Status' },
@@ -100,7 +101,7 @@ function PaymentMethodBadge({ method, emphasize = false }) {
   );
 }
 
-export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
+export default function AdminOrderManagement({ PageHeader, title, subtitle, deliveryAssignmentPath = '/admin/delivery-assignment', useLegacyProcurementPanel = true }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialKpi = searchParams.get('kpi');
   const [kpiFilter, setKpiFilter] = useState(
@@ -398,7 +399,7 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
             <div key={order.id} className="p-4 space-y-3">
               <div className="flex items-start justify-between gap-3"><div><p className="font-semibold text-gray-900">#{String(order.id).slice(-8).toUpperCase()}</p><p className="text-sm text-gray-600">{order.vendor}</p></div><StatusBadge status={order.status} /></div>
               <div className="grid grid-cols-2 gap-2 text-xs text-gray-600"><span>Amount <strong className="block text-sm text-gray-900">₹{order.amount.toLocaleString('en-IN')}</strong></span><span>Payment <strong className="block text-sm text-gray-900">{formatPaymentMethodLabel(order.paymentMethod)} · {order.paymentStatus}</strong></span><span>Delivery <strong className="block text-sm text-gray-900">{getOrderStatusLabel(order.raw?.logisticsStatus || 'UNASSIGNED')}</strong></span><span>Partner <strong className="block text-sm text-gray-900">{order.deliveryPartner || 'Not Assigned'}</strong></span></div>
-              <div className="flex flex-wrap gap-2"><button type="button" onClick={() => handleViewOrder(order)} className="inline-flex items-center gap-1 px-3 py-2 min-h-[44px] bg-blue-600 text-white rounded-lg text-xs"><FiEye size={14} /> Manage</button>{!order.raw?.shipmentId || !order.raw?.logisticsStatus ? <Link to={`/admin/delivery-assignment?orderId=${encodeURIComponent(order.raw?._id || order.id)}`} className="inline-flex items-center gap-1 px-3 py-2 min-h-[44px] border border-blue-200 text-blue-700 rounded-lg text-xs"><FiTruck size={14} /> Assign Delivery</Link> : null}</div>
+              <div className="flex flex-wrap gap-2"><button type="button" onClick={() => handleViewOrder(order)} className="inline-flex items-center gap-1 px-3 py-2 min-h-[44px] bg-blue-600 text-white rounded-lg text-xs"><FiEye size={14} /> Manage</button>{!order.raw?.shipmentId || !order.raw?.logisticsStatus ? <Link to={`${deliveryAssignmentPath}?orderId=${encodeURIComponent(order.raw?._id || order.id)}`} className="inline-flex items-center gap-1 px-3 py-2 min-h-[44px] border border-blue-200 text-blue-700 rounded-lg text-xs"><FiTruck size={14} /> Assign Delivery</Link> : null}</div>
             </div>
           ))}
         </div>
@@ -431,10 +432,10 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div className="rounded-lg border p-3"><h4 className="font-semibold text-gray-900 mb-1">Customer</h4><p>{selectedOrder.raw?.userId?.name || selectedOrder.vendor}</p><p className="text-gray-600">{selectedOrder.raw?.userId?.mobile || selectedOrder.raw?.userId?.email || 'Contact unavailable'}</p><p className="text-gray-600 mt-1">{selectedOrder.address}</p></div>
-              <div className="rounded-lg border p-3"><h4 className="font-semibold text-gray-900 mb-1">Delivery</h4><p>Status: {getOrderStatusLabel(selectedOrder.raw?.logisticsStatus || 'UNASSIGNED')}</p><p>Partner: {selectedOrder.deliveryPartner || 'Not Assigned'}</p><p>Distance: {selectedOrder.raw?.deliveryDistance || 'Not available'}</p><Link to={`/admin/delivery-assignment?orderId=${encodeURIComponent(selectedOrder.raw?._id || selectedOrder.id)}`} className="inline-flex items-center gap-1 mt-2 text-blue-700 font-semibold"><FiTruck size={14} /> {selectedOrder.raw?.deliveryPartner ? 'Review assignment' : 'Assign Delivery'}</Link></div>
+              <div className="rounded-lg border p-3"><h4 className="font-semibold text-gray-900 mb-1">Delivery</h4><p>Status: {getOrderStatusLabel(selectedOrder.raw?.logisticsStatus || 'UNASSIGNED')}</p><p>Partner: {selectedOrder.deliveryPartner || 'Not Assigned'}</p><p>Distance: {selectedOrder.raw?.deliveryDistance || 'Not available'}</p><Link to={`${deliveryAssignmentPath}?orderId=${encodeURIComponent(selectedOrder.raw?._id || selectedOrder.id)}`} className="inline-flex items-center gap-1 mt-2 text-blue-700 font-semibold"><FiTruck size={14} /> {selectedOrder.raw?.deliveryPartner ? 'Review assignment' : 'Assign Delivery'}</Link></div>
             </div>
 
-            <ProcurementPanel orderId={selectedOrder.raw?._id || selectedOrder.id} />
+            {useLegacyProcurementPanel ? <ProcurementPanel orderId={selectedOrder.raw?._id || selectedOrder.id} /> : <SupplierAllocationSummary orderId={selectedOrder.raw?._id || selectedOrder.id} />}
 
             <div className="rounded-lg border p-3"><h4 className="font-semibold text-gray-900 mb-2">Order items</h4><div className="space-y-2">{(selectedOrder.raw?.items || []).map((item, index) => <div key={`${item.productId?._id || item.productId || index}`} className="flex justify-between gap-3 text-sm"><span>{item.name || item.productId?.name || 'Product'} × {item.quantity}</span><span>₹{Number(item.finalPrice ?? item.price ?? 0).toLocaleString('en-IN')}</span></div>)}</div><div className="flex justify-between border-t mt-3 pt-3 font-semibold"><span>Total</span><span>₹{Number(selectedOrder.amount || 0).toLocaleString('en-IN')}</span></div></div>
 

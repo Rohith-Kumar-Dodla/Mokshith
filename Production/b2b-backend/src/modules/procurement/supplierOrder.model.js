@@ -14,6 +14,7 @@ const supplierOrderItemSchema = new mongoose.Schema({
 const supplierOrderSchema = new mongoose.Schema({
   supplierOrderNumber: { type: String, required: true, unique: true, index: true },
   customerOrderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true, index: true },
+  allocationRequestKey: { type: String, unique: true, sparse: true, index: true },
   supplierId: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier', required: true, index: true },
   assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   assignedAt: { type: Date, default: Date.now },
@@ -31,6 +32,7 @@ const supplierOrderSchema = new mongoose.Schema({
   acknowledgedAt: { type: Date, default: null },
   collectedAt: { type: Date, default: null },
   receivedAtWarehouseAt: { type: Date, default: null },
+  warehouseDestination: { type: String, default: '' },
 }, { timestamps: true });
 
 supplierOrderSchema.index({ customerOrderId: 1, supplierId: 1, createdAt: -1 });
