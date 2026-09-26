@@ -136,6 +136,48 @@ export const aggregateSupplierCategoryCounts = async (supplierIds = []) => {
   }]));
 };
 
+export const getSupplierCategorySummaries = async (supplierId) => {
+  await requireSupplier(supplierId);
+
+  const mappings = await SupplierCategory.find({ supplierId })
+    .populate('categoryId', 'name isActive')
+    .sort({ createdAt: -1 })
+    .lean();
+
+  const categoryIds = mappings
+    .map((mapping) => mapping.categoryId?._id || mapping.categoryId)
+    .filter(Boolean);
+
+  const productCounts = categoryIds.length > 0
+    ? await SupplierProduct.aggregate([
+      { $match: { supplierId: new mongoose.Types.ObjectId(supplierId) } },
+      {
+        $lookup: {
+          from: 'products',
+          localField: 'productId',
+          foreignField: '_id',
+          as: 'product',
+        },
+      },
+      { $unwind: '$product' },
+      { $match: { 'product.categoryId': { $in: categoryIds } } },
+      { $group: { _id: '$product.categoryId', productCount: { $sum: 1 } } },
+    ])
+    : [];
+
+  const countsByCategory = new Map(
+    productCounts.map((row) => [String(row._id), row.productCount])
+  );
+
+  return mappings.map((mapping) => ({
+    _id: mapping._id,
+    categoryId: mapping.categoryId?._id || mapping.categoryId,
+    name: mapping.categoryId?.name || '—',
+    status: mapping.status,
+    productCount: countsByCategory.get(String(mapping.categoryId?._id || mapping.categoryId)) || 0,
+  }));
+};
+
 export const listSupplierCategories = async (supplierId, { status = 'all' } = {}) => {
   await requireSupplier(supplierId);
 

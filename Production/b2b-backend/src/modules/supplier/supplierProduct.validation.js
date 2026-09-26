@@ -40,6 +40,21 @@ export const listSupplierProductsSchema = Joi.object({
   }),
 });
 
+export const listSupplierCategoryProductsSchema = Joi.object({
+  params: Joi.object({
+    id: Joi.string().required(),
+    categoryId: Joi.string().required(),
+  }),
+  query: Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(12),
+    status: Joi.string()
+      .valid('all', ...Object.values(SUPPLIER_PRODUCT_STATUS))
+      .optional(),
+    search: Joi.string().trim().max(100).optional().allow(''),
+  }),
+});
+
 export const createSupplierProductSchema = Joi.object({
   params: Joi.object({
     id: Joi.string().required(),

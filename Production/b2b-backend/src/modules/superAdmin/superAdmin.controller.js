@@ -401,6 +401,15 @@ export const receivePurchaseRequest = asyncHandler(async (req, res) => {
   successResponse(res, request, 'Goods received');
 });
 
+export const getSupplierCategoryProducts = asyncHandler(async (req, res) => {
+  const result = await supplierProductService.listSupplierCategoryProducts(
+    req.params.id,
+    req.params.categoryId,
+    req.query
+  );
+  successResponse(res, result);
+});
+
 export const createSupplierAccount = asyncHandler(async (req, res) => {
   const supplier = await service.createSupplierAccount(req.body, req.user?._id, req.ip);
   successResponse(res, supplier, 'Supplier account created successfully', 201);

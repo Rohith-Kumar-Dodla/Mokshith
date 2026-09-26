@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import mongoose from 'mongoose';
 import supertest from 'supertest';
 import app from '../../src/app.js';
 import Product from '../../src/modules/product/product.model.js';
@@ -11,12 +10,14 @@ import {
   seedAdminUser,
   seedVendorUser,
   seedDeliveryPartner,
+  seedActiveUser,
   seedCategory,
   seedProduct,
 } from '../helpers/integrationFixtures.js';
 import { sessionHeaders } from '../helpers/httpTestHelpers.js';
 import { SUPPLIER_STATUS } from '../../src/constants/supplierStatus.js';
 import { SUPPLIER_PRODUCT_STATUS } from '../../src/constants/supplierProductStatus.js';
+import { ROLES } from '../../src/constants/roles.js';
 
 const request = supertest(app);
 
@@ -130,6 +131,11 @@ describe('Super Admin supplier catalog overview - Phase 4.1', () => {
       pricesNotSet: 2,
       categoryCount: 2,
     }));
+    expect(detail.body.data.categories).toHaveLength(2);
+    expect(detail.body.data.categories).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: 'Cooking Oil', productCount: 2 }),
+      expect.objectContaining({ name: 'Edible Oils', productCount: 1 }),
+    ]));
   });
 
   it('handles empty supplier summary counts', async () => {
@@ -155,6 +161,7 @@ describe('Super Admin supplier catalog overview - Phase 4.1', () => {
       pricesConfigured: 0,
       pricesNotSet: 0,
     });
+    expect(detail.body.data.categories).toEqual([]);
   });
 
   it('lists supplier products with supplier price, MOQ, and unset price as null', async () => {
@@ -207,6 +214,71 @@ describe('Super Admin supplier catalog overview - Phase 4.1', () => {
     expect(edible).toBeTruthy();
     expect(cooking.productCount).toBe(2);
     expect(edible.productCount).toBe(1);
+  });
+
+  it('lists products for one supplier and category with supplier fields and pagination', async () => {
+    const response = await asSuperAdmin(
+      request.get(`/api/v1/super-admin/suppliers/${supplierId}/categories/${categoryA._id}/products?limit=1`)
+    ).expect(200);
+
+    expect(response.body.data.supplier.supplierName).toBe('ABC Oils');
+    expect(response.body.data.category.name).toBe('Cooking Oil');
+    expect(response.body.data.total).toBe(2);
+    expect(response.body.data.products).toHaveLength(1);
+    expect(response.body.data.pages).toBe(2);
+    expect(response.body.data.products[0]).toEqual(expect.objectContaining({
+      minimumOrderQuantity: expect.any(Number),
+      availabilityStatus: SUPPLIER_PRODUCT_STATUS.ACTIVE,
+    }));
+    expect(response.body.data.products[0].product.category.name).toBe('Cooking Oil');
+  });
+
+  it('keeps category product search, status, supplier, and category scoped', async () => {
+    const search = await asSuperAdmin(
+      request.get(`/api/v1/super-admin/suppliers/${supplierId}/categories/${categoryA._id}/products?search=Groundnut`)
+    ).expect(200);
+    expect(search.body.data.total).toBe(1);
+    expect(search.body.data.products[0].product.name).toBe('Groundnut Oil');
+
+    const otherCategory = await asSuperAdmin(
+      request.get(`/api/v1/super-admin/suppliers/${supplierId}/categories/${categoryB._id}/products`)
+    ).expect(200);
+    expect(otherCategory.body.data.products).toHaveLength(1);
+    expect(otherCategory.body.data.products[0].product.name).toBe('Mustard Oil');
+
+    const mappingId = search.body.data.products[0]._id;
+    await asSuperAdmin(
+      request.patch(`/api/v1/super-admin/suppliers/${supplierId}/products/${mappingId}/status`)
+        .send({ status: SUPPLIER_PRODUCT_STATUS.INACTIVE })
+    ).expect(200);
+    const activeOnly = await asSuperAdmin(
+      request.get(`/api/v1/super-admin/suppliers/${supplierId}/categories/${categoryA._id}/products?status=ACTIVE`)
+    ).expect(200);
+    expect(activeOnly.body.data.products.every((row) => row.availabilityStatus === 'ACTIVE')).toBe(true);
+
+    const otherSupplier = await asSuperAdmin(request.post('/api/v1/super-admin/suppliers'))
+      .send(validSupplier({ supplierName: 'Scoped Supplier', companyName: 'Scoped Supplier Ltd', email: 'scoped@example.com', phone: '9876504444', gstNumber: undefined }))
+      .expect(201);
+    await asSuperAdmin(request.patch(`/api/v1/super-admin/suppliers/${otherSupplier.body.data._id}/status`)).send({ status: SUPPLIER_STATUS.APPROVED }).expect(200);
+    await asSuperAdmin(request.patch(`/api/v1/super-admin/suppliers/${otherSupplier.body.data._id}/status`)).send({ status: SUPPLIER_STATUS.ACTIVE }).expect(200);
+    await asSuperAdmin(request.post(`/api/v1/super-admin/suppliers/${otherSupplier.body.data._id}/categories`)).send({ categoryId: categoryA._id.toString() }).expect(201);
+    const scoped = await asSuperAdmin(request.get(`/api/v1/super-admin/suppliers/${otherSupplier.body.data._id}/categories/${categoryA._id}/products`)).expect(200);
+    expect(scoped.body.data.products).toEqual([]);
+  });
+
+  it('requires valid supplier, category, relationship, and Super Admin authorization', async () => {
+    const unrelated = await seedCategory({ name: 'Unrelated Category' });
+    await asSuperAdmin(request.get(`/api/v1/super-admin/suppliers/${supplierId}/categories/${unrelated._id}/products`)).expect(404);
+    await asSuperAdmin(request.get(`/api/v1/super-admin/suppliers/not-an-id/categories/${categoryA._id}/products`)).expect(400);
+    await asSuperAdmin(request.get(`/api/v1/super-admin/suppliers/${supplierId}/categories/not-an-id/products`)).expect(400);
+    await asSuperAdmin(request.get(`/api/v1/super-admin/suppliers/${new Product()._id}/categories/${categoryA._id}/products`)).expect(404);
+    await asSuperAdmin(request.get(`/api/v1/super-admin/suppliers/${supplierId}/categories/${new Product()._id}/products`)).expect(404);
+    await request.get(`/api/v1/super-admin/suppliers/${supplierId}/categories/${categoryA._id}/products`).set(sessionHeaders(admin)).expect(403);
+    await request.get(`/api/v1/super-admin/suppliers/${supplierId}/categories/${categoryA._id}/products`).set(sessionHeaders(vendor)).expect(403);
+    await request.get(`/api/v1/super-admin/suppliers/${supplierId}/categories/${categoryA._id}/products`).set(sessionHeaders(delivery)).expect(403);
+    const supplierUser = await seedActiveUser({ role: ROLES.SUPPLIER, email: 'phase2-supplier@example.com' });
+    await request.get(`/api/v1/super-admin/suppliers/${supplierId}/categories/${categoryA._id}/products`).set(sessionHeaders(supplierUser)).expect(403);
+    await request.get(`/api/v1/super-admin/suppliers/${supplierId}/categories/${categoryA._id}/products`).expect(401);
   });
 
   it('scopes supplier products to the requested supplier only', async () => {

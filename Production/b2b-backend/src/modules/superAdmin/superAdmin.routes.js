@@ -21,6 +21,7 @@ import {
 } from '../supplier/supplier.validation.js';
 import {
   listSupplierProductsSchema,
+  listSupplierCategoryProductsSchema,
   createSupplierProductSchema,
   searchSupplierProductsSchema,
   updateSupplierProductSchema,
@@ -167,6 +168,11 @@ router.get(
   '/suppliers/:id/categories',
   validate(listSupplierCategoriesSchema),
   controller.getSupplierCategories
+);
+router.get(
+  '/suppliers/:id/categories/:categoryId/products',
+  validate(listSupplierCategoryProductsSchema),
+  controller.getSupplierCategoryProducts
 );
 router.post(
   '/suppliers/:id/categories',

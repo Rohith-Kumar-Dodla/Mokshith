@@ -4,6 +4,7 @@ import SupplierProductPriceHistory from './supplierProductPriceHistory.model.js'
 import SupplierCategory from './supplierCategory.model.js';
 import Supplier from './supplier.model.js';
 import Product from '../product/product.model.js';
+import Category from '../category/category.model.js';
 import Audit from '../audit/audit.model.js';
 import AppError from '../../errors/AppError.js';
 import { SUPPLIER_STATUS } from '../../constants/supplierStatus.js';
@@ -59,7 +60,12 @@ const serializeMapping = (doc) => {
     ? {
       _id: plain.productId._id,
       name: plain.productId.name,
+      sku: plain.productId.sku || '',
       unit: plain.productId.unit,
+      image: plain.productId.image || '',
+      imageUrl: plain.productId.imageUrl || '',
+      imagePublicId: plain.productId.imagePublicId || null,
+      updatedAt: plain.productId.updatedAt,
       isActive: plain.productId.isActive,
       catalogScope: plain.productId.catalogScope || 'CUSTOMER',
       categoryId: plain.productId.categoryId?._id || plain.productId.categoryId || null,
@@ -114,7 +120,7 @@ export const isSupplierPriceConfigured = (value) => {
 
 const populateProduct = (query) => query.populate({
   path: 'productId',
-  select: 'name unit isActive categoryId catalogScope',
+  select: 'name sku unit image imageUrl imagePublicId updatedAt isActive categoryId catalogScope',
   populate: { path: 'categoryId', select: 'name' },
 });
 
@@ -365,6 +371,52 @@ export const listSupplierProducts = async (
   };
 };
 
+export const listSupplierCategoryProducts = async (
+  supplierId,
+  categoryId,
+  { page = 1, limit = 12, status = 'all', search = '' } = {}
+) => {
+  const supplier = await requireSupplier(supplierId);
+  assertValidId(categoryId, 'category');
+
+  const category = await Category.findById(categoryId).select('name isActive').lean();
+  if (!category) {
+    throw new AppError('Category not found', 404);
+  }
+
+  const association = await SupplierCategory.findOne({ supplierId, categoryId }).select('_id status').lean();
+  if (!association) {
+    throw new AppError('Supplier category association not found', 404);
+  }
+
+  const result = await listSupplierProducts(supplierId, {
+    page,
+    limit,
+    status,
+    search,
+    categoryId,
+  });
+
+  return {
+    supplier: {
+      _id: supplier._id,
+      supplierName: supplier.supplierName,
+      companyName: supplier.companyName,
+      status: supplier.status,
+    },
+    category: {
+      _id: category._id,
+      name: category.name,
+      isActive: category.isActive,
+      associationStatus: association.status,
+    },
+    products: result.mappings,
+    total: result.total,
+    page: result.page,
+    pages: result.pages,
+  };
+};
+
 export const getSupplierProduct = async (supplierId, mappingId) => {
   await requireSupplier(supplierId);
   const mapping = await requireMapping(supplierId, mappingId);
@@ -476,7 +528,7 @@ export const createSupplierProduct = async (supplierId, data, actorId, ip) => {
 };
 
 export const createSupplierProductWithNewProduct = async (supplierId, data, actorId, ip) => {
-  const supplier = await requireActiveSupplier(supplierId);
+  await requireActiveSupplier(supplierId);
   const supplierCategory = await requireSupplierCategoryForSupplier(supplierId, data.supplierCategoryId);
   const canonicalCategoryId = canonicalCategoryIdFromSupplierCategory(supplierCategory);
 

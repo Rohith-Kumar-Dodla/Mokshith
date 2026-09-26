@@ -116,6 +116,14 @@ const superAdminService = {
     return unwrap(response);
   },
 
+  getSupplierCategoryProducts: async (supplierId, categoryId, params = {}) => {
+    const response = await api.get(
+      `/super-admin/suppliers/${supplierId}/categories/${categoryId}/products`,
+      { params }
+    );
+    return unwrap(response);
+  },
+
   createSupplierCategory: async (supplierId, payload) => {
     const response = await api.post(`/super-admin/suppliers/${supplierId}/categories`, payload);
     return unwrap(response);

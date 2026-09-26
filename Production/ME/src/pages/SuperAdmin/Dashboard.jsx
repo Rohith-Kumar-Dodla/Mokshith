@@ -107,8 +107,8 @@ const SuperAdminDashboard = () => {
   const supplierDashboardEntry = (
     <Link to="/supplier-dashboard" className="group flex items-center gap-4 rounded-xl border border-blue-100 bg-blue-50/60 p-4 transition hover:border-blue-300 hover:bg-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:p-5">
       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm"><FiBriefcase size={23} /></div>
-      <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h2 className="font-semibold text-gray-900">Supplier Dashboard</h2><span className="rounded-full bg-amber-100 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-700">Coming Soon</span></div><p className="mt-1 text-sm text-gray-600">Supplier operations will be available in the dedicated Supplier Dashboard.</p></div>
-      <span className="shrink-0 text-sm font-semibold text-blue-700">Open</span>
+      <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h2 className="font-semibold text-gray-900">Supplier Dashboard</h2><span className="rounded-full bg-amber-100 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-700">Coming Soon</span></div><p className="mt-1 text-sm text-gray-600">Dedicated supplier operations workspace.</p></div>
+      <span className="shrink-0 text-sm font-semibold text-blue-700">Open Supplier Dashboard <span aria-hidden="true">→</span></span>
     </Link>
   );
 

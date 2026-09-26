@@ -11,6 +11,7 @@ vi.mock('../../services/superAdminService', () => ({
     getStats: vi.fn(),
     getMetrics: vi.fn(),
     getAuditLogs: vi.fn(),
+    getSupplierAllocationMetrics: vi.fn(),
   },
 }));
 
@@ -43,6 +44,7 @@ describe('Super Admin production hardening', () => {
       },
     });
     superAdminService.getAuditLogs.mockResolvedValue({ data: [] });
+    superAdminService.getSupplierAllocationMetrics.mockResolvedValue({ data: {} });
   });
 
   it('dashboard KPI cards link to role-specific user management tabs', async () => {
@@ -69,6 +71,19 @@ describe('Super Admin production hardening', () => {
     );
   });
 
+  it('shows the dedicated Supplier Dashboard entry', async () => {
+    render(
+      <MemoryRouter>
+        <Dashboard />
+      </MemoryRouter>
+    );
+
+    const entry = await screen.findByRole('link', { name: /Supplier Dashboard/i });
+    expect(entry).toHaveAttribute('href', '/supplier-dashboard');
+    expect(entry).toHaveTextContent('Coming Soon');
+    expect(entry).toHaveTextContent('Dedicated supplier operations workspace.');
+  });
+
   it('dashboard shows API error state', async () => {
     superAdminService.getStats.mockRejectedValue(new Error('stats failed'));
 
@@ -79,7 +94,7 @@ describe('Super Admin production hardening', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/stats failed/i)).toBeInTheDocument();
+      expect(screen.getByText(/couldn't reach the server/i)).toBeInTheDocument();
     });
   });
 

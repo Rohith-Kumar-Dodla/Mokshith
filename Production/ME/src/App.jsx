@@ -36,7 +36,11 @@ const SuperAdminProcurementDemand = lazy(() => import('./pages/SuperAdmin/Procur
 const SuperAdminProcurementPlan = lazy(() => import('./pages/SuperAdmin/ProcurementPlan'));
 const SuperAdminPurchaseRequests = lazy(() => import('./pages/SuperAdmin/PurchaseRequests'));
 const SuperAdminPurchaseRequestCreate = lazy(() => import('./pages/SuperAdmin/PurchaseRequestCreate'));
+const SupplierDashboardLayout = lazy(() => import('./layouts/SupplierDashboardLayout'));
 const SupplierDashboardComingSoon = lazy(() => import('./pages/SupplierDashboard/ComingSoon'));
+const SupplierNetwork = lazy(() => import('./pages/SupplierDashboard/Suppliers'));
+const SupplierDetails = lazy(() => import('./pages/SupplierDashboard/SupplierDetails'));
+const SupplierCategoryProducts = lazy(() => import('./pages/SupplierDashboard/SupplierCategoryProducts'));
 
 const AdminLayout = lazy(() => import('./layouts/AdminLayout'));
 const AdminDashboard = lazy(() => import('./pages/Admin/Dashboard'));
@@ -97,7 +101,15 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
 
-              <Route path="/supplier-dashboard" element={<ProtectedRoute requiredRole="super-admin"><SupplierDashboardComingSoon /></ProtectedRoute>} />
+              <Route path="/supplier-dashboard/*" element={<ProtectedRoute requiredRole="super-admin"><SupplierDashboardLayout /></ProtectedRoute>}>
+                <Route index element={<SupplierDashboardComingSoon />} />
+                <Route path="suppliers" element={<SupplierNetwork />} />
+                <Route path="suppliers/:supplierId" element={<SupplierDetails />} />
+                <Route path="suppliers/:supplierId/categories/:categoryId" element={<SupplierCategoryProducts />} />
+                <Route path="categories" element={<SupplierDashboardComingSoon title="Categories" description="Supplier category management will be available here." />} />
+                <Route path="products" element={<SupplierDashboardComingSoon title="Products" description="Supplier product management will be available here." />} />
+                <Route path="settings" element={<SupplierDashboardComingSoon title="Settings" description="Supplier dashboard settings will be available here." />} />
+              </Route>
 
               <Route path="/super-admin/*" element={<ProtectedRoute requiredRole="super-admin"><SuperAdminLayout /></ProtectedRoute>}>
                 <Route index element={<Navigate to="/super-admin/dashboard" replace />} />
