@@ -62,7 +62,7 @@ export default function SettingsPage({ PageHeader, role = 'vendor' }) {
     setSettings,
   } = useSettings();
 
-  const [activeTab, setActiveTab] = useState('profile');
+  const [activeTab, setActiveTab] = useState(role === 'delivery' ? 'account' : 'profile');
   const [profileForm, setProfileForm] = useState({});
   const [settingsForm, setSettingsForm] = useState({});
   const [passwordForm, setPasswordForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
@@ -79,16 +79,16 @@ export default function SettingsPage({ PageHeader, role = 'vendor' }) {
     if (settings) setSettingsForm(settings);
   }, [settings]);
 
+  const isDelivery = role === 'delivery';
+  const isVendor = role === 'vendor';
+
   const tabs = [
-    { id: 'profile', label: 'Profile', icon: FiUser },
+    ...(isDelivery ? [] : [{ id: 'profile', label: 'Profile', icon: FiUser }]),
     { id: 'account', label: 'Account', icon: FiLock },
     { id: 'security', label: 'Security', icon: FiShield },
     { id: 'notifications', label: 'Notifications', icon: FiBell },
     { id: 'preferences', label: 'Preferences', icon: FiMonitor },
   ];
-
-  const isDelivery = role === 'delivery';
-  const isVendor = role === 'vendor';
 
   const handleProfileSubmit = async (e) => {
     e.preventDefault();

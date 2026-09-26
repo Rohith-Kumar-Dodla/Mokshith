@@ -13,15 +13,25 @@ const Cart = () => {
     cartItems,
     subtotal,
     discount,
+    specialDiscount,
+    bulkDiscount,
     tax,
     grandTotal,
     removeFromCart,
+    updateQuantity,
     loadCart,
   } = useCart();
 
   const handleRemove = async (productId) => {
     await removeFromCart(productId);
   };
+
+  const handleUpdateQuantity = async (productId, quantity) => {
+    await updateQuantity(productId, quantity);
+  };
+
+  const specialDiscountAmount = Number(specialDiscount ?? 0);
+  const bulkDiscountAmount = Number(bulkDiscount ?? 0);
 
   if (loading) {
     return (
@@ -91,7 +101,7 @@ const Cart = () => {
                 key={item.id}
                 item={item}
                 onRemove={handleRemove}
-                quantityEditingDisabled
+                onUpdateQuantity={handleUpdateQuantity}
                 removing={actionLoading}
               />
             ))}
@@ -107,8 +117,12 @@ const Cart = () => {
                   <span className="font-medium text-gray-900">₹{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-xs sm:text-sm">
+                  <span className="text-gray-600">Special Discount</span>
+                  <span className="font-medium text-green-600">-₹{specialDiscountAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-gray-600">Bulk Discount</span>
-                  <span className="font-medium text-green-600">-₹{discount.toFixed(2)}</span>
+                  <span className="font-medium text-orange-700">-₹{bulkDiscountAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-gray-600">Tax (18%)</span>

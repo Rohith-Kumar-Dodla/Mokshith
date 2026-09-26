@@ -35,16 +35,36 @@ export const getDeliveryQueue = asyncHandler(async (req, res) => {
 });
 
 export const getDeliveryHistory = asyncHandler(async (req, res) => {
-  const history = await service.getDeliveryHistory(req.user);
+  const history = await service.getDeliveryHistory(req.user, req.query);
   successResponse(res, history || []);
 });
 
 export const acceptDelivery = asyncHandler(async (req, res) => {
+  if (req.body?.offerId) {
+    const result = await service.acceptDeliveryOffer({
+      logisticsId: req.params.id,
+      offerId: req.body.offerId,
+      partnerId: req.user._id,
+      requestId: req.headers['idempotency-key'] || req.body.requestId,
+    });
+    return successResponse(res, result, 'Delivery offer accepted');
+  }
   const shipment = await service.updateStatus(req.params.id, 'ACCEPTED', req.user._id);
   successResponse(res, shipment, 'Delivery accepted');
 });
 
 export const rejectAssignment = asyncHandler(async (req, res) => {
+  if (req.body?.offerId) {
+    const result = await service.rejectDeliveryOffer({
+      logisticsId: req.params.id,
+      offerId: req.body.offerId,
+      partnerId: req.user._id,
+      rejectionCode: req.body.rejectionCode,
+      reason: req.body.reason,
+      requestId: req.headers['idempotency-key'] || req.body.requestId,
+    });
+    return successResponse(res, result, 'Delivery offer rejected');
+  }
   const shipment = await service.rejectAssignment(req.params.id, req.user._id, {
     reason: req.body?.reason,
   });
@@ -82,7 +102,7 @@ export const completeDelivery = asyncHandler(async (req, res) => {
 
 export const updateLocation = asyncHandler(async (req, res) => {
   const { lat, lng } = req.body;
-  const shipment = await service.updateLocation(req.params.id, { lat, lng });
+  const shipment = await service.updateLocation(req.params.id, { lat, lng }, req.user._id);
 
   // Emit real-time location update
   const io = global.io || req.app.get('io');
@@ -97,14 +117,15 @@ export const updateLocation = asyncHandler(async (req, res) => {
 });
 
 export const getShipmentDetails = asyncHandler(async (req, res) => {
-  const shipment = await service.getShipmentById(req.params.id);
+  const shipment = await service.getShipmentById(req.params.id, req.user);
   successResponse(res, shipment);
 });
 
 export const assignDeliveryPartner = asyncHandler(async (req, res) => {
   const shipment = await service.assignDeliveryPartner(
     req.params.id,
-    req.body.deliveryPartnerId
+    req.body.deliveryPartnerId,
+    req.user._id
   );
   successResponse(res, shipment, 'Delivery partner assigned');
 });
@@ -112,7 +133,8 @@ export const assignDeliveryPartner = asyncHandler(async (req, res) => {
 export const reassignDeliveryPartner = asyncHandler(async (req, res) => {
   const shipment = await service.reassignDeliveryPartner(
     req.params.id,
-    req.body.deliveryPartnerId
+    req.body.deliveryPartnerId,
+    req.user._id
   );
   successResponse(res, shipment, 'Delivery partner reassigned');
 });
@@ -120,4 +142,65 @@ export const reassignDeliveryPartner = asyncHandler(async (req, res) => {
 export const getDeliveryAnalytics = asyncHandler(async (req, res) => {
   const analytics = await service.getDeliveryAnalytics(req.user);
   successResponse(res, analytics);
+});
+
+export const createDeliveryOffer = asyncHandler(async (req, res) => {
+  const offer = await service.createDeliveryOffer({
+    logisticsId: req.params.id,
+    deliveryPartnerId: req.body.deliveryPartnerId,
+    deliveryAmount: req.body.deliveryAmount,
+    actorId: req.user._id,
+    idempotencyKey: req.headers['idempotency-key'] || req.body.idempotencyKey,
+    forceReassign: req.body.forceReassign === true,
+  });
+  successResponse(res, offer, 'Delivery offer created', 201);
+});
+
+export const getDeliveryOfferHistory = asyncHandler(async (req, res) => {
+  const offers = await service.getDeliveryOfferHistory(req.params.id, req.user);
+  successResponse(res, offers || []);
+});
+
+export const getMyDeliveryOffers = asyncHandler(async (req, res) => {
+  const offers = await service.getMyDeliveryOffers(req.user);
+  successResponse(res, offers || []);
+});
+
+export const acceptDeliveryOffer = asyncHandler(async (req, res) => {
+  const result = await service.acceptDeliveryOffer({
+    logisticsId: req.params.id,
+    offerId: req.params.offerId,
+    partnerId: req.user._id,
+    requestId: req.headers['idempotency-key'] || req.body?.requestId,
+  });
+  successResponse(res, result, 'Delivery offer accepted');
+});
+
+export const rejectDeliveryOffer = asyncHandler(async (req, res) => {
+  const result = await service.rejectDeliveryOffer({
+    logisticsId: req.params.id,
+    offerId: req.params.offerId,
+    partnerId: req.user._id,
+    rejectionCode: req.body?.rejectionCode,
+    reason: req.body?.reason,
+    requestId: req.headers['idempotency-key'] || req.body?.requestId,
+  });
+  successResponse(res, result, 'Delivery offer rejected');
+});
+
+export const increaseDeliveryOfferAmount = asyncHandler(async (req, res) => {
+  const result = await service.increaseDeliveryOfferAmount({
+    logisticsId: req.params.id,
+    offerId: req.params.offerId,
+    deliveryPartnerId: req.body.deliveryPartnerId,
+    deliveryAmount: req.body.deliveryAmount,
+    actorId: req.user._id,
+    idempotencyKey: req.headers['idempotency-key'] || req.body.idempotencyKey,
+  });
+  successResponse(res, result, 'Delivery amount increased and offer recreated');
+});
+
+export const getDeliveryDistance = asyncHandler(async (req, res) => {
+  const route = await service.getDeliveryDistance(req.params.id);
+  successResponse(res, route);
 });

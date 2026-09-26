@@ -12,6 +12,9 @@ export const vendorAddressMongooseSchema = {
   location: {
     latitude: { type: Number },
     longitude: { type: Number },
+    addressHash: { type: String },
+    formattedAddress: { type: String },
+    geocodedAt: { type: Date },
   },
 };
 
@@ -26,10 +29,6 @@ export const vendorAddressJoiSchema = Joi.object({
   pincode: Joi.string().trim().pattern(/^[0-9]{6}$/).required().messages({
     'string.pattern.base': 'Pincode must be exactly 6 digits',
   }),
-  location: Joi.object({
-    latitude: Joi.number().min(-90).max(90).optional(),
-    longitude: Joi.number().min(-180).max(180).optional(),
-  }).optional(),
 });
 
 export const optionalVendorAddressJoiSchema = vendorAddressJoiSchema.fork(

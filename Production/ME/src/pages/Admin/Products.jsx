@@ -20,6 +20,7 @@ import {
 
 const EMPTY_FORM = {
   name: '',
+  sku: '',
   description: '',
   categoryId: '',
   price: '',
@@ -107,6 +108,7 @@ const Products = () => {
     setSelectedProduct(product);
     setFormData({
       name: product.name || '',
+      sku: product.sku || '',
       description: product.description || '',
       categoryId: product.categoryId || '',
       price: String(product.price ?? ''),
@@ -164,6 +166,7 @@ const Products = () => {
 
     const payload = {
       name: formData.name.trim(),
+      sku: formData.sku.trim() || undefined,
       description: formData.description.trim(),
       categoryId: formData.categoryId,
       price: Number(formData.price),
@@ -261,6 +264,7 @@ const Products = () => {
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-700">Product</th>
+                <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-700">SKU</th>
                 <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-700">Category</th>
                 <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-700">Price</th>
                 <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-700">Stock</th>
@@ -285,6 +289,7 @@ const Products = () => {
                       </div>
                     </div>
                   </td>
+                  <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-700">{product.sku || '—'}{product.activePromotion && <span className="ml-2 rounded-full bg-green-100 px-2 py-1 text-xs text-green-700">Promo</span>}</td>
                   <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-700">{product.category}</td>
                   <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium text-gray-900">₹{product.price.toFixed(2)}</td>
                   <td className="px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-700">{product.stock}</td>
@@ -340,6 +345,10 @@ const Products = () => {
                 placeholder="Enter product name"
                 required
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">SKU</label>
+              <input type="text" value={formData.sku} onChange={(e) => setFormData({ ...formData, sku: e.target.value.toUpperCase() })} className="w-full px-4 py-2.5 h-12 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Optional stock keeping unit" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">Category</label>

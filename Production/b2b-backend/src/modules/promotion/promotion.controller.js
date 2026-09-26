@@ -8,7 +8,7 @@ export const getPromotions = asyncHandler(async (req, res) => {
 });
 
 export const createPromotion = asyncHandler(async (req, res) => {
-  const data = await service.createPromotion(req.body);
+  const data = await service.createPromotion({ ...req.body, actorId: req.user?._id });
   successResponse(res, data, 'Promotion created');
 });
 

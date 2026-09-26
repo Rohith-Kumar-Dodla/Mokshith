@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import ProfileCard from '../../components/delivery/ProfileCard';
 import { FiUser, FiPhone, FiMail, FiMapPin, FiCalendar, FiShield, FiTruck, FiEdit2, FiSave, FiX, FiRefreshCw } from 'react-icons/fi';
 import useDelivery from '../../hooks/useDelivery';
+import authService from '../../services/authService';
 
 const EMPTY_PROFILE = {
   name: '',
@@ -44,6 +45,7 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState(EMPTY_PROFILE);
   const [saveError, setSaveError] = useState(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   useEffect(() => {
     if (loadedProfile) {
@@ -83,6 +85,25 @@ const Profile = () => {
 
   const handleChange = (field, value) => {
     setEditedProfile((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handlePhotoChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type) || file.size > 2000000) {
+      setSaveError('Profile photo must be JPEG, PNG, or WebP and 2 MB or smaller.');
+      return;
+    }
+    setUploadingPhoto(true);
+    setSaveError(null);
+    try {
+      await authService.uploadProfileImage(file);
+      await refreshProfile();
+    } catch (uploadError) {
+      setSaveError(uploadError.message || 'Failed to upload profile photo.');
+    } finally {
+      setUploadingPhoto(false);
+    }
   };
 
   if (loading) {
@@ -140,13 +161,13 @@ const Profile = () => {
           <p className="text-xs sm:text-sm text-gray-600 mt-1">Manage your profile information</p>
         </div>
         {!isEditing && (
-          <button
-            onClick={handleEdit}
-            className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 h-10 sm:h-12 bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-blue-700 transition-colors"
-          >
-            <FiEdit2 size={16} />
-            Edit Profile
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <label className="inline-flex min-h-[44px] cursor-pointer items-center rounded-lg border border-gray-300 px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50">
+              {uploadingPhoto ? 'Uploading...' : 'Change photo'}
+              <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handlePhotoChange} disabled={uploadingPhoto} />
+            </label>
+            <button onClick={handleEdit} className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 min-h-[44px] bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-blue-700 transition-colors"><FiEdit2 size={16} /> Edit Profile</button>
+          </div>
         )}
       </div>
 

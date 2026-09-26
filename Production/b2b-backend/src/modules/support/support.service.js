@@ -5,6 +5,7 @@ import { ROLES } from '../../constants/roles.js';
 import { USER_STATUS } from '../../constants/userStatus.js';
 import { sendNotification } from '../notification/notification.service.js';
 import { logger } from '../../config/logger.js';
+import { logAction } from '../audit/audit.service.js';
 
 function emitSupportUpdate(ticket, event = 'support:updated') {
   if (!global.io) return;
@@ -63,13 +64,21 @@ export const createTicket = async (user, data) => {
   const ticket = await Support.create({
     userId: user._id || user.id,
     subject,
+    category: data.category || 'GENERAL',
+    description: message,
     message,
     messages: [firstMessage],
     lastMessage: message,
     lastMessageAt: new Date(),
     priority: data.priority || 'MEDIUM',
     status: SUPPORT_STATUS.OPEN,
+    relatedOrder: data.relatedOrder || null,
+    relatedPayment: data.relatedPayment || null,
+    relatedDelivery: data.relatedDelivery || null,
+    relatedProduct: data.relatedProduct || null,
   });
+
+  await logAction({ userId: user._id || user.id, action: 'SUPPORT_TICKET_CREATED', entity: 'Support', entityId: ticket._id, details: 'Support ticket created' }).catch(() => {});
 
   await notifyAdmins(
     'New support request received',
@@ -115,7 +124,8 @@ export const getAllTickets = async (filters = {}) => {
 
   if (search?.trim()) {
     const regex = new RegExp(search.trim(), 'i');
-    query.$or = [{ subject: regex }, { ticketId: regex }, { lastMessage: regex }];
+    const matchingUsers = await User.find({ $or: [{ name: regex }, { email: regex }, { businessName: regex }] }).select('_id').lean();
+    query.$or = [{ subject: regex }, { ticketId: regex }, { lastMessage: regex }, { userId: { $in: matchingUsers.map((item) => item._id) } }];
   }
 
   const skip = (Number(page) - 1) * Number(limit);
@@ -195,6 +205,7 @@ export const replyToTicket = async (ticketId, user, data) => {
   }
 
   await ticket.save();
+  await logAction({ userId: user._id || user.id, action: isStaff ? 'SUPPORT_ADMIN_REPLIED' : 'SUPPORT_TICKET_REPLIED', entity: 'Support', entityId: ticket._id, details: 'Support ticket reply added' }).catch(() => {});
   const populated = await getTicketById(ticket._id, user);
   emitSupportUpdate(populated, 'support:message');
   return populated;
@@ -215,6 +226,7 @@ export const updateTicketStatus = async (ticketId, status, adminUser, priority) 
   }
 
   await ticket.save();
+  await logAction({ userId: adminUser._id || adminUser.id, action: status === SUPPORT_STATUS.RESOLVED ? 'SUPPORT_TICKET_RESOLVED' : status === SUPPORT_STATUS.CLOSED ? 'SUPPORT_TICKET_CLOSED' : 'SUPPORT_TICKET_STATUS_CHANGED', entity: 'Support', entityId: ticket._id, details: `Support ticket status changed to ${status}` }).catch(() => {});
 
   await sendNotification({
     userId: ticket.userId,
@@ -226,4 +238,19 @@ export const updateTicketStatus = async (ticketId, status, adminUser, priority) 
   const populated = await getTicketById(ticket._id, adminUser);
   emitSupportUpdate(populated);
   return populated;
+};
+
+export const getAssignableAdmins = async () => User.find({ role: { $in: [ROLES.ADMIN, ROLES.SUPER_ADMIN] }, status: USER_STATUS.ACTIVE, isDeleted: { $ne: true } }).select('_id name email role').sort({ name: 1 }).lean();
+
+export const assignTicket = async (ticketId, assigneeId, adminUser) => {
+  const assignee = await User.findOne({ _id: assigneeId, role: { $in: [ROLES.ADMIN, ROLES.SUPER_ADMIN] }, status: USER_STATUS.ACTIVE, isDeleted: { $ne: true } }).select('_id name email role');
+  if (!assignee) throw new AppError('Assignee must be an active Admin or Super Admin', 400);
+  const ticket = await Support.findById(ticketId);
+  if (!ticket) throw new AppError('Ticket not found', 404);
+  const action = ticket.assignedAdmin ? 'SUPPORT_TICKET_REASSIGNED' : 'SUPPORT_TICKET_ASSIGNED';
+  ticket.assignedAdmin = assignee._id;
+  if (ticket.status === SUPPORT_STATUS.OPEN) ticket.status = SUPPORT_STATUS.IN_PROGRESS;
+  await ticket.save();
+  await logAction({ userId: adminUser._id || adminUser.id, action, entity: 'Support', entityId: ticket._id, details: `Support ticket assigned to ${assignee.email}` }).catch(() => {});
+  return getTicketById(ticket._id, adminUser);
 };

@@ -15,6 +15,10 @@ const warehouseSchema = new mongoose.Schema(
       state: { type: String, trim: true },
       country: { type: String, trim: true },
       pincode: { type: String, trim: true, index: true },
+      coordinates: {
+        latitude: { type: Number, min: -90, max: 90 },
+        longitude: { type: Number, min: -180, max: 180 },
+      },
     },
 
     isActive: {
@@ -22,6 +26,7 @@ const warehouseSchema = new mongoose.Schema(
       default: true,
       index: true,
     },
+    isDeliveryOrigin: { type: Boolean, default: false, index: true },
 
     capacity: {
       type: Number,

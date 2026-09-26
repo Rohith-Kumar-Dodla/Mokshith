@@ -25,6 +25,7 @@ export function useProductPricing(product, quantity) {
         const response = await pricingService.calculatePrice({
           price: product.price,
           quantity,
+          productId: product.id || product._id,
         });
         if (!cancelled) {
           setApiPricing(response.data ?? response);
@@ -46,7 +47,7 @@ export function useProductPricing(product, quantity) {
     return () => {
       cancelled = true;
     };
-  }, [product?.id, product?.price, quantity]);
+  }, [product?.id, product?._id, product?.price, quantity]);
 
   const pricing = useMemo(
     () => resolveEffectiveUnitPrice({ apiPricing, product, quantity }),
@@ -60,6 +61,12 @@ export function useProductPricing(product, quantity) {
 
   return {
     ...pricing,
+    specialDiscountAmount: Number(apiPricing?.specialDiscountAmount || 0),
+    bulkDiscountAmount: Number(apiPricing?.bulkDiscountAmount || 0),
+    totalDiscount: Number(apiPricing?.totalDiscount ?? pricing.discount * quantity),
+    specialPromotion: apiPricing?.specialPromotion || null,
+    bulkPromotion: apiPricing?.bulkPromotion || null,
+    bulkMinimumQuantity: apiPricing?.bulkMinimumQuantity || null,
     moqUnitPrice: moqPricing.unitPrice,
     pricingLoading,
     pricingError,

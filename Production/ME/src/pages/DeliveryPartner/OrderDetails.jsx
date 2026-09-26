@@ -219,6 +219,16 @@ const OrderDetails = () => {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setActionError('Proof must be a JPEG, PNG, or WebP image.');
+      return;
+    }
+    if (file.size > 1500000) {
+      setActionError('Proof image must be 1.5 MB or smaller.');
+      return;
+    }
+    setActionError(null);
     const reader = new FileReader();
     reader.onloadend = () => setDeliveryImage(reader.result);
     reader.readAsDataURL(file);
@@ -269,6 +279,13 @@ const OrderDetails = () => {
           {order.collectionMode ? ` · Collected via ${order.collectionMode}` : ''}
         </div>
       )}
+
+      <section className="grid grid-cols-1 gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-3 sm:p-5" aria-label="Delivery financial summary">
+        <div><p className="text-xs font-medium uppercase tracking-wide text-gray-500">Order total</p><p className="mt-1 text-lg font-bold text-gray-900">₹{Number(order.orderAmount || 0).toLocaleString('en-IN')}</p></div>
+        <div><p className="text-xs font-medium uppercase tracking-wide text-gray-500">Delivery partner earnings</p><p className="mt-1 text-lg font-bold text-green-700">{order.deliveryAmount == null ? 'Unavailable' : `₹${Number(order.deliveryAmount).toLocaleString('en-IN')}`}</p></div>
+        <div><p className="text-xs font-medium uppercase tracking-wide text-gray-500">Distance</p><p className="mt-1 text-lg font-bold text-gray-900">{order.distanceKm == null ? 'Unavailable' : `${order.distanceKm} ${order.distanceUnit || 'km'}`}</p></div>
+        <p className="text-xs text-gray-500 sm:col-span-3">Order total and delivery partner earnings are separate server-provided values.</p>
+      </section>
 
       {needsCodCollection && (
         <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 space-y-4">

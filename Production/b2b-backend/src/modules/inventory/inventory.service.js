@@ -8,7 +8,8 @@ import { logger } from '../../config/logger.js';
 const DEFAULT_REORDER_LEVEL = 10;
 
 export async function getOrCreateDefaultWarehouse() {
-  let warehouse = await Warehouse.findOne({ isActive: true }).sort({ createdAt: 1 });
+  let warehouse = await Warehouse.findOne({ isActive: true, isDeliveryOrigin: true }).sort({ createdAt: 1 });
+  if (!warehouse) warehouse = await Warehouse.findOne({ isActive: true }).sort({ createdAt: 1 });
 
   if (!warehouse) {
     warehouse = await Warehouse.create({
@@ -156,7 +157,8 @@ export const addStock = async ({ productId, warehouseId, stock }) => {
 };
 
 export const getLowStockItems = async () => {
-  return repo.findLowStock();
+  const rows = await repo.findLowStock();
+  return rows.filter((row) => row.productId && row.productId.isActive !== false);
 };
 
 export const getInventoryStats = async () => {
@@ -165,11 +167,16 @@ export const getInventoryStats = async () => {
 
 // 📦 Get Inventory (bounded, newest-first — see repository.findAll)
 export const getInventory = async (options = {}) => {
-  return repo.findAll(options);
+  const rows = await repo.findAll(options);
+  return rows.filter((row) => row.productId && row.productId.isActive !== false);
 };
 
 // 🔄 Update Stock
 export const updateStock = async ({ productId, warehouseId, stock, type = 'SET' }) => {
+  if (!mongoose.Types.ObjectId.isValid(productId) || !mongoose.Types.ObjectId.isValid(warehouseId)) {
+    throw new AppError('Invalid product or warehouse ID', 400);
+  }
+  if (stock < 0) throw new AppError('Stock cannot be negative', 400);
   let inventory = await repo.findInventory(productId, warehouseId);
 
   if (!inventory) {
@@ -185,18 +192,17 @@ export const updateStock = async ({ productId, warehouseId, stock, type = 'SET' 
     throw new AppError('Inventory record not found', 404);
   }
 
-  if (type === 'ADD') {
-    inventory.stock += stock;
-  } else if (type === 'SUBTRACT') {
-    if (inventory.stock < stock) {
-      throw new AppError('Insufficient stock', 400);
-    }
-    inventory.stock -= stock;
-  } else {
-    inventory.stock = stock;
-  }
-
-  return inventory.save();
+  const filter = { _id: inventory._id, version: inventory.version };
+  const update = type === 'ADD'
+    ? { $inc: { stock, version: 1 } }
+    : type === 'SUBTRACT'
+      ? { $inc: { stock: -stock, version: 1 } }
+      : { $set: { stock }, $inc: { version: 1 } };
+  if (type === 'SUBTRACT') filter.stock = { $gte: stock };
+  if (type === 'SET') filter.stock = { $gte: inventory.reservedStock || 0 };
+  const updated = await repo.updateOneAtomic(filter, update);
+  if (!updated) throw new AppError('Inventory changed concurrently; please retry', 409);
+  return updated;
 };
 
 // ✅ Check Stock Availability

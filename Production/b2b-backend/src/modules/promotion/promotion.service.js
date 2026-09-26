@@ -1,18 +1,35 @@
 import * as repo from './promotion.repository.js';
 import AppError from '../../errors/AppError.js';
+import { logAction } from '../audit/audit.service.js';
+
+const effectiveStatus = (promotion, now = new Date()) => {
+  if (promotion.status === 'PAUSED' || promotion.isActive === false) return 'PAUSED';
+  if (promotion.endAt && new Date(promotion.endAt) <= now) return 'EXPIRED';
+  if (promotion.expiresAt && new Date(promotion.expiresAt) <= now) return 'EXPIRED';
+  if (promotion.startAt && new Date(promotion.startAt) > now) return 'SCHEDULED';
+  return promotion.status === 'DRAFT' ? 'DRAFT' : 'ACTIVE';
+};
+
+const generatedCode = (data) =>
+  (data.code || data.name || 'PROMO').toString().toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 28)
+    + (data.code ? '' : `-${Date.now().toString().slice(-6)}`);
 
 export const getPromotions = async () => {
-  return repo.findAll();
+  const rows = await repo.findAll();
+  return rows.map((row) => ({ ...row.toObject(), effectiveStatus: effectiveStatus(row) }));
 };
 
 export const createPromotion = async (data) => {
-  if (!data.code || !data.value) {
-    throw new AppError('Code and value are required', 400);
-  }
-  return repo.create(data);
+  if (!data.value || !data.discountType) throw new AppError('Discount type and value are required', 400);
+  if (data.startAt && data.endAt && new Date(data.endAt) <= new Date(data.startAt)) throw new AppError('End date must be after start date', 400);
+  const promo = await repo.create({ ...data, code: generatedCode(data), status: data.status || 'ACTIVE' });
+  await logAction({ userId: data.actorId, action: 'PROMOTION_CREATED', entity: 'Promotion', entityId: promo._id, details: 'Promotion created', data: { code: promo.code } }).catch(() => {});
+  return promo;
 };
 
 export const updatePromotion = async (id, data) => {
+  if (data.startAt && data.endAt && new Date(data.endAt) <= new Date(data.startAt)) throw new AppError('End date must be after start date', 400);
   const promo = await repo.update(id, data);
   if (!promo) throw new AppError('Promotion not found', 404);
   return promo;
@@ -27,8 +44,15 @@ export const deletePromotion = async (id) => {
 export const togglePromotion = async (id) => {
   const promo = await repo.findById(id);
   if (!promo) throw new AppError('Promotion not found', 404);
-  return repo.update(id, { isActive: !promo.isActive });
+  return repo.update(id, { isActive: !promo.isActive, status: promo.isActive ? 'PAUSED' : 'ACTIVE' });
 };
+
+export const getEligiblePromotions = async (productIds) => {
+  const rows = await repo.findEligibleForProducts(productIds);
+  return rows.filter((row) => effectiveStatus(row) === 'ACTIVE');
+};
+
+export { effectiveStatus };
 
 export const applyCoupon = async (code, amount) => {
   if (!code) {
@@ -44,8 +68,9 @@ export const applyCoupon = async (code, amount) => {
   if (!promo) throw new AppError('Invalid coupon', 400);
 
   // 🔥 Check expiry
-  if (promo.expiresAt && promo.expiresAt < new Date()) {
-    throw new AppError('Coupon expired', 400);
+  const status = effectiveStatus(promo);
+  if (status !== 'ACTIVE') {
+    throw new AppError(status === 'SCHEDULED' ? 'Coupon is not active yet' : 'Coupon expired', 400);
   }
 
   let discount = 0;

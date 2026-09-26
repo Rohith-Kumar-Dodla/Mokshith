@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiTrash2 } from 'react-icons/fi';
+import { FiTrash2, FiPlus, FiMinus } from 'react-icons/fi';
 
 const CartItem = ({
   item,
@@ -74,16 +74,27 @@ const CartItem = ({
             </div>
           )}
 
+          {(item.specialDiscountAmount > 0 || item.bulkDiscountAmount > 0) && (
+            <div className="text-xs text-gray-600 mb-2 space-y-0.5">
+              {item.specialDiscountAmount > 0 && <p className="text-green-600">Special discount: -₹{item.specialDiscountAmount.toFixed(2)}</p>}
+              {item.bulkDiscountAmount > 0 && <p className="text-orange-700">Bulk discount: -₹{item.bulkDiscountAmount.toFixed(2)}</p>}
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
                 <span className="text-xs sm:text-sm text-gray-600">Quantity:</span>
-                <span className="font-medium text-xs sm:text-sm">{item.quantity}</span>
+                {isQuantityLocked ? <span className="font-medium text-xs sm:text-sm">{item.quantity}</span> : (
+                  <div className="inline-flex items-center rounded-lg border border-gray-300 overflow-hidden">
+                    <button type="button" aria-label={`Decrease ${item.productName} quantity`} onClick={() => onUpdateQuantity(item.productId, Math.max(item.minimumOrderQuantity, item.quantity - 1))} disabled={removing || item.quantity <= item.minimumOrderQuantity} className="h-9 w-9 flex items-center justify-center hover:bg-gray-50 disabled:opacity-40"><FiMinus className="w-3.5 h-3.5" /></button>
+                    <span className="min-w-10 text-center text-sm font-semibold" aria-live="polite">{item.quantity}</span>
+                    <button type="button" aria-label={`Increase ${item.productName} quantity`} onClick={() => onUpdateQuantity(item.productId, Math.min(item.availableStock, item.quantity + 1))} disabled={removing || item.quantity >= item.availableStock} className="h-9 w-9 flex items-center justify-center hover:bg-gray-50 disabled:opacity-40"><FiPlus className="w-3.5 h-3.5" /></button>
+                  </div>
+                )}
               </div>
               {isQuantityLocked && (
-                <p className="text-xs text-gray-500">
-                  Quantity changes not yet supported
-                </p>
+                <p className="text-xs text-gray-500">Minimum order quantity: {item.minimumOrderQuantity}</p>
               )}
             </div>
 

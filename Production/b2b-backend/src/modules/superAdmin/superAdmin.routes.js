@@ -10,6 +10,7 @@ import {
   createDeliveryAgentSchema,
   updateDeliveryAgentSchema,
   listStaffSchema,
+  createSupplierAccountSchema,
 } from './superAdmin.validation.js';
 import {
   createSupplierSchema,
@@ -20,7 +21,11 @@ import {
 } from '../supplier/supplier.validation.js';
 import {
   listSupplierProductsSchema,
+  listSupplierCategoryProductsSchema,
   createSupplierProductSchema,
+  createSupplierCategoryProductSchema,
+  updateSupplierCategoryProductSchema,
+  supplierCategoryProductIdSchema,
   searchSupplierProductsSchema,
   updateSupplierProductSchema,
   updateSupplierProductStatusSchema,
@@ -28,6 +33,9 @@ import {
   updateSupplierProductPriceSchema,
   listSupplierProductPriceHistorySchema,
   supplierComparisonSchema,
+  listNetworkSupplierProductsSchema,
+  listNetworkCategoriesSchema,
+  updateSupplierDashboardSettingsSchema,
 } from '../supplier/supplierProduct.validation.js';
 import {
   listSupplierCategoriesSchema,
@@ -66,6 +74,12 @@ router.delete('/admins/:id', controller.deleteAdmin);
 
 router.get('/delivery-agents', validate(listStaffSchema), controller.getDeliveryAgents);
 router.post('/delivery-agents', validate(createDeliveryAgentSchema), controller.createDeliveryAgent);
+router.post('/suppliers/onboard', validate(createSupplierAccountSchema), controller.createSupplierAccount);
+router.get('/supplier-network/dashboard', controller.getSupplierNetworkDashboard);
+router.get('/supplier-network/products', validate(listNetworkSupplierProductsSchema), controller.getSupplierNetworkProducts);
+router.get('/supplier-network/categories', validate(listNetworkCategoriesSchema), controller.getSupplierNetworkCategories);
+router.get('/supplier-network/settings', controller.getSupplierDashboardSettings);
+router.patch('/supplier-network/settings', validate(updateSupplierDashboardSettingsSchema), controller.updateSupplierDashboardSettings);
 router.patch('/delivery-agents/:id', validate(updateDeliveryAgentSchema), controller.updateDeliveryAgent);
 router.delete('/delivery-agents/:id', controller.deleteDeliveryAgent);
 
@@ -166,6 +180,26 @@ router.get(
   validate(listSupplierCategoriesSchema),
   controller.getSupplierCategories
 );
+router.get(
+  '/suppliers/:id/categories/:categoryId/products',
+  validate(listSupplierCategoryProductsSchema),
+  controller.getSupplierCategoryProducts
+);
+router.post(
+  '/suppliers/:id/categories/:categoryId/products',
+  validate(createSupplierCategoryProductSchema),
+  controller.createSupplierCategoryProduct
+);
+router.patch(
+  '/suppliers/:id/categories/:categoryId/products/:mappingId',
+  validate(updateSupplierCategoryProductSchema),
+  controller.updateSupplierCategoryProduct
+);
+router.delete(
+  '/suppliers/:id/categories/:categoryId/products/:mappingId',
+  validate(supplierCategoryProductIdSchema),
+  controller.removeSupplierCategoryProduct
+);
 router.post(
   '/suppliers/:id/categories',
   validate(createSupplierCategorySchema),
@@ -212,6 +246,11 @@ router.patch(
   '/suppliers/:id/products/:mappingId',
   validate(updateSupplierProductSchema),
   controller.updateSupplierProduct
+);
+router.delete(
+  '/suppliers/:id/products/:mappingId',
+  validate(supplierProductIdSchema),
+  controller.removeSupplierProduct
 );
 router.patch('/suppliers/:id/status', validate(updateSupplierStatusSchema), controller.updateSupplierStatus);
 router.get('/suppliers/:id', validate(supplierIdSchema), controller.getSupplier);

@@ -20,6 +20,12 @@ const supplierProductSchema = new mongoose.Schema(
       required: true,
       min: 1,
     },
+    quantity: {
+      type: Number,
+      required: true,
+      default: 0,
+      min: 0,
+    },
     // Supplier purchase / procurement cost only. Does not affect Product.price.
     currentSupplierPrice: {
       type: Number,

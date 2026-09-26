@@ -31,17 +31,17 @@ export function getMoqUnitPrice(product) {
 }
 
 export function calculateCartTotals(cartItems = []) {
-  const subtotal = cartItems.reduce((sum, item) => sum + Number(item.subtotal ?? 0), 0);
-  const bulkDiscount = cartItems.reduce(
-    (sum, item) => sum + (Number(item.unitPrice ?? 0) - Number(item.bulkPrice ?? 0)) * Number(item.quantity ?? 0),
-    0
-  );
-  const tax = subtotal * 0.18;
-  const grandTotal = subtotal + tax;
+  const originalSubtotal = cartItems.reduce((sum, item) => sum + Number(item.unitPrice ?? 0) * Number(item.quantity ?? 0), 0);
+  const bulkDiscount = cartItems.reduce((sum, item) => sum + Number(item.discountAmount ?? (Number(item.unitPrice ?? 0) - Number(item.bulkPrice ?? 0)) * Number(item.quantity ?? 0)), 0);
+  const discountedSubtotal = cartItems.reduce((sum, item) => sum + Number(item.subtotal ?? 0), 0);
+  const tax = discountedSubtotal * 0.18;
+  const grandTotal = discountedSubtotal + tax;
   const itemCount = cartItems.length;
 
   return {
-    subtotal,
+    subtotal: discountedSubtotal,
+    originalSubtotal,
+    discountedSubtotal,
     bulkDiscount,
     discount: bulkDiscount,
     tax,

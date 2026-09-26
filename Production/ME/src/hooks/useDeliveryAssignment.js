@@ -117,6 +117,7 @@ export function useDeliveryAssignment({ autoLoad = true } = {}) {
       } catch (actionError) {
         const message = getUserFacingErrorMessage(actionError, 'Failed to assign delivery partner');
         setError(message);
+        await refreshAll({ silent: true });
         throw new Error(message);
       } finally {
         setActionLoading(false);
@@ -135,6 +136,38 @@ export function useDeliveryAssignment({ autoLoad = true } = {}) {
       } catch (actionError) {
         const message = getUserFacingErrorMessage(actionError, 'Failed to reassign delivery partner');
         setError(message);
+        await refreshAll({ silent: true });
+        throw new Error(message);
+      } finally {
+        setActionLoading(false);
+      }
+    },
+    [refreshAll]
+  );
+
+  const sendOffer = useCallback(
+    async (item, partnerId, deliveryAmount, forceReassign = false) => {
+      setActionLoading(true);
+      setError(null);
+      const requestId = `delivery-offer-${item.id || item.orderId}-${partnerId}-${Date.now()}`;
+      try {
+        let shipmentId = item.id;
+        if (item.needsShipment) {
+          await deliveryService.createShipment(item.orderId);
+          const refreshedQueue = mapAdminDeliveryQueue(await deliveryService.getDeliveryQueue());
+          shipmentId = refreshedQueue.find((entry) => String(entry.orderId) === String(item.orderId))?.id;
+        }
+        if (!shipmentId) throw new Error('Delivery record could not be created for this order.');
+        await deliveryService.createDeliveryOffer(shipmentId, {
+          deliveryPartnerId: partnerId,
+          deliveryAmount: deliveryAmount === '' || deliveryAmount === undefined ? undefined : Number(deliveryAmount),
+          forceReassign,
+        }, requestId);
+        await refreshAll({ silent: true });
+      } catch (actionError) {
+        const message = getUserFacingErrorMessage(actionError, 'Failed to send delivery offer');
+        setError(message);
+        await refreshAll({ silent: true });
         throw new Error(message);
       } finally {
         setActionLoading(false);
@@ -154,6 +187,7 @@ export function useDeliveryAssignment({ autoLoad = true } = {}) {
     refreshAll,
     assignPartner,
     reassignPartner,
+    sendOffer,
   };
 }
 

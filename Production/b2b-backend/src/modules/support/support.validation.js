@@ -6,10 +6,15 @@ const objectId = Joi.string().hex().length(24);
 export const createTicketSchema = Joi.object({
   body: Joi.object({
     subject: Joi.string().trim().max(200).optional().allow(''),
+    category: Joi.string().trim().max(80).optional(),
     message: Joi.string().trim().min(1).max(5000).required(),
     priority: Joi.string()
       .valid(...Object.values(SUPPORT_PRIORITY))
       .optional(),
+    relatedOrder: objectId.optional(),
+    relatedPayment: objectId.optional(),
+    relatedDelivery: objectId.optional(),
+    relatedProduct: objectId.optional(),
     attachments: Joi.array()
       .items(
         Joi.object({
@@ -20,6 +25,11 @@ export const createTicketSchema = Joi.object({
       )
       .optional(),
   }),
+});
+
+export const assignTicketSchema = Joi.object({
+  params: Joi.object({ id: objectId.required() }),
+  body: Joi.object({ assigneeId: objectId.required() }),
 });
 
 export const replyTicketSchema = Joi.object({

@@ -27,6 +27,9 @@ import { ORDER_STATUS } from '../../constants/orderStatus.js';
 import { PAYMENT_STATUS } from '../../constants/paymentStatus.js';
 import { logger } from '../../config/logger.js';
 import { calculateLinePricing } from '../../utils/bulkPricing.utils.js';
+import { applyBestProductPromotion } from '../../utils/bulkPricing.utils.js';
+import { getEligiblePromotions } from '../promotion/promotion.service.js';
+import { geocodeAddress, hasValidCoordinates } from '../../services/geocoding.service.js';
 
 import mongoose from 'mongoose';
 import { getTransactionSupport } from '../../config/db.js';
@@ -112,7 +115,7 @@ export const createOrder = async (userId, data) => {
   // 🔥 1. Bulk fetch all products at once (Performance optimization)
   const productIds = finalItems.map(item => item.productId || item.id || item.productId?._id);
   const products = await Product.find({ _id: { $in: productIds } })
-    .select('_id name price basePrice weight minOrderQty moq isActive catalogScope bulkPricing')
+    .select('_id name sku price basePrice weight minOrderQty moq isActive catalogScope bulkPricing')
     .lean();
   
   if (products.length !== productIds.length) {
@@ -121,8 +124,12 @@ export const createOrder = async (userId, data) => {
 
   // Create a map for quick lookup
   const productMap = new Map(products.map(p => [p._id.toString(), p]));
+  const promotions = await getEligiblePromotions(products.map((product) => product._id));
 
   let totalAmount = 0;
+  let totalDiscountAmount = 0;
+  let totalSpecialDiscountAmount = 0;
+  let totalBulkDiscountAmount = 0;
   let totalWeight = 0;
   const items = [];
 
@@ -155,9 +162,17 @@ export const createOrder = async (userId, data) => {
     await checkStock(product._id, item.quantity);
 
     const productPrice = product.price || product.basePrice || 0;
-    const linePricing = calculateLinePricing(product, item.quantity);
+    const linePricing = applyBestProductPromotion(
+      product,
+      item.quantity,
+      calculateLinePricing(product, item.quantity),
+      promotions
+    );
 
     totalAmount += linePricing.itemTotal;
+    totalDiscountAmount += Number(linePricing.discountAmount || 0);
+    totalSpecialDiscountAmount += Number(linePricing.specialDiscountAmount || 0);
+    totalBulkDiscountAmount += Number(linePricing.bulkDiscountAmount || 0);
     totalWeight += (product.weight || 0) * item.quantity;
 
     items.push({
@@ -167,7 +182,12 @@ export const createOrder = async (userId, data) => {
       quantity: item.quantity,
       discountPercent: linePricing.discountPercent,
       discountAmount: linePricing.discountAmount,
+      specialDiscountAmount: linePricing.specialDiscountAmount || 0,
+      bulkDiscountAmount: linePricing.bulkDiscountAmount || 0,
       finalPrice: linePricing.unitPrice,
+      promotionId: linePricing.promotion?._id,
+      promotionName: linePricing.promotion?.name,
+      promotionCode: linePricing.promotion?.code,
     });
   }
 
@@ -185,6 +205,11 @@ export const createOrder = async (userId, data) => {
     userId,
     items,
     totalAmount: finalTotal,
+    subtotal: totalAmount,
+    discountAmount: totalDiscountAmount,
+    specialDiscountAmount: totalSpecialDiscountAmount,
+    bulkDiscountAmount: totalBulkDiscountAmount,
+    taxAmount: tax,
     totalWeight,
     commissionRate,
     commissionAmount,
@@ -406,6 +431,8 @@ export const getOrders = async (user, query = {}) => {
     paymentMethod,
     paymentStatus,
     paymentCompleted,
+    deliveryStatus,
+    deliveryFilter,
   } = query;
 
   const filter = {};
@@ -436,6 +463,40 @@ export const getOrders = async (user, query = {}) => {
     andConditions.push(buildPaymentCompletedFilter());
   }
 
+  if (isAdmin && (deliveryStatus || deliveryFilter)) {
+    const deliveryFilterQuery = {};
+    if (deliveryStatus) {
+      deliveryFilterQuery.status = String(deliveryStatus).toUpperCase();
+    } else if (deliveryFilter === 'active') {
+      deliveryFilterQuery.status = {
+        $in: ['ASSIGNED', 'ACCEPTED', 'PICKED', 'OUT_FOR_DELIVERY'],
+      };
+    } else if (deliveryFilter === 'attention') {
+      deliveryFilterQuery.status = 'REJECTED';
+    } else if (deliveryFilter === 'unassigned') {
+      deliveryFilterQuery.$or = [
+        { deliveryPartnerId: { $exists: false } },
+        { deliveryPartnerId: null },
+      ];
+      deliveryFilterQuery.status = { $in: ['PENDING', 'REJECTED'] };
+    }
+
+    const matchingLogistics = await Logistics.find(deliveryFilterQuery).select('orderId').lean();
+    const matchingOrderIds = matchingLogistics.map((shipment) => shipment.orderId);
+
+    if (deliveryFilter === 'unassigned') {
+      const linkedOrderIds = await Logistics.find({}).distinct('orderId');
+      andConditions.push({
+        $or: [
+          { _id: { $in: matchingOrderIds } },
+          { _id: { $nin: linkedOrderIds } },
+        ],
+      });
+    } else {
+      andConditions.push({ _id: { $in: matchingOrderIds } });
+    }
+  }
+
   if (search) {
     // Sanitize search input to prevent ReDoS / regex injection
     const sanitized = String(search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -461,6 +522,9 @@ export const getOrders = async (user, query = {}) => {
 
   if (isAdmin && search && !filter.$or) {
     const User = (await import('../user/user.model.js')).default;
+    const matchingProducts = await Product.find({
+      name: { $regex: String(search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' },
+    }).select('_id').lean();
     const sanitizedSearch = String(search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const matchingUsers = await User.find({
       $or: [
@@ -474,6 +538,9 @@ export const getOrders = async (user, query = {}) => {
       .lean();
     const userIds = matchingUsers.map((u) => u._id);
     filter.$or = [{ userId: { $in: userIds } }];
+    if (matchingProducts.length) {
+      filter.$or.push({ 'items.productId': { $in: matchingProducts.map((product) => product._id) } });
+    }
     if (search.match(/^[0-9a-fA-F]{24}$/)) {
       filter.$or.push({ _id: search });
     }

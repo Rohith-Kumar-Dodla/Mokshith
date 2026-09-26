@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getUserFacingErrorMessage } from '../utils/apiResponse';
+import useOrderStatusSync from './useOrderStatusSync';
 
 import deliveryService from '../services/deliveryService';
 
@@ -12,6 +13,7 @@ import {
   computeDeliveryAnalytics,
 
   mapDeliveryHistory,
+  mapDeliveryOffer,
 
   mapNotifications,
 
@@ -47,6 +49,7 @@ async function loadSafely(loader, fallback = null) {
 export function useDelivery({ autoLoad = true } = {}) {
 
   const [assignments, setAssignments] = useState([]);
+  const [offers, setOffers] = useState([]);
 
   const [history, setHistory] = useState([]);
 
@@ -83,6 +86,7 @@ export function useDelivery({ autoLoad = true } = {}) {
       const [
 
         assignmentsPayload,
+        offersPayload,
 
         historyPayload,
 
@@ -95,8 +99,9 @@ export function useDelivery({ autoLoad = true } = {}) {
       ] = await Promise.all([
 
         loadSafely(() => deliveryService.getMyAssignments(), { data: [] }),
+        loadSafely(() => deliveryService.getMyOffers(), { data: [] }),
 
-        loadSafely(() => deliveryService.getDeliveryHistory(), { data: [] }),
+        loadSafely(() => deliveryService.getDeliveryHistory({ page: 1, limit: 100 }), { data: { items: [] } }),
 
         deliveryService.getProfile().catch((profileLoadError) => {
 
@@ -115,6 +120,7 @@ export function useDelivery({ autoLoad = true } = {}) {
 
 
       const mappedAssignments = mapShipmentsToDeliveryOrders(assignmentsPayload);
+      const mappedOffers = offersPayload?.data ?? offersPayload;
 
       const mappedHistory = mapDeliveryHistory(historyPayload);
 
@@ -129,6 +135,7 @@ export function useDelivery({ autoLoad = true } = {}) {
 
 
       setAssignments(mappedAssignments);
+      setOffers(Array.isArray(mappedOffers) ? mappedOffers.map(mapDeliveryOffer).filter(Boolean) : []);
 
       setHistory(mappedHistory);
 
@@ -154,11 +161,12 @@ export function useDelivery({ autoLoad = true } = {}) {
 
             completedDeliveries: apiAnalytics.completedDeliveries ?? computedAnalytics.today.completedDeliveries,
 
-            todaysEarnings: computedAnalytics.today.todaysEarnings,
+            todaysEarnings: apiAnalytics.todayEarnings ?? computedAnalytics.today.todaysEarnings,
 
-            monthlyEarnings: apiAnalytics.earnings ?? computedAnalytics.today.monthlyEarnings,
+            weeklyEarnings: apiAnalytics.weekEarnings ?? null,
+            monthlyEarnings: apiAnalytics.monthEarnings ?? apiAnalytics.earnings ?? computedAnalytics.today.monthlyEarnings,
 
-            averageRating: apiAnalytics.averageRating ?? computedAnalytics.today.averageRating,
+            averageRating: apiAnalytics.averageRating ?? null,
 
             successRate: apiAnalytics.completionRate ?? computedAnalytics.today.successRate,
 
@@ -195,7 +203,15 @@ export function useDelivery({ autoLoad = true } = {}) {
 
   }, []);
 
-
+  const realtimeRefreshRef = useRef(null);
+  useOrderStatusSync((event) => {
+    if (!event?.orderId && !event?.logisticsId && !event?.shipmentId) return;
+    if (realtimeRefreshRef.current) return;
+    realtimeRefreshRef.current = window.setTimeout(() => {
+      realtimeRefreshRef.current = null;
+      refreshAll({ silent: true });
+    }, 150);
+  });
 
   const refreshProfile = useCallback(async () => {
 
@@ -339,6 +355,38 @@ export function useDelivery({ autoLoad = true } = {}) {
 
   );
 
+  const acceptOffer = useCallback(async (logisticsId, offerId) => {
+    setActionLoading(true);
+    setError(null);
+    const requestId = `offer-accept-${logisticsId}-${offerId}-${Date.now()}`;
+    try {
+      await deliveryService.acceptDeliveryOffer(logisticsId, offerId, requestId);
+      await refreshAll({ silent: true });
+    } catch (actionError) {
+      const message = getUserFacingErrorMessage(actionError, 'Failed to accept delivery offer');
+      setError(message);
+      throw new Error(message);
+    } finally {
+      setActionLoading(false);
+    }
+  }, [refreshAll]);
+
+  const rejectOffer = useCallback(async (logisticsId, offerId, payload) => {
+    setActionLoading(true);
+    setError(null);
+    const requestId = `offer-reject-${logisticsId}-${offerId}-${Date.now()}`;
+    try {
+      await deliveryService.rejectDeliveryOffer(logisticsId, offerId, payload, requestId);
+      await refreshAll({ silent: true });
+    } catch (actionError) {
+      const message = getUserFacingErrorMessage(actionError, 'Failed to reject delivery offer');
+      setError(message);
+      throw new Error(message);
+    } finally {
+      setActionLoading(false);
+    }
+  }, [refreshAll]);
+
 
 
   const pickUpDelivery = useCallback(
@@ -465,7 +513,7 @@ export function useDelivery({ autoLoad = true } = {}) {
 
       } catch (actionError) {
 
-        const message = getErrorMessage(actionError, 'Failed to collect COD payment');
+        const message = getUserFacingErrorMessage(actionError, 'Failed to collect COD payment');
 
         setError(message);
 
@@ -563,7 +611,7 @@ export function useDelivery({ autoLoad = true } = {}) {
 
       current.map((notification) =>
 
-        notification.id === notificationId ? { ...notification, isRead: true } : notification
+        notification.id === notificationId ? { ...notification, isRead: true, read: true } : notification
 
       )
 
@@ -571,17 +619,25 @@ export function useDelivery({ autoLoad = true } = {}) {
 
   }, []);
 
+  const markAllNotificationsRead = useCallback(async () => {
+    await deliveryService.markAllNotificationsRead();
+    setNotifications((current) => current.map((notification) => ({ ...notification, isRead: true, read: true })));
+  }, []);
+
 
 
   return {
 
     assignments,
+    offers,
 
     history,
 
     profile,
 
     notifications,
+
+    unreadCount: notifications.filter((notification) => !notification.isRead && !notification.read).length,
 
     analytics,
 
@@ -606,6 +662,8 @@ export function useDelivery({ autoLoad = true } = {}) {
     acceptDelivery,
 
     rejectAssignment,
+    acceptOffer,
+    rejectOffer,
 
     pickUpDelivery,
 
@@ -620,6 +678,8 @@ export function useDelivery({ autoLoad = true } = {}) {
     updateProfile,
 
     markNotificationRead,
+
+    markAllNotificationsRead,
 
   };
 

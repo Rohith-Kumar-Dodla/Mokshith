@@ -1,7 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { FiBell, FiX, FiCheck } from 'react-icons/fi';
 
-const NotificationDrawer = ({ isOpen, onClose, notifications }) => {
+const NotificationDrawer = ({ isOpen, onClose, notifications, onMarkAsRead, onMarkAllAsRead }) => {
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const handleKeyDown = (event) => { if (event.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
@@ -10,19 +17,21 @@ const NotificationDrawer = ({ isOpen, onClose, notifications }) => {
       <div
         className="fixed inset-0 bg-black bg-opacity-50 z-40"
         onClick={onClose}
+        aria-hidden="true"
       />
 
       {/* Drawer */}
-      <div className="fixed right-0 top-0 h-full w-full sm:w-96 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out">
+      <div className="fixed right-0 top-0 h-full w-full sm:w-96 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out" role="dialog" aria-modal="true" aria-labelledby="admin-notifications-title">
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
             <div className="flex items-center gap-2 sm:gap-3">
               <FiBell className="w-5 h-5 text-blue-600 flex-shrink-0" />
-              <h2 className="text-base sm:text-xl font-bold text-gray-900">Notifications</h2>
+              <h2 id="admin-notifications-title" className="text-base sm:text-xl font-bold text-gray-900">Notifications</h2>
             </div>
             <button
               onClick={onClose}
+              aria-label="Close notifications"
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors min-h-[36px] min-w-[36px] sm:min-h-[40px] sm:min-w-[40px] flex items-center justify-center"
             >
               <FiX className="w-4 h-4 text-gray-600" />
@@ -39,11 +48,13 @@ const NotificationDrawer = ({ isOpen, onClose, notifications }) => {
             ) : (
               <div className="divide-y divide-gray-100">
                 {notifications.map((notification) => (
-                  <div
+                  <button
+                    type="button"
                     key={notification.id}
                     className={`p-3 sm:p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
                       !notification.read ? 'bg-blue-50' : ''
                     }`}
+                    onClick={() => !notification.read && onMarkAsRead?.(notification.id)}
                   >
                     <div className="flex items-start gap-2 sm:gap-3">
                       <div className={`w-2 h-2 mt-1.5 sm:mt-2 rounded-full ${
@@ -61,7 +72,7 @@ const NotificationDrawer = ({ isOpen, onClose, notifications }) => {
                         </p>
                       </div>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
@@ -69,7 +80,7 @@ const NotificationDrawer = ({ isOpen, onClose, notifications }) => {
 
           {/* Footer */}
           <div className="p-3 sm:p-4 border-t border-gray-200">
-            <button className="w-full py-2.5 h-10 sm:h-12 text-xs sm:text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+            <button type="button" onClick={() => onMarkAllAsRead?.()} disabled={!notifications.some((notification) => !notification.read)} className="w-full py-2.5 h-10 sm:h-12 text-xs sm:text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50">
               Mark all as read
             </button>
           </div>

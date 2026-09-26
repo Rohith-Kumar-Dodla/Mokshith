@@ -3,10 +3,11 @@ import Joi from 'joi';
 export const createProductSchema = Joi.object({
   body: Joi.object({
     name: Joi.string().trim().required(),
+    sku: Joi.string().trim().max(80).optional(),
     description: Joi.string().allow('').optional(),
     price: Joi.number().greater(0).required(),
     stock: Joi.number().min(0).optional(),
-    categoryId: Joi.string().required(),
+    categoryId: Joi.string().hex().length(24).required(),
     vendorId: Joi.string().optional(),
     companyId: Joi.string().optional(),
     moq: Joi.number().min(1).optional(),
@@ -36,10 +37,11 @@ export const updateProductSchema = Joi.object({
   }),
   body: Joi.object({
     name: Joi.string().trim().optional(),
+    sku: Joi.string().trim().max(80).optional(),
     description: Joi.string().allow('').optional(),
     price: Joi.number().greater(0).optional(),
     stock: Joi.number().min(0).optional(),
-    categoryId: Joi.string().optional(),
+    categoryId: Joi.string().hex().length(24).optional(),
     moq: Joi.number().min(1).optional(),
     isActive: Joi.any().optional(),
     image: Joi.any().optional(),

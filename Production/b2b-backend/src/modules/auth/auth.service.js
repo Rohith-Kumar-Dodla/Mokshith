@@ -34,6 +34,7 @@ import User from '../user/user.model.js';
 import {
   syncLegacyAddressFromVendorAddress,
 } from '../../utils/vendorAddress.utils.js';
+import { geocodeAddress } from '../../services/geocoding.service.js';
 
 export const register = async (data, req = {}) => {
   const { email, mobile, password } = data;
@@ -79,7 +80,11 @@ export const register = async (data, req = {}) => {
   }
 
   const hashedPassword = await hashPassword(password);
-  const vendorAddress = data.address;
+  const vendorAddress = { ...data.address };
+  if (process.env.NODE_ENV !== 'test') {
+    const geocoded = await geocodeAddress(vendorAddress);
+    vendorAddress.location = { ...geocoded, geocodedAt: new Date() };
+  }
   const legacyAddress = syncLegacyAddressFromVendorAddress(vendorAddress);
 
   const user = await createUser({

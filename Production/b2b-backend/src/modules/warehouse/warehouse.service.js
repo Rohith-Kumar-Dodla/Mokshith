@@ -7,6 +7,7 @@ export const createWarehouse = async (data) => {
     throw new AppError('Warehouse name is required', 400);
   }
 
+  if (data.isDeliveryOrigin) await repo.updateMany({ isDeliveryOrigin: true }, { isDeliveryOrigin: false });
   return repo.createWarehouse(data);
 };
 
@@ -42,6 +43,8 @@ export const getWarehouseById = async (id) => {
 };
 
 export const updateWarehouse = async (id, data) => {
+  if (data.isDeliveryOrigin === true) await repo.updateMany({ _id: { $ne: id }, isDeliveryOrigin: true }, { isDeliveryOrigin: false });
+  if (data.isDeliveryOrigin === true && data.isActive === false) throw new AppError('A delivery-origin warehouse must be active.', 400);
   const warehouse = await repo.updateWarehouse(id, data);
   if (!warehouse) throw new AppError('Warehouse not found', 404);
   return warehouse;
@@ -51,4 +54,15 @@ export const deleteWarehouse = async (id) => {
   const warehouse = await repo.findById(id);
   if (!warehouse) throw new AppError('Warehouse not found', 404);
   return repo.deleteWarehouse(id);
+};
+
+export const getDeliveryOrigin = async () => {
+  const warehouse = await repo.findOne({ isActive: true, isDeliveryOrigin: true });
+  if (!warehouse) throw new AppError('No active client delivery-origin warehouse is configured.', 422, 'WAREHOUSE_ORIGIN_REQUIRED');
+  const coordinates = warehouse.location?.coordinates;
+  if (!coordinates || !Number.isFinite(Number(coordinates.latitude)) || !Number.isFinite(Number(coordinates.longitude))) {
+    throw new AppError('The active delivery-origin warehouse has no valid coordinates.', 422, 'WAREHOUSE_COORDINATES_REQUIRED');
+  }
+  if (data.isDeliveryOrigin && data.isActive === false) throw new AppError('A delivery-origin warehouse must be active.', 400);
+  return warehouse;
 };

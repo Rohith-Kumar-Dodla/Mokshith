@@ -14,7 +14,14 @@ const LOGISTICS_STATUS_MAP = {
 
 function unwrapList(payload) {
   if (Array.isArray(payload)) return payload;
-  return payload?.data ?? [];
+  const data = payload?.data ?? payload;
+  if (Array.isArray(data)) return data;
+  return data?.items ?? [];
+}
+
+function numberOrNull(value) {
+  const number = Number(value);
+  return value === null || value === undefined || value === '' || !Number.isFinite(number) ? null : number;
 }
 
 function getOrderFromShipment(shipment) {
@@ -43,14 +50,27 @@ export function mapShipmentToDeliveryOrder(shipment) {
   const items = order?.items ?? [];
   const warehouse = shipment.warehouseId;
 
+  const currentOffer = shipment.currentOfferId && typeof shipment.currentOfferId === 'object'
+    ? shipment.currentOfferId
+    : null;
+  const distanceKm = numberOrNull(shipment.distanceKm ?? currentOffer?.distance);
+  const distanceUnit = shipment.distanceUnit || currentOffer?.distanceUnit || null;
+  const deliveryAmount = numberOrNull(shipment.deliveryAmount ?? currentOffer?.deliveryAmount);
+
   return {
     id: shipment._id || shipment.id,
     shipmentId: shipment._id || shipment.id,
     orderRef: order?._id || order?.id || shipment.orderId,
+    logisticsId: shipment._id || shipment.id,
+    offerId: currentOffer?._id || null,
+    partnerId: shipment.deliveryPartnerId?._id || shipment.deliveryPartnerId || null,
+    offerStatus: currentOffer?.status || null,
+    offerVersion: shipment.currentOfferVersion || currentOffer?.version || null,
     vendor: order?.userId?.name || shipment.customerName || 'Customer Order',
     vendorId: order?.userId?._id || order?.userId || null,
-    pickupLocation:
-      typeof warehouse === 'object'
+    pickupLocation: shipment.pickupWarehouseName
+      ? `${shipment.pickupWarehouseName}${shipment.pickupAddress ? `, ${shipment.pickupAddress}` : ''}`
+      : typeof warehouse === 'object'
         ? `${warehouse.name || 'Warehouse'}${warehouse.location ? `, ${warehouse.location}` : ''}`
         : 'Warehouse',
     deliveryLocation: shipment.address || '—',
@@ -61,7 +81,17 @@ export function mapShipmentToDeliveryOrder(shipment) {
     priority: derivePriority(shipment),
     assignedTime: shipment.createdAt || shipment.updatedAt,
     estimatedDelivery: shipment.estimatedDelivery,
-    distance: Number(shipment.etaMinutes || 0) / 10 || 0,
+    distanceKm,
+    distanceUnit,
+    distance: distanceKm,
+    deliveryAmount,
+    earnings: deliveryAmount,
+    offerExpiresAt: currentOffer?.expiresAt || null,
+    rejectionReason: shipment.rejectionReason || currentOffer?.rejectionReason || null,
+    rejectionCode: currentOffer?.rejectionCode || null,
+    rejectionCount: shipment.rejectionCount ?? null,
+    deliveredAt: shipment.deliveredAt || null,
+    completedAt: shipment.completedAt || null,
     customerName: shipment.customerName || order?.userId?.name || 'Customer',
     customerPhone: shipment.phone || order?.address?.phone || order?.userId?.mobile || '—',
     specialInstructions: order?.notes || '',
@@ -88,12 +118,42 @@ export function mapShipmentsToDeliveryOrders(payload) {
   return unwrapList(payload).map(mapShipmentToDeliveryOrder).filter(Boolean);
 }
 
+export function mapDeliveryOffer(offer) {
+  if (!offer) return null;
+  const order = offer.orderId && typeof offer.orderId === 'object' ? offer.orderId : null;
+  const logistics = offer.logisticsId && typeof offer.logisticsId === 'object' ? offer.logisticsId : null;
+  const distanceKm = numberOrNull(offer.distance ?? logistics?.distanceKm);
+  const deliveryAmount = numberOrNull(offer.deliveryAmount ?? logistics?.deliveryAmount);
+  return {
+    ...offer,
+    offerId: offer._id || offer.id,
+    logisticsId: logistics?._id || offer.logisticsId,
+    orderId: order?._id || offer.orderId,
+    partnerId: offer.deliveryPartnerId?._id || offer.deliveryPartnerId || null,
+    offerStatus: offer.status || null,
+    lifecycleStatus: logistics?.status || null,
+    version: offer.version || logistics?.currentOfferVersion || null,
+    customerName: order?.userId?.name || order?.userId?.businessName || null,
+    customerPhone: order?.userId?.mobile || null,
+    address: order?.address || order?.shippingAddress || logistics?.address || null,
+    orderValue: numberOrNull(order?.totalAmount),
+    distanceKm,
+    distanceUnit: offer.distanceUnit || logistics?.distanceUnit || null,
+    deliveryAmount,
+    earnings: deliveryAmount,
+    expiresAt: offer.expiresAt || null,
+    rejectionReason: offer.rejectionReason || logistics?.rejectionReason || null,
+    rejectionCode: offer.rejectionCode || null,
+    raw: offer,
+  };
+}
+
 export function mapHistoryItem(shipment) {
   const mapped = mapShipmentToDeliveryOrder(shipment);
   if (!mapped) return null;
 
   const deliveredAt = shipment.deliveredAt || shipment.updatedAt || shipment.createdAt;
-  const earnings = Math.round(mapped.orderAmount * 0.05);
+  const earnings = mapped.deliveryAmount;
 
   return {
     id: mapped.id,
@@ -104,8 +164,12 @@ export function mapHistoryItem(shipment) {
     date: deliveredAt,
     earnings,
     orderAmount: mapped.orderAmount,
-    distance: mapped.distance,
-    rating: mapped.status === 'delivered' ? 5 : null,
+    distance: mapped.distanceKm,
+    distanceKm: mapped.distanceKm,
+    distanceUnit: mapped.distanceUnit,
+    deliveryAmount: mapped.deliveryAmount,
+    rating: null,
+    raw: shipment,
   };
 }
 
@@ -175,12 +239,12 @@ export function computeDeliveryAnalytics(assignments = [], history = []) {
     return date.toDateString() === today.toDateString();
   });
 
-  const todaysEarnings = completedToday.reduce((sum, item) => sum + Number(item.earnings || 0), 0);
+  const todaysEarnings = completedToday.reduce((sum, item) => sum + (Number.isFinite(item.earnings) ? item.earnings : 0), 0);
   const monthlyEarnings = history.reduce((sum, item) => {
     const date = new Date(item.completedAt || item.date);
     const now = new Date();
     if (date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()) {
-      return sum + Number(item.earnings || 0);
+      return sum + (Number.isFinite(item.earnings) ? item.earnings : 0);
     }
     return sum;
   }, 0);
@@ -197,7 +261,7 @@ export function computeDeliveryAnalytics(assignments = [], history = []) {
       completedDeliveries: completedToday.length,
       todaysEarnings,
       monthlyEarnings,
-      averageRating: deliveredCount > 0 ? 4.8 : 0,
+      averageRating: null,
       successRate,
     },
     activityTimeline: history.slice(0, 6).map((item) => ({
@@ -212,12 +276,15 @@ export function computeDeliveryAnalytics(assignments = [], history = []) {
 
 export function buildEarningsSeries(history = []) {
   const grouped = history.reduce((acc, item) => {
-    const key = new Date(item.completedAt || item.date).toISOString().slice(0, 10);
+    if (!Number.isFinite(item.earnings)) return acc;
+    const timestamp = new Date(item.completedAt || item.date).getTime();
+    if (!Number.isFinite(timestamp)) return acc;
+    const key = new Date(timestamp).toISOString().slice(0, 10);
     if (!acc[key]) {
       acc[key] = { date: key, total: 0, earnings: 0, bonus: 0, deliveries: 0 };
     }
-    acc[key].total += Number(item.earnings || 0);
-    acc[key].earnings += Number(item.earnings || 0);
+    acc[key].total += item.earnings;
+    acc[key].earnings += item.earnings;
     acc[key].deliveries += 1;
     return acc;
   }, {});
@@ -232,11 +299,11 @@ export function buildPerformanceMetrics(assignments = [], history = []) {
 
   return {
     successRate: total > 0 ? Math.round((delivered.length / total) * 100) : 100,
-    averageRating: delivered.length > 0 ? 4.8 : 0,
-    onTimeDeliveries: delivered.length > 0 ? 92 : 0,
+    averageRating: null,
+    onTimeDeliveries: null,
     completedDeliveries: delivered.length,
     cancelledDeliveries: cancelled.length,
-    customerSatisfaction: delivered.length > 0 ? 96 : 0,
+    customerSatisfaction: null,
     activeAssignments: assignments.length,
   };
 }

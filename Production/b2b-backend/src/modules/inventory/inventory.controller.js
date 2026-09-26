@@ -1,9 +1,11 @@
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import * as service from './inventory.service.js';
 import { successResponse } from '../../utils/responseHandler.js';
+import { logAction } from '../audit/audit.service.js';
 
 export const addStock = asyncHandler(async (req, res) => {
   const data = await service.addStock(req.body);
+  await logAction({ userId: req.user?._id, action: 'INVENTORY_STOCK_ADDED', entity: 'Inventory', entityId: data?._id, details: 'Inventory stock added', data: req.body }).catch(() => {});
   successResponse(res, data, 'Stock updated');
 });
 
@@ -31,5 +33,6 @@ export const getInventoryStats = asyncHandler(async (req, res) => {
 
 export const updateStock = asyncHandler(async (req, res) => {
   const data = await service.updateStock(req.body);
+  await logAction({ userId: req.user?._id, action: 'INVENTORY_STOCK_UPDATED', entity: 'Inventory', entityId: data?._id, details: 'Inventory stock adjusted', data: req.body }).catch(() => {});
   successResponse(res, data, 'Stock updated successfully');
 });

@@ -4,6 +4,9 @@ import { MemoryRouter } from 'react-router-dom';
 import AdminDashboard from './Dashboard';
 import Vendors from './Vendors';
 import adminService from '../../services/adminService';
+import deliveryService from '../../services/deliveryService';
+import inventoryService from '../../services/inventoryService';
+import orderService from '../../services/orderService';
 
 vi.mock('../../services/adminService', () => ({
   default: {
@@ -12,6 +15,24 @@ vi.mock('../../services/adminService', () => ({
     approveUser: vi.fn(),
     rejectUser: vi.fn(),
     updateUserStatus: vi.fn(),
+  },
+}));
+
+vi.mock('../../services/deliveryService', () => ({
+  default: {
+    getDeliveryQueue: vi.fn(),
+  },
+}));
+
+vi.mock('../../services/inventoryService', () => ({
+  default: {
+    getLowStockItems: vi.fn(),
+  },
+}));
+
+vi.mock('../../services/orderService', () => ({
+  default: {
+    getAllOrders: vi.fn(),
   },
 }));
 
@@ -25,16 +46,21 @@ describe('Admin Dashboard KPI drill-down', () => {
     adminService.getStats.mockResolvedValue({
       data: {
         totalOrders: 12,
-        totalVendors: 5,
-        totalDeliveryPartners: 3,
-        pendingApprovals: 1,
-        totalAdmins: 2,
-        totalUsers: 20,
+        pendingOrders: 4,
+        codOrders: 3,
+        paidOrders: 9,
+        unassignedDeliveries: 2,
+        activeDeliveries: 5,
+        lowStock: 1,
+        deliveryRejections: 1,
       },
     });
+    orderService.getAllOrders.mockResolvedValue({ data: { orders: [], pagination: {} } });
+    deliveryService.getDeliveryQueue.mockResolvedValue({ data: [] });
+    inventoryService.getLowStockItems.mockResolvedValue({ data: [] });
   });
 
-  it('links Total Orders, Total Vendors, and Delivery Partners KPIs', async () => {
+  it('links operational Home KPIs to the canonical admin workflows', async () => {
     render(
       <MemoryRouter>
         <AdminDashboard />
@@ -42,13 +68,14 @@ describe('Admin Dashboard KPI drill-down', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('link', { name: /View Total Orders/i })).toHaveAttribute('href', '/admin/orders');
+      expect(screen.getByRole('link', { name: /Total Orders/i })).toHaveAttribute('href', '/admin/orders');
     });
-    expect(screen.getByRole('link', { name: /View Total Vendors/i })).toHaveAttribute('href', '/admin/vendors');
-    expect(screen.getByRole('link', { name: /View Delivery Partners/i })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /Pending Orders/i })).toHaveAttribute('href', '/admin/orders?status=PENDING');
+    expect(screen.getByRole('link', { name: /Unassigned Deliveries/i })).toHaveAttribute(
       'href',
-      '/admin/delivery-assignment?tab=partners'
+      '/admin/orders?deliveryFilter=unassigned'
     );
+    expect(screen.getByRole('link', { name: /Low Stock/i })).toHaveAttribute('href', '/admin/inventory');
   });
 });
 

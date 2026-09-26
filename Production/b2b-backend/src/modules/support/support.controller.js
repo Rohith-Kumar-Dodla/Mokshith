@@ -45,3 +45,12 @@ export const updateTicketStatus = asyncHandler(async (req, res) => {
   );
   successResponse(res, ticket, 'Ticket status updated');
 });
+
+export const getAssignableAdmins = asyncHandler(async (req, res) => {
+  successResponse(res, await service.getAssignableAdmins());
+});
+
+export const assignTicket = asyncHandler(async (req, res) => {
+  const ticket = await service.assignTicket(req.params.id, req.body.assigneeId, req.user);
+  successResponse(res, ticket, 'Ticket assigned');
+});

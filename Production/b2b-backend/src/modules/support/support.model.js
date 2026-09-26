@@ -66,6 +66,8 @@ const supportSchema = new mongoose.Schema(
       maxlength: 200,
       default: 'Support Request',
     },
+    category: { type: String, trim: true, maxlength: 80, default: 'GENERAL' },
+    description: { type: String, trim: true, maxlength: 5000, default: '' },
     // Legacy single-message field kept for backward compatibility
     message: {
       type: String,
@@ -104,6 +106,10 @@ const supportSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    relatedOrder: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', default: null },
+    relatedPayment: { type: mongoose.Schema.Types.ObjectId, ref: 'Payment', default: null },
+    relatedDelivery: { type: mongoose.Schema.Types.ObjectId, ref: 'Logistics', default: null },
+    relatedProduct: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', default: null },
   },
   { timestamps: true }
 );

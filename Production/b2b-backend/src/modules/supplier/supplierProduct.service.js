@@ -4,7 +4,9 @@ import SupplierProductPriceHistory from './supplierProductPriceHistory.model.js'
 import SupplierCategory from './supplierCategory.model.js';
 import Supplier from './supplier.model.js';
 import Product from '../product/product.model.js';
+import Category from '../category/category.model.js';
 import Audit from '../audit/audit.model.js';
+import SupplierAllocation from '../procurement/supplierAllocation.model.js';
 import AppError from '../../errors/AppError.js';
 import { SUPPLIER_STATUS } from '../../constants/supplierStatus.js';
 import { SUPPLIER_PRODUCT_STATUS } from '../../constants/supplierProductStatus.js';
@@ -13,7 +15,7 @@ import { createProduct as createCanonicalProduct } from '../product/product.serv
 import { getTransactionSupport } from '../../config/db.js';
 import { formatCurrency } from '../../utils/currency.utils.js';
 
-const UPDATABLE_FIELDS = ['minimumOrderQuantity', 'availabilityStatus', 'notes'];
+const UPDATABLE_FIELDS = ['minimumOrderQuantity', 'quantity', 'availabilityStatus', 'notes'];
 
 const assertValidId = (id, label) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -59,7 +61,12 @@ const serializeMapping = (doc) => {
     ? {
       _id: plain.productId._id,
       name: plain.productId.name,
+      sku: plain.productId.sku || '',
       unit: plain.productId.unit,
+      image: plain.productId.image || '',
+      imageUrl: plain.productId.imageUrl || '',
+      imagePublicId: plain.productId.imagePublicId || null,
+      updatedAt: plain.productId.updatedAt,
       isActive: plain.productId.isActive,
       catalogScope: plain.productId.catalogScope || 'CUSTOMER',
       categoryId: plain.productId.categoryId?._id || plain.productId.categoryId || null,
@@ -82,6 +89,7 @@ const serializeMapping = (doc) => {
     productId: populatedProduct?._id || plain.productId,
     product: populatedProduct,
     minimumOrderQuantity: plain.minimumOrderQuantity,
+    quantity: Number(plain.quantity || 0),
     currentSupplierPrice,
     availabilityStatus: plain.availabilityStatus,
     notes: plain.notes || '',
@@ -114,7 +122,7 @@ export const isSupplierPriceConfigured = (value) => {
 
 const populateProduct = (query) => query.populate({
   path: 'productId',
-  select: 'name unit isActive categoryId catalogScope',
+  select: 'name sku unit image imageUrl imagePublicId updatedAt isActive categoryId catalogScope',
   populate: { path: 'categoryId', select: 'name' },
 });
 
@@ -170,6 +178,7 @@ const assertProductMatchesSupplierCategory = (product, supplierCategory) => {
 const serializeProductSearchResult = (product, mappedProductIds) => ({
   _id: product._id,
   name: product.name,
+  sku: product.sku || '',
   price: product.price,
   moq: product.moq,
   isActive: product.isActive,
@@ -365,32 +374,91 @@ export const listSupplierProducts = async (
   };
 };
 
+export const listSupplierCategoryProducts = async (
+  supplierId,
+  categoryId,
+  { page = 1, limit = 12, status = 'all', search = '' } = {}
+) => {
+  const supplier = await requireSupplier(supplierId);
+  assertValidId(categoryId, 'category');
+
+  const category = await Category.findById(categoryId).select('name isActive').lean();
+  if (!category) {
+    throw new AppError('Category not found', 404);
+  }
+
+  const association = await SupplierCategory.findOne({ supplierId, categoryId }).select('_id status').lean();
+  if (!association) {
+    throw new AppError('Supplier category association not found', 404);
+  }
+
+  const result = await listSupplierProducts(supplierId, {
+    page,
+    limit,
+    status,
+    search,
+    categoryId,
+  });
+
+  return {
+    supplier: {
+      _id: supplier._id,
+      supplierName: supplier.supplierName,
+      companyName: supplier.companyName,
+      status: supplier.status,
+    },
+    category: {
+      _id: category._id,
+      name: category.name,
+      isActive: category.isActive,
+      associationId: association._id,
+      associationStatus: association.status,
+    },
+    products: result.mappings,
+    total: result.total,
+    page: result.page,
+    pages: result.pages,
+  };
+};
+
 export const getSupplierProduct = async (supplierId, mappingId) => {
   await requireSupplier(supplierId);
   const mapping = await requireMapping(supplierId, mappingId);
   return serializeMapping(mapping);
 };
 
-export const searchProductsForSupplier = async (supplierId, { search = '', page = 1, limit = 20 } = {}) => {
+export const searchProductsForSupplier = async (supplierId, { search = '', page = 1, limit = 20, categoryId } = {}) => {
   await requireSupplier(supplierId);
 
   const normalizedSearch = String(search || '').trim();
   const filter = {};
+  if (categoryId) {
+    assertValidId(categoryId, 'category');
+    const category = await Category.findById(categoryId).select('_id').lean();
+    if (!category) throw new AppError('Category not found', 404);
+    const association = await SupplierCategory.findOne({ supplierId, categoryId }).select('_id').lean();
+    if (!association) throw new AppError('Supplier category association not found', 404);
+    filter.categoryId = categoryId;
+  }
   if (normalizedSearch) {
     if (mongoose.Types.ObjectId.isValid(normalizedSearch)) {
       filter.$or = [
         { _id: normalizedSearch },
         { name: { $regex: escapeRegex(normalizedSearch), $options: 'i' } },
+        { sku: { $regex: escapeRegex(normalizedSearch), $options: 'i' } },
       ];
     } else {
-      filter.name = { $regex: escapeRegex(normalizedSearch), $options: 'i' };
+      filter.$or = [
+        { name: { $regex: escapeRegex(normalizedSearch), $options: 'i' } },
+        { sku: { $regex: escapeRegex(normalizedSearch), $options: 'i' } },
+      ];
     }
   }
 
   const skip = (Number(page) - 1) * Number(limit);
   const [products, total, existingMappings] = await Promise.all([
     Product.find(filter)
-      .select('name price moq isActive categoryId vendorId companyId')
+      .select('name sku price moq isActive categoryId vendorId companyId')
       .populate('categoryId', 'name')
       .populate('vendorId', 'name')
       .populate('companyId', 'name')
@@ -416,6 +484,13 @@ export const createSupplierProduct = async (supplierId, data, actorId, ip) => {
   const supplier = await requireActiveSupplier(supplierId);
   const product = await requireProduct(data.productId);
 
+  if (data.supplierPrice != null && data.supplierPrice !== '') {
+    normalizeSupplierPrice(data.supplierPrice);
+    if ((data.availabilityStatus || SUPPLIER_PRODUCT_STATUS.ACTIVE) !== SUPPLIER_PRODUCT_STATUS.ACTIVE) {
+      throw new AppError('Cannot set supplier price while the product mapping is inactive.', 400);
+    }
+  }
+
   if (data.supplierCategoryId) {
     const supplierCategory = await requireSupplierCategoryForSupplier(supplierId, data.supplierCategoryId);
     assertProductMatchesSupplierCategory(product, supplierCategory);
@@ -440,6 +515,7 @@ export const createSupplierProduct = async (supplierId, data, actorId, ip) => {
       supplierId: supplier._id,
       productId: product._id,
       minimumOrderQuantity,
+      quantity: Number(data.quantity || 0),
       availabilityStatus: data.availabilityStatus || SUPPLIER_PRODUCT_STATUS.ACTIVE,
       notes: String(data.notes || '').trim(),
       currentSupplierPrice: null,
@@ -462,10 +538,6 @@ export const createSupplierProduct = async (supplierId, data, actorId, ip) => {
   });
 
   if (data.supplierPrice != null && data.supplierPrice !== '') {
-    const availability = data.availabilityStatus || SUPPLIER_PRODUCT_STATUS.ACTIVE;
-    if (availability !== SUPPLIER_PRODUCT_STATUS.ACTIVE) {
-      throw new AppError('Cannot set supplier price while the product mapping is inactive.', 400);
-    }
     await setSupplierProductPrice(supplierId, mapping._id, data.supplierPrice, actorId, ip);
     const populated = await populateProduct(SupplierProduct.findById(mapping._id));
     return serializeMapping(populated);
@@ -475,8 +547,57 @@ export const createSupplierProduct = async (supplierId, data, actorId, ip) => {
   return serializeMapping(populated);
 };
 
+export const createSupplierCategoryProduct = async (supplierId, categoryId, data, actorId, ip) => {
+  await requireSupplier(supplierId);
+  assertValidId(categoryId, 'category');
+  const category = await Category.findById(categoryId).select('_id').lean();
+  if (!category) throw new AppError('Category not found', 404);
+  const association = await SupplierCategory.findOne({ supplierId, categoryId }).select('_id').lean();
+  if (!association) throw new AppError('Supplier category association not found', 404);
+  return createSupplierProduct(
+    supplierId,
+    { ...data, supplierCategoryId: association._id },
+    actorId,
+    ip
+  );
+};
+
+const requireCategoryScopedMapping = async (supplierId, categoryId, mappingId) => {
+  await requireSupplier(supplierId);
+  assertValidId(categoryId, 'category');
+  const category = await Category.findById(categoryId).select('_id').lean();
+  if (!category) throw new AppError('Category not found', 404);
+  const association = await SupplierCategory.findOne({ supplierId, categoryId }).select('_id').lean();
+  if (!association) throw new AppError('Supplier category association not found', 404);
+  const mapping = await requireMapping(supplierId, mappingId);
+  const productCategoryId = String(mapping.productId?.categoryId?._id || mapping.productId?.categoryId || '');
+  if (productCategoryId !== String(categoryId)) {
+    throw new AppError('Supplier product mapping does not belong to this category.', 404);
+  }
+  return mapping;
+};
+
+export const updateSupplierCategoryProduct = async (supplierId, categoryId, mappingId, data, actorId, ip) => {
+  const mapping = await requireCategoryScopedMapping(supplierId, categoryId, mappingId);
+  const nextStatus = data.availabilityStatus || mapping.availabilityStatus;
+  if (data.supplierPrice !== undefined && nextStatus !== SUPPLIER_PRODUCT_STATUS.ACTIVE) {
+    throw new AppError('Cannot set supplier price while the product mapping is inactive.', 400);
+  }
+  const mappingUpdates = Object.fromEntries(
+    Object.entries(data).filter(([key]) => key !== 'supplierPrice')
+  );
+  let updated = serializeMapping(mapping);
+  if (Object.keys(mappingUpdates).length > 0) {
+    updated = await updateSupplierProduct(supplierId, mappingId, mappingUpdates, actorId, ip);
+  }
+  if (data.supplierPrice !== undefined && !pricesEqual(updated.currentSupplierPrice, data.supplierPrice)) {
+    updated = await setSupplierProductPrice(supplierId, mappingId, data.supplierPrice, actorId, ip);
+  }
+  return updated;
+};
+
 export const createSupplierProductWithNewProduct = async (supplierId, data, actorId, ip) => {
-  const supplier = await requireActiveSupplier(supplierId);
+  await requireActiveSupplier(supplierId);
   const supplierCategory = await requireSupplierCategoryForSupplier(supplierId, data.supplierCategoryId);
   const canonicalCategoryId = canonicalCategoryIdFromSupplierCategory(supplierCategory);
 
@@ -545,6 +666,12 @@ export const updateSupplierProduct = async (supplierId, mappingId, data, actorId
         throw new AppError('Minimum order quantity must be a positive number.', 400);
       }
       updates.minimumOrderQuantity = moq;
+    } else if (field === 'quantity') {
+      const quantity = Number(data.quantity);
+      if (!Number.isInteger(quantity) || quantity < 0) {
+        throw new AppError('Supplier quantity must be a non-negative integer.', 400);
+      }
+      updates.quantity = quantity;
     } else if (field === 'notes') {
       updates.notes = String(data.notes || '').trim();
     } else {
@@ -594,6 +721,92 @@ export const updateSupplierProductStatus = async (supplierId, mappingId, nextSta
 
   const populated = await populateProduct(SupplierProduct.findById(mapping._id));
   return serializeMapping(populated);
+};
+
+export const removeSupplierProduct = async (supplierId, mappingId, actorId, ip) => {
+  await requireSupplier(supplierId);
+  const mapping = await requireMapping(supplierId, mappingId);
+  const activeAllocation = await SupplierAllocation.exists({
+    supplierProductId: mapping._id,
+    status: 'ACTIVE',
+  });
+  if (activeAllocation) {
+    throw new AppError('This supplier product has an active allocation and cannot be removed.', 409);
+  }
+  if (mapping.availabilityStatus === SUPPLIER_PRODUCT_STATUS.INACTIVE) {
+    throw new AppError('This supplier product is already inactive.', 409);
+  }
+
+  mapping.availabilityStatus = SUPPLIER_PRODUCT_STATUS.INACTIVE;
+  mapping.updatedBy = actorId || null;
+  await mapping.save();
+  await writeAudit({
+    actorId,
+    ip,
+    action: 'DEACTIVATE_SUPPLIER_PRODUCT',
+    entityId: mapping._id,
+    details: `Removed supplier product mapping ${mapping._id} from active supplier use without deleting product ${mapping.productId?._id || mapping.productId}`,
+  });
+  const populated = await populateProduct(SupplierProduct.findById(mapping._id));
+  return serializeMapping(populated);
+};
+
+export const removeSupplierCategoryProduct = async (supplierId, categoryId, mappingId, actorId, ip) => {
+  await requireCategoryScopedMapping(supplierId, categoryId, mappingId);
+  return removeSupplierProduct(supplierId, mappingId, actorId, ip);
+};
+
+export const listNetworkSupplierProducts = async ({ page = 1, limit = 20, search = '', supplierId, categoryId, status = 'all' } = {}) => {
+  const match = {};
+  if (supplierId && supplierId !== 'all') {
+    assertValidId(supplierId, 'supplier');
+    match.supplierId = new mongoose.Types.ObjectId(supplierId);
+  }
+  if (status && status !== 'all') match.availabilityStatus = status;
+  const productMatch = {};
+  if (categoryId && categoryId !== 'all') {
+    assertValidId(categoryId, 'category');
+    productMatch['product.categoryId'] = new mongoose.Types.ObjectId(categoryId);
+  }
+  if (String(search).trim()) {
+    const regex = new RegExp(escapeRegex(search), 'i');
+    productMatch.$or = [{ 'product.name': regex }, { 'product.sku': regex }];
+  }
+  const skip = (Number(page) - 1) * Number(limit);
+  const pipeline = [
+    { $match: match },
+    { $lookup: { from: 'products', localField: 'productId', foreignField: '_id', as: 'product' } },
+    { $unwind: '$product' },
+    { $match: productMatch },
+    { $lookup: { from: 'suppliers', localField: 'supplierId', foreignField: '_id', as: 'supplier' } },
+    { $unwind: '$supplier' },
+    { $lookup: { from: 'categories', localField: 'product.categoryId', foreignField: '_id', as: 'category' } },
+    { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } },
+    { $sort: { createdAt: -1 } },
+    { $facet: { rows: [{ $skip: skip }, { $limit: Number(limit) }], meta: [{ $count: 'total' }] } },
+  ];
+  const [result] = await SupplierProduct.aggregate(pipeline);
+  const total = result?.meta?.[0]?.total || 0;
+  return {
+    products: (result?.rows || []).map((row) => ({
+      _id: row._id, supplierId: row.supplierId, productId: row.productId,
+      product: { _id: row.product._id, name: row.product.name, sku: row.product.sku || '', imageUrl: row.product.imageUrl || row.product.image || '' },
+      supplier: { _id: row.supplier._id, supplierName: row.supplier.supplierName, status: row.supplier.status },
+      category: row.category ? { _id: row.category._id, name: row.category.name } : null,
+      quantity: Number(row.quantity || 0), currentSupplierPrice: row.currentSupplierPrice,
+      minimumOrderQuantity: row.minimumOrderQuantity, availabilityStatus: row.availabilityStatus,
+    })),
+    total, page: Number(page), pages: Math.ceil(total / Number(limit)) || 1,
+  };
+};
+
+export const getSupplierNetworkDashboard = async () => {
+  const [totalSuppliers, activeSuppliers, categoryRows, productRows] = await Promise.all([
+    Supplier.countDocuments(), Supplier.countDocuments({ status: SUPPLIER_STATUS.ACTIVE }),
+    SupplierCategory.countDocuments(), SupplierProduct.aggregate([{ $group: { _id: null, total: { $sum: 1 }, quantity: { $sum: { $ifNull: ['$quantity', 0] } }, averagePrice: { $avg: '$currentSupplierPrice' }, suppliers: { $addToSet: '$supplierId' } } }]),
+  ]);
+  const summary = productRows[0] || { total: 0, quantity: 0, averagePrice: null, suppliers: [] };
+  return { totalSuppliers, activeSuppliers, totalSupplierCategories: categoryRows, totalSupplierProducts: summary.total, totalSupplierProductQuantity: summary.quantity, averageSupplierPrice: summary.averagePrice, suppliersWithProducts: summary.suppliers.length, suppliersWithoutProducts: Math.max(0, totalSuppliers - summary.suppliers.length) };
 };
 
 /**

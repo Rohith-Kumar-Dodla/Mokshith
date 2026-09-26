@@ -4,6 +4,9 @@ import { USER_STATUS } from '../../constants/userStatus.js';
 import { ROLES } from '../../constants/roles.js';
 import User from '../user/user.model.js';
 import Order from '../order/order.model.js';
+import Logistics from '../logistics/logistics.model.js';
+import Inventory from '../inventory/inventory.model.js';
+import { DELIVERY_STATUS } from '../../constants/deliveryStatus.js';
 import { hashPassword } from '../../utils/hashPassword.js';
 
 export const getAllUsers = async (role) => {
@@ -102,19 +105,52 @@ export const changeUserStatus = async (userId, status) => {
 };
 
 export const getStats = async () => {
-  const totalUsers = await User.countDocuments({ isDeleted: { $ne: true } });
-  const totalOrders = await Order.countDocuments();
-  const totalAdmins = await User.countDocuments({ role: ROLES.ADMIN, isDeleted: { $ne: true } });
-  const totalVendors = await User.countDocuments({
-    role: { $in: [ROLES.VENDOR, ROLES.B2B_CUSTOMER] },
-    isDeleted: { $ne: true },
-  });
-  const totalDeliveryPartners = await User.countDocuments({ role: ROLES.DELIVERY_PARTNER, isDeleted: { $ne: true } });
-  const pendingApprovals = await User.countDocuments({
-    status: USER_STATUS.PENDING,
-    role: { $ne: ROLES.SUPER_ADMIN },
-    isDeleted: { $ne: true },
-  });
+  const activeDeliveryStatuses = [
+    DELIVERY_STATUS.ASSIGNED,
+    DELIVERY_STATUS.ACCEPTED,
+    DELIVERY_STATUS.PICKED,
+    DELIVERY_STATUS.OUT_FOR_DELIVERY,
+  ];
+
+  const [
+    totalUsers,
+    totalOrders,
+    totalAdmins,
+    totalVendors,
+    totalDeliveryPartners,
+    pendingApprovals,
+    pendingOrders,
+    codOrders,
+    paidOrders,
+    unassignedDeliveries,
+    activeDeliveries,
+    deliveryRejections,
+    lowStock,
+  ] = await Promise.all([
+    User.countDocuments({ isDeleted: { $ne: true } }),
+    Order.countDocuments(),
+    User.countDocuments({ role: ROLES.ADMIN, isDeleted: { $ne: true } }),
+    User.countDocuments({
+      role: { $in: [ROLES.VENDOR, ROLES.B2B_CUSTOMER] },
+      isDeleted: { $ne: true },
+    }),
+    User.countDocuments({ role: ROLES.DELIVERY_PARTNER, isDeleted: { $ne: true } }),
+    User.countDocuments({
+      status: USER_STATUS.PENDING,
+      role: { $ne: ROLES.SUPER_ADMIN },
+      isDeleted: { $ne: true },
+    }),
+    Order.countDocuments({ status: { $in: ['CREATED', 'PENDING', 'PENDING_PAYMENT'] } }),
+    Order.countDocuments({ paymentMethod: 'COD' }),
+    Order.countDocuments({ paymentStatus: 'PAID' }),
+    Logistics.countDocuments({
+      status: { $in: [DELIVERY_STATUS.PENDING, DELIVERY_STATUS.REJECTED] },
+      $or: [{ deliveryPartnerId: { $exists: false } }, { deliveryPartnerId: null }],
+    }),
+    Logistics.countDocuments({ status: { $in: activeDeliveryStatuses } }),
+    Logistics.countDocuments({ status: DELIVERY_STATUS.REJECTED }),
+    Inventory.countDocuments({ $expr: { $lte: ['$stock', '$reorderLevel'] } }),
+  ]);
 
   return {
     totalUsers,
@@ -123,6 +159,13 @@ export const getStats = async () => {
     totalVendors,
     totalDeliveryPartners,
     pendingApprovals,
+    pendingOrders,
+    codOrders,
+    paidOrders,
+    unassignedDeliveries,
+    activeDeliveries,
+    deliveryRejections,
+    lowStock,
     // revenue intentionally omitted for Admins; financials are Super Admin-only
   };
 };

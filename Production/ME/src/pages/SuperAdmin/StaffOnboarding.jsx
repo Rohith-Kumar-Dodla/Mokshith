@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FiPlus, FiUsers, FiTruck } from 'react-icons/fi';
+import { FiPlus, FiUsers, FiTruck, FiBriefcase } from 'react-icons/fi';
 import PageHeader from '../../components/superadmin/PageHeader';
 import SearchBar from '../../components/superadmin/SearchBar';
 import FilterDropdown from '../../components/superadmin/FilterDropdown';
@@ -13,6 +13,7 @@ import { getPasswordRequirementsText } from '../../utils/authValidationPolicy';
 const TABS = [
   { key: 'admins', label: 'Admins', icon: FiUsers },
   { key: 'delivery', label: 'Delivery Agents', icon: FiTruck },
+  { key: 'suppliers', label: 'Suppliers', icon: FiBriefcase },
 ];
 
 const VEHICLE_TYPES = [
@@ -63,6 +64,7 @@ const emptyDeliveryForm = {
   serviceArea: '',
   status: 'ACTIVE',
 };
+const emptySupplierForm = { name: '', email: '', mobile: '', password: '', confirmPassword: '', supplierName: '', companyName: '', contactPerson: '', businessAddress: '', gstNumber: '' };
 
 function StaffOnboarding() {
   const [activeTab, setActiveTab] = useState('admins');
@@ -78,9 +80,11 @@ function StaffOnboarding() {
   const [selectedRow, setSelectedRow] = useState(null);
   const [adminForm, setAdminForm] = useState(emptyAdminForm);
   const [deliveryForm, setDeliveryForm] = useState(emptyDeliveryForm);
+  const [supplierForm, setSupplierForm] = useState(emptySupplierForm);
   const [formError, setFormError] = useState('');
 
   const isAdmins = activeTab === 'admins';
+  const isSuppliers = activeTab === 'suppliers';
 
   const loadRows = useCallback(async () => {
     setLoading(true);
@@ -92,14 +96,12 @@ function StaffOnboarding() {
         search: searchTerm || undefined,
         status: statusFilter,
       };
-      const response = isAdmins
-        ? await superAdminService.getAdmins(params)
-        : await superAdminService.getDeliveryAgents(params);
+      const response = isAdmins ? await superAdminService.getAdmins(params) : isSuppliers ? await superAdminService.getSuppliers(params) : await superAdminService.getDeliveryAgents(params);
       const payload = response?.data ?? response;
-      const users = payload?.users || [];
+      const users = isSuppliers ? (payload?.suppliers || []) : (payload?.users || []);
       setRows(users.map((user) => ({
         id: user._id || user.id,
-        name: user.name || '—',
+        name: user.name || user.contactPerson || user.supplierName || '—',
         email: user.email || '—',
         phone: user.mobile || user.phone || '—',
         status: String(user.status || 'INACTIVE').toLowerCase(),
@@ -107,7 +109,9 @@ function StaffOnboarding() {
         employeeId: user.employeeId || '—',
         vehicleType: user.vehicleType || '—',
         vehicleNumber: user.vehicleNumber || '—',
-        serviceArea: user.serviceArea || '—',
+        serviceArea: user.serviceArea || user.companyName || '—',
+        supplierName: user.supplierName || '—',
+        companyName: user.companyName || '—',
         createdAt: user.createdAt,
         lastLoginAt: user.lastLoginAt,
       })));
@@ -118,7 +122,7 @@ function StaffOnboarding() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, isAdmins, page, searchTerm, statusFilter]);
+  }, [activeTab, isAdmins, isSuppliers, page, searchTerm, statusFilter]);
 
   useEffect(() => {
     loadRows();
@@ -133,6 +137,7 @@ function StaffOnboarding() {
     setSelectedRow(null);
     setAdminForm(emptyAdminForm);
     setDeliveryForm(emptyDeliveryForm);
+    setSupplierForm(emptySupplierForm);
     setModalMode('create');
   };
 
@@ -201,10 +206,19 @@ function StaffOnboarding() {
     return '';
   };
 
+  const validateSupplierForm = () => {
+    if (!supplierForm.name.trim() || !supplierForm.supplierName.trim() || !supplierForm.companyName.trim()) return 'Name, supplier name and company name are required';
+    if (!supplierForm.email.trim()) return 'Email is required';
+    if (!/^\d{10}$/.test(String(supplierForm.mobile).replace(/\D/g, ''))) return 'Phone must be 10 digits';
+    if (modalMode === 'create' && !supplierForm.password) return 'Password is required';
+    if (supplierForm.password && supplierForm.password !== supplierForm.confirmPassword) return 'Passwords do not match';
+    return '';
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setFormError('');
-    const validationMessage = isAdmins ? validateAdminForm() : validateDeliveryForm();
+    const validationMessage = isAdmins ? validateAdminForm() : isSuppliers ? validateSupplierForm() : validateDeliveryForm();
     if (validationMessage) {
       setFormError(validationMessage);
       return;
@@ -227,6 +241,11 @@ function StaffOnboarding() {
         } else {
           await superAdminService.updateAdmin(selectedRow.id, payload);
         }
+      } else if (isSuppliers) {
+        const payload = { name: supplierForm.name.trim(), email: supplierForm.email.trim(), mobile: String(supplierForm.mobile).replace(/\D/g, ''), supplierName: supplierForm.supplierName.trim(), companyName: supplierForm.companyName.trim(), contactPerson: supplierForm.contactPerson.trim(), businessAddress: supplierForm.businessAddress.trim(), gstNumber: supplierForm.gstNumber.trim() };
+        if (supplierForm.password) payload.password = supplierForm.password;
+        if (modalMode === 'create') await superAdminService.createSupplierAccount(payload);
+        else throw new Error('Supplier editing is managed from Suppliers.');
       } else {
         const payload = {
           name: deliveryForm.name.trim(),
@@ -262,6 +281,8 @@ function StaffOnboarding() {
       const nextStatus = row.rawStatus === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
       if (isAdmins) {
         await superAdminService.updateAdmin(row.id, { status: nextStatus });
+      } else if (isSuppliers) {
+        await superAdminService.updateSupplierStatus(row.id, nextStatus);
       } else {
         await superAdminService.updateDeliveryAgent(row.id, { status: nextStatus });
       }
@@ -330,13 +351,21 @@ function StaffOnboarding() {
     },
   ];
 
-  const columns = useMemo(() => (isAdmins ? adminColumns : deliveryColumns), [isAdmins, actionLoading]);
+  const supplierColumns = [
+    { key: 'supplierName', label: 'Supplier' },
+    { key: 'companyName', label: 'Company' },
+    { key: 'email', label: 'Email' },
+    { key: 'phone', label: 'Phone' },
+    { key: 'status', label: 'Status', render: (value) => <StatusBadge status={value} /> },
+    { key: 'actions', label: 'Actions', render: (_, row) => <button type="button" onClick={() => openViewModal(row)} className="px-3 py-1.5 text-sm rounded-lg border border-gray-200">View</button> },
+  ];
+  const columns = useMemo(() => (isAdmins ? adminColumns : isSuppliers ? supplierColumns : deliveryColumns), [isAdmins, isSuppliers, actionLoading]);
 
   return (
     <div className="space-y-4">
       <PageHeader
         title="Staff Onboarding"
-        subtitle="Create and manage admin and delivery agent accounts."
+        subtitle="Create and manage admin, delivery partner and supplier accounts."
         actions={(
           <button
             type="button"
@@ -344,12 +373,12 @@ function StaffOnboarding() {
             className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
           >
             <FiPlus size={16} />
-            {isAdmins ? 'Create Admin' : 'Create Delivery Agent'}
+            {isAdmins ? 'Create Admin' : isSuppliers ? 'Onboard Supplier' : 'Create Delivery Agent'}
           </button>
         )}
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {TABS.map((tab) => (
           <button
             key={tab.key}
@@ -366,7 +395,7 @@ function StaffOnboarding() {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
-        <SearchBar placeholder={`Search ${isAdmins ? 'admins' : 'delivery agents'}...`} value={searchTerm} onSearch={setSearchTerm} />
+        <SearchBar placeholder={`Search ${isAdmins ? 'admins' : isSuppliers ? 'suppliers' : 'delivery agents'}...`} value={searchTerm} onSearch={setSearchTerm} />
         <FilterDropdown label="Status" value={statusFilter} options={STATUS_OPTIONS} onChange={setStatusFilter} />
       </div>
 
@@ -399,10 +428,10 @@ function StaffOnboarding() {
         onClose={closeModal}
         title={
           modalMode === 'view'
-            ? (isAdmins ? 'Admin Details' : 'Delivery Agent Details')
+            ? (isAdmins ? 'Admin Details' : isSuppliers ? 'Supplier Details' : 'Delivery Agent Details')
             : modalMode === 'create'
-              ? (isAdmins ? 'Create Admin' : 'Create Delivery Agent')
-              : (isAdmins ? 'Edit Admin' : 'Edit Delivery Agent')
+              ? (isAdmins ? 'Create Admin' : isSuppliers ? 'Onboard Supplier' : 'Create Delivery Agent')
+              : (isAdmins ? 'Edit Admin' : isSuppliers ? 'Supplier Details' : 'Edit Delivery Agent')
         }
       >
         {modalMode === 'view' && selectedRow && (
@@ -412,6 +441,19 @@ function StaffOnboarding() {
             <p><span className="font-medium">Phone:</span> {selectedRow.phone}</p>
             {isAdmins ? (
               <p><span className="font-medium">Employee ID:</span> {selectedRow.employeeId}</p>
+            ) : isSuppliers ? (
+              <>
+                <input className={inputClass} placeholder="User name" value={supplierForm.name} onChange={(e) => setSupplierForm({ ...supplierForm, name: e.target.value })} required />
+                <input className={inputClass} type="email" placeholder="Email" value={supplierForm.email} onChange={(e) => setSupplierForm({ ...supplierForm, email: e.target.value })} required />
+                <input className={inputClass} placeholder="Phone (10 digits)" value={supplierForm.mobile} onChange={(e) => setSupplierForm({ ...supplierForm, mobile: e.target.value })} required />
+                <input className={inputClass} placeholder="Supplier / business name" value={supplierForm.supplierName} onChange={(e) => setSupplierForm({ ...supplierForm, supplierName: e.target.value })} required />
+                <input className={inputClass} placeholder="Company name" value={supplierForm.companyName} onChange={(e) => setSupplierForm({ ...supplierForm, companyName: e.target.value })} required />
+                <input className={inputClass} placeholder="Contact person (optional)" value={supplierForm.contactPerson} onChange={(e) => setSupplierForm({ ...supplierForm, contactPerson: e.target.value })} />
+                <input className={inputClass} placeholder="Business address (optional)" value={supplierForm.businessAddress} onChange={(e) => setSupplierForm({ ...supplierForm, businessAddress: e.target.value })} />
+                <input className={inputClass} placeholder="GSTIN (optional)" value={supplierForm.gstNumber} onChange={(e) => setSupplierForm({ ...supplierForm, gstNumber: e.target.value })} />
+                <PasswordInput className={inputClass} placeholder="Password" value={supplierForm.password} onChange={(e) => setSupplierForm({ ...supplierForm, password: e.target.value })} required={modalMode === 'create'} />
+                <PasswordInput className={inputClass} placeholder="Confirm password" value={supplierForm.confirmPassword} onChange={(e) => setSupplierForm({ ...supplierForm, confirmPassword: e.target.value })} required={Boolean(supplierForm.password)} />
+              </>
             ) : (
               <>
                 <p><span className="font-medium">Vehicle Type:</span> {selectedRow.vehicleType}</p>

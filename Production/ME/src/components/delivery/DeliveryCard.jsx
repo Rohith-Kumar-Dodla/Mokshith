@@ -1,80 +1,23 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FiMapPin, FiPackage, FiClock, FiArrowRight } from 'react-icons/fi';
+import { FiArrowRight, FiClock, FiMapPin, FiPackage } from 'react-icons/fi';
 import StatusBadge from './StatusBadge';
 
-const DeliveryCard = ({ order }) => {
-  const getPriorityColor = (priority) => {
-    switch (priority?.toLowerCase()) {
-      case 'high':
-        return 'bg-red-100 text-red-700';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-700';
-      case 'low':
-        return 'bg-green-100 text-green-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
-    }
-  };
+const money = (value) => value == null ? 'Unavailable' : `₹${Number(value).toLocaleString('en-IN')}`;
 
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5 hover:shadow-lg transition-shadow">
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4 mb-3 sm:mb-4">
-        <div>
-          <h3 className="font-bold text-base sm:text-lg text-gray-900">{order.id}</h3>
-          <p className="text-xs sm:text-sm text-gray-600">{order.vendor}</p>
-        </div>
-        <div className="flex flex-row sm:flex-col items-end gap-2">
-          <StatusBadge status={order.status} />
-          <span className={`text-xs font-semibold px-2 py-1 rounded-full ${getPriorityColor(order.priority)}`}>
-            {order.priority?.toUpperCase()}
-          </span>
-        </div>
-      </div>
-
-      <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
-        <div className="flex items-start gap-2 sm:gap-3">
-          <FiMapPin className="text-blue-500 mt-1 flex-shrink-0" size={14} />
-          <div className="flex-1">
-            <p className="text-xs text-gray-500">Pickup</p>
-            <p className="text-xs sm:text-sm text-gray-700">{order.pickupLocation}</p>
-          </div>
-        </div>
-        <div className="flex items-start gap-2 sm:gap-3">
-          <FiMapPin className="text-green-500 mt-1 flex-shrink-0" size={14} />
-          <div className="flex-1">
-            <p className="text-xs text-gray-500">Delivery</p>
-            <p className="text-xs sm:text-sm text-gray-700">{order.deliveryLocation}</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4 text-xs sm:text-sm text-gray-600">
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <FiPackage className="w-3.5 h-3.5 flex-shrink-0" />
-          <span>{order.itemsCount} items</span>
-        </div>
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <FiClock className="w-3.5 h-3.5 flex-shrink-0" />
-          <span>{order.distance} km</span>
-        </div>
-      </div>
-
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pt-3 sm:pt-4 border-t border-gray-100">
-        <div>
-          <p className="text-xs text-gray-500">Order Amount</p>
-          <p className="font-bold text-sm sm:text-base text-gray-900">₹{order.orderAmount?.toFixed(2)}</p>
-        </div>
-        <Link
-          to={`/delivery/order-details/${order.id}`}
-          className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 h-10 sm:h-12 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-sm font-medium"
-        >
-          View Details
-          <FiArrowRight className="w-3.5 h-3.5 flex-shrink-0" />
-        </Link>
-      </div>
+const DeliveryCard = ({ order }) => (
+  <article className="rounded-xl border border-gray-200 bg-white p-4 transition-shadow hover:shadow-lg sm:p-5">
+    <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
+      <div><h3 className="text-base font-bold text-gray-900 sm:text-lg">{order.orderRef || order.id}</h3><p className="text-sm text-gray-600">{order.customerName || order.vendor}</p></div>
+      <StatusBadge status={order.status} />
     </div>
-  );
-};
+    <div className="mb-4 space-y-3">
+      <div className="flex items-start gap-3"><FiMapPin className="mt-1 shrink-0 text-blue-500" size={15} /><div><p className="text-xs text-gray-500">Pickup</p><p className="text-sm text-gray-700">{order.pickupLocation || 'Unavailable'}</p></div></div>
+      <div className="flex items-start gap-3"><FiMapPin className="mt-1 shrink-0 text-green-500" size={15} /><div><p className="text-xs text-gray-500">Destination</p><p className="text-sm text-gray-700">{order.deliveryLocation || 'Unavailable'}</p></div></div>
+    </div>
+    <div className="mb-4 flex flex-wrap gap-3 text-sm text-gray-600"><span className="inline-flex items-center gap-2"><FiPackage /> {order.itemsCount || 0} items</span><span className="inline-flex items-center gap-2"><FiClock /> {order.distanceKm == null ? 'Distance unavailable' : `${order.distanceKm} ${order.distanceUnit || 'km'}`}</span></div>
+    <div className="flex flex-col justify-between gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center"><div><p className="text-xs text-gray-500">Delivery earnings</p><p className="font-bold text-green-700">{money(order.deliveryAmount)}</p><p className="mt-1 text-xs text-gray-500">Order total: {money(order.orderAmount)}</p></div><Link to={`/delivery/order-details/${order.id}`} className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700">View details <FiArrowRight /></Link></div>
+  </article>
+);
 
 export default React.memo(DeliveryCard);

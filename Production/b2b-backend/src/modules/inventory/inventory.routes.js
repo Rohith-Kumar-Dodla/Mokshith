@@ -3,7 +3,7 @@ import * as controller from './inventory.controller.js';
 import { protect } from '../../middlewares/auth.middleware.js';
 import { authorize } from '../../middlewares/role.middleware.js';
 import { validate } from '../../middlewares/validate.middleware.js';
-import { addStockSchema } from './inventory.validation.js';
+import { addStockSchema, updateStockSchema } from './inventory.validation.js';
 import { operationIdempotency } from '../../middlewares/idempotency.middleware.js';
 
 const router = express.Router();
@@ -24,8 +24,9 @@ router.get('/stats', protect, authorize('ADMIN'), controller.getInventoryStats);
 router.patch(
   '/update',
   protect,
-  authorize('ADMIN', 'VENDOR'),
+  authorize('ADMIN'),
   operationIdempotency('inventory:update'),
+  validate(updateStockSchema),
   controller.updateStock
 );
 

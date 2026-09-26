@@ -18,6 +18,12 @@ const ProductDetails = () => {
     total: currentTotal,
     bulkApplied,
     pricingLoading,
+    specialDiscountAmount,
+    bulkDiscountAmount,
+    totalDiscount,
+    bulkMinimumQuantity,
+    specialPromotion,
+    bulkPromotion,
   } = useProductPricing(product, quantity);
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedTab, setSelectedTab] = useState('description');
@@ -200,6 +206,11 @@ const ProductDetails = () => {
             </div>
 
             <div className="bg-gray-50 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
+              {product.activePromotion && (
+                <div className="mb-2 rounded-md bg-green-100 px-3 py-2 text-xs sm:text-sm font-semibold text-green-700">
+                  {product.activePromotion.message || `${product.activePromotion.value}${product.activePromotion.discountType === 'PERCENTAGE' ? '% promotion' : ' promotion'}`}
+                </div>
+              )}
               <div className="flex items-baseline gap-2 sm:gap-3 flex-wrap">
                 {bulkApplied && product.price !== currentBulkPrice ? (
                   <>
@@ -223,20 +234,10 @@ const ProductDetails = () => {
                     )}
                   </>
                 )}
+                {product.promotionalPrice != null && product.promotionalPrice < product.price && (
+                  <span className="text-xs sm:text-sm text-green-700 font-semibold">Promo from ₹{product.promotionalPrice.toFixed(2)}</span>
+                )}
               </div>
-            </div>
-
-            <div className="flex items-center gap-1.5 sm:gap-2 mb-3 sm:mb-4">
-              <span className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full ${
-                product.status === 'active' ? 'bg-green-500' :
-                product.status === 'low_stock' ? 'bg-yellow-500' :
-                'bg-red-500'
-              }`} />
-              <span className="text-xs sm:text-sm font-medium text-gray-700">
-                {product.status === 'active' ? 'In Stock' :
-                 product.status === 'low_stock' ? 'Low Stock' :
-                 'Out of Stock'}
-              </span>
             </div>
 
             <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6">{product.description}</p>
@@ -290,7 +291,22 @@ const ProductDetails = () => {
                   Bulk pricing applied — you save ₹{((product.price - currentBulkPrice) * quantity).toFixed(2)}
                 </p>
               )}
+              {!pricingLoading && (specialDiscountAmount > 0 || bulkDiscountAmount > 0) && (
+                <div className="mt-3 border-t border-blue-100 pt-3 text-xs sm:text-sm text-gray-700 space-y-1">
+                  <p className="font-semibold text-gray-900">Discount breakdown</p>
+                  {specialDiscountAmount > 0 && <p>Special Discount: -₹{specialDiscountAmount.toFixed(2)}</p>}
+                  {bulkDiscountAmount > 0 ? <p>Bulk Discount{bulkMinimumQuantity ? ` (buy ${bulkMinimumQuantity}+)` : ''}: -₹{bulkDiscountAmount.toFixed(2)}</p> : bulkPromotion ? <p>Bulk Discount: Not applicable</p> : null}
+                  <p className="font-semibold text-gray-900">Total Discount: -₹{totalDiscount.toFixed(2)}</p>
+                </div>
+              )}
             </div>
+
+            {(specialPromotion || bulkPromotion) && (
+              <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {specialPromotion && <div className="rounded-lg border border-green-200 bg-green-50 p-3"><p className="text-xs font-semibold uppercase tracking-wide text-green-700">Special Offer</p><p className="mt-1 text-sm text-green-900">{specialPromotion.discountApplication === 'PER_UNIT' ? `₹${specialPromotion.value} off per unit` : (specialPromotion.message || 'Special discount')}</p></div>}
+                {bulkPromotion && <div className="rounded-lg border border-orange-200 bg-orange-50 p-3"><p className="text-xs font-semibold uppercase tracking-wide text-orange-700">Bulk Offer</p><p className="mt-1 text-sm text-orange-900">Buy {bulkPromotion.minimumQuantity || 1}+ units</p><p className="text-sm text-orange-900">{bulkPromotion.discountApplication === 'PER_UNIT' ? `₹${bulkPromotion.value} off per unit` : `₹${bulkPromotion.value} additional discount`}</p></div>}
+              </div>
+            )}
 
             {cartMessage && (
               <div
