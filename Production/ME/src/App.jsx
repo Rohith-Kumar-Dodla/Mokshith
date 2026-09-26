@@ -37,10 +37,15 @@ const SuperAdminProcurementPlan = lazy(() => import('./pages/SuperAdmin/Procurem
 const SuperAdminPurchaseRequests = lazy(() => import('./pages/SuperAdmin/PurchaseRequests'));
 const SuperAdminPurchaseRequestCreate = lazy(() => import('./pages/SuperAdmin/PurchaseRequestCreate'));
 const SupplierDashboardLayout = lazy(() => import('./layouts/SupplierDashboardLayout'));
-const SupplierDashboardComingSoon = lazy(() => import('./pages/SupplierDashboard/ComingSoon'));
+const SupplierDashboardHome = lazy(() => import('./pages/SupplierDashboard/Dashboard'));
 const SupplierNetwork = lazy(() => import('./pages/SupplierDashboard/Suppliers'));
 const SupplierDetails = lazy(() => import('./pages/SupplierDashboard/SupplierDetails'));
 const SupplierCategoryProducts = lazy(() => import('./pages/SupplierDashboard/SupplierCategoryProducts'));
+const SupplierCategories = lazy(() => import('./pages/SupplierDashboard/SupplierCategories'));
+const SupplierProducts = lazy(() => import('./pages/SupplierDashboard/SupplierProducts'));
+const SupplierNetworkCategories = lazy(() => import('./pages/SupplierDashboard/Categories'));
+const SupplierNetworkProducts = lazy(() => import('./pages/SupplierDashboard/Products'));
+const SupplierDashboardSettings = lazy(() => import('./pages/SupplierDashboard/Settings'));
 
 const AdminLayout = lazy(() => import('./layouts/AdminLayout'));
 const AdminDashboard = lazy(() => import('./pages/Admin/Dashboard'));
@@ -102,13 +107,15 @@ function App() {
               <Route path="/reset-password" element={<ResetPassword />} />
 
               <Route path="/supplier-dashboard/*" element={<ProtectedRoute requiredRole="super-admin"><SupplierDashboardLayout /></ProtectedRoute>}>
-                <Route index element={<SupplierDashboardComingSoon />} />
+                <Route index element={<SupplierDashboardHome />} />
                 <Route path="suppliers" element={<SupplierNetwork />} />
                 <Route path="suppliers/:supplierId" element={<SupplierDetails />} />
+                <Route path="suppliers/:supplierId/categories" element={<SupplierCategories />} />
+                <Route path="suppliers/:supplierId/products" element={<SupplierProducts />} />
                 <Route path="suppliers/:supplierId/categories/:categoryId" element={<SupplierCategoryProducts />} />
-                <Route path="categories" element={<SupplierDashboardComingSoon title="Categories" description="Supplier category management will be available here." />} />
-                <Route path="products" element={<SupplierDashboardComingSoon title="Products" description="Supplier product management will be available here." />} />
-                <Route path="settings" element={<SupplierDashboardComingSoon title="Settings" description="Supplier dashboard settings will be available here." />} />
+                <Route path="categories" element={<SupplierNetworkCategories />} />
+                <Route path="products" element={<SupplierNetworkProducts />} />
+                <Route path="settings" element={<SupplierDashboardSettings />} />
               </Route>
 
               <Route path="/super-admin/*" element={<ProtectedRoute requiredRole="super-admin"><SuperAdminLayout /></ProtectedRoute>}>

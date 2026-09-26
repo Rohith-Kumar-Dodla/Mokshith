@@ -7,6 +7,7 @@ import * as procurementDemandService from '../procurement/procurementDemand.serv
 import * as procurementPlanService from '../procurement/procurementPlan.service.js';
 import * as purchaseRequestService from '../procurement/purchaseRequest.service.js';
 import { successResponse } from '../../utils/responseHandler.js';
+import { fetchSetting, updateSetting } from '../settings/settings.service.js';
 
 export const getUsers = asyncHandler(async (req, res) => {
   const users = await service.getAllUsers();
@@ -401,6 +402,41 @@ export const receivePurchaseRequest = asyncHandler(async (req, res) => {
   successResponse(res, request, 'Goods received');
 });
 
+export const createSupplierCategoryProduct = asyncHandler(async (req, res) => {
+  const mapping = await supplierProductService.createSupplierCategoryProduct(
+    req.params.id,
+    req.params.categoryId,
+    req.body,
+    req.user?._id,
+    req.ip
+  );
+  successResponse(res, mapping, 'Supplier product created successfully', 201);
+});
+
+export const updateSupplierCategoryProduct = asyncHandler(async (req, res) => {
+  const mapping = await supplierProductService.updateSupplierCategoryProduct(
+    req.params.id, req.params.categoryId, req.params.mappingId, req.body, req.user?._id, req.ip
+  );
+  successResponse(res, mapping, 'Supplier product updated successfully');
+});
+
+export const removeSupplierCategoryProduct = asyncHandler(async (req, res) => {
+  const mapping = await supplierProductService.removeSupplierCategoryProduct(
+    req.params.id, req.params.categoryId, req.params.mappingId, req.user?._id, req.ip
+  );
+  successResponse(res, mapping, 'Supplier product removed successfully');
+});
+
+export const removeSupplierProduct = asyncHandler(async (req, res) => {
+  const mapping = await supplierProductService.removeSupplierProduct(
+    req.params.id,
+    req.params.mappingId,
+    req.user?._id,
+    req.ip
+  );
+  successResponse(res, mapping, 'Supplier product removed successfully');
+});
+
 export const getSupplierCategoryProducts = asyncHandler(async (req, res) => {
   const result = await supplierProductService.listSupplierCategoryProducts(
     req.params.id,
@@ -413,4 +449,26 @@ export const getSupplierCategoryProducts = asyncHandler(async (req, res) => {
 export const createSupplierAccount = asyncHandler(async (req, res) => {
   const supplier = await service.createSupplierAccount(req.body, req.user?._id, req.ip);
   successResponse(res, supplier, 'Supplier account created successfully', 201);
+});
+
+export const getSupplierNetworkProducts = asyncHandler(async (req, res) => {
+  successResponse(res, await supplierProductService.listNetworkSupplierProducts(req.query));
+});
+
+export const getSupplierNetworkCategories = asyncHandler(async (req, res) => {
+  successResponse(res, await supplierCategoryService.listNetworkCategories(req.query));
+});
+
+export const getSupplierNetworkDashboard = asyncHandler(async (req, res) => {
+  successResponse(res, await supplierProductService.getSupplierNetworkDashboard());
+});
+
+export const getSupplierDashboardSettings = asyncHandler(async (req, res) => {
+  const setting = await fetchSetting('supplierDashboardRefreshSeconds');
+  successResponse(res, { refreshSeconds: Number(setting.value || 60) });
+});
+
+export const updateSupplierDashboardSettings = asyncHandler(async (req, res) => {
+  await updateSetting('supplierDashboardRefreshSeconds', req.body.refreshSeconds);
+  successResponse(res, { refreshSeconds: req.body.refreshSeconds }, 'Supplier dashboard settings updated');
 });

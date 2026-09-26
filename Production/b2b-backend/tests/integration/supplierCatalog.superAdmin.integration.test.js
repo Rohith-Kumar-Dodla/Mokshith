@@ -132,6 +132,7 @@ describe('Super Admin supplier catalog overview - Phase 4.1', () => {
       categoryCount: 2,
     }));
     expect(detail.body.data.categories).toHaveLength(2);
+    expect(detail.body.data.categories.every((row) => String(row.supplierCategoryId) !== String(row.categoryId))).toBe(true);
     expect(detail.body.data.categories).toEqual(expect.arrayContaining([
       expect.objectContaining({ name: 'Cooking Oil', productCount: 2 }),
       expect.objectContaining({ name: 'Edible Oils', productCount: 1 }),
@@ -279,6 +280,71 @@ describe('Super Admin supplier catalog overview - Phase 4.1', () => {
     const supplierUser = await seedActiveUser({ role: ROLES.SUPPLIER, email: 'phase2-supplier@example.com' });
     await request.get(`/api/v1/super-admin/suppliers/${supplierId}/categories/${categoryA._id}/products`).set(sessionHeaders(supplierUser)).expect(403);
     await request.get(`/api/v1/super-admin/suppliers/${supplierId}/categories/${categoryA._id}/products`).expect(401);
+  });
+
+  it('creates, updates, and safely deactivates a category-scoped supplier product only', async () => {
+    const newProduct = await seedProduct(categoryA._id, { name: 'Rice Bran Oil', price: 325, moq: 1 });
+    const productBefore = await Product.findById(newProduct._id).lean();
+
+    const created = await asSuperAdmin(
+      request.post(`/api/v1/super-admin/suppliers/${supplierId}/categories/${categoryA._id}/products`)
+    ).send({
+      productId: newProduct._id.toString(),
+      minimumOrderQuantity: 24,
+      supplierPrice: 210.5,
+      availabilityStatus: 'ACTIVE',
+      notes: 'Phase 3 mapping',
+    }).expect(201);
+
+    expect(created.body.data).toEqual(expect.objectContaining({
+      minimumOrderQuantity: 24,
+      currentSupplierPrice: 210.5,
+      availabilityStatus: 'ACTIVE',
+    }));
+    const mappingId = created.body.data._id;
+
+    const updated = await asSuperAdmin(
+      request.patch(`/api/v1/super-admin/suppliers/${supplierId}/categories/${categoryA._id}/products/${mappingId}`)
+    ).send({ minimumOrderQuantity: 30, notes: 'Updated supplier terms' }).expect(200);
+    expect(updated.body.data.minimumOrderQuantity).toBe(30);
+    expect(updated.body.data.notes).toBe('Updated supplier terms');
+
+    const removed = await asSuperAdmin(
+      request.delete(`/api/v1/super-admin/suppliers/${supplierId}/categories/${categoryA._id}/products/${mappingId}`)
+    ).expect(200);
+    expect(removed.body.data.availabilityStatus).toBe('INACTIVE');
+    expect(await Product.findById(newProduct._id)).toBeTruthy();
+    const productAfter = await Product.findById(newProduct._id).lean();
+    expect(productAfter.price).toBe(productBefore.price);
+    expect(productAfter.name).toBe(productBefore.name);
+  });
+
+  it('enforces scoped mutation validation, duplicate integrity, and Super Admin-only access', async () => {
+    const candidate = await seedProduct(categoryA._id, { name: 'Scoped Candidate Oil', price: 450 });
+    const endpoint = `/api/v1/super-admin/suppliers/${supplierId}/categories/${categoryA._id}/products`;
+    const payload = { productId: candidate._id.toString(), minimumOrderQuantity: 10 };
+
+    await request.post(endpoint).set(sessionHeaders(admin)).send(payload).expect(403);
+    await request.post(endpoint).set(sessionHeaders(vendor)).send(payload).expect(403);
+    await request.post(endpoint).set(sessionHeaders(delivery)).send(payload).expect(403);
+    const supplierUser = await seedActiveUser({ role: ROLES.SUPPLIER, email: 'phase3-supplier@example.com' });
+    await request.post(endpoint).set(sessionHeaders(supplierUser)).send(payload).expect(403);
+    await request.post(endpoint).send(payload).expect(401);
+
+    await asSuperAdmin(request.post(endpoint)).send(payload).expect(201);
+    const duplicate = await asSuperAdmin(request.post(endpoint)).send(payload).expect(400);
+    expect(duplicate.body.message).toMatch(/already mapped/i);
+
+    const wrongCategoryProduct = await seedProduct(categoryB._id, { name: 'Wrong Category Oil' });
+    await asSuperAdmin(request.post(endpoint))
+      .send({ productId: wrongCategoryProduct._id.toString(), minimumOrderQuantity: 1 })
+      .expect(400);
+    await asSuperAdmin(request.post(endpoint))
+      .send({ productId: 'not-an-id', minimumOrderQuantity: 1 })
+      .expect(400);
+    await asSuperAdmin(request.post(endpoint))
+      .send({ productId: new Product()._id.toString(), minimumOrderQuantity: 1 })
+      .expect(404);
   });
 
   it('scopes supplier products to the requested supplier only', async () => {

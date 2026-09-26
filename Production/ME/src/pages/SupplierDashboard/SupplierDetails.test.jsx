@@ -16,7 +16,7 @@ describe('Supplier Details', () => {
       _id: 'abc', supplierName: 'Sunrise Staples', companyName: 'Sunrise Pvt Ltd', status: 'ACTIVE',
       contactPerson: 'Asha', phone: '9876501234', email: 'asha@example.com', businessAddress: 'Hyderabad',
       catalogSummary: { categoryCount: 1, productCount: 2 },
-      categories: [{ _id: 'mapping-1', categoryId: 'cat-1', name: 'Rice & Grains', status: 'ACTIVE', productCount: 2 }],
+      categories: [{ _id: '64b000000000000000000001', supplierCategoryId: '64b000000000000000000001', categoryId: '64c000000000000000000002', name: 'Rice & Grains', status: 'ACTIVE', productCount: 2 }],
     } });
     renderPage();
     expect(await screen.findByRole('heading', { name: 'Sunrise Staples' })).toBeInTheDocument();
@@ -24,7 +24,7 @@ describe('Supplier Details', () => {
     expect(screen.getByText('2 Supplier Products')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Rice & Grains.*View Products/i })).toHaveAttribute(
       'href',
-      '/supplier-dashboard/suppliers/abc/categories/cat-1'
+      '/supplier-dashboard/suppliers/abc/categories/64c000000000000000000002'
     );
     expect(superAdminService.getSupplier).toHaveBeenCalledWith('abc');
   });
