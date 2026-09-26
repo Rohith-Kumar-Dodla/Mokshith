@@ -7,8 +7,8 @@ const ProfileCard = ({ profile, onEdit }) => {
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-4 sm:p-6 text-white">
         <div className="flex items-center gap-3 sm:gap-4">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-full flex items-center justify-center text-blue-600 font-bold text-xl sm:text-2xl">
-            {(profile?.name || 'DP').split(' ').filter(Boolean).map((n) => n[0]).join('').toUpperCase().slice(0, 2) || 'DP'}
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-full flex items-center justify-center text-blue-600 font-bold text-xl sm:text-2xl overflow-hidden">
+            {profile?.profileImage ? <img src={profile.profileImage} alt={`${profile.name || 'Delivery partner'} profile`} className="h-full w-full object-cover" /> : (profile?.name || 'DP').split(' ').filter(Boolean).map((n) => n[0]).join('').toUpperCase().slice(0, 2) || 'DP'}
           </div>
           <div>
             <h2 className="text-lg sm:text-2xl font-bold">{profile?.name}</h2>

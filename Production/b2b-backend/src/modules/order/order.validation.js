@@ -25,6 +25,10 @@ export const createOrderSchema = Joi.object({
       city: Joi.string().trim().min(2).max(50).required(),
       state: Joi.string().trim().min(2).max(50).required(),
       pincode: Joi.string().trim().pattern(/^[0-9]{6}$/).required(),
+      location: Joi.object({
+        latitude: Joi.number().min(-90).max(90).required(),
+        longitude: Joi.number().min(-180).max(180).required(),
+      }).optional(),
     }).optional(),
     idempotencyKey: Joi.string().pattern(/^[a-zA-Z0-9_-]+$/).max(255).optional(),
   }).unknown(true),
@@ -66,6 +70,14 @@ export const getOrdersQuerySchema = Joi.object({
       .optional(),
     paymentCompleted: Joi.alternatives()
       .try(Joi.boolean(), Joi.string().valid('true', 'false', '1', '0'))
+      .optional(),
+    deliveryStatus: Joi.string()
+      .uppercase()
+      .valid('PENDING', 'ASSIGNED', 'ACCEPTED', 'PICKED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'COMPLETED', 'CANCELLED', 'FAILED', 'REJECTED')
+      .optional(),
+    deliveryFilter: Joi.string()
+      .lowercase()
+      .valid('unassigned', 'active', 'attention')
       .optional(),
     _refresh: Joi.any().optional(),
   }).unknown(true),

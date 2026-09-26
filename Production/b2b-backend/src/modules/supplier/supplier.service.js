@@ -4,7 +4,10 @@ import Audit from '../audit/audit.model.js';
 import AppError from '../../errors/AppError.js';
 import { ROLES } from '../../constants/roles.js';
 import { aggregateSupplierCatalogSummaries } from './supplierProduct.service.js';
-import { aggregateSupplierCategoryCounts } from './supplierCategory.service.js';
+import {
+  aggregateSupplierCategoryCounts,
+  getSupplierCategorySummaries,
+} from './supplierCategory.service.js';
 import {
   SUPPLIER_STATUS,
   SUPPLIER_STATUS_TRANSITIONS,
@@ -136,15 +139,6 @@ const attachCatalogSummaries = async (suppliers) => {
     supplierList.map((supplier) => supplier._id)
   );
 
-  const emptySummary = {
-    productCount: 0,
-    activeProductCount: 0,
-    categoryCount: 0,
-    activeCategoryCount: 0,
-    pricesConfigured: 0,
-    pricesNotSet: 0,
-  };
-
   return supplierList.map((supplier) => {
     const plain = supplier?.toObject ? supplier.toObject() : supplier;
     const productSummary = summaries.get(String(plain._id)) || {};
@@ -222,8 +216,11 @@ export const getSupplierById = async (id) => {
   if (!supplier) {
     throw new AppError('Supplier not found', 404);
   }
-  const [withSummary] = await attachCatalogSummaries([supplier]);
-  return withSummary;
+  const [[withSummary], categories] = await Promise.all([
+    attachCatalogSummaries([supplier]),
+    getSupplierCategorySummaries(id),
+  ]);
+  return { ...withSummary, categories };
 };
 
 export const createSupplier = async (data, actorId, ip) => {

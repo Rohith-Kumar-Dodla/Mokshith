@@ -1,10 +1,13 @@
-import React from 'react';
-import SuperAdminOrderManagement from '../../components/superadmin/SuperAdminOrderManagement';
+import AdminOrderManagement from '../../components/admin/AdminOrderManagement';
+import PageHeader from '../../components/superadmin/PageHeader';
 
 const Orders = () => (
-  <SuperAdminOrderManagement
+  <AdminOrderManagement
+    PageHeader={PageHeader}
     title="Global Orders"
-    subtitle="Manage all platform orders across regions"
+    subtitle="Monitor orders, payments and delivery operations across the platform"
+    deliveryAssignmentPath="/super-admin/delivery-assignment"
+    useLegacyProcurementPanel={false}
   />
 );
 

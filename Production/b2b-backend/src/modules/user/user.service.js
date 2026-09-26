@@ -3,6 +3,7 @@ import * as repo from './user.repository.js';
 import { hashPassword } from '../../utils/hashPassword.js';
 import User from './user.model.js';
 import { syncLegacyAddressFromVendorAddress } from '../../utils/vendorAddress.utils.js';
+import { addressFingerprint, geocodeAddress, hasValidCoordinates } from '../../services/geocoding.service.js';
 
 export const changePassword = async (userId, newPassword) => {
   const user = await repo.findById(userId);
@@ -87,7 +88,18 @@ export const updateProfile = async (userId, data) => {
   }
 
   if (filteredData.vendorAddress) {
-    const legacyAddress = syncLegacyAddressFromVendorAddress(filteredData.vendorAddress);
+    const previousUser = await repo.findById(userId);
+    const incomingAddress = { ...filteredData.vendorAddress };
+    const incomingHash = addressFingerprint(incomingAddress);
+    const previousLocation = previousUser?.vendorAddress?.location;
+    if (hasValidCoordinates(previousLocation) && previousLocation.addressHash === incomingHash) {
+      incomingAddress.location = previousLocation;
+    } else if (process.env.NODE_ENV !== 'test') {
+      const geocoded = await geocodeAddress(incomingAddress);
+      incomingAddress.location = { ...geocoded, geocodedAt: new Date() };
+    }
+    filteredData.vendorAddress = incomingAddress;
+    const legacyAddress = syncLegacyAddressFromVendorAddress(incomingAddress);
     filteredData.businessAddress = legacyAddress;
     filteredData.address = legacyAddress;
   }

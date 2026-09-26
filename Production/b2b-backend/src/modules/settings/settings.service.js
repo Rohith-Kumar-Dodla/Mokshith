@@ -28,6 +28,7 @@ const ALLOWED_KEYS = [
   'DEFAULT_CURRENCY',
   'ENABLE_NOTIFICATIONS',
   'blockedIps',
+  'supplierDashboardRefreshSeconds',
 ];
 
 export const updateSetting = async (key, value) => {

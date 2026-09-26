@@ -36,18 +36,32 @@ const SuperAdminProcurementDemand = lazy(() => import('./pages/SuperAdmin/Procur
 const SuperAdminProcurementPlan = lazy(() => import('./pages/SuperAdmin/ProcurementPlan'));
 const SuperAdminPurchaseRequests = lazy(() => import('./pages/SuperAdmin/PurchaseRequests'));
 const SuperAdminPurchaseRequestCreate = lazy(() => import('./pages/SuperAdmin/PurchaseRequestCreate'));
+const SupplierDashboardLayout = lazy(() => import('./layouts/SupplierDashboardLayout'));
+const SupplierDashboardHome = lazy(() => import('./pages/SupplierDashboard/Dashboard'));
+const SupplierNetwork = lazy(() => import('./pages/SupplierDashboard/Suppliers'));
+const SupplierDetails = lazy(() => import('./pages/SupplierDashboard/SupplierDetails'));
+const SupplierCategoryProducts = lazy(() => import('./pages/SupplierDashboard/SupplierCategoryProducts'));
+const SupplierCategories = lazy(() => import('./pages/SupplierDashboard/SupplierCategories'));
+const SupplierProducts = lazy(() => import('./pages/SupplierDashboard/SupplierProducts'));
+const SupplierNetworkCategories = lazy(() => import('./pages/SupplierDashboard/Categories'));
+const SupplierNetworkProducts = lazy(() => import('./pages/SupplierDashboard/Products'));
+const SupplierDashboardSettings = lazy(() => import('./pages/SupplierDashboard/Settings'));
 
 const AdminLayout = lazy(() => import('./layouts/AdminLayout'));
 const AdminDashboard = lazy(() => import('./pages/Admin/Dashboard'));
 const Products = lazy(() => import('./pages/Admin/Products'));
 const Categories = lazy(() => import('./pages/Admin/Categories'));
 const Inventory = lazy(() => import('./pages/Admin/Inventory'));
+const AdminDiscounts = lazy(() => import('./pages/Admin/Discounts'));
+const AdminNotifications = lazy(() => import('./pages/Admin/Notifications'));
+const AdminProfile = lazy(() => import('./pages/Admin/Profile'));
 const AdminVendors = lazy(() => import('./pages/Admin/Vendors'));
 const AdminOrders = lazy(() => import('./pages/Admin/Orders'));
 const DeliveryAssignment = lazy(() => import('./pages/Admin/DeliveryAssignment'));
 const Reports = lazy(() => import('./pages/Admin/Reports'));
 const AdminAnalytics = lazy(() => import('./pages/Admin/Analytics'));
 const AdminSettings = lazy(() => import('./pages/Admin/Settings'));
+const SupplierAllocation = lazy(() => import('./pages/Shared/SupplierAllocation'));
 
 const VendorLayout = lazy(() => import('./layouts/VendorLayout'));
 const VendorDashboard = lazy(() => import('./pages/Vendor/Dashboard'));
@@ -92,6 +106,18 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
 
+              <Route path="/supplier-dashboard/*" element={<ProtectedRoute requiredRole="super-admin"><SupplierDashboardLayout /></ProtectedRoute>}>
+                <Route index element={<SupplierDashboardHome />} />
+                <Route path="suppliers" element={<SupplierNetwork />} />
+                <Route path="suppliers/:supplierId" element={<SupplierDetails />} />
+                <Route path="suppliers/:supplierId/categories" element={<SupplierCategories />} />
+                <Route path="suppliers/:supplierId/products" element={<SupplierProducts />} />
+                <Route path="suppliers/:supplierId/categories/:categoryId" element={<SupplierCategoryProducts />} />
+                <Route path="categories" element={<SupplierNetworkCategories />} />
+                <Route path="products" element={<SupplierNetworkProducts />} />
+                <Route path="settings" element={<SupplierDashboardSettings />} />
+              </Route>
+
               <Route path="/super-admin/*" element={<ProtectedRoute requiredRole="super-admin"><SuperAdminLayout /></ProtectedRoute>}>
                 <Route index element={<Navigate to="/super-admin/dashboard" replace />} />
                 <Route path="dashboard" element={<SuperAdminDashboard />} />
@@ -109,6 +135,8 @@ function App() {
                 <Route path="procurement/purchase-requests/:id" element={<SuperAdminPurchaseRequests />} />
                 <Route path="procurement/purchase-requests" element={<SuperAdminPurchaseRequests />} />
                 <Route path="orders" element={<SuperAdminOrders />} />
+                <Route path="delivery-assignment" element={<DeliveryAssignment />} />
+                <Route path="supplier-allocation" element={<SupplierAllocation />} />
                 <Route path="payment-verifications" element={<Navigate to="/super-admin/orders" replace />} />
                 <Route path="analytics" element={<SuperAdminAnalytics />} />
                 <Route path="settings" element={<SuperAdminSettings />} />
@@ -121,13 +149,17 @@ function App() {
                 <Route path="categories" element={<Categories />} />
                 <Route path="products" element={<Products />} />
                 <Route path="inventory" element={<Inventory />} />
+                <Route path="discounts" element={<AdminDiscounts />} />
                 <Route path="vendors" element={<AdminVendors />} />
                 <Route path="orders" element={<AdminOrders />} />
+                <Route path="supplier-allocation" element={<SupplierAllocation />} />
                 <Route path="delivery-assignment" element={<DeliveryAssignment />} />
                 <Route path="reports" element={<Reports />} />
                 <Route path="analytics" element={<AdminAnalytics />} />
                 <Route path="support" element={<AdminSupport />} />
+                <Route path="notifications" element={<AdminNotifications />} />
                 <Route path="settings" element={<AdminSettings />} />
+                <Route path="profile" element={<AdminProfile />} />
               </Route>
 
               <Route path="/vendor/*" element={<ProtectedRoute requiredRole="vendor"><VendorLayout /></ProtectedRoute>}>
@@ -154,6 +186,7 @@ function App() {
                 <Route index element={<Navigate to="/delivery/dashboard" replace />} />
                 <Route path="dashboard" element={<DeliveryDashboard />} />
                 <Route path="assigned-orders" element={<AssignedOrders />} />
+                <Route path="deliveries" element={<AssignedOrders />} />
                 <Route path="order-details/:id" element={<OrderDetails />} />
                 <Route path="history" element={<DeliveryHistory />} />
                 <Route path="earnings" element={<DeliveryEarnings />} />

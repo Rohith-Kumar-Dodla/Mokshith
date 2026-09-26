@@ -16,16 +16,6 @@ export default function VendorAddressFields({
     });
   };
 
-  const updateLocation = (field, fieldValue) => {
-    onChange({
-      ...value,
-      location: {
-        ...(value.location || {}),
-        [field]: fieldValue,
-      },
-    });
-  };
-
   return (
     <div className="space-y-3 sm:space-y-4">
       <div>
@@ -122,34 +112,6 @@ export default function VendorAddressFields({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-        <div>
-          <label htmlFor={`${idPrefix}-latitude`} className="block text-sm font-medium text-gray-700 mb-1">
-            Latitude (optional)
-          </label>
-          <input
-            id={`${idPrefix}-latitude`}
-            type="number"
-            step="any"
-            className={inputClass}
-            value={value.location?.latitude ?? ''}
-            onChange={(e) => updateLocation('latitude', e.target.value)}
-          />
-        </div>
-        <div>
-          <label htmlFor={`${idPrefix}-longitude`} className="block text-sm font-medium text-gray-700 mb-1">
-            Longitude (optional)
-          </label>
-          <input
-            id={`${idPrefix}-longitude`}
-            type="number"
-            step="any"
-            className={inputClass}
-            value={value.location?.longitude ?? ''}
-            onChange={(e) => updateLocation('longitude', e.target.value)}
-          />
-        </div>
-      </div>
     </div>
   );
 }

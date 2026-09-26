@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useId } from 'react';
 import { FiX } from 'react-icons/fi';
 
 const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
+  const titleId = useId();
   const sizeClasses = {
     sm: 'max-w-md',
     md: 'max-w-lg',
@@ -26,11 +27,13 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }) => {
   return (
     <div className="fixed inset-0 z-50 sm:flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
-      <div className={`relative bg-white sm:rounded-2xl rounded-none shadow-2xl w-full ${sizeClasses[size]} sm:max-h-[90vh] max-h-[100vh] overflow-y-auto`}>
+      <div role="dialog" aria-modal="true" aria-labelledby={titleId} className={`relative bg-white sm:rounded-2xl rounded-none shadow-2xl w-full ${sizeClasses[size]} sm:max-h-[90vh] max-h-[100vh] overflow-y-auto`}>
         <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100">
-          <h2 className="text-lg sm:text-xl font-semibold text-gray-900">{title}</h2>
+          <h2 id={titleId} className="text-lg sm:text-xl font-semibold text-gray-900">{title}</h2>
           <button
             onClick={onClose}
+            type="button"
+            aria-label="Close dialog"
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors min-h-[44px] min-w-[44px]"
           >
             <FiX size={20} className="text-gray-500" />

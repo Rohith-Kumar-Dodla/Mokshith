@@ -1,0 +1,22 @@
+import React, { useState } from 'react';
+import PageHeader from '../../components/admin/PageHeader';
+import Card from '../../components/admin/Card';
+import useProfile from '../../hooks/useProfile';
+import authService from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
+import { getUserFacingErrorMessage } from '../../utils/apiResponse';
+
+const Profile = () => {
+  const { user } = useAuth();
+  const { profile, loading, saving, error, updateProfile } = useProfile();
+  const [form, setForm] = useState(null);
+  const [password, setPassword] = useState({ oldPassword: '', newPassword: '', confirm: '' });
+  const [message, setMessage] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  if (loading && !profile) return <Card className="p-8 text-center">Loading profile...</Card>;
+  const values = form || { ownerName: profile?.ownerName || '', email: profile?.email || '', phone: profile?.phone || '' };
+  const save = async (event) => { event.preventDefault(); setMessage(''); try { await updateProfile(values); setForm(null); setMessage('Profile updated successfully'); } catch (saveError) { setMessage(saveError.message); } };
+  const changePassword = async (event) => { event.preventDefault(); setPasswordError(''); if (password.newPassword !== password.confirm) { setPasswordError('New passwords do not match'); return; } try { await authService.changePassword({ oldPassword: password.oldPassword, newPassword: password.newPassword }); setPassword({ oldPassword: '', newPassword: '', confirm: '' }); setMessage('Password changed successfully'); } catch (passwordChangeError) { setPasswordError(getUserFacingErrorMessage(passwordChangeError, 'Failed to change password')); } };
+  return <div className="space-y-6"><PageHeader title="Profile" subtitle="Manage your Admin account details and security" />{(message || error) && <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">{message || error}</div>}<Card className="p-4 sm:p-6"><h2 className="font-semibold mb-4">Account information</h2><form onSubmit={save} className="grid grid-cols-1 sm:grid-cols-2 gap-4"><label className="text-sm">Name<input className="mt-1 w-full border rounded-lg p-3" value={values.ownerName} onChange={(e) => setForm({ ...values, ownerName: e.target.value })} required /></label><label className="text-sm">Email<input type="email" className="mt-1 w-full border rounded-lg p-3" value={values.email} onChange={(e) => setForm({ ...values, email: e.target.value })} required /></label><label className="text-sm">Phone<input className="mt-1 w-full border rounded-lg p-3" value={values.phone} onChange={(e) => setForm({ ...values, phone: e.target.value })} /></label><div className="text-sm"><span className="block">Role</span><p className="mt-1 rounded-lg bg-gray-50 p-3">{user?.role || profile?.raw?.role || 'ADMIN'}</p></div><div className="text-sm"><span className="block">Account status</span><p className="mt-1 rounded-lg bg-gray-50 p-3">{user?.status || profile?.status || 'Active'}</p></div><div className="sm:col-span-2"><button disabled={saving} className="px-4 py-2.5 min-h-[44px] bg-blue-600 text-white rounded-lg">{saving ? 'Saving...' : 'Save profile'}</button></div></form></Card><Card className="p-4 sm:p-6"><h2 className="font-semibold mb-4">Change password</h2>{passwordError && <p className="text-sm text-red-700 mb-3">{passwordError}</p>}<form onSubmit={changePassword} className="grid grid-cols-1 sm:grid-cols-3 gap-4"><input aria-label="Current password" type="password" placeholder="Current password" className="border rounded-lg p-3" value={password.oldPassword} onChange={(e) => setPassword({ ...password, oldPassword: e.target.value })} required /><input aria-label="New password" type="password" placeholder="New password" className="border rounded-lg p-3" value={password.newPassword} onChange={(e) => setPassword({ ...password, newPassword: e.target.value })} required /><input aria-label="Confirm new password" type="password" placeholder="Confirm new password" className="border rounded-lg p-3" value={password.confirm} onChange={(e) => setPassword({ ...password, confirm: e.target.value })} required /><button className="sm:col-span-3 sm:w-fit px-4 py-2.5 min-h-[44px] border border-blue-600 text-blue-700 rounded-lg">Change password</button></form></Card></div>;
+};
+export default Profile;

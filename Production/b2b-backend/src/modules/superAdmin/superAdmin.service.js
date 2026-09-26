@@ -16,6 +16,8 @@ import { createCreditAccount } from '../credit/credit.service.js';
 import { validatePassword } from '../../utils/passwordPolicy.js';
 import { sendNotification } from '../notification/notification.service.js';
 import { sendEmail } from '../../services/email.service.js';
+import Supplier from '../supplier/supplier.model.js';
+import { SUPPLIER_STATUS } from '../../constants/supplierStatus.js';
 
 export const getAllUsers = async () => {
   return repo.getAllUsers();
@@ -496,4 +498,21 @@ export const updateCategory = async (id, data) => {
   const category = await Category.findByIdAndUpdate(id, data, { new: true });
   if (!category) throw new AppError('Category not found', 404);
   return category;
+};
+
+export const createSupplierAccount = async (data, creatorId, ip) => {
+  const { name, email, password, mobile, supplierName, companyName, contactPerson = '', businessAddress = '', gstNumber, status = USER_STATUS.ACTIVE } = data;
+  await ensureUniqueUserFields({ email, mobile });
+  validatePassword(password, { name, email, mobile });
+  const hashedPassword = await hashPassword(password);
+  const user = await User.create({ name, email, mobile, phone: mobile, password: hashedPassword, role: ROLES.SUPPLIER, status, isVerified: true, lastPasswordChange: new Date(), passwordHistory: [{ hash: hashedPassword, changedAt: new Date() }] });
+  try {
+    const supplier = await Supplier.create({ supplierName, companyName, contactPerson, phone: mobile, email, businessAddress, gstNumber: gstNumber || undefined, status: SUPPLIER_STATUS.ACTIVE, role: ROLES.SUPPLIER, userId: user._id, createdBy: creatorId || null });
+    await Audit.create({ userId: creatorId, action: 'CREATE_SUPPLIER_ACCOUNT', entity: 'SUPPLIER', entityId: supplier._id, details: `Created supplier account: ${email}`, ip, severity: 'INFO' });
+    await sendStaffWelcome(user, 'Supplier');
+    return { ...supplier.toObject(), userId: user._id };
+  } catch (error) {
+    await User.deleteOne({ _id: user._id });
+    throw error;
+  }
 };

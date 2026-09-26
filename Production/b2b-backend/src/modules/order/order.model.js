@@ -23,7 +23,12 @@ const orderSchema = new mongoose.Schema(
         quantity: { type: Number, required: true, min: 1 },
         discountPercent: { type: Number, default: 0 },
         discountAmount: { type: Number, default: 0 },
+        specialDiscountAmount: { type: Number, default: 0 },
+        bulkDiscountAmount: { type: Number, default: 0 },
         finalPrice: { type: Number },
+        promotionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Promotion' },
+        promotionName: { type: String },
+        promotionCode: { type: String },
       },
     ],
 
@@ -31,6 +36,11 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    subtotal: { type: Number, default: 0 },
+    discountAmount: { type: Number, default: 0 },
+    specialDiscountAmount: { type: Number, default: 0 },
+    bulkDiscountAmount: { type: Number, default: 0 },
+    taxAmount: { type: Number, default: 0 },
 
     totalWeight: {
       type: Number,
@@ -106,6 +116,10 @@ const orderSchema = new mongoose.Schema(
       city: { type: String, required: true },
       state: { type: String, required: true },
       pincode: { type: String, required: true },
+      location: {
+        latitude: { type: Number, min: -90, max: 90 },
+        longitude: { type: Number, min: -180, max: 180 },
+      },
     },
 
     shippingAddress: {
@@ -115,6 +129,10 @@ const orderSchema = new mongoose.Schema(
       city: String,
       state: String,
       pincode: String,
+      location: {
+        latitude: { type: Number, min: -90, max: 90 },
+        longitude: { type: Number, min: -180, max: 180 },
+      },
     },
 
     status: {
@@ -131,6 +149,7 @@ const orderSchema = new mongoose.Schema(
       sparse: true,
       index: true,
     },
+    supplierAllocationLock: { type: Boolean, default: false },
 
     metadata: {
       type: Object,

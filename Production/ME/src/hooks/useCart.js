@@ -120,9 +120,45 @@ export function useCart({ autoLoad = true } = {}) {
     [applyCartResponse]
   );
 
+  const updateQuantity = useCallback(
+    async (productId, quantity) => {
+      setActionLoading(true);
+      setError(null);
+      try {
+        const response = await cartService.updateQuantity(productId, quantity);
+        const mappedCart = applyCartResponse(response);
+        skipReloadRef.current = true;
+        emitCartUpdated();
+        return mappedCart;
+      } catch (updateError) {
+        const message = getUserFacingErrorMessage(updateError, 'Failed to update cart quantity');
+        setError(message);
+        throw new Error(message);
+      } finally {
+        setActionLoading(false);
+      }
+    },
+    [applyCartResponse]
+  );
+
   const cartItems = useMemo(() => cart?.items ?? [], [cart]);
 
-  const totals = useMemo(() => calculateCartTotals(cartItems), [cartItems]);
+  const totals = useMemo(() => {
+    if (cart?.pricing) {
+      return {
+        subtotal: Number(cart.pricing.discountedSubtotal ?? 0),
+        originalSubtotal: Number(cart.pricing.subtotal ?? 0),
+        discountedSubtotal: Number(cart.pricing.discountedSubtotal ?? 0),
+        bulkDiscount: cartItems.reduce((sum, item) => sum + Number(item.bulkDiscountAmount ?? 0), 0),
+        specialDiscount: cartItems.reduce((sum, item) => sum + Number(item.specialDiscountAmount ?? 0), 0),
+        discount: Number(cart.pricing.discount ?? 0),
+        tax: Number(cart.pricing.tax ?? 0),
+        grandTotal: Number(cart.pricing.grandTotal ?? 0),
+        itemCount: cartItems.length,
+      };
+    }
+    return calculateCartTotals(cartItems);
+  }, [cart, cartItems]);
 
   return {
     loading,
@@ -131,14 +167,17 @@ export function useCart({ autoLoad = true } = {}) {
     cart,
     cartItems,
     subtotal: totals.subtotal,
+    originalSubtotal: totals.originalSubtotal,
     discount: totals.discount,
     bulkDiscount: totals.bulkDiscount,
+    specialDiscount: totals.specialDiscount ?? 0,
     tax: totals.tax,
     grandTotal: totals.grandTotal,
     itemCount: totals.itemCount,
     loadCart,
     addToCart,
     removeFromCart,
+    updateQuantity,
   };
 }
 

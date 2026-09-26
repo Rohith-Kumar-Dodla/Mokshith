@@ -23,6 +23,11 @@ const supplierPriceField = () =>
       'number.greater': 'Supplier price must be greater than 0.',
       'any.required': 'Supplier price must be a valid amount greater than 0.',
     });
+const quantityField = () => Joi.number().integer().min(0).messages({
+  'number.base': 'Supplier quantity must be a non-negative integer.',
+  'number.integer': 'Supplier quantity must be a non-negative integer.',
+  'number.min': 'Supplier quantity must be a non-negative integer.',
+});
 
 export const listSupplierProductsSchema = Joi.object({
   params: Joi.object({
@@ -40,6 +45,21 @@ export const listSupplierProductsSchema = Joi.object({
   }),
 });
 
+export const listSupplierCategoryProductsSchema = Joi.object({
+  params: Joi.object({
+    id: Joi.string().required(),
+    categoryId: Joi.string().required(),
+  }),
+  query: Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(12),
+    status: Joi.string()
+      .valid('all', ...Object.values(SUPPLIER_PRODUCT_STATUS))
+      .optional(),
+    search: Joi.string().trim().max(100).optional().allow(''),
+  }),
+});
+
 export const createSupplierProductSchema = Joi.object({
   params: Joi.object({
     id: Joi.string().required(),
@@ -49,6 +69,7 @@ export const createSupplierProductSchema = Joi.object({
       productId: Joi.string().required(),
       supplierCategoryId: Joi.string().optional(),
       minimumOrderQuantity: moqField(true),
+      quantity: quantityField().default(0),
       supplierPrice: supplierPriceField().optional(),
       availabilityStatus: Joi.string()
         .valid(...Object.values(SUPPLIER_PRODUCT_STATUS))
@@ -83,6 +104,47 @@ export const searchSupplierProductsSchema = Joi.object({
     search: Joi.string().trim().max(100).optional().allow(''),
     page: Joi.number().integer().min(1).default(1),
     limit: Joi.number().integer().min(1).max(50).default(20),
+    categoryId: Joi.string().optional(),
+  }),
+});
+
+export const createSupplierCategoryProductSchema = Joi.object({
+  params: Joi.object({
+    id: Joi.string().required(),
+    categoryId: Joi.string().required(),
+  }),
+  body: Joi.object({
+    productId: Joi.string().required(),
+    minimumOrderQuantity: moqField(true),
+    quantity: quantityField().default(0),
+    supplierPrice: supplierPriceField().optional(),
+    availabilityStatus: Joi.string()
+      .valid(...Object.values(SUPPLIER_PRODUCT_STATUS))
+      .default(SUPPLIER_PRODUCT_STATUS.ACTIVE),
+    notes: Joi.string().trim().max(1000).optional().allow(''),
+  }),
+});
+
+export const updateSupplierCategoryProductSchema = Joi.object({
+  params: Joi.object({
+    id: Joi.string().required(),
+    categoryId: Joi.string().required(),
+    mappingId: Joi.string().required(),
+  }),
+  body: Joi.object({
+    minimumOrderQuantity: moqField(false),
+    quantity: quantityField().optional(),
+    supplierPrice: supplierPriceField().optional(),
+    availabilityStatus: Joi.string().valid(...Object.values(SUPPLIER_PRODUCT_STATUS)).optional(),
+    notes: Joi.string().trim().max(1000).optional().allow(''),
+  }).min(1),
+});
+
+export const supplierCategoryProductIdSchema = Joi.object({
+  params: Joi.object({
+    id: Joi.string().required(),
+    categoryId: Joi.string().required(),
+    mappingId: Joi.string().required(),
   }),
 });
 
@@ -93,6 +155,7 @@ export const updateSupplierProductSchema = Joi.object({
   }),
   body: Joi.object({
     minimumOrderQuantity: moqField(false),
+    quantity: quantityField().optional(),
     availabilityStatus: Joi.string()
       .valid(...Object.values(SUPPLIER_PRODUCT_STATUS))
       .optional(),
@@ -144,4 +207,27 @@ export const supplierComparisonSchema = Joi.object({
   params: Joi.object({
     productId: Joi.string().required(),
   }),
+});
+
+export const listNetworkSupplierProductsSchema = Joi.object({
+  query: Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(20),
+    search: Joi.string().trim().max(100).allow('').optional(),
+    supplierId: Joi.string().allow('all').optional(),
+    categoryId: Joi.string().allow('all').optional(),
+    status: Joi.string().valid('all', ...Object.values(SUPPLIER_PRODUCT_STATUS)).default('all'),
+  }),
+});
+
+export const listNetworkCategoriesSchema = Joi.object({
+  query: Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(20),
+    search: Joi.string().trim().max(100).allow('').optional(),
+  }),
+});
+
+export const updateSupplierDashboardSettingsSchema = Joi.object({
+  body: Joi.object({ refreshSeconds: Joi.number().integer().min(15).max(3600).required() }),
 });

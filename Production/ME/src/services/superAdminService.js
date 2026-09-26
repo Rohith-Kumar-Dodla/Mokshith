@@ -3,6 +3,15 @@ import api from './api';
 const unwrap = (response) => response?.data ?? response;
 
 const superAdminService = {
+  getSupplierAllocationMetrics: async () => {
+    const response = await api.get('/supplier-allocations/metrics');
+    return unwrap(response);
+  },
+  getSupplierNetworkDashboard: async () => unwrap(await api.get('/super-admin/supplier-network/dashboard')),
+  getSupplierNetworkProducts: async (params = {}) => unwrap(await api.get('/super-admin/supplier-network/products', { params })),
+  getSupplierNetworkCategories: async (params = {}) => unwrap(await api.get('/super-admin/supplier-network/categories', { params })),
+  getSupplierDashboardSettings: async () => unwrap(await api.get('/super-admin/supplier-network/settings')),
+  updateSupplierDashboardSettings: async (payload) => unwrap(await api.patch('/super-admin/supplier-network/settings', payload)),
   getStats: async () => {
     const response = await api.get('/super-admin/stats');
     return unwrap(response);
@@ -50,6 +59,10 @@ const superAdminService = {
 
   createDeliveryAgent: async (payload) => {
     const response = await api.post('/super-admin/delivery-agents', payload);
+    return unwrap(response);
+  },
+  createSupplierAccount: async (payload) => {
+    const response = await api.post('/super-admin/suppliers/onboard', payload);
     return unwrap(response);
   },
 
@@ -108,6 +121,29 @@ const superAdminService = {
     return unwrap(response);
   },
 
+  getSupplierCategoryProducts: async (supplierId, categoryId, params = {}) => {
+    const response = await api.get(
+      `/super-admin/suppliers/${supplierId}/categories/${categoryId}/products`,
+      { params }
+    );
+    return unwrap(response);
+  },
+
+  createSupplierCategoryProduct: async (supplierId, categoryId, payload) => {
+    const response = await api.post(`/super-admin/suppliers/${supplierId}/categories/${categoryId}/products`, payload);
+    return unwrap(response);
+  },
+
+  updateSupplierCategoryProduct: async (supplierId, categoryId, mappingId, payload) => {
+    const response = await api.patch(`/super-admin/suppliers/${supplierId}/categories/${categoryId}/products/${mappingId}`, payload);
+    return unwrap(response);
+  },
+
+  removeSupplierCategoryProduct: async (supplierId, categoryId, mappingId) => {
+    const response = await api.delete(`/super-admin/suppliers/${supplierId}/categories/${categoryId}/products/${mappingId}`);
+    return unwrap(response);
+  },
+
   createSupplierCategory: async (supplierId, payload) => {
     const response = await api.post(`/super-admin/suppliers/${supplierId}/categories`, payload);
     return unwrap(response);
@@ -154,6 +190,11 @@ const superAdminService = {
       `/super-admin/suppliers/${supplierId}/products/${mappingId}/price`,
       { price }
     );
+    return unwrap(response);
+  },
+
+  removeSupplierProduct: async (supplierId, mappingId) => {
+    const response = await api.delete(`/super-admin/suppliers/${supplierId}/products/${mappingId}`);
     return unwrap(response);
   },
 

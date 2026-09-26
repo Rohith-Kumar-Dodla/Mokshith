@@ -98,6 +98,83 @@ export function calculateLinePricing(product, quantity) {
   };
 }
 
+/** Apply product-scoped promotions without compounding quantity pricing. */
+export function applyBestProductPromotion(product, quantity, quantityPricing, promotions = []) {
+  const baseTotal = quantityPricing.basePrice * Number(quantity);
+
+  const explicitPromotions = promotions.filter((promotion) => {
+    if (!(promotion.promotionKind === 'SPECIAL' || promotion.promotionKind === 'BULK')) return false;
+    const productIds = (promotion.productIds || []).map((id) => String(id?._id || id));
+    return productIds.length === 0 || productIds.includes(String(product?._id || product?.id));
+  });
+  if (explicitPromotions.length > 0) {
+    const qty = Number(quantity);
+    const specialPromotions = explicitPromotions.filter((promotion) => promotion.promotionKind === 'SPECIAL');
+    const bulkPromotions = explicitPromotions.filter((promotion) => promotion.promotionKind === 'BULK' && qty >= Number(promotion.minimumQuantity || 1));
+
+    const calculatePromotionAmount = (promotion) => {
+      const raw = promotion.discountType === 'PERCENTAGE'
+        ? baseTotal * (Number(promotion.value) / 100)
+        : Number(promotion.value);
+      const amount = promotion.discountApplication === 'PER_UNIT' ? raw * qty : raw;
+      return Math.max(0, Math.min(amount, baseTotal));
+    };
+
+    const specialPromotion = specialPromotions
+      .map((promotion) => ({ promotion, amount: calculatePromotionAmount(promotion) }))
+      .sort((a, b) => b.amount - a.amount)[0] || null;
+    const bulkPromotion = bulkPromotions
+      .map((promotion) => ({ promotion, amount: calculatePromotionAmount(promotion) }))
+      .sort((a, b) => b.amount - a.amount)[0] || null;
+    const specialDiscountAmount = specialPromotion?.amount || 0;
+    const bulkDiscountAmount = bulkPromotion?.amount || 0;
+    const discountAmount = Math.min(baseTotal, specialDiscountAmount + bulkDiscountAmount);
+    const itemTotal = baseTotal - discountAmount;
+
+    return {
+      unitPrice: qty ? itemTotal / qty : quantityPricing.basePrice,
+      basePrice: quantityPricing.basePrice,
+      discountAmount,
+      specialDiscountAmount,
+      bulkDiscountAmount,
+      discountPercent: quantityPricing.basePrice > 0 ? Math.round((discountAmount / baseTotal) * 100) : 0,
+      itemTotal,
+      pricingSource: 'combinedPromotions',
+      promotion: specialPromotion?.promotion || bulkPromotion?.promotion || null,
+      specialPromotion: specialPromotion?.promotion || null,
+      bulkPromotion: bulkPromotion?.promotion || null,
+    };
+  }
+
+  let best = { ...quantityPricing, promotion: null };
+
+  for (const promotion of promotions) {
+    const productIds = (promotion.productIds || []).map((id) => String(id?._id || id));
+    if (!productIds.includes(String(product?._id || product?.id))) continue;
+
+    let discountAmount = promotion.discountType === 'PERCENTAGE'
+      ? baseTotal * (Number(promotion.value) / 100)
+      : Number(promotion.value);
+    if (promotion.maxDiscount != null) discountAmount = Math.min(discountAmount, Number(promotion.maxDiscount));
+    discountAmount = Math.max(0, Math.min(discountAmount, baseTotal));
+    const itemTotal = baseTotal - discountAmount;
+
+    // A promotion competes with bulk/legacy pricing; discounts never compound.
+    if (itemTotal < best.itemTotal) {
+      best = {
+        unitPrice: Number(quantity) ? itemTotal / Number(quantity) : quantityPricing.basePrice,
+        basePrice: quantityPricing.basePrice,
+        discountAmount,
+        discountPercent: quantityPricing.basePrice > 0 ? Math.round((discountAmount / baseTotal) * 100) : 0,
+        itemTotal,
+        pricingSource: 'promotion',
+        promotion,
+      };
+    }
+  }
+  return best;
+}
+
 /**
  * Validate bulk pricing tiers against a base product price.
  * Throws Error with message on invalid input.

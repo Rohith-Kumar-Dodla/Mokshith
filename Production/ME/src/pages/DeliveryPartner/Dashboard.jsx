@@ -1,192 +1,39 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FiPackage, FiCheckCircle, FiTruck, FiClock, FiDollarSign, FiStar, FiTrendingUp, FiArrowRight } from 'react-icons/fi';
-import MetricCard from '../../components/delivery/MetricCard';
+import { FiArrowRight, FiBell, FiCheckCircle, FiClock, FiDollarSign, FiPackage, FiTruck } from 'react-icons/fi';
+import DeliveryOfferCard from '../../components/delivery/DeliveryOfferCard';
 import StatusBadge from '../../components/delivery/StatusBadge';
 import useDelivery from '../../hooks/useDelivery';
 
+const money = (value) => Number.isFinite(Number(value)) ? `₹${Number(value).toLocaleString('en-IN')}` : 'Unavailable';
+const display = (value) => value || 'Unavailable';
+
 const DeliveryDashboard = () => {
-  const { assignments, analytics, loading, error } = useDelivery();
-  const deliveryAnalytics = analytics?.today ?? {
-    assignedOrders: 0,
-    pendingDeliveries: 0,
-    completedDeliveries: 0,
-    todaysEarnings: 0,
-    monthlyEarnings: 0,
-    averageRating: 0,
-    successRate: 0,
-  };
-  const activityTimeline = analytics?.activityTimeline ?? [];
+  const { assignments = [], offers = [], profile, analytics, loading, error, actionLoading, acceptOffer, rejectOffer } = useDelivery();
+  const pendingOffers = offers.filter((offer) => offer.status === 'OFFERED');
+  const activeDelivery = assignments.find((delivery) => !['delivered', 'completed', 'failed'].includes(delivery.status));
+  const today = analytics?.today;
 
-  const summaryCards = [
-    {
-      title: 'Assigned Orders',
-      value: deliveryAnalytics.assignedOrders,
-      icon: <FiPackage size={24} />,
-      change: '+2',
-      color: 'blue',
-      to: '/delivery/assigned-orders',
-    },
-    { title: 'Pending Deliveries', value: deliveryAnalytics.pendingDeliveries, icon: <FiClock size={24} />, change: '+1', color: 'orange' },
-    { title: 'Completed Deliveries', value: deliveryAnalytics.completedDeliveries, icon: <FiCheckCircle size={24} />, change: '+3', color: 'green', to: '/delivery/history' },
-    { title: "Today's Earnings", value: `₹${deliveryAnalytics.todaysEarnings}`, icon: <FiDollarSign size={24} />, change: '+15%', color: 'purple', to: '/delivery/earnings' },
-    { title: 'Monthly Earnings', value: `₹${deliveryAnalytics.monthlyEarnings}`, icon: <FiTrendingUp size={24} />, change: '+8%', color: 'green' },
-    { title: 'Average Rating', value: deliveryAnalytics.averageRating, icon: <FiStar size={24} />, change: '+0.2', color: 'orange' },
-    { title: 'Success Rate', value: `${deliveryAnalytics.successRate}%`, icon: <FiCheckCircle size={24} />, change: '+2%', color: 'blue' },
-    { title: 'Today\'s Deliveries', value: deliveryAnalytics.completedDeliveries, icon: <FiTruck size={24} />, change: '+3', color: 'green' },
-  ];
-
-  const quickActions = [
-    { title: 'View Assigned Orders', icon: FiPackage, link: '/delivery/assigned-orders', color: 'blue' },
-    { title: 'Start Delivery', icon: FiTruck, link: '/delivery/assigned-orders', color: 'green' },
-    { title: 'Update Status', icon: FiCheckCircle, link: '/delivery/assigned-orders', color: 'orange' },
-    { title: 'View Earnings', icon: FiDollarSign, link: '/delivery/earnings', color: 'purple' },
-    { title: 'Performance Report', icon: FiTrendingUp, link: '/delivery/performance', color: 'blue' },
-    { title: 'Delivery History', icon: FiClock, link: '/delivery/history', color: 'green' },
-  ];
-
-  const todayPerformance = [
-    { title: 'Orders Assigned', value: deliveryAnalytics.assignedOrders, icon: FiPackage, color: 'blue' },
-    { title: 'Orders Delivered', value: deliveryAnalytics.completedDeliveries, icon: FiCheckCircle, color: 'green' },
-    { title: 'Orders Pending', value: deliveryAnalytics.pendingDeliveries, icon: FiClock, color: 'orange' },
-    { title: 'Earnings Today', value: `₹${deliveryAnalytics.todaysEarnings}`, icon: FiDollarSign, color: 'purple' },
-    { title: 'Rating Today', value: deliveryAnalytics.averageRating, icon: FiStar, color: 'orange' },
-    { title: 'Success Rate', value: `${deliveryAnalytics.successRate}%`, icon: FiTrendingUp, color: 'blue' },
-  ];
-
-  const recentOrders = assignments.slice(0, 4);
-
-  if (loading) {
-    return (
-      <div className="space-y-4 sm:space-y-8">
-        <div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Delivery Operations Dashboard</h1>
-          <p className="text-xs sm:text-sm text-gray-600 mt-1">Loading delivery dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-4 sm:space-y-8">
-        <div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Delivery Operations Dashboard</h1>
-          <p className="text-xs sm:text-sm text-red-600 mt-1">{error}</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading && !analytics) return <div className="space-y-4"><div className="h-8 w-2/3 animate-pulse rounded bg-gray-200" /><div className="h-40 animate-pulse rounded-xl bg-gray-200" /><div className="h-32 animate-pulse rounded-xl bg-gray-200" /></div>;
 
   return (
-    <div className="space-y-4 sm:space-y-8">
-      <div>
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Delivery Operations Dashboard</h1>
-        <p className="text-xs sm:text-sm text-gray-600 mt-1">Manage assigned deliveries efficiently.</p>
-      </div>
+    <div className="space-y-5 sm:space-y-6">
+      <header className="flex flex-col gap-3 rounded-2xl bg-gradient-to-r from-blue-700 to-blue-600 p-5 text-white sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <div><p className="text-sm text-blue-100">Welcome back</p><h1 className="mt-1 text-2xl font-bold sm:text-3xl">{profile?.name || 'Delivery Partner'}</h1><p className="mt-1 text-sm text-blue-100">Here is what needs your attention today.</p></div>
+        <Link aria-label="View Assigned Orders" to="/delivery/assigned-orders" className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-50"><FiTruck /> View Assigned Orders ({assignments.length}) <FiArrowRight /></Link>
+      </header>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-        {summaryCards.slice(0, 4).map((card, index) => (
-          <MetricCard key={index} {...card} />
-        ))}
-      </div>
+      {error ? <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        {quickActions.map((action, index) => (
-          <Link
-            key={index}
-            to={action.link}
-            className="bg-white rounded-xl border border-gray-200 p-3 sm:p-5 hover:shadow-lg transition-all group"
-          >
-            <div className="flex items-center gap-2 sm:gap-4">
-              <div className={`p-2 sm:p-3 rounded-lg bg-${action.color}-50 text-${action.color}-600 group-hover:bg-${action.color}-600 group-hover:text-white transition-colors`}>
-                <action.icon size={20} />
-              </div>
-              <div className="flex-1">
-                <p className="text-xs sm:text-sm font-semibold text-gray-900">{action.title}</p>
-                <p className="text-xs text-gray-500 hidden sm:block">Click to proceed</p>
-              </div>
-              <FiArrowRight className="text-gray-400 group-hover:text-gray-600" size={16} />
-            </div>
-          </Link>
-        ))}
-      </div>
+      <section aria-labelledby="today-summary"><h2 id="today-summary" className="mb-3 text-lg font-bold text-gray-900">Today&apos;s summary</h2><div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="rounded-xl border border-gray-200 bg-white p-4"><div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-green-50 text-green-600"><FiCheckCircle /></div><p className="text-sm text-gray-600">Completed deliveries</p><p className="mt-1 text-2xl font-bold text-gray-900">{today?.completedDeliveries ?? 0}</p></div>
+        <div className="rounded-xl border border-gray-200 bg-white p-4"><div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-purple-50 text-purple-600"><FiDollarSign /></div><p className="text-sm text-gray-600">Today&apos;s earnings</p><p className="mt-1 text-2xl font-bold text-gray-900">{money(today?.todaysEarnings)}</p></div>
+        <div className="rounded-xl border border-gray-200 bg-white p-4"><div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-orange-50 text-orange-600"><FiClock /></div><p className="text-sm text-gray-600">Action required</p><p className="mt-1 text-2xl font-bold text-gray-900">{pendingOffers.length + (activeDelivery ? 1 : 0)}</p></div>
+      </div></section>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
-        <h2 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mb-4 sm:mb-6">Today's Performance</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
-          {todayPerformance.map((perf, index) => (
-            <div key={index} className="flex items-center gap-2 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg">
-              <div className="p-2 sm:p-3 bg-blue-500 rounded-lg text-white">
-                <perf.icon size={16} />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-gray-600">{perf.title}</p>
-                <p className="text-base sm:text-xl font-bold text-gray-900">{perf.value}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      {pendingOffers.length > 0 ? <section aria-labelledby="pending-offers" className="space-y-3"><div className="flex items-end justify-between gap-3"><div><h2 id="pending-offers" className="text-lg font-bold text-gray-900">Pending offers</h2><p className="text-sm text-gray-600">Review the server-provided route and earnings before responding.</p></div><Link to="/delivery/assigned-orders" className="text-sm font-semibold text-blue-600">View all</Link></div><div className="grid grid-cols-1 gap-4 lg:grid-cols-2">{pendingOffers.slice(0, 2).map((offer) => <DeliveryOfferCard key={offer.offerId || offer._id} offer={offer} actionLoading={actionLoading} onAccept={() => acceptOffer(offer.logisticsId, offer.offerId || offer._id)} onReject={(payload) => rejectOffer(offer.logisticsId, offer.offerId || offer._id, payload)} />)}</div></section> : <section className="rounded-xl border border-dashed border-gray-300 bg-white p-5 text-center"><FiBell className="mx-auto mb-2 text-gray-400" /><p className="font-semibold text-gray-800">No pending offers</p><p className="mt-1 text-sm text-gray-500">New assignments will appear here when available.</p></section>}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
-        <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
-          <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <h2 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900">Recent Orders</h2>
-            <Link to="/delivery/assigned-orders" className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm font-medium">
-              View All
-            </Link>
-          </div>
-          <div className="space-y-3 sm:space-y-4">
-            {recentOrders.map((order) => (
-              <div key={order.id} className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
-                    <p className="text-xs sm:text-sm font-semibold text-gray-900">{order.id}</p>
-                    <StatusBadge status={order.status} />
-                  </div>
-                  <p className="text-xs sm:text-sm text-gray-600">{order.vendor}</p>
-                  <p className="text-xs text-gray-500 mt-0.5 sm:mt-1">{order.deliveryLocation}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs sm:text-sm font-bold text-gray-900">₹{order.orderAmount.toFixed(2)}</p>
-                  <p className="text-xs text-gray-500">{order.distance} km</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
-          <h2 className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 mb-4 sm:mb-6">Recent Activities</h2>
-          <div className="space-y-3 sm:space-y-4">
-            {activityTimeline.slice(0, 6).map((activity) => (
-              <div key={activity.id} className="flex items-start gap-2 sm:gap-4">
-                <div className={`p-1.5 sm:p-2 rounded-lg ${
-                  activity.type === 'delivery_completed' ? 'bg-green-100 text-green-600' :
-                  activity.type === 'payment_completed' ? 'bg-purple-100 text-purple-600' :
-                  'bg-blue-100 text-blue-600'
-                }`}>
-                  {activity.type === 'delivery_completed' ? <FiCheckCircle size={14} /> : <FiPackage size={14} />}
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs sm:text-sm font-medium text-gray-900">{activity.title}</p>
-                  <p className="text-xs text-gray-600">{activity.description}</p>
-                  <p className="text-xs text-gray-400 mt-0.5 sm:mt-1">
-                    {activity.timestamp ? new Date(activity.timestamp).toLocaleString('en-IN') : '—'}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-        {summaryCards.slice(4).map((card, index) => (
-          <MetricCard key={index + 4} {...card} />
-        ))}
-      </div>
+      <section aria-labelledby="active-delivery"><div className="mb-3 flex items-end justify-between gap-3"><div><h2 id="active-delivery" className="text-lg font-bold text-gray-900">Active delivery</h2><p className="text-sm text-gray-600">Your next valid action is available from the details page.</p></div><Link to="/delivery/assigned-orders" className="text-sm font-semibold text-blue-600">All deliveries</Link></div>{activeDelivery ? <div className="rounded-xl border border-blue-200 bg-white p-4 shadow-sm sm:p-5"><div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Order reference</p><h3 className="mt-1 text-lg font-bold text-gray-900">{activeDelivery.orderRef || activeDelivery.id}</h3><p className="text-sm text-gray-600">{display(activeDelivery.customerName || activeDelivery.vendor)}</p></div><StatusBadge status={activeDelivery.status} /></div><div className="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3"><div><p className="text-gray-500">Destination</p><p className="font-medium text-gray-900">{display(activeDelivery.deliveryLocation)}</p></div><div><p className="text-gray-500">Distance</p><p className="font-medium text-gray-900">{activeDelivery.distanceKm == null ? 'Unavailable' : `${activeDelivery.distanceKm} ${activeDelivery.distanceUnit || 'km'}`}</p></div><div><p className="text-gray-500">Delivery earnings</p><p className="font-semibold text-green-700">{money(activeDelivery.deliveryAmount)}</p></div></div><Link to={`/delivery/order-details/${activeDelivery.id}`} className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 sm:w-auto">Open active delivery <FiArrowRight /></Link></div> : <div className="rounded-xl border border-dashed border-gray-300 bg-white p-5 text-center"><FiPackage className="mx-auto mb-2 text-gray-400" /><p className="font-semibold text-gray-800">No active delivery</p><p className="mt-1 text-sm text-gray-500">Accept an offer to start a delivery.</p></div>}</section>
     </div>
   );
 };

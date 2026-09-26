@@ -16,3 +16,8 @@ export const removeFromCart = asyncHandler(async (req, res) => {
   const cart = await cartService.removeFromCart(req.user, req.params.productId);
   successResponse(res, cart, 'Item removed from cart');
 });
+
+export const updateQuantity = asyncHandler(async (req, res) => {
+  const cart = await cartService.updateQuantity(req.user, req.params.productId, req.body.quantity);
+  successResponse(res, cart, 'Cart quantity updated');
+});

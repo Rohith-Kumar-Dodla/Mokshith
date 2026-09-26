@@ -6,6 +6,7 @@ import { transformProductsArray } from '../../utils/cdn.js';
 import { CATALOG_SCOPE } from '../../constants/catalogScope.js';
 import { assertCustomerCatalogProduct } from './productCatalog.utils.js';
 import { validateBulkPricingTiers } from '../../utils/bulkPricing.utils.js';
+import Promotion from '../promotion/promotion.model.js';
 
 function serializeProduct(product) {
   if (!product) {
@@ -14,6 +15,36 @@ function serializeProduct(product) {
 
   const plain = product?.toObject ? product.toObject() : product;
   return transformProductsArray([plain])[0];
+}
+
+async function attachActivePromotions(products) {
+  const rows = Array.isArray(products) ? products : [products];
+  if (!rows.length) return products;
+  const ids = rows.map((item) => item._id);
+  const now = new Date();
+  const promotions = await Promotion.find({
+    isActive: true,
+    productIds: { $in: ids },
+    $or: [{ startAt: null }, { startAt: { $lte: now } }],
+    $and: [{ $or: [{ endAt: null }, { endAt: { $gt: now } }] }, { $or: [{ expiresAt: null }, { expiresAt: { $gt: now } }] }],
+  }).select('name message code discountType value maxDiscount promotionKind discountApplication minimumQuantity productIds status startAt endAt expiresAt').lean();
+  const byProduct = new Map();
+  for (const promotion of promotions) {
+    for (const id of promotion.productIds || []) {
+      const key = String(id);
+      if (!byProduct.has(key)) byProduct.set(key, []);
+      byProduct.get(key).push(promotion);
+    }
+  }
+  return rows.map((item) => ({ ...(item?.toObject ? item.toObject() : item), activePromotions: byProduct.get(String(item._id)) || [] }))
+    .map((item) => ({ ...item, activePromotions: item.activePromotions.filter((promotion) => effectivePromotionStatus(promotion) === 'ACTIVE') }));
+}
+
+function effectivePromotionStatus(promotion, now = new Date()) {
+  if (promotion.status === 'PAUSED' || promotion.status === 'DRAFT' || promotion.isActive === false) return 'PAUSED';
+  if ((promotion.endAt && new Date(promotion.endAt) <= now) || (promotion.expiresAt && new Date(promotion.expiresAt) <= now)) return 'EXPIRED';
+  if (promotion.startAt && new Date(promotion.startAt) > now) return 'SCHEDULED';
+  return 'ACTIVE';
 }
 
 // 🔥 Simple In-Memory Cache
@@ -94,7 +125,7 @@ export const getProducts = async (query) => {
   ]);
 
   // Transform product images to CDN URLs
-  const transformedProducts = transformProductsArray(products);
+  const transformedProducts = transformProductsArray(await attachActivePromotions(products));
 
   // Build pagination metadata
   const pagination = buildPaginationMeta(page, limit, total);
@@ -119,7 +150,8 @@ export const getProductById = async (id) => {
 
   assertCustomerCatalogProduct(product);
 
-  return serializeProduct(product);
+  const [withPromotion] = await attachActivePromotions([product]);
+  return serializeProduct(withPromotion);
 };
 
 export const updateProduct = async (id, data) => {
@@ -153,6 +185,8 @@ export const deleteProduct = async (id) => {
   if (!product) throw new AppError('Product not found', 404);
 
   await repo.deleteProduct(id);
+  // Hard deletion must also remove the product from every promotion target list.
+  await Promotion.updateMany({ productIds: id }, { $pull: { productIds: id } });
 
   productCache.data = null;
 

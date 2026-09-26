@@ -5,7 +5,6 @@ import {
   FiPackage,
   FiFileText,
   FiDollarSign,
-  FiBarChart2,
   FiUser,
   FiSettings,
   FiMenu,
@@ -24,14 +23,19 @@ const DeliveryLayout = () => {
   const location = useLocation();
   const { requestLogout, LogoutConfirmDialog } = useLogoutConfirm();
   const { mobileMenuOpen, toggleMobileMenu, closeMobileMenu } = useMobileSidebar();
-  const { profile: deliveryProfile, notifications: deliveryNotifications } = useDelivery();
+  const {
+    profile: deliveryProfile,
+    notifications: deliveryNotifications,
+    unreadCount,
+    markNotificationRead,
+    markAllNotificationsRead,
+  } = useDelivery();
 
   const menuItems = [
-    { path: '/delivery/dashboard', icon: FiGrid, label: 'Dashboard' },
-    { path: '/delivery/assigned-orders', icon: FiPackage, label: 'Assigned Orders' },
-    { path: '/delivery/history', icon: FiFileText, label: 'Delivery History' },
+    { path: '/delivery/dashboard', icon: FiGrid, label: 'Home' },
+    { path: '/delivery/assigned-orders', icon: FiPackage, label: 'Deliveries' },
     { path: '/delivery/earnings', icon: FiDollarSign, label: 'Earnings' },
-    { path: '/delivery/performance', icon: FiBarChart2, label: 'Performance' },
+    { path: '/delivery/history', icon: FiFileText, label: 'History' },
     { path: '/delivery/profile', icon: FiUser, label: 'Profile' },
     { path: '/delivery/settings', icon: FiSettings, label: 'Settings' },
   ];
@@ -83,7 +87,7 @@ const DeliveryLayout = () => {
                 aria-label="Notifications"
               >
                 <FiBell size={20} className="text-gray-600" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                {unreadCount > 0 ? <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" /> : null}
               </button>
 
               <div className="flex items-center gap-3 p-2 min-h-[44px]" aria-label="Signed in user">
@@ -108,6 +112,8 @@ const DeliveryLayout = () => {
         isOpen={notificationOpen}
         onClose={() => setNotificationOpen(false)}
         notifications={deliveryNotifications}
+        onMarkAsRead={markNotificationRead}
+        onMarkAllAsRead={markAllNotificationsRead}
       />
 
       <LogoutConfirmDialog />

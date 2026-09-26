@@ -27,7 +27,8 @@ export const findById = (id) =>
     })
     .populate('warehouseId')
     .populate('deliveryPartnerId', 'name email mobile')
-    .populate('lastRejectedPartnerId', 'name email mobile');
+    .populate('lastRejectedPartnerId', 'name email mobile')
+    .populate('currentOfferId');
 
 export const findAll = (filter = {}) =>
   Logistics.find(filter)
@@ -39,7 +40,8 @@ export const findAll = (filter = {}) =>
       },
     })
     .populate('warehouseId')
-    .populate('deliveryPartnerId', 'name email mobile');
+    .populate('deliveryPartnerId', 'name email mobile')
+    .populate('currentOfferId');
 
 export const findAllActive = () =>
   Logistics.find({
@@ -61,7 +63,8 @@ export const findAllActive = () =>
     })
     .populate('warehouseId')
     .populate('deliveryPartnerId', 'name email mobile')
-    .populate('lastRejectedPartnerId', 'name email mobile');
+    .populate('lastRejectedPartnerId', 'name email mobile')
+    .populate('currentOfferId');
 
 export const findAllDelivered = () =>
   Logistics.find({ status: { $in: ['DELIVERED', 'COMPLETED'] } })
@@ -73,7 +76,8 @@ export const findAllDelivered = () =>
       },
     })
     .populate('warehouseId')
-    .populate('deliveryPartnerId', 'name email mobile');
+    .populate('deliveryPartnerId', 'name email mobile')
+    .populate('currentOfferId');
 
 export const findByPartner = (partnerId, statuses) =>
   Logistics.find({
@@ -88,7 +92,29 @@ export const findByPartner = (partnerId, statuses) =>
       },
     })
     .populate('warehouseId')
-    .populate('deliveryPartnerId', 'name email mobile');
+    .populate('deliveryPartnerId', 'name email mobile')
+    .populate('currentOfferId');
+
+const historyPopulate = (query) => query
+  .populate({
+    path: 'orderId',
+    populate: {
+      path: 'userId',
+      select: 'name email mobile businessName upiId qrImage',
+    },
+  })
+  .populate('warehouseId')
+  .populate('deliveryPartnerId', 'name email mobile')
+  .populate('lastRejectedPartnerId', 'name email mobile')
+  .populate('currentOfferId');
+
+export const findHistoryPage = async (filter, { skip = 0, limit = 50 } = {}) => {
+  const [items, total] = await Promise.all([
+    historyPopulate(Logistics.find(filter).sort({ updatedAt: -1 }).skip(skip).limit(limit)),
+    Logistics.countDocuments(filter),
+  ]);
+  return { items, total };
+};
 
 export const countByStatus = (filter = {}) =>
   Logistics.aggregate([

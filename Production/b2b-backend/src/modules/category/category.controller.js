@@ -2,6 +2,7 @@ import { asyncHandler } from '../../utils/asyncHandler.js';
 import * as service from './category.service.js';
 import { successResponse } from '../../utils/responseHandler.js';
 import { replaceStoredImage, applyUploadedImage } from '../../utils/imageUpload.utils.js';
+import { logAction } from '../audit/audit.service.js';
 
 function normalizeCategoryBody(body = {}) {
   const data = { ...body };
@@ -26,6 +27,7 @@ export const createCategory = asyncHandler(async (req, res) => {
   delete data.imageUrl;
 
   const category = await service.createCategory(data);
+  await logAction({ userId: req.user?._id, action: 'CATEGORY_CREATED', entity: 'Category', entityId: category?._id, details: 'Category created' }).catch(() => {});
   successResponse(res, category, 'Category created');
 });
 
@@ -51,10 +53,12 @@ export const updateCategory = asyncHandler(async (req, res) => {
   delete data.imageUrl;
 
   const category = await service.updateCategory(req.params.id, data);
+  await logAction({ userId: req.user?._id, action: 'CATEGORY_UPDATED', entity: 'Category', entityId: category?._id, details: 'Category updated' }).catch(() => {});
   successResponse(res, category, 'Category updated');
 });
 
 export const deleteCategory = asyncHandler(async (req, res) => {
   const category = await service.deleteCategory(req.params.id);
+  await logAction({ userId: req.user?._id, action: 'CATEGORY_DELETED', entity: 'Category', entityId: category?._id, details: 'Category deleted' }).catch(() => {});
   successResponse(res, category, 'Category deleted');
 });

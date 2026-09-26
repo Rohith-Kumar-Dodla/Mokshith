@@ -2,8 +2,6 @@ import * as repo from './invoice.repository.js';
 import { generateInvoiceNumber, createInvoicePDF } from './invoice.generator.js';
 import AppError from '../../errors/AppError.js';
 import Order from '../order/order.model.js';
-import User from '../user/user.model.js';
-import Product from '../product/product.model.js';
 
 import fs from 'fs';
 import path from 'path';
@@ -33,43 +31,27 @@ export const generateInvoice = async (orderId, force = false) => {
     console.log(`[InvoiceService] 🔄 File missing for invoice ${invoice.invoiceNumber}, re-generating...`);
   }
 
-  // Calculate GST per item safely
-  let totalBaseAmount = 0;
-  let totalTaxAmount = 0;
-
-  const itemDetails = await Promise.all((order.items || []).map(async (item) => {
-    try {
-      const product = await Product.findById(item.productId);
-      const gstRate = product?.gst || 18;
-      const price = item.price || 0;
-      const quantity = item.quantity || 0;
-      
-      const basePrice = price / (1 + gstRate / 100);
-      const taxPerUnit = price - basePrice;
-      
-      totalBaseAmount += basePrice * quantity;
-      totalTaxAmount += taxPerUnit * quantity;
-
-      return {
-        name: item.name || 'Unknown Product',
-        price: price,
-        quantity: quantity,
-        basePrice,
-        gstRate,
-        taxPerUnit
-      };
-    } catch (err) {
-      console.error(`[InvoiceService] Error processing item:`, err);
-      return {
-        name: item.name || 'Product',
-        price: item.price || 0,
-        quantity: item.quantity || 0,
-        basePrice: (item.price || 0) / 1.18,
-        gstRate: 18,
-        taxPerUnit: (item.price || 0) - ((item.price || 0) / 1.18)
-      };
-    }
-  }));
+  // Invoices are historical documents: use the order snapshot, never current product/user data.
+  const gstRate = 18;
+  const itemDetails = (order.items || []).map((item) => {
+    const price = Number(item.price || 0);
+    const quantity = Number(item.quantity || 0);
+    const basePrice = price / (1 + gstRate / 100);
+    return {
+      name: item.name || 'Product',
+      price,
+      quantity,
+      basePrice,
+      gstRate,
+      taxPerUnit: price - basePrice,
+      finalPrice: Number(item.finalPrice ?? price),
+      discountAmount: Number(item.discountAmount || 0),
+      specialDiscountAmount: Number(item.specialDiscountAmount || 0),
+      bulkDiscountAmount: Number(item.bulkDiscountAmount || 0),
+    };
+  });
+  const totalBaseAmount = Number(order.subtotal ?? itemDetails.reduce((sum, item) => sum + item.basePrice * item.quantity, 0));
+  const totalTaxAmount = Number(order.taxAmount ?? (Number(order.totalAmount || 0) - totalBaseAmount));
 
   if (!invoice) {
     const invoiceNumber = generateInvoiceNumber();
@@ -77,7 +59,7 @@ export const generateInvoice = async (orderId, force = false) => {
       orderId: order._id,
       userId: order.userId?._id || order.userId || null,
       amount: Math.round((totalBaseAmount || 0) * 100) / 100,
-      gst: 18, // average
+      gst: gstRate,
       taxAmount: Math.round((totalTaxAmount || 0) * 100) / 100,
       totalAmount: order.totalAmount || 0,
       invoiceNumber,

@@ -33,6 +33,7 @@ const AdminSupport = () => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+  const [assignees, setAssignees] = useState([]);
 
   const loadTickets = useCallback(async () => {
     setLoading(true);
@@ -55,6 +56,10 @@ const AdminSupport = () => {
   useEffect(() => {
     loadTickets();
   }, [loadTickets]);
+
+  useEffect(() => {
+    supportService.getAssignableAdmins().then(setAssignees).catch(() => setAssignees([]));
+  }, []);
 
   const openTicket = async (ticketId) => {
     try {
@@ -94,11 +99,22 @@ const AdminSupport = () => {
     }
   };
 
+  const handleAssign = async (assigneeId) => {
+    if (!selectedTicket?._id || !assigneeId) return;
+    try {
+      const updated = await supportService.assignTicket(selectedTicket._id, assigneeId);
+      setSelectedTicket(updated);
+      await loadTickets();
+    } catch (assignError) {
+      setError(assignError?.response?.data?.message || assignError.message || 'Failed to assign ticket');
+    }
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <div>
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Support</h1>
-        <p className="text-sm text-gray-500 mt-1">Manage vendor support tickets</p>
+        <p className="text-sm text-gray-500 mt-1">Manage customer support tickets, assignment and resolution</p>
       </div>
 
       {error ? (
@@ -191,6 +207,13 @@ const AdminSupport = () => {
                     <option key={option.value} value={option.value}>{option.label}</option>
                   ))}
                 </select>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-lg bg-gray-50 p-3 text-sm">
+                <p><span className="font-medium">Category:</span> {selectedTicket.category || 'GENERAL'}</p>
+                <p><span className="font-medium">Priority:</span> {selectedTicket.priority || 'MEDIUM'}</p>
+                <p><span className="font-medium">Assigned to:</span> {selectedTicket.assignedAdmin?.name || 'Unassigned'}</p>
+                <label className="flex items-center gap-2"><span className="font-medium">Assign:</span><select aria-label="Assign support ticket" value={selectedTicket.assignedAdmin?._id || ''} onChange={(e) => handleAssign(e.target.value)} className="border border-gray-300 rounded px-2 py-1"><option value="">Unassigned</option>{assignees.map((assignee) => <option key={assignee._id} value={assignee._id}>{assignee.name} ({assignee.role})</option>)}</select></label>
               </div>
 
               <div className="space-y-3 max-h-96 overflow-y-auto border border-gray-100 rounded-lg p-3 bg-gray-50">

@@ -18,7 +18,10 @@ export function mapBackendCartItem(item) {
   const product = mapBackendProduct(rawProduct);
   const quantity = Number(item.quantity ?? 1);
   const unitPrice = Number(product.price ?? 0);
-  const pricing = resolveEffectiveUnitPrice({ apiPricing: null, product, quantity });
+  const apiPricing = item.pricing
+    ? { original: item.pricing.originalUnitPrice, final: item.pricing.finalUnitPrice, discount: item.pricing.discountAmount }
+    : null;
+  const pricing = resolveEffectiveUnitPrice({ apiPricing, product, quantity });
   const bulkPrice = pricing.unitPrice;
   const imageUrl = product.imageUrl || product.image || '';
   const moq = Number(rawProduct.minOrderQty ?? rawProduct.moq ?? product.minimumOrderQuantity ?? 1);
@@ -34,7 +37,12 @@ export function mapBackendCartItem(item) {
     quantity,
     unitPrice,
     bulkPrice,
-    subtotal: bulkPrice * quantity,
+    subtotal: Number(item.pricing?.itemSubtotal ?? bulkPrice * quantity),
+    discountAmount: Number(item.pricing?.discountAmount ?? pricing.discount * quantity),
+    specialDiscountAmount: Number(item.pricing?.specialDiscountAmount ?? 0),
+    bulkDiscountAmount: Number(item.pricing?.bulkDiscountAmount ?? 0),
+    pricingSource: item.pricing?.pricingSource || pricing.source,
+    promotionName: item.pricing?.promotionName || null,
     minimumOrderQuantity: moq,
     availableStock,
     status: deriveProductStatus(availableStock, moq),
@@ -56,10 +64,12 @@ export function mapBackendCart(cart) {
     .map(mapBackendCartItem)
     .filter(Boolean);
 
-  return {
+  const mapped = {
     id: cart._id || cart.id || null,
     items,
     createdAt: cart.createdAt ?? null,
     updatedAt: cart.updatedAt ?? null,
   };
+  if (cart.pricing) mapped.pricing = cart.pricing;
+  return mapped;
 }

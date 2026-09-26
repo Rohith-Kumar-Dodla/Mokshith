@@ -103,7 +103,7 @@ describe('Super Admin supplier category management - Phase 4.2', () => {
       request.post(`/api/v1/super-admin/suppliers/${supplierId}/categories`)
     )
       .send({ categoryId: categoryA._id.toString() })
-      .expect(400);
+      .expect(409);
 
     expect(duplicate.body.message).toMatch(/already associated/i);
   });

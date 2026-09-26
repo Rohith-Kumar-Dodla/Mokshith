@@ -1,6 +1,49 @@
 import api from './api';
 
 const deliveryService = {
+  getMyOffers: async () => {
+    const response = await api.get('/logistics/my-offers');
+    return response.data;
+  },
+
+  getOfferHistory: async (logisticsId) => {
+    const response = await api.get(`/logistics/${logisticsId}/offers`);
+    return response.data;
+  },
+
+  getDeliveryDistance: async (logisticsId) => {
+    const response = await api.post(`/logistics/${logisticsId}/distance`);
+    return response.data;
+  },
+
+  createDeliveryOffer: async (logisticsId, payload, requestId) => {
+    const response = await api.post(`/logistics/${logisticsId}/offers`, payload, {
+      headers: requestId ? { 'Idempotency-Key': requestId } : undefined,
+    });
+    return response.data;
+  },
+
+  acceptDeliveryOffer: async (logisticsId, offerId, requestId) => {
+    const response = await api.post(`/logistics/${logisticsId}/offers/${offerId}/accept`, { requestId }, {
+      headers: requestId ? { 'Idempotency-Key': requestId } : undefined,
+    });
+    return response.data;
+  },
+
+  rejectDeliveryOffer: async (logisticsId, offerId, payload, requestId) => {
+    const response = await api.post(`/logistics/${logisticsId}/offers/${offerId}/reject`, { ...payload, requestId }, {
+      headers: requestId ? { 'Idempotency-Key': requestId } : undefined,
+    });
+    return response.data;
+  },
+
+  increaseDeliveryOfferAmount: async (logisticsId, offerId, payload, requestId) => {
+    const response = await api.post(`/logistics/${logisticsId}/offers/${offerId}/increase-amount`, payload, {
+      headers: requestId ? { 'Idempotency-Key': requestId } : undefined,
+    });
+    return response.data;
+  },
+
   getMyAssignments: async () => {
     const response = await api.get('/logistics/my-assignments');
     return response.data;
@@ -11,8 +54,8 @@ const deliveryService = {
     return response.data;
   },
 
-  getDeliveryHistory: async () => {
-    const response = await api.get('/logistics/history');
+  getDeliveryHistory: async (params) => {
+    const response = await api.get('/logistics/history', params ? { params } : undefined);
     return response.data;
   },
 
@@ -88,6 +131,11 @@ const deliveryService = {
 
   markNotificationRead: async (notificationId) => {
     const response = await api.patch(`/notifications/${notificationId}/read`);
+    return response.data;
+  },
+
+  markAllNotificationsRead: async () => {
+    const response = await api.patch('/notifications/read-all');
     return response.data;
   },
 

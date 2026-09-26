@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { getUserFacingErrorMessage } from '../../utils/apiResponse';
-import { useSearchParams } from 'react-router-dom';
-import { FiEye, FiPackage, FiCheckCircle, FiDollarSign, FiCheck, FiRefreshCw } from 'react-icons/fi';
+import { Link, useSearchParams } from 'react-router-dom';
+import { FiEye, FiPackage, FiCheckCircle, FiDollarSign, FiCheck, FiRefreshCw, FiTruck, FiFilter } from 'react-icons/fi';
 import Card from './Card';
 import StatusBadge from './StatusBadge';
 import SearchBar from './SearchBar';
@@ -16,10 +16,13 @@ import {
 import useDebouncedValue from '../../hooks/useDebouncedValue';
 import useOrderStatusSync from '../../hooks/useOrderStatusSync';
 import { getOrderStatusLabel } from '../../utils/orderStatusSync';
+import ProcurementPanel from './ProcurementPanel';
+import SupplierAllocationSummary from './SupplierAllocationSummary';
 
 const ADMIN_STATUS_OPTIONS = [
   { value: 'all', label: 'All Status' },
   { value: 'PENDING', label: 'Pending' },
+  { value: 'PENDING_PAYMENT', label: 'Pending Payment' },
   { value: 'CONFIRMED', label: 'Confirmed' },
   { value: 'PROCESSING', label: 'Processing' },
   { value: 'PACKED', label: 'Packed' },
@@ -31,6 +34,13 @@ const ADMIN_STATUS_OPTIONS = [
   { value: 'CANCELLED', label: 'Cancelled' },
   { value: 'RETURNED', label: 'Returned' },
   { value: 'REFUNDED', label: 'Refunded' },
+];
+
+const DELIVERY_FILTER_OPTIONS = [
+  { value: 'all', label: 'All Delivery' },
+  { value: 'unassigned', label: 'Unassigned' },
+  { value: 'active', label: 'Active Delivery' },
+  { value: 'attention', label: 'Delivery Attention' },
 ];
 
 const PAYMENT_METHOD_OPTIONS = [
@@ -91,7 +101,7 @@ function PaymentMethodBadge({ method, emphasize = false }) {
   );
 }
 
-export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
+export default function AdminOrderManagement({ PageHeader, title, subtitle, deliveryAssignmentPath = '/admin/delivery-assignment', useLegacyProcurementPanel = true }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialKpi = searchParams.get('kpi');
   const [kpiFilter, setKpiFilter] = useState(
@@ -107,14 +117,13 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [paymentMethodFilter, setPaymentMethodFilter] = useState('all');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
+  const [deliveryFilter, setDeliveryFilter] = useState(searchParams.get('deliveryFilter') || 'all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [page, setPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [statusUpdating, setStatusUpdating] = useState(false);
-  const [confirmStatus, setConfirmStatus] = useState(null);
-  const [statusNote, setStatusNote] = useState('');
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const hasLoadedOnceRef = useRef(false);
 
   const buildListParams = useCallback((overrides = {}) => {
@@ -126,6 +135,7 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
       startDate: startDate || undefined,
       endDate: endDate || undefined,
       paymentStatus: paymentStatusFilter !== 'all' ? paymentStatusFilter : undefined,
+      deliveryFilter: deliveryFilter !== 'all' ? deliveryFilter : undefined,
     };
 
     if (kpiFilter === KPI_KEYS.completed) {
@@ -145,6 +155,7 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
     startDate,
     endDate,
     paymentStatusFilter,
+    deliveryFilter,
     paymentMethodFilter,
     kpiFilter,
   ]);
@@ -188,7 +199,18 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, selectedStatus, startDate, endDate, paymentMethodFilter, paymentStatusFilter, kpiFilter]);
+  }, [debouncedSearch, selectedStatus, startDate, endDate, paymentMethodFilter, paymentStatusFilter, deliveryFilter, kpiFilter]);
+
+  useEffect(() => {
+    const nextStatus = searchParams.get('status');
+    const nextMethod = searchParams.get('paymentMethod');
+    const nextPaymentStatus = searchParams.get('paymentStatus');
+    const nextDelivery = searchParams.get('deliveryFilter');
+    if (nextStatus) setSelectedStatus(nextStatus.toUpperCase());
+    if (nextMethod) setPaymentMethodFilter(nextMethod.toUpperCase());
+    if (nextPaymentStatus) setPaymentStatusFilter(nextPaymentStatus.toUpperCase());
+    if (nextDelivery) setDeliveryFilter(nextDelivery.toLowerCase());
+  }, [searchParams]);
 
   useEffect(() => {
     loadOrders({ silent: hasLoadedOnceRef.current });
@@ -248,35 +270,11 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
 
   const emphasizePaymentMethod = kpiFilter === KPI_KEYS.completed;
 
-  const handleStatusUpdate = async () => {
-    if (!selectedOrder || !confirmStatus) return;
-    setStatusUpdating(true);
-    try {
-      await orderService.updateOrderStatus(selectedOrder.rawId || selectedOrder.id, {
-        status: confirmStatus,
-        note: statusNote,
-      });
-      setConfirmStatus(null);
-      setStatusNote('');
-      await loadOrders({ silent: true });
-      await loadKpiCounts();
-    } catch (updateError) {
-      setError(getUserFacingErrorMessage(updateError, 'Failed to update status'));
-    } finally {
-      setStatusUpdating(false);
-    }
-  };
-
   const handleViewOrder = (order) => {
     setSelectedOrder({ ...order, rawId: order.raw?._id || order.id });
     setIsViewModalOpen(true);
-    setConfirmStatus(null);
-    setStatusNote('');
   };
-
-  const nextStatuses = selectedOrder?.backendStatus
-    ? NEXT_STATUS_MAP[selectedOrder.backendStatus] || []
-    : [];
+  const activeFilterCount = [selectedStatus !== 'all', paymentMethodFilter !== 'all', paymentStatusFilter !== 'all', deliveryFilter !== 'all', Boolean(startDate), Boolean(endDate)].filter(Boolean).length;
 
   if (loading && orders.length === 0) {
     return (
@@ -324,15 +322,22 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
       <Card className="p-4 sm:p-6">
         <div className="flex flex-col gap-3 sm:gap-4">
           <SearchBar placeholder="Search by order ID or vendor..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} onClear={() => setSearchInput('')} />
-          <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
-            <FilterDropdown label="Status" options={ADMIN_STATUS_OPTIONS} selected={selectedStatus} onSelect={setSelectedStatus} />
-            {kpiFilter !== KPI_KEYS.cod && (
-              <FilterDropdown label="Payment Method" options={PAYMENT_METHOD_OPTIONS} selected={paymentMethodFilter} onSelect={setPaymentMethodFilter} />
-            )}
-            <FilterDropdown label="Payment Status" options={PAYMENT_STATUS_OPTIONS} selected={paymentStatusFilter} onSelect={setPaymentStatusFilter} />
-            <div className="hidden md:flex items-center gap-2 sm:gap-3">
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-3 py-2 border rounded-lg text-sm min-h-[44px]" aria-label="Start date" />
-              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-3 py-2 border rounded-lg text-sm min-h-[44px]" aria-label="End date" />
+          <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3 items-stretch sm:items-center">
+            <div className="relative">
+              <button type="button" onClick={() => setFiltersOpen((open) => !open)} className="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] border rounded-lg text-sm hover:bg-gray-50">
+                <FiFilter size={16} /> Filters{activeFilterCount ? ` (${activeFilterCount})` : ''}
+              </button>
+              {filtersOpen && <div className="absolute left-0 top-full mt-2 z-50 w-full sm:w-[22rem] rounded-lg border bg-white p-4 shadow-xl space-y-3">
+                <FilterDropdown label="Status" options={ADMIN_STATUS_OPTIONS} selected={selectedStatus} onSelect={setSelectedStatus} />
+                {kpiFilter !== KPI_KEYS.cod && <FilterDropdown label="Payment Method" options={PAYMENT_METHOD_OPTIONS} selected={paymentMethodFilter} onSelect={setPaymentMethodFilter} />}
+                <FilterDropdown label="Payment Status" options={PAYMENT_STATUS_OPTIONS} selected={paymentStatusFilter} onSelect={setPaymentStatusFilter} />
+                <FilterDropdown label="Delivery" options={DELIVERY_FILTER_OPTIONS} selected={deliveryFilter} onSelect={setDeliveryFilter} />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-3 py-2 border rounded-lg text-sm min-h-[44px]" aria-label="Start date" />
+                  <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-3 py-2 border rounded-lg text-sm min-h-[44px]" aria-label="End date" />
+                </div>
+                <button type="button" onClick={() => { setSelectedStatus('all'); setPaymentMethodFilter('all'); setPaymentStatusFilter('all'); setDeliveryFilter('all'); setStartDate(''); setEndDate(''); setFiltersOpen(false); }} className="text-sm text-blue-700 font-medium">Clear filters</button>
+              </div>}
             </div>
             <button
               type="button"
@@ -350,10 +355,10 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
 
       <Card className="overflow-hidden p-0">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px]">
+          <table className="hidden md:table w-full min-w-[980px]">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
-                {['Order ID', 'Vendor', 'Amount', 'Order Status', 'Payment Method', 'Payment Status', 'Date', 'Actions'].map((h) => (
+                {['Order ID', 'Customer', 'Amount', 'Order Status', 'Payment Method', 'Payment Status', 'Delivery', 'Partner', 'Date', 'Actions'].map((h) => (
                   <th key={h} className="text-left px-3 sm:px-6 py-3 text-xs sm:text-sm font-semibold text-gray-700 whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -376,6 +381,8 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
                     <PaymentMethodBadge method={order.paymentMethod} emphasize={emphasizePaymentMethod} />
                   </td>
                   <td className="px-3 sm:px-6 py-3 text-xs sm:text-sm capitalize">{order.paymentStatus}</td>
+                  <td className="px-3 sm:px-6 py-3"><StatusBadge status={String(order.raw?.logisticsStatus || 'unassigned').toLowerCase()} /></td>
+                  <td className="px-3 sm:px-6 py-3 text-xs sm:text-sm">{order.deliveryPartner || 'Not Assigned'}</td>
                   <td className="px-3 sm:px-6 py-3 text-xs sm:text-sm">{order.date}</td>
                   <td className="px-3 sm:px-6 py-3">
                     <button type="button" onClick={() => handleViewOrder(order)} className="inline-flex items-center gap-1 px-3 py-2 min-h-[44px] bg-blue-600 text-white rounded-lg text-xs sm:text-sm">
@@ -386,6 +393,15 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
               ))}
             </tbody>
           </table>
+        </div>
+        <div className="md:hidden divide-y">
+          {orders.map((order) => (
+            <div key={order.id} className="p-4 space-y-3">
+              <div className="flex items-start justify-between gap-3"><div><p className="font-semibold text-gray-900">#{String(order.id).slice(-8).toUpperCase()}</p><p className="text-sm text-gray-600">{order.vendor}</p></div><StatusBadge status={order.status} /></div>
+              <div className="grid grid-cols-2 gap-2 text-xs text-gray-600"><span>Amount <strong className="block text-sm text-gray-900">₹{order.amount.toLocaleString('en-IN')}</strong></span><span>Payment <strong className="block text-sm text-gray-900">{formatPaymentMethodLabel(order.paymentMethod)} · {order.paymentStatus}</strong></span><span>Delivery <strong className="block text-sm text-gray-900">{getOrderStatusLabel(order.raw?.logisticsStatus || 'UNASSIGNED')}</strong></span><span>Partner <strong className="block text-sm text-gray-900">{order.deliveryPartner || 'Not Assigned'}</strong></span></div>
+              <div className="flex flex-wrap gap-2"><button type="button" onClick={() => handleViewOrder(order)} className="inline-flex items-center gap-1 px-3 py-2 min-h-[44px] bg-blue-600 text-white rounded-lg text-xs"><FiEye size={14} /> Manage</button>{!order.raw?.shipmentId || !order.raw?.logisticsStatus ? <Link to={`${deliveryAssignmentPath}?orderId=${encodeURIComponent(order.raw?._id || order.id)}`} className="inline-flex items-center gap-1 px-3 py-2 min-h-[44px] border border-blue-200 text-blue-700 rounded-lg text-xs"><FiTruck size={14} /> Assign Delivery</Link> : null}</div>
+            </div>
+          ))}
         </div>
         {orders.length === 0 && <div className="text-center py-8 text-sm text-gray-500">No orders found</div>}
         {pagination && (
@@ -414,6 +430,15 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
               </div>
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <div className="rounded-lg border p-3"><h4 className="font-semibold text-gray-900 mb-1">Customer</h4><p>{selectedOrder.raw?.userId?.name || selectedOrder.vendor}</p><p className="text-gray-600">{selectedOrder.raw?.userId?.mobile || selectedOrder.raw?.userId?.email || 'Contact unavailable'}</p><p className="text-gray-600 mt-1">{selectedOrder.address}</p></div>
+              <div className="rounded-lg border p-3"><h4 className="font-semibold text-gray-900 mb-1">Delivery</h4><p>Status: {getOrderStatusLabel(selectedOrder.raw?.logisticsStatus || 'UNASSIGNED')}</p><p>Partner: {selectedOrder.deliveryPartner || 'Not Assigned'}</p><p>Distance: {selectedOrder.raw?.deliveryDistance || 'Not available'}</p><Link to={`${deliveryAssignmentPath}?orderId=${encodeURIComponent(selectedOrder.raw?._id || selectedOrder.id)}`} className="inline-flex items-center gap-1 mt-2 text-blue-700 font-semibold"><FiTruck size={14} /> {selectedOrder.raw?.deliveryPartner ? 'Review assignment' : 'Assign Delivery'}</Link></div>
+            </div>
+
+            {useLegacyProcurementPanel ? <ProcurementPanel orderId={selectedOrder.raw?._id || selectedOrder.id} /> : <SupplierAllocationSummary orderId={selectedOrder.raw?._id || selectedOrder.id} />}
+
+            <div className="rounded-lg border p-3"><h4 className="font-semibold text-gray-900 mb-2">Order items</h4><div className="space-y-2">{(selectedOrder.raw?.items || []).map((item, index) => <div key={`${item.productId?._id || item.productId || index}`} className="flex justify-between gap-3 text-sm"><span>{item.name || item.productId?.name || 'Product'} × {item.quantity}</span><span>₹{Number(item.finalPrice ?? item.price ?? 0).toLocaleString('en-IN')}</span></div>)}</div><div className="flex justify-between border-t mt-3 pt-3 font-semibold"><span>Total</span><span>₹{Number(selectedOrder.amount || 0).toLocaleString('en-IN')}</span></div></div>
+
             {(selectedOrder.raw?.statusHistory || []).length > 0 && (
               <div>
                 <h4 className="text-sm font-semibold mb-2">Status History</h4>
@@ -431,40 +456,6 @@ export default function AdminOrderManagement({ PageHeader, title, subtitle }) {
               </div>
             )}
 
-            {nextStatuses.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold mb-2">Update Status</h4>
-                <div className="flex flex-wrap gap-2">
-                  {nextStatuses.map((status) => (
-                    <button
-                      key={status}
-                      type="button"
-                      onClick={() => setConfirmStatus(status)}
-                      className={`px-3 py-2 min-h-[44px] rounded-lg text-xs sm:text-sm border ${confirmStatus === status ? 'bg-blue-600 text-white border-blue-600' : 'hover:bg-gray-50'}`}
-                    >
-                      {status.replace(/_/g, ' ')}
-                    </button>
-                  ))}
-                </div>
-                {confirmStatus && (
-                  <div className="mt-3 space-y-2">
-                    <textarea
-                      value={statusNote}
-                      onChange={(e) => setStatusNote(e.target.value)}
-                      placeholder="Optional note for audit log"
-                      rows={2}
-                      className="w-full px-3 py-2 border rounded-lg text-sm"
-                    />
-                    <div className="flex flex-wrap gap-2">
-                      <button type="button" onClick={handleStatusUpdate} disabled={statusUpdating} className="px-4 py-2.5 min-h-[44px] bg-blue-600 text-white rounded-lg text-sm">
-                        {statusUpdating ? 'Updating...' : `Confirm ${confirmStatus.replace(/_/g, ' ')}`}
-                      </button>
-                      <button type="button" onClick={() => setConfirmStatus(null)} className="px-4 py-2.5 border rounded-lg text-sm">Cancel</button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         )}
       </Modal>

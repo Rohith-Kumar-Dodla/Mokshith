@@ -106,7 +106,7 @@ describe('AdminOrderManagement KPI behavior', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Online Vendor')).toBeInTheDocument();
+      expect(screen.getAllByText('Online Vendor').length).toBeGreaterThan(0);
     });
 
     fireEvent.click(screen.getByRole('button', { name: /Show payment-completed orders/i }));

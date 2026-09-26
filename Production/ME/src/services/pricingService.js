@@ -1,8 +1,8 @@
 import api from './api';
 
 const pricingService = {
-  calculatePrice: async ({ price, quantity }) => {
-    const response = await api.post('/pricing', { price, quantity });
+  calculatePrice: async ({ price, quantity, productId }) => {
+    const response = await api.post('/pricing', { price, quantity, productId });
     return response.data;
   },
 };
