@@ -256,9 +256,9 @@ const Products = () => {
     <div className="space-y-4 sm:space-y-6 pb-24 sm:pb-6">
       {toast && (
         <div
-          role="status"
-          aria-live="polite"
-          className={`rounded-lg border p-3 sm:p-4 ${
+          role={toast.type === 'success' ? 'status' : 'alert'}
+          aria-live={toast.type === 'success' ? 'polite' : 'assertive'}
+          className={`fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-lg border p-3 shadow-lg sm:bottom-auto sm:left-auto sm:right-4 sm:top-4 sm:w-auto sm:min-w-72 sm:translate-x-0 ${
             toast.type === 'success'
               ? 'bg-green-50 border-green-200 text-green-700'
               : 'bg-red-50 border-red-200 text-red-700'

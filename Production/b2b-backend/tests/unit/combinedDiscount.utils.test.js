@@ -19,4 +19,18 @@ describe('combined special and bulk promotions', () => {
     expect(result.discountAmount).toBe(special + bulk);
     expect(result.itemTotal).toBe(100 * quantity - total);
   });
+
+  it.each([
+    [9, 0],
+    [10, 750],
+  ])('classifies tier savings as bulk discount at quantity %i', (quantity, expectedBulkDiscount) => {
+    const result = calculateLinePricing(
+      { price: 2150, bulkPricing: [{ minQuantity: 10, price: 2075 }] },
+      quantity
+    );
+
+    expect(result.specialDiscountAmount).toBe(0);
+    expect(result.bulkDiscountAmount).toBe(expectedBulkDiscount);
+    expect(result.discountAmount).toBe(expectedBulkDiscount);
+  });
 });
