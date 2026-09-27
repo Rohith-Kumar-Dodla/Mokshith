@@ -7,6 +7,15 @@ import { logger } from '../../config/logger.js';
 
 const DEFAULT_REORDER_LEVEL = 10;
 
+const syncInventoryTotalToProduct = async (productId, { session } = {}) => {
+  let query = mongoose.model('Inventory').find({ productId }).select('stock');
+  if (session) query = query.session(session);
+  const rows = await query.lean();
+  const stock = rows.reduce((sum, row) => sum + Number(row.stock || 0), 0);
+  await Product.findByIdAndUpdate(productId, { $set: { stock } }, { session });
+  return stock;
+};
+
 export async function getOrCreateDefaultWarehouse() {
   let warehouse = await Warehouse.findOne({ isActive: true, isDeliveryOrigin: true }).sort({ createdAt: 1 });
   if (!warehouse) warehouse = await Warehouse.findOne({ isActive: true }).sort({ createdAt: 1 });
@@ -143,17 +152,21 @@ export const addStock = async ({ productId, warehouseId, stock }) => {
   let inventory = await repo.findInventory(productId, warehouseId);
 
   if (!inventory) {
-    return repo.createInventory({
+    const created = await repo.createInventory({
       productId,
       warehouseId,
       stock,
       reservedStock: 0,
       reorderLevel: DEFAULT_REORDER_LEVEL,
     });
+    await syncInventoryTotalToProduct(productId);
+    return created;
   }
 
   inventory.stock += stock;
-  return inventory.save();
+  const updated = await inventory.save();
+  await syncInventoryTotalToProduct(productId);
+  return updated;
 };
 
 export const getLowStockItems = async () => {
@@ -181,13 +194,15 @@ export const updateStock = async ({ productId, warehouseId, stock, type = 'SET' 
 
   if (!inventory) {
     if (type === 'SET') {
-      return repo.createInventory({
+      const created = await repo.createInventory({
         productId,
         warehouseId,
         stock,
         reservedStock: 0,
         reorderLevel: DEFAULT_REORDER_LEVEL,
       });
+      await syncInventoryTotalToProduct(productId);
+      return created;
     }
     throw new AppError('Inventory record not found', 404);
   }
@@ -201,7 +216,14 @@ export const updateStock = async ({ productId, warehouseId, stock, type = 'SET' 
   if (type === 'SUBTRACT') filter.stock = { $gte: stock };
   if (type === 'SET') filter.stock = { $gte: inventory.reservedStock || 0 };
   const updated = await repo.updateOneAtomic(filter, update);
-  if (!updated) throw new AppError('Inventory changed concurrently; please retry', 409);
+  if (!updated) {
+    if (type === 'SUBTRACT') {
+      const latest = await repo.findInventory(productId, warehouseId);
+      if (!latest || latest.stock < stock) throw new AppError('Insufficient stock', 400);
+    }
+    throw new AppError('Inventory changed concurrently; please retry', 409);
+  }
+  await syncInventoryTotalToProduct(productId);
   return updated;
 };
 
@@ -257,7 +279,6 @@ export const reduceStock = async (productId, quantity, options = {}) => {
 
   // Retry logic for optimistic locking conflicts
   let attempt = 0;
-  let lastError = null;
 
   while (attempt < maxRetries) {
     checkTimeout(); // 🔒 Check timeout before each attempt
@@ -313,6 +334,7 @@ export const reduceStock = async (productId, quantity, options = {}) => {
         throw new AppError(`Failed to deduct full quantity for product: ${productId}`, 500);
       }
 
+      await syncInventoryTotalToProduct(productId, { session });
       logger.info(`✅ Stock deducted for product ${productId}: ${quantity} units`, { updates });
       return true;
 
@@ -322,7 +344,6 @@ export const reduceStock = async (productId, quantity, options = {}) => {
       if (error.message === 'INVENTORY_CONFLICT' && attempt < maxRetries - 1) {
         // Optimistic locking conflict - retry with exponential backoff
         attempt++;
-        lastError = error;
         
         // 🔒 PHASE 2 FIX: Enhanced backoff with jitter for backpressure protection
         const baseDelay = 100 * Math.pow(2, attempt); // Exponential: 200ms, 400ms, 800ms
@@ -398,6 +419,7 @@ export const restoreStock = async (productId, quantity, options = {}) => {
     throw new AppError('Failed to restore stock', 500);
   }
 
+  await syncInventoryTotalToProduct(productId, { session });
   console.log(`Restored ${quantity} units of product ${productId}`);
   return true;
 };

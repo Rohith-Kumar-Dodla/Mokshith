@@ -51,7 +51,8 @@ function effectivePromotionStatus(promotion, now = new Date()) {
 const productCache = {
   data: null,
   lastFetched: null,
-  ttl: 300000 // 5 minutes
+  // Stock is order-sensitive; default catalog reads must not expose stale availability.
+  ttl: 0
 };
 
 // 🔥 EVENTS

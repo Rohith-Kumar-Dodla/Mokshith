@@ -51,6 +51,12 @@ const ProductDetails = () => {
     }
   }, [product?.id, product?.minimumOrderQuantity]);
 
+  useEffect(() => {
+    if (!cartMessage) return undefined;
+    const timeoutId = window.setTimeout(() => setCartMessage(null), 4000);
+    return () => window.clearTimeout(timeoutId);
+  }, [cartMessage]);
+
   if (loading) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
@@ -310,7 +316,9 @@ const ProductDetails = () => {
 
             {cartMessage && (
               <div
-                className={`mb-3 sm:mb-4 rounded-lg border p-3 ${
+                role={cartMessage.type === 'success' ? 'status' : 'alert'}
+                aria-live={cartMessage.type === 'success' ? 'polite' : 'assertive'}
+                className={`fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-lg border p-3 shadow-lg sm:bottom-auto sm:left-auto sm:right-4 sm:top-4 sm:w-auto sm:min-w-72 sm:translate-x-0 ${
                   cartMessage.type === 'success'
                     ? 'bg-green-50 border-green-200 text-green-700'
                     : 'bg-red-50 border-red-200 text-red-700'

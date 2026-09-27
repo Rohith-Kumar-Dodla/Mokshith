@@ -50,7 +50,7 @@ const NotificationDrawer = ({ isOpen, onClose, notifications = [] }) => {
 
       {/* Drawer */}
       <div
-        className={`fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 flex h-full w-full max-w-md flex-col overflow-hidden bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -76,7 +76,7 @@ const NotificationDrawer = ({ isOpen, onClose, notifications = [] }) => {
         </div>
 
         {/* Notifications List */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y">
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-500">
               <FiBell className="w-12 h-12 mb-3" />

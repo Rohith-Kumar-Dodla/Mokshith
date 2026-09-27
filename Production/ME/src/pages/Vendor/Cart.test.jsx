@@ -81,6 +81,8 @@ describe('Cart page', () => {
       cartItems: [mockCartItem],
       subtotal: 2700,
       discount: 300,
+      specialDiscount: 0,
+      bulkDiscount: 300,
       tax: 486,
       grandTotal: 3186,
       removeFromCart: vi.fn(),
@@ -93,7 +95,8 @@ describe('Cart page', () => {
     expect(screen.getByText('Order Summary')).toBeInTheDocument();
     expect(screen.getAllByText('₹2700.00').length).toBeGreaterThan(0);
     expect(screen.getByText('Grand Total').closest('div')?.textContent).toContain('₹3186.00');
-    expect(screen.getByText('Quantity changes not yet supported')).toBeInTheDocument();
+    expect(screen.getByText('Bulk Discount').closest('div')?.textContent).toContain('-₹300.00');
+    expect(screen.getByRole('button', { name: /Decrease Basmati Rice quantity/i })).toBeInTheDocument();
   });
 
   it('calls removeFromCart when remove button is clicked', async () => {

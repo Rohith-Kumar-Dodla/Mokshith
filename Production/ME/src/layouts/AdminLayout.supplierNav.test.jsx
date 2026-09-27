@@ -38,5 +38,7 @@ describe('Admin layout supplier nav isolation', () => {
     expect(screen.queryByRole('link', { name: /^Suppliers$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Compare Suppliers/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^Procurement$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^Notifications$/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Notifications$/i })).toBeInTheDocument();
   });
 });

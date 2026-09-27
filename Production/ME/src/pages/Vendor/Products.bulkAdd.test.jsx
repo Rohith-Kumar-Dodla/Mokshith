@@ -173,6 +173,10 @@ describe('Vendor Products bulk add to cart', () => {
     expect(addToCart).toHaveBeenCalledWith('p1', 5);
     expect(addToCart).toHaveBeenCalledWith('p2', 1);
     expect(screen.getByText(/2 products added to your cart/i)).toBeInTheDocument();
+    const toast = screen.getByRole('status');
+    expect(toast).toHaveClass('fixed');
+    expect(toast).toHaveClass('z-50');
+    expect(screen.getAllByText(/2 products added to your cart/i)).toHaveLength(1);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Add Selected to Cart/i })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /View Cart/i })).toBeInTheDocument();
@@ -195,8 +199,9 @@ describe('Vendor Products bulk add to cart', () => {
     });
     expect(screen.getByText(/1 product could not be added/i)).toBeInTheDocument();
     expect(screen.queryByText(/2 products added to your cart/i)).not.toBeInTheDocument();
-    expect(screen.getByRole('alert')).toHaveTextContent(/Flour 10kg/);
-    expect(screen.getByRole('alert')).toHaveTextContent(/Insufficient stock/i);
+    const failures = screen.getByText('Some products could not be added').closest('[role="alert"]');
+    expect(failures).toHaveTextContent(/Flour 10kg/);
+    expect(failures).toHaveTextContent(/Insufficient stock/i);
   });
 
   it('does not send duplicate requests when Add to Cart is clicked twice', async () => {

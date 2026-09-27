@@ -44,7 +44,6 @@ const AdminLayout = () => {
     { path: '/admin/supplier-allocation', icon: FiShare2, label: 'Supplier Allocation' },
     { path: '/admin/delivery-assignment', icon: FiTruck, label: 'Delivery Partners' },
     { path: '/admin/support', icon: FiLifeBuoy, label: 'Support' },
-    { path: '/admin/notifications', icon: FiBell, label: 'Notifications' },
     { path: '/admin/settings', icon: FiSettings, label: 'Settings' },
     { path: '/admin/profile', icon: FiUser, label: 'Profile' },
   ];
