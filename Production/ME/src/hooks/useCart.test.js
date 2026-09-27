@@ -168,4 +168,40 @@ describe('useCart', () => {
     expect(result.current.tax).toBeCloseTo(576);
     expect(result.current.grandTotal).toBeCloseTo(3776);
   });
+
+  it('uses the authoritative discount breakdown returned with cart pricing', async () => {
+    cartService.getCart.mockResolvedValue(apiCart({
+      _id: 'cart-1',
+      items: [{
+        ...backendCartItem,
+        quantity: 10,
+        pricing: {
+          originalUnitPrice: 2150,
+          finalUnitPrice: 2075,
+          discountAmount: 750,
+          specialDiscountAmount: 0,
+          bulkDiscountAmount: 750,
+          itemSubtotal: 20750,
+        },
+      }],
+      pricing: {
+        subtotal: 21500,
+        discount: 750,
+        specialDiscountAmount: 0,
+        bulkDiscountAmount: 750,
+        discountedSubtotal: 20750,
+        tax: 3735,
+        grandTotal: 24485,
+      },
+    }));
+
+    const { result } = renderHook(() => useCart());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.subtotal).toBe(20750);
+    expect(result.current.bulkDiscount).toBe(750);
+    expect(result.current.specialDiscount).toBe(0);
+    expect(result.current.tax).toBe(3735);
+    expect(result.current.grandTotal).toBe(24485);
+  });
 });

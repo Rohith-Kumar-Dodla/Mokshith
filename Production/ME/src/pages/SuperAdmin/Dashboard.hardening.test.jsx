@@ -80,8 +80,8 @@ describe('Super Admin production hardening', () => {
 
     const entry = await screen.findByRole('link', { name: /Supplier Dashboard/i });
     expect(entry).toHaveAttribute('href', '/supplier-dashboard');
-    expect(entry).toHaveTextContent('Coming Soon');
-    expect(entry).toHaveTextContent('Dedicated supplier operations workspace.');
+    expect(entry).not.toHaveTextContent('Coming Soon');
+    expect(entry).toHaveTextContent('Manage suppliers, categories, products and supplier pricing.');
   });
 
   it('dashboard shows API error state', async () => {

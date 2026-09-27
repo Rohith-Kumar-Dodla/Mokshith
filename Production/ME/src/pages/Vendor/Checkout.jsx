@@ -47,7 +47,7 @@ const releaseOrderClickMutex = () => {
 const Checkout = () => {
   const { user } = useAuth();
   const [selectedPayment, setSelectedPayment] = useState('');
-  const { loading, error, cartItems, subtotal, discount, tax, grandTotal, loadCart } = useCart();
+  const { loading, error, cartItems, subtotal, specialDiscount, bulkDiscount, tax, grandTotal, loadCart } = useCart();
   const { submitting, error: checkoutError, placeOrder, setError: setCheckoutError } = useCheckout({
     onSuccess: async () => {
       await loadCart();
@@ -434,8 +434,12 @@ const Checkout = () => {
                 <span className="font-medium text-gray-900">₹{subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-xs sm:text-sm">
+                <span className="text-gray-600">Special Discount</span>
+                <span className="font-medium text-green-600">-₹{Number(specialDiscount || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-xs sm:text-sm">
                 <span className="text-gray-600">Bulk Discount</span>
-                <span className="font-medium text-green-600">-₹{discount.toFixed(2)}</span>
+                <span className="font-medium text-orange-700">-₹{Number(bulkDiscount || 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-xs sm:text-sm">
                 <span className="text-gray-600">Tax (18%)</span>

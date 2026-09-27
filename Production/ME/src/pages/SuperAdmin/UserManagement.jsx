@@ -486,7 +486,7 @@ const UserManagement = () => {
         {/* Top navigation tabs */}
         <div className="mt-3">
           {/* Desktop & Tablet: grid layout */}
-          <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
             {SECTION_KEYS.map((s) => (
               <button
                 key={s.key}

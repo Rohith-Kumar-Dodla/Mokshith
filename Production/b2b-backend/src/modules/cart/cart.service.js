@@ -44,6 +44,8 @@ async function withAuthoritativePricing(cart) {
   const promotions = await getEligiblePromotions(products.map((product) => product._id));
   let subtotal = 0;
   let discount = 0;
+  let specialDiscountAmount = 0;
+  let bulkDiscountAmount = 0;
   const items = validItems.map((item) => {
     const pricing = applyBestProductPromotion(
       item.productId,
@@ -53,6 +55,8 @@ async function withAuthoritativePricing(cart) {
     );
     subtotal += pricing.basePrice * Number(item.quantity);
     discount += pricing.discountAmount;
+    specialDiscountAmount += Number(pricing.specialDiscountAmount || 0);
+    bulkDiscountAmount += Number(pricing.bulkDiscountAmount || 0);
     return {
       ...item,
       pricing: {
@@ -77,7 +81,16 @@ async function withAuthoritativePricing(cart) {
   return {
     ...plain,
     items,
-    pricing: { subtotal, discount, discountedSubtotal, tax, delivery: 0, grandTotal: discountedSubtotal + tax },
+    pricing: {
+      subtotal,
+      discount,
+      specialDiscountAmount,
+      bulkDiscountAmount,
+      discountedSubtotal,
+      tax,
+      delivery: 0,
+      grandTotal: discountedSubtotal + tax,
+    },
   };
 }
 

@@ -221,6 +221,9 @@ describe('Inventory Module - Integration Tests', () => {
       // Verify in database
       const updated = await Inventory.findOne({ productId: testProduct._id, warehouseId: testWarehouse._id });
       expect(updated.stock).toBe(updateData.stock);
+      const inventoryRows = await Inventory.find({ productId: testProduct._id });
+      const projectedProduct = await Product.findById(testProduct._id);
+      expect(projectedProduct.stock).toBe(inventoryRows.reduce((sum, row) => sum + row.stock, 0));
     });
 
     it('should reject negative stock updates', async () => {

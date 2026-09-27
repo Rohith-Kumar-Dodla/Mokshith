@@ -106,14 +106,13 @@ const StatusBadge = ({ status, size = 'md' }) => {
     lg: 'px-3 py-1.5 text-base'
   };
 
-  const formattedStatus = status
+  const formattedStatus = String(status || '')
     .split('_')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 
   return (
-    <span className={`inline-flex items-center gap-1.5 font-semibold rounded-full ${config.bg} ${config.text} ${sizeClasses[size]}`}>
-      <span>{config.icon}</span>
+    <span className={`inline-flex items-center font-semibold rounded-full ${config.bg} ${config.text} ${sizeClasses[size]}`}>
       <span>{formattedStatus}</span>
     </span>
   );
