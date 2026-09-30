@@ -13,6 +13,7 @@ import {
   FiMenu,
   FiX,
   FiBell,
+  FiRotateCcw,
 } from 'react-icons/fi';
 import NotificationDrawer from '../components/vendor/NotificationDrawer';
 import PortalSidebar from '../components/common/PortalSidebar';
@@ -47,6 +48,7 @@ const VendorLayout = () => {
     { path: '/vendor/categories', icon: FiFolder, label: 'Categories' },
     { path: '/vendor/products', icon: FiBox, label: 'Products' },
     { path: '/vendor/orders', icon: FiTruck, label: 'Orders' },
+    { path: '/vendor/returns', icon: FiRotateCcw, label: 'Returns' },
     { path: '/vendor/invoices', icon: FiFileText, label: 'Invoices' },
     { path: '/vendor/wishlist', icon: FiHeart, label: 'Wishlist' },
     { path: '/vendor/profile', icon: FiUser, label: 'Profile' },

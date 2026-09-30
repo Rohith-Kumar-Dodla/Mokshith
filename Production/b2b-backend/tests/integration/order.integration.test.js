@@ -142,6 +142,30 @@ describe('Order Module - Integration Tests', () => {
       );
     });
 
+    it('calculates and snapshots mixed per-product GST while ignoring client tax fields', async () => {
+      await Product.updateOne({ _id: testProduct1._id }, { $set: { gst: 5, bulkPricing: [] } });
+      await Product.updateOne({ _id: testProduct2._id }, { $set: { gst: 18, bulkPricing: [] } });
+
+      const response = await request
+        .post('/api/v1/orders')
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({ paymentMethod: 'COD', shippingAddress: validShippingAddress, gst: 99, taxAmount: 1 })
+        .expect(200);
+
+      const order = await Order.findById(response.body.data._id);
+      expect(order.items[0].gstRate).toBe(5);
+      expect(order.items[0].gstAmount).toBe(Math.round(order.items[0].finalPrice * order.items[0].quantity * 0.05 * 100) / 100);
+      expect(order.items[1].gstRate).toBe(18);
+      expect(order.items[1].gstAmount).toBe(Math.round(order.items[1].finalPrice * order.items[1].quantity * 0.18 * 100) / 100);
+      expect(order.taxAmount).toBe(order.items[0].gstAmount + order.items[1].gstAmount);
+      expect(order.totalAmount).toBe(order.subtotal + order.taxAmount);
+
+      await Product.updateOne({ _id: testProduct1._id }, { $set: { gst: 12 } });
+      const historical = await Order.findById(order._id);
+      expect(historical.items[0].gstRate).toBe(5);
+      expect(historical.items[0].gstAmount).toBe(order.items[0].gstAmount);
+    });
+
     it('should allow single-line-item orders when MOQ is met', async () => {
       await Cart.deleteMany({ userId: testUser._id });
       await request

@@ -4,6 +4,7 @@ import { successResponse } from '../../utils/responseHandler.js';
 import { replaceStoredImage, applyUploadedImage } from '../../utils/imageUpload.utils.js';
 import { logger } from '../../config/logger.js';
 import AppError from '../../errors/AppError.js';
+import { compareSuppliersForProduct } from '../supplier/supplierProduct.service.js';
 
 /**
  * Middleware to load product and attach to req.product
@@ -47,6 +48,7 @@ function normalizeProductBody(body = {}) {
   if (data.price !== undefined && data.price !== '') data.price = Number(data.price);
   if (data.stock !== undefined && data.stock !== '') data.stock = Number(data.stock);
   if (data.moq !== undefined && data.moq !== '') data.moq = Number(data.moq);
+  if (data.gst !== undefined && data.gst !== '') data.gst = Number(data.gst);
   if (data.isActive === 'true') data.isActive = true;
   if (data.isActive === 'false') data.isActive = false;
 
@@ -97,8 +99,13 @@ export const updateProduct = asyncHandler(async (req, res) => {
 });
 
 export const deleteProduct = asyncHandler(async (req, res) => {
-  await service.deleteProduct(req.params.id);
-  successResponse(res, null, 'Product deleted successfully');
+  const result = await service.deleteProduct(req.params.id, { userId: req.user?._id, role: req.user?.role });
+  successResponse(res, result, result.message);
+});
+
+export const getSupplierComparison = asyncHandler(async (req, res) => {
+  const comparison = await compareSuppliersForProduct(req.params.id);
+  successResponse(res, comparison);
 });
 
 export const updateStock = asyncHandler(async (req, res) => {

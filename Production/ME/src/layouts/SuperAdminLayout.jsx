@@ -14,6 +14,9 @@ import {
   FiTool,
   FiClipboard,
   FiShare2,
+  FiCreditCard,
+  FiFileText,
+  FiRotateCcw,
 } from 'react-icons/fi';
 import NotificationDrawer from '../components/superadmin/NotificationDrawer';
 import PortalSidebar from '../components/common/PortalSidebar';
@@ -29,16 +32,21 @@ const SuperAdminLayout = () => {
   const { user } = useAuth();
   const { requestLogout, LogoutConfirmDialog } = useLogoutConfirm();
   const { mobileMenuOpen, toggleMobileMenu, closeMobileMenu } = useMobileSidebar();
-  const { notifications, unreadCount } = useNotifications();
+  const { notifications, unreadCount, loading: notificationsLoading, error: notificationsError, refreshNotifications, markAsRead, markAllAsRead } = useNotifications();
 
   const menuItems = [
     { path: '/super-admin/dashboard', icon: FiGrid, label: 'Dashboard' },
     { path: '/super-admin/platform', icon: FiMonitor, label: 'Platform Monitoring' },
     { path: '/super-admin/user-management', icon: FiUserCheck, label: 'User Management' },
     { path: '/super-admin/staff-onboarding', icon: FiUserPlus, label: 'Staff Onboarding' },
+    { path: '/super-admin/other-roles', icon: FiUserPlus, label: 'Other Roles' },
     { path: '/super-admin/orders', icon: FiPackage, label: 'Orders' },
+    { path: '/super-admin/returns', icon: FiRotateCcw, label: 'Returns' },
     { path: '/super-admin/supplier-allocation', icon: FiShare2, label: 'Supplier Allocation' },
-    { path: '/super-admin/analytics', icon: FiBarChart2, label: 'Analytics' },
+    { path: '/super-admin/payments', icon: FiCreditCard, label: 'Payments' },
+    { path: '/super-admin/company-documents', icon: FiFileText, label: 'Company Documents' },
+    { path: '/super-admin/notifications', icon: FiBell, label: 'Notifications' },
+    { path: '/super-admin/analytics', icon: FiBarChart2, label: 'Report Analysis' },
     { path: '/super-admin/system-settings', icon: FiTool, label: 'System Settings' },
     { path: '/super-admin/settings', icon: FiSettings, label: 'Settings' },
   ];
@@ -129,6 +137,11 @@ const SuperAdminLayout = () => {
         isOpen={notificationOpen}
         onClose={() => setNotificationOpen(false)}
         notifications={notifications}
+        loading={notificationsLoading}
+        error={notificationsError}
+        onRetry={refreshNotifications}
+        onMarkRead={markAsRead}
+        onMarkAllRead={markAllAsRead}
       />
 
       <LogoutConfirmDialog />

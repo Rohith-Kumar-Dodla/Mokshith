@@ -11,6 +11,7 @@ import ImageUpload from '../../components/common/ImageUpload';
 import BulkPricingEditor from '../../components/admin/BulkPricingEditor';
 import useProducts from '../../hooks/useProducts';
 import useCategories from '../../hooks/useCategories';
+import productService from '../../services/productService';
 import { getProductImageKey } from '../../utils/productMapper';
 import {
   tiersToDiscountForm,
@@ -24,13 +25,14 @@ const EMPTY_FORM = {
   description: '',
   categoryId: '',
   price: '',
+  gst: '18',
   stock: '',
   moq: '1',
   isActive: true,
   bulkDiscountTiers: [{ minQuantity: '', discountAmount: '' }],
 };
 
-const Products = () => {
+const Products = ({ canDelete = false }) => {
   const {
     products,
     loading,
@@ -55,6 +57,7 @@ const Products = () => {
   const [imageFile, setImageFile] = useState(null);
   const [uploadedImage, setUploadedImage] = useState(null);
   const [formError, setFormError] = useState(null);
+  const [supplierComparison, setSupplierComparison] = useState({ loading: false, error: '', suppliers: [] });
 
   const categoryOptions = [
     { value: 'all', label: 'All Categories' },
@@ -87,6 +90,7 @@ const Products = () => {
     setUploadedImage(null);
     setFormError(null);
     setSelectedProduct(null);
+    setSupplierComparison({ loading: false, error: '', suppliers: [] });
   };
 
   const resetForm = () => {
@@ -112,6 +116,7 @@ const Products = () => {
       description: product.description || '',
       categoryId: product.categoryId || '',
       price: String(product.price ?? ''),
+      gst: String(product.gst ?? 18),
       stock: String(product.stock ?? ''),
       moq: String(product.minimumOrderQuantity ?? 1),
       isActive: product.status !== 'inactive' && product.status !== 'out_of_stock',
@@ -122,10 +127,22 @@ const Products = () => {
     setFormError(null);
     clearMessages();
     setIsAddModalOpen(true);
+    loadSupplierComparison(product.id);
+  };
+
+  const loadSupplierComparison = async (productId) => {
+    if (!productId) return;
+    setSupplierComparison({ loading: true, error: '', suppliers: [] });
+    try {
+      const result = await productService.getSupplierComparison(productId);
+      setSupplierComparison({ loading: false, error: '', suppliers: result.suppliers || [] });
+    } catch {
+      setSupplierComparison({ loading: false, error: 'Unable to load supplier pricing', suppliers: [] });
+    }
   };
 
   const handleDeleteProduct = async (product) => {
-    if (!window.confirm(`Delete product "${product.name}"?`)) return;
+    if (!window.confirm(`Deactivate product "${product.name}"? It will be removed from active catalog use while historical records are preserved.`)) return;
     try {
       await deleteProduct(product.id);
     } catch {
@@ -154,6 +171,10 @@ const Products = () => {
       setFormError('Price must be greater than 0');
       return;
     }
+    if (formData.gst === '' || !Number.isFinite(Number(formData.gst)) || Number(formData.gst) < 0 || Number(formData.gst) > 100) {
+      setFormError('GST must be between 0 and 100');
+      return;
+    }
 
     const bulkValidationError = validateBulkDiscountForm(
       formData.bulkDiscountTiers,
@@ -170,6 +191,7 @@ const Products = () => {
       description: formData.description.trim(),
       categoryId: formData.categoryId,
       price: Number(formData.price),
+      gst: Number(formData.gst),
       stock: Number(formData.stock) || 0,
       moq: Number(formData.moq) || 1,
       isActive: formData.isActive,
@@ -304,9 +326,9 @@ const Products = () => {
                       <button type="button" onClick={() => handleEditProduct(product)} className="p-2 hover:bg-green-100 rounded-lg" title="Edit">
                         <FiEdit size={14} className="text-green-600" />
                       </button>
-                      <button type="button" onClick={() => handleDeleteProduct(product)} className="p-2 hover:bg-red-100 rounded-lg" title="Delete">
+                      {canDelete && <button type="button" onClick={() => handleDeleteProduct(product)} className="p-2 hover:bg-red-100 rounded-lg" title="Deactivate product">
                         <FiTrash2 size={14} className="text-red-600" />
-                      </button>
+                      </button>}
                     </div>
                   </td>
                 </tr>
@@ -395,6 +417,34 @@ const Products = () => {
                 onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
                 className="w-full px-4 py-2.5 h-12 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+            </div>
+            <div>
+              <label htmlFor="product-gst" className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">GST (%)</label>
+              <input
+                id="product-gst"
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                value={formData.gst}
+                onChange={(e) => setFormData({ ...formData, gst: e.target.value })}
+                className="w-full px-4 py-2.5 h-12 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+            <div className="sm:col-span-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900">Supplier Prices</h3>
+                  <p className="text-xs text-gray-500">Internal reference only. Customer price is never changed automatically.</p>
+                </div>
+                {selectedProduct && <button type="button" onClick={() => loadSupplierComparison(selectedProduct.id)} className="text-sm text-blue-600 hover:underline">Retry</button>}
+              </div>
+              {!selectedProduct ? <p className="mt-3 text-sm text-gray-500">Save the global product, then edit it to view mapped supplier pricing.</p>
+                : supplierComparison.loading ? <p className="mt-3 text-sm text-gray-500">Loading supplier prices...</p>
+                  : supplierComparison.error ? <p className="mt-3 text-sm text-red-600">{supplierComparison.error}</p>
+                    : supplierComparison.suppliers.length === 0 ? <p className="mt-3 text-sm text-gray-500">No supplier pricing available for this product.</p>
+                      : <div className="mt-3 space-y-2">{supplierComparison.suppliers.map((supplier) => <div key={supplier.mappingId} className="flex flex-wrap items-center justify-between gap-2 rounded border bg-white px-3 py-2 text-sm"><span><span className="font-medium">{supplier.supplierName}</span>{supplier.companyName ? ` · ${supplier.companyName}` : ''}</span><span className="font-semibold">{supplier.currentSupplierPrice == null ? 'Price not set' : `₹${Number(supplier.currentSupplierPrice).toFixed(2)}`} · {supplier.availabilityStatus}</span></div>)}</div>}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1 sm:mb-2">Minimum Order Quantity</label>

@@ -18,6 +18,8 @@ import { sendNotification } from '../notification/notification.service.js';
 import { sendEmail } from '../../services/email.service.js';
 import Supplier from '../supplier/supplier.model.js';
 import { SUPPLIER_STATUS } from '../../constants/supplierStatus.js';
+import { publishSuperAdminEvent } from '../notification/businessNotification.service.js';
+import * as categoryService from '../category/category.service.js';
 
 export const getAllUsers = async () => {
   return repo.getAllUsers();
@@ -137,6 +139,7 @@ export const createAdmin = async (data, creatorId, ip) => {
   }
 
   await sendStaffWelcome(admin, 'Admin');
+  await publishSuperAdminEvent('ADMIN_CREATED', { entityType: 'USER', entityId: admin._id, actorId: creatorId, businessKey: 'created', message: `Admin “${admin.name}” was created.` });
 
   return admin;
 };
@@ -160,6 +163,8 @@ export const deleteAdmin = async (id, deleterId, ip) => {
     ip,
     severity: 'WARNING'
   });
+
+  await publishSuperAdminEvent('ADMIN_UPDATED', { entityType: 'USER', entityId: user._id, actorId: deleterId, businessKey: 'deleted', status: 'DEACTIVATED', message: `Admin “${user.name}” was disabled.` });
 
   return { message: 'Admin deleted successfully' };
 };
@@ -201,6 +206,8 @@ export const updateAdmin = async (id, data, updaterId, ip) => {
     ip,
     severity: 'INFO'
   });
+
+  await publishSuperAdminEvent('ADMIN_UPDATED', { entityType: 'USER', entityId: updatedAdmin._id, actorId: updaterId, businessKey: String(updatedAdmin.updatedAt?.getTime?.() || Date.now()), status: updatedAdmin.status, message: `Admin “${updatedAdmin.name}” was updated.` });
 
   return updatedAdmin;
 };
@@ -253,6 +260,7 @@ export const createDeliveryAgent = async (data, creatorId, ip) => {
   });
 
   await sendStaffWelcome(agent, 'Delivery Agent');
+  await publishSuperAdminEvent('DELIVERY_PARTNER_CREATED', { entityType: 'USER', entityId: agent._id, actorId: creatorId, businessKey: 'created', message: `Delivery partner “${agent.name}” was created.` });
 
   return agent;
 };
@@ -293,6 +301,8 @@ export const updateDeliveryAgent = async (id, data, updaterId, ip) => {
     ip,
     severity: 'INFO',
   });
+
+  await publishSuperAdminEvent('DELIVERY_PARTNER_UPDATED', { entityType: 'USER', entityId: updatedAgent._id, actorId: updaterId, businessKey: String(updatedAgent.updatedAt?.getTime?.() || Date.now()), status: updatedAgent.status, message: `Delivery partner “${updatedAgent.name}” was updated.` });
 
   return updatedAgent;
 };
@@ -452,6 +462,8 @@ export const updateConfig = async (config, userId, ip) => {
     });
   }
 
+  await publishSuperAdminEvent('SETTINGS_CHANGED', { entityType: 'SYSTEM_SETTINGS', actorId: userId, entityKey: 'platform', businessKey: String(Date.now()), message: 'Platform configuration was updated.' });
+
   for (const [key, value] of Object.entries(config)) {
     if (
       key === 'maintenanceMode' ||
@@ -481,22 +493,21 @@ export const getCategories = async () => {
   return Category.find();
 };
 
-export const createCategory = async (data) => {
-  return Category.create(data);
+export const createCategory = async (data, actorId) => {
+  const category = await Category.create(data);
+  await publishSuperAdminEvent('CATEGORY_CREATED', { entityType: 'CATEGORY', entityId: category._id, actorId, businessKey: 'created', message: `Category “${category.name}” was created.` });
+  return category;
 };
 
 export const deleteCategory = async (id) => {
-  const category = await Category.findById(id);
-  if (!category) {
-    throw new AppError('Category not found', 404);
-  }
-  await Category.findByIdAndDelete(id);
+  await categoryService.deleteCategory(id);
   return { message: 'Category deleted successfully' };
 };
 
-export const updateCategory = async (id, data) => {
+export const updateCategory = async (id, data, actorId) => {
   const category = await Category.findByIdAndUpdate(id, data, { new: true });
   if (!category) throw new AppError('Category not found', 404);
+  await publishSuperAdminEvent('CATEGORY_UPDATED', { entityType: 'CATEGORY', entityId: category._id, actorId, businessKey: String(category.updatedAt?.getTime?.() || Date.now()), message: `Category “${category.name}” was updated.` });
   return category;
 };
 

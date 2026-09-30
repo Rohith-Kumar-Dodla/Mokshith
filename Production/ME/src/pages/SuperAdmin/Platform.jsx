@@ -43,7 +43,7 @@ const Platform = () => {
   const platformStats = [
     { title: 'Total Vendors', value: String(stats?.vendors ?? metrics?.activeVendors ?? 0), icon: FiUsers, color: 'blue', to: '/super-admin/user-management?tab=vendors' },
     { title: 'Delivery Partners', value: String(stats?.deliveryPartners ?? 0), icon: FiTruck, color: 'purple', to: '/super-admin/user-management?tab=delivery' },
-    { title: 'Total Products', value: String(stats?.products ?? 0), icon: FiPackage, color: 'orange' },
+    { title: 'Total Products', value: String(stats?.products ?? 0), icon: FiPackage, color: 'orange', to: '/super-admin/catalog/products' },
     { title: 'Total Orders', value: String(stats?.orders ?? 0), icon: FiTrendingUp, color: 'teal', to: '/super-admin/orders' },
     { title: 'Total Revenue', value: formatRevenue(stats?.revenue ?? 0), icon: FiDollarSign, color: 'green' },
     { title: 'Pending Approvals', value: String(stats?.pendingApprovals ?? metrics?.pendingApprovals ?? 0), icon: FiActivity, color: 'blue', to: '/super-admin/user-management?tab=approvals' },

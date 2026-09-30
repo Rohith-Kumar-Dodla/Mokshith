@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
+import { getAccessToken } from '../utils/authStorage';
 
 function resolveSocketUrl() {
   const configuredApi = import.meta.env.VITE_API_BASE_URL;
@@ -10,7 +11,7 @@ function resolveSocketUrl() {
 
 let sharedSocket = null;
 
-function getSocket() {
+export function getSocket() {
   if (sharedSocket) return sharedSocket;
   const url = resolveSocketUrl();
   if (!url) return null;
@@ -19,6 +20,7 @@ function getSocket() {
     transports: ['websocket', 'polling'],
     withCredentials: true,
     autoConnect: true,
+    auth: { token: getAccessToken() },
   });
 
   return sharedSocket;

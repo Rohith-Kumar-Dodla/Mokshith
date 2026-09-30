@@ -15,6 +15,7 @@ import promotionRoutes from '../modules/promotion/promotion.routes.js';
 // Buying Flow
 import cartRoutes from '../modules/cart/cart.routes.js';
 import orderRoutes from '../modules/order/order.routes.js';
+import returnRoutes from '../modules/return/return.routes.js';
 
 // Payment & Finance
 import paymentRoutes from '../modules/payment/payment.routes.js';
@@ -72,6 +73,7 @@ router.use('/promotions', authenticate, injectCsrfToken, promotionRoutes);
 router.use('/cart', authenticate, injectCsrfToken, cartRoutes);
 router.use('/wishlist', authenticate, injectCsrfToken, wishlistRoutes);
 router.use('/orders', authenticate, injectCsrfToken, orderRoutes);
+router.use('/returns', authenticate, injectCsrfToken, returnRoutes);
 
 // 💳 Finance
 router.use('/payments', paymentRoutes); // Payments has its own internal protection logic

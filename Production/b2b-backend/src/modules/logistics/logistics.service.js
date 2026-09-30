@@ -17,6 +17,7 @@ import { calculateRouteDistance } from './deliveryDistance.service.js';
 import { validateDeliveryAmount } from './deliveryAmount.service.js';
 import { geocodeAddress, hasValidCoordinates } from '../../services/geocoding.service.js';
 import { getDeliveryOrigin } from '../warehouse/warehouse.service.js';
+import { publishSuperAdminEvent } from '../notification/businessNotification.service.js';
 
 const LOGISTICS_TRANSITIONS = {
   [DELIVERY_STATUS.PENDING]: [DELIVERY_STATUS.ASSIGNED],
@@ -126,7 +127,7 @@ async function notifyDeliveryStakeholders(shipment, logisticsStatus) {
   if (partnerId) recipients.add(String(partnerId));
 
   const User = mongoose.model('User');
-  const admins = await User.find({ role: { $in: ['ADMIN', 'SUPER_ADMIN'] } }).select('_id').lean();
+  const admins = await User.find({ role: 'ADMIN' }).select('_id').lean();
   admins.forEach((admin) => recipients.add(String(admin._id)));
 
   await Promise.all(
@@ -136,6 +137,8 @@ async function notifyDeliveryStakeholders(shipment, logisticsStatus) {
       })
     )
   );
+  const eventType = logisticsStatus === DELIVERY_STATUS.ASSIGNED ? 'DELIVERY_ASSIGNED' : logisticsStatus === DELIVERY_STATUS.COMPLETED ? 'DELIVERY_COMPLETED' : 'DELIVERY_STATUS_CHANGED';
+  await publishSuperAdminEvent(eventType, { entityType: 'LOGISTICS', entityId: shipment._id, businessKey: `${logisticsStatus}:${shipment.updatedAt?.getTime?.() || Date.now()}`, status: logisticsStatus, reference: String(orderId), message: template.message(String(orderId)) });
 }
 
 function emitDeliveryStatusUpdate(shipment, previousStatus = null) {
@@ -871,6 +874,7 @@ async function expireOfferIfNeeded(logisticsId, offerId) {
     },
     { new: true }
   );
+
   if (!offer) return null;
 
   const updated = await Logistics.findOneAndUpdate(
@@ -1013,6 +1017,7 @@ export const createDeliveryOffer = async ({ logisticsId, deliveryPartnerId, deli
     data: { logisticsId, orderId: offer.orderId, deliveryPartnerId, amount, distance: route.distance, version },
     severity: 'INFO',
   }).catch((error) => logger.warn('Delivery offer audit failed', { error: error.message }));
+  await publishSuperAdminEvent('DELIVERY_OFFER_CREATED', { entityType: 'DELIVERY_OFFER', entityId: offer._id, actorId, businessKey: `version:${version}`, status: offer.status, reference: String(offer.orderId), message: `Delivery offer version ${version} was created for order #${offer.orderId}.` });
   if (currentOffer && amount > Number(currentOffer.deliveryAmount || 0)) {
     await logAction({
       userId: actorId,
@@ -1092,6 +1097,7 @@ export const acceptDeliveryOffer = async ({ logisticsId, offerId, partnerId, req
   await syncOrderStatusFromLogistics(resolveOrderId(updated.orderId), DELIVERY_STATUS.ACCEPTED, { _id: partnerId, role: 'DELIVERY_PARTNER' }, { shipmentId: updated._id });
   await notifyDeliveryStakeholders(updated, DELIVERY_STATUS.ACCEPTED);
   await logAction({ userId: partnerId, action: 'DELIVERY_OFFER_ACCEPTED', entity: 'DeliveryOffer', entityId: offer._id, details: 'Delivery partner accepted offer', data: { logisticsId, orderId: offer.orderId, version: offer.version }, severity: 'INFO' }).catch((error) => logger.warn('Offer acceptance audit failed', { error: error.message }));
+  await publishSuperAdminEvent('DELIVERY_OFFER_ACCEPTED', { entityType: 'DELIVERY_OFFER', entityId: offer._id, actorId: partnerId, businessKey: `accepted:${offer.version}`, status: 'ACCEPTED', reference: String(offer.orderId), message: `Delivery offer for order #${offer.orderId} was accepted.` });
   emitDeliveryStatusUpdate(updated, DELIVERY_STATUS.ASSIGNED);
   return { offer: accepted, logistics: await repo.findById(updated._id) };
 };
@@ -1132,6 +1138,7 @@ export const rejectDeliveryOffer = async ({ logisticsId, offerId, partnerId, rej
   if (updated.rejectionCount >= 3) {
     await Promise.all(admins.map((admin) => notifyOfferRecipient(admin._id, 'Delivery escalation required', `Three or more partners rejected order #${offer.orderId}. Increase the amount and reassign.`, 'delivery:escalationRequired', { logisticsId, orderId: offer.orderId, rejectionCount: updated.rejectionCount })));
   }
+  await publishSuperAdminEvent('DELIVERY_REASSIGNMENT_REQUIRED', { entityType: 'DELIVERY_OFFER', entityId: offer._id, actorId: partnerId, businessKey: `rejected:${offer.version}`, status: 'REJECTED', reference: String(offer.orderId), message: `Delivery offer for order #${offer.orderId} was rejected; reassignment is required.` });
   await logAction({ userId: partnerId, action: 'DELIVERY_OFFER_REJECTED', entity: 'DeliveryOffer', entityId: offer._id, details: 'Delivery partner rejected offer', data: { logisticsId, orderId: offer.orderId, rejectionCode, reason, rejectionCount: updated.rejectionCount }, severity: updated.rejectionCount >= 3 ? 'WARNING' : 'INFO' }).catch((error) => logger.warn('Offer rejection audit failed', { error: error.message }));
   emitDeliveryStatusUpdate(updated, DELIVERY_STATUS.ASSIGNED);
   return { offer: rejected, logistics: await repo.findById(updated._id) };

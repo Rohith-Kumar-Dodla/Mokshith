@@ -25,6 +25,7 @@ describe('Category Module - Integration Tests', () => {
   let adminUser;
   let customerUser;
   let adminToken;
+  let superAdminToken;
   let customerToken;
 
   beforeEach(async () => {
@@ -54,6 +55,13 @@ describe('Category Module - Integration Tests', () => {
       status: USER_STATUS.ACTIVE,
     });
 
+    await User.create({
+      ...generateTestUser({ email: 'superadmin@test.com', mobile: '9876543219' }),
+      password: hashedPassword,
+      role: ROLES.SUPER_ADMIN,
+      status: USER_STATUS.ACTIVE,
+    });
+
     // Login users and capture CSRF tokens
     const adminLogin = await request
       .post('/api/v1/auth/login')
@@ -66,6 +74,8 @@ describe('Category Module - Integration Tests', () => {
       .send({ identifier: 'customer@test.com', password: 'Admin@1234' });
     customerToken = customerLogin.body.data.accessToken;
     const customerCsrf = customerLogin.body.data.csrfToken;
+    const superAdminLogin = await request.post('/api/v1/auth/login').send({ identifier: 'superadmin@test.com', password: 'Admin@1234' });
+    superAdminToken = { token: superAdminLogin.body.data.accessToken, csrf: superAdminLogin.body.data.csrfToken };
 
     // Attach csrf helpers to tokens for convenience in tests
     adminToken = { token: adminToken, csrf: adminCsrf };
@@ -380,12 +390,12 @@ describe('Category Module - Integration Tests', () => {
       });
     });
 
-    it('should delete category by admin', async () => {
+    it('should delete an unreferenced category by super admin', async () => {
       const response = await request
         .delete(`/api/v1/categories/${testCategory._id}`)
-        .set('Authorization', `Bearer ${adminToken.token}`)
-        .set('x-csrf-token', adminToken.csrf)
-        .set('Cookie', `csrf-token=${adminToken.csrf}`)
+        .set('Authorization', `Bearer ${superAdminToken.token}`)
+        .set('x-csrf-token', superAdminToken.csrf)
+        .set('Cookie', `csrf-token=${superAdminToken.csrf}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -395,7 +405,7 @@ describe('Category Module - Integration Tests', () => {
       expect(deleted).toBeNull();
     });
 
-    it('should delete category even when products are linked (no referential guard)', async () => {
+    it('should preserve a category when products are linked', async () => {
       await Product.create({
         name: 'Linked Product',
         price: 1000,
@@ -404,24 +414,24 @@ describe('Category Module - Integration Tests', () => {
 
       const response = await request
         .delete(`/api/v1/categories/${testCategory._id}`)
-        .set('Authorization', `Bearer ${adminToken.token}`)
-        .set('x-csrf-token', adminToken.csrf)
-        .set('Cookie', `csrf-token=${adminToken.csrf}`)
-        .expect(200);
+        .set('Authorization', `Bearer ${superAdminToken.token}`)
+        .set('x-csrf-token', superAdminToken.csrf)
+        .set('Cookie', `csrf-token=${superAdminToken.csrf}`)
+        .expect(409);
 
-      expect(response.body.success).toBe(true);
+      expect(response.body.success).toBe(false);
 
       const deleted = await Category.findById(testCategory._id);
-      expect(deleted).toBeNull();
+      expect(deleted).not.toBeNull();
     });
 
     it('should reject deletion for non-existent category', async () => {
       const fakeId = new mongoose.Types.ObjectId();
       const response = await request
         .delete(`/api/v1/categories/${fakeId}`)
-        .set('Authorization', `Bearer ${adminToken.token}`)
-        .set('x-csrf-token', adminToken.csrf)
-        .set('Cookie', `csrf-token=${adminToken.csrf}`)
+        .set('Authorization', `Bearer ${superAdminToken.token}`)
+        .set('x-csrf-token', superAdminToken.csrf)
+        .set('Cookie', `csrf-token=${superAdminToken.csrf}`)
         .expect(404);
 
       expect(response.body.success).toBe(false);
@@ -440,6 +450,24 @@ describe('Category Module - Integration Tests', () => {
       // Verify category still exists
       const stillExists = await Category.findById(testCategory._id);
       expect(stillExists).toBeDefined();
+    });
+
+    it('should return 403 for admin while preserving edit access', async () => {
+      await request
+        .delete(`/api/v1/categories/${testCategory._id}`)
+        .set('Authorization', `Bearer ${adminToken.token}`)
+        .set('x-csrf-token', adminToken.csrf)
+        .set('Cookie', `csrf-token=${adminToken.csrf}`)
+        .send({ role: ROLES.SUPER_ADMIN })
+        .expect(403);
+
+      await request
+        .put(`/api/v1/categories/${testCategory._id}`)
+        .set('Authorization', `Bearer ${adminToken.token}`)
+        .set('x-csrf-token', adminToken.csrf)
+        .set('Cookie', `csrf-token=${adminToken.csrf}`)
+        .send({ name: 'Still Editable' })
+        .expect(200);
     });
   });
 
@@ -481,14 +509,15 @@ describe('Category Module - Integration Tests', () => {
       expect(children.some((c) => c._id.toString() === childCategory._id.toString())).toBe(true);
     });
 
-    it('should delete child category without removing grandchild records', async () => {
+    it('should preserve a category that has child categories', async () => {
       await request
         .delete(`/api/v1/categories/${childCategory._id}`)
-        .set('Authorization', `Bearer ${adminToken.token}`)
-        .set('x-csrf-token', adminToken.csrf)
-        .set('Cookie', `csrf-token=${adminToken.csrf}`)
-        .expect(200);
+        .set('Authorization', `Bearer ${superAdminToken.token}`)
+        .set('x-csrf-token', superAdminToken.csrf)
+        .set('Cookie', `csrf-token=${superAdminToken.csrf}`)
+        .expect(409);
 
+      expect(await Category.findById(childCategory._id)).not.toBeNull();
       const grandchild = await Category.findById(grandchildCategory._id);
       expect(grandchild).toBeDefined();
       expect(String(grandchild.parentId)).toBe(childCategory._id.toString());

@@ -220,14 +220,31 @@ export function mapNotifications(payload) {
     title: notification.title,
     message: notification.message,
     type: notification.type || 'info',
+    category: notification.category || notification.type || 'SYSTEM',
+    eventType: notification.eventType || 'SYSTEM_EVENT',
+    actionUrl: notification.actionUrl || null,
+    severity: notification.severity || 'INFO',
     isRead: Boolean(notification.isRead),
     read: Boolean(notification.isRead),
-    time: notification.createdAt
-      ? new Date(notification.createdAt).toLocaleString('en-IN')
-      : '—',
+    time: formatRelativeTime(notification.createdAt),
     createdAt: notification.createdAt,
     raw: notification,
   }));
+}
+
+function formatRelativeTime(value) {
+  if (!value) return '—';
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) return '—';
+  const seconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+  if (seconds < 60) return 'Just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(timestamp).toLocaleDateString('en-IN');
 }
 
 export function computeDeliveryAnalytics(assignments = [], history = []) {

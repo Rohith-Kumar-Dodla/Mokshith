@@ -94,7 +94,7 @@ function createUploader(maxFiles = 1) {
  * Parse multipart uploads only. Cloud upload happens in controllers via imageUpload.utils.
  */
 export const parseUpload = (fieldName, options = {}) => {
-  const { maxFiles = 1 } = options;
+  const { maxFiles = 1, category = 'images' } = options;
 
   return async (req, res, next) => {
     const uploader = createUploader(maxFiles);
@@ -113,13 +113,13 @@ export const parseUpload = (fieldName, options = {}) => {
             req.file.buffer = fs.readFileSync(req.file.path);
           }
 
-          req.file = validateAndSanitizeUpload(req.file, 'images');
+          req.file = validateAndSanitizeUpload(req.file, category);
         } else if (req.files?.length) {
           req.files = req.files.map((file) => {
             if (!file.buffer && file.path) {
               file.buffer = fs.readFileSync(file.path);
             }
-            return validateAndSanitizeUpload(file, 'images');
+            return validateAndSanitizeUpload(file, category);
           });
         }
 

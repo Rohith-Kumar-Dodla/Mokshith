@@ -5,7 +5,7 @@ import { authorize } from '../../middlewares/role.middleware.js';
 import { validate } from '../../middlewares/validate.middleware.js';
 import { createCategorySchema, updateCategorySchema } from './category.validation.js';
 import { uploadImageToCloud } from '../../middlewares/upload.middleware.js';
-import { cacheMiddleware, clearCacheMiddleware } from '../../middlewares/cache.middleware.js';
+import { clearCacheMiddleware } from '../../middlewares/cache.middleware.js';
 import { csrfProtection } from '../../middlewares/csrf.middleware.js';
 
 const router = express.Router();
@@ -40,7 +40,7 @@ router.delete(
   '/:id',
   protect,
   csrfProtection,
-  authorize('ADMIN', 'SUPER_ADMIN'),
+  authorize('SUPER_ADMIN'),
   controller.deleteCategory,
   clearCacheMiddleware(['cache:*categories*', 'cache:*products*'])
 );

@@ -53,6 +53,8 @@ export const updateWarehouse = async (id, data) => {
 export const deleteWarehouse = async (id) => {
   const warehouse = await repo.findById(id);
   if (!warehouse) throw new AppError('Warehouse not found', 404);
+  const inventoryCount = await Inventory.countDocuments({ warehouseId: id });
+  if (inventoryCount > 0) throw new AppError('Warehouse cannot be deleted while inventory references it. Deactivate it instead.', 409);
   return repo.deleteWarehouse(id);
 };
 
@@ -63,6 +65,5 @@ export const getDeliveryOrigin = async () => {
   if (!coordinates || !Number.isFinite(Number(coordinates.latitude)) || !Number.isFinite(Number(coordinates.longitude))) {
     throw new AppError('The active delivery-origin warehouse has no valid coordinates.', 422, 'WAREHOUSE_COORDINATES_REQUIRED');
   }
-  if (data.isDeliveryOrigin && data.isActive === false) throw new AppError('A delivery-origin warehouse must be active.', 400);
   return warehouse;
 };

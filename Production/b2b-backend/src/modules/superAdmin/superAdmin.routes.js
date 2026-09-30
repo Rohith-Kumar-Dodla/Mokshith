@@ -1,8 +1,11 @@
 import express from 'express';
 import * as controller from './superAdmin.controller.js';
+import * as operationsController from './operations.controller.js';
 import { protect } from '../../middlewares/auth.middleware.js';
 import { authorize } from '../../middlewares/role.middleware.js';
 import { validate } from '../../middlewares/validate.middleware.js';
+import { parseUpload } from '../../middlewares/upload.middleware.js';
+import { transactionQuerySchema, documentQuerySchema, internalStaffSchema, internalStaffUpdateSchema, reportQuerySchema } from './operations.validation.js';
 import {
   updateUserRoleSchema,
   createAdminSchema,
@@ -64,6 +67,17 @@ const router = express.Router();
 
 // 🔥 Only SUPER_ADMIN access
 router.use(protect, authorize('SUPER_ADMIN'));
+
+// V2 Super Admin operations (financial views are read-only).
+router.get('/transactions', validate(transactionQuerySchema), operationsController.getTransactions);
+router.get('/report-analysis', validate(reportQuerySchema), operationsController.getReportAnalysis);
+router.get('/company-documents', validate(documentQuerySchema), operationsController.getDocuments);
+router.post('/company-documents', parseUpload('file', { category: 'documents' }), operationsController.uploadDocument);
+router.get('/company-documents/:id/file', operationsController.downloadDocument);
+router.delete('/company-documents/:id', operationsController.archiveDocument);
+router.get('/internal-staff', validate(listStaffSchema), operationsController.getInternalStaff);
+router.post('/internal-staff', validate(internalStaffSchema), operationsController.createInternalStaff);
+router.patch('/internal-staff/:id', validate(internalStaffUpdateSchema), operationsController.updateInternalStaff);
 
 // 👤 Users
 router.get('/users', controller.getUsers);

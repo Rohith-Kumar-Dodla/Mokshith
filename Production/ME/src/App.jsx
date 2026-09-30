@@ -30,6 +30,10 @@ const SuperAdminAnalytics = lazy(() => import('./pages/SuperAdmin/Analytics'));
 const SuperAdminSettings = lazy(() => import('./pages/SuperAdmin/Settings'));
 const SystemSettings = lazy(() => import('./pages/SuperAdmin/SystemSettings'));
 const StaffOnboarding = lazy(() => import('./pages/SuperAdmin/StaffOnboarding'));
+const SuperAdminPayments = lazy(() => import('./pages/SuperAdmin/Payments'));
+const CompanyDocuments = lazy(() => import('./pages/SuperAdmin/CompanyDocuments'));
+const OtherRoles = lazy(() => import('./pages/SuperAdmin/OtherRoles'));
+const SuperAdminNotifications = lazy(() => import('./pages/SuperAdmin/Notifications'));
 const SuperAdminSuppliers = lazy(() => import('./pages/SuperAdmin/Suppliers'));
 const SuperAdminSupplierComparison = lazy(() => import('./pages/SuperAdmin/SupplierComparison'));
 const SuperAdminProcurementDemand = lazy(() => import('./pages/SuperAdmin/ProcurementDemand'));
@@ -50,6 +54,7 @@ const SupplierDashboardSettings = lazy(() => import('./pages/SupplierDashboard/S
 const AdminLayout = lazy(() => import('./layouts/AdminLayout'));
 const AdminDashboard = lazy(() => import('./pages/Admin/Dashboard'));
 const Products = lazy(() => import('./pages/Admin/Products'));
+const ReturnsPage = lazy(() => import('./pages/Returns/ReturnsPage'));
 const Categories = lazy(() => import('./pages/Admin/Categories'));
 const Inventory = lazy(() => import('./pages/Admin/Inventory'));
 const AdminDiscounts = lazy(() => import('./pages/Admin/Discounts'));
@@ -122,11 +127,18 @@ function App() {
                 <Route index element={<Navigate to="/super-admin/dashboard" replace />} />
                 <Route path="dashboard" element={<SuperAdminDashboard />} />
                 <Route path="platform" element={<Platform />} />
+                <Route path="catalog/products" element={<Products canDelete />} />
+                <Route path="catalog/categories" element={<Categories canDelete />} />
+                <Route path="catalog/discounts" element={<AdminDiscounts canDelete />} />
                 <Route path="admin-approvals" element={<Navigate to="/super-admin/user-management?tab=approvals" replace />} />
                 <Route path="vendors" element={<Navigate to="/super-admin/user-management?tab=vendors" replace />} />
                 <Route path="delivery-partners" element={<Navigate to="/super-admin/user-management?tab=delivery" replace />} />
                 <Route path="user-management" element={<UserManagement />} />
                 <Route path="staff-onboarding" element={<StaffOnboarding />} />
+                <Route path="other-roles" element={<OtherRoles />} />
+                <Route path="payments" element={<SuperAdminPayments />} />
+                <Route path="company-documents" element={<CompanyDocuments />} />
+                <Route path="notifications" element={<SuperAdminNotifications />} />
                 <Route path="suppliers/comparison" element={<SuperAdminSupplierComparison />} />
                 <Route path="suppliers" element={<SuperAdminSuppliers />} />
                 <Route path="procurement/demand" element={<SuperAdminProcurementDemand />} />
@@ -135,10 +147,13 @@ function App() {
                 <Route path="procurement/purchase-requests/:id" element={<SuperAdminPurchaseRequests />} />
                 <Route path="procurement/purchase-requests" element={<SuperAdminPurchaseRequests />} />
                 <Route path="orders" element={<SuperAdminOrders />} />
+                <Route path="returns" element={<ReturnsPage superAdmin />} />
+                <Route path="returns/:id" element={<ReturnsPage superAdmin />} />
                 <Route path="delivery-assignment" element={<DeliveryAssignment />} />
                 <Route path="supplier-allocation" element={<SupplierAllocation />} />
                 <Route path="payment-verifications" element={<Navigate to="/super-admin/orders" replace />} />
                 <Route path="analytics" element={<SuperAdminAnalytics />} />
+                <Route path="report-analysis" element={<Navigate to="/super-admin/analytics" replace />} />
                 <Route path="settings" element={<SuperAdminSettings />} />
                 <Route path="system-settings" element={<SystemSettings />} />
               </Route>
@@ -152,6 +167,8 @@ function App() {
                 <Route path="discounts" element={<AdminDiscounts />} />
                 <Route path="vendors" element={<AdminVendors />} />
                 <Route path="orders" element={<AdminOrders />} />
+                <Route path="returns" element={<ReturnsPage admin />} />
+                <Route path="returns/:id" element={<ReturnsPage admin />} />
                 <Route path="supplier-allocation" element={<SupplierAllocation />} />
                 <Route path="delivery-assignment" element={<DeliveryAssignment />} />
                 <Route path="reports" element={<Reports />} />
@@ -174,6 +191,8 @@ function App() {
                 <Route path="orders/:id/payment" element={<BankTransferPayment />} />
                 <Route path="orders" element={<VendorOrders />} />
                 <Route path="orders/:id" element={<VendorOrderDetails />} />
+                <Route path="returns" element={<ReturnsPage />} />
+                <Route path="returns/:id" element={<ReturnsPage />} />
                 <Route path="invoices" element={<VendorInvoices />} />
                 <Route path="invoices/:id" element={<VendorInvoices />} />
                 <Route path="wishlist" element={<VendorWishlist />} />

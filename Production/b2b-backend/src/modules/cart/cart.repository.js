@@ -4,7 +4,7 @@ export const findCartByUser = async (userId) =>
   Cart.findOne({ userId })
     .populate({
       path: 'items.productId',
-      select: 'name price stock moq minOrderQty image imageUrl imagePublicId categoryId isActive bulkPricing',
+      select: 'name price gst stock moq minOrderQty image imageUrl imagePublicId categoryId isActive bulkPricing',
       populate: { path: 'categoryId', select: 'name' },
     });
 

@@ -101,7 +101,7 @@ export const getCategories = asyncHandler(async (req, res) => {
 });
 
 export const createCategory = asyncHandler(async (req, res) => {
-  const category = await service.createCategory(req.body);
+  const category = await service.createCategory(req.body, req.user?._id);
   successResponse(res, category, 'Category created successfully', 201);
 });
 
@@ -111,7 +111,7 @@ export const deleteCategory = asyncHandler(async (req, res) => {
 });
 
 export const updateCategory = asyncHandler(async (req, res) => {
-  const category = await service.updateCategory(req.params.id, req.body);
+  const category = await service.updateCategory(req.params.id, req.body, req.user?._id);
   successResponse(res, category, 'Category updated successfully');
 });
 
