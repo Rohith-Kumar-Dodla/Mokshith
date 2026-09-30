@@ -1,10 +1,12 @@
 import api from './api';
 
 const notificationService = {
-  getNotifications: async () => {
-    const response = await api.get('/notifications');
+  getNotifications: async (params = {}) => {
+    const response = await api.get('/notifications', { params });
     return response.data;
   },
+
+  getUnreadCount: async () => (await api.get('/notifications/unread-count')).data,
 
   markAsRead: async (notificationId) => {
     const response = await api.patch(`/notifications/${notificationId}/read`);

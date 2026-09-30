@@ -105,9 +105,9 @@ export const createInvoicePDF = async (invoice, order, user) => {
           // Safety checks for numeric values
           const qty = Number(item.quantity) || 0;
           const price = Number(item.finalPrice ?? item.price) || 0;
-          const gstRate = Number(item.gstRate) || 18;
-          const basePrice = Number(item.basePrice) || (price / 1.18);
-          const taxPerUnit = Number(item.taxPerUnit) || (price - basePrice);
+          const gstRate = item.gstRate == null ? 18 : Number(item.gstRate);
+          const basePrice = Number(item.basePrice ?? price) || 0;
+          const taxPerUnit = Number(item.taxPerUnit ?? 0) || 0;
           const name = String(item.name || 'Product');
 
           doc.text(name.substring(0, 25), 50, currentHeight);
@@ -115,7 +115,7 @@ export const createInvoicePDF = async (invoice, order, user) => {
           doc.text(`₹${basePrice.toFixed(2)}`, 280, currentHeight);
           doc.text(`${gstRate}%`, 350, currentHeight);
           doc.text(`₹${(taxPerUnit * qty).toFixed(2)}`, 420, currentHeight);
-          doc.text(`₹${(price * qty).toFixed(2)}`, 490, currentHeight);
+          doc.text(`₹${Number(item.lineTotal ?? (basePrice * qty + taxPerUnit * qty)).toFixed(2)}`, 490, currentHeight);
           currentHeight += 20;
 
           // Page break check
@@ -132,7 +132,7 @@ export const createInvoicePDF = async (invoice, order, user) => {
         const subtotal = Number(invoice.amount) || 0;
         const taxTotal = Number(invoice.taxAmount) || 0;
         const grandTotal = Number(invoice.totalAmount) || 0;
-        const gstLabel = Number(invoice.gst) || 18;
+        const gstLabel = invoice.gst == null ? 'Mixed' : `${Number(invoice.gst)}%`;
 
         doc.text('Subtotal:', 350, footerTop + 15);
         doc.text(`₹${subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 450, footerTop + 15);
@@ -151,7 +151,7 @@ export const createInvoicePDF = async (invoice, order, user) => {
           discountRow += 15;
         }
         
-        doc.text(`GST (${gstLabel}%):`, 350, discountRow);
+        doc.text(`GST (${gstLabel}):`, 350, discountRow);
         doc.text(`₹${taxTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 450, discountRow);
         
         doc.font('Helvetica-Bold');

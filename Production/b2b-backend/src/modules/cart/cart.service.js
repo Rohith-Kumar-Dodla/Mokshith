@@ -12,6 +12,7 @@ import {
   pruneStaleCartItems,
   resolveUserId,
 } from './cart.utils.js';
+import { calculateLineTax, money, normalizeGstRate } from '../../utils/tax.utils.js';
 
 async function loadUserCart(userId) {
   const cart = await repo.findCartByUser(userId);
@@ -46,6 +47,7 @@ async function withAuthoritativePricing(cart) {
   let discount = 0;
   let specialDiscountAmount = 0;
   let bulkDiscountAmount = 0;
+  let tax = 0;
   const items = validItems.map((item) => {
     const pricing = applyBestProductPromotion(
       item.productId,
@@ -57,6 +59,9 @@ async function withAuthoritativePricing(cart) {
     discount += pricing.discountAmount;
     specialDiscountAmount += Number(pricing.specialDiscountAmount || 0);
     bulkDiscountAmount += Number(pricing.bulkDiscountAmount || 0);
+    const gstRate = normalizeGstRate(item.productId.gst);
+    const gstAmount = calculateLineTax(pricing.itemTotal, gstRate);
+    tax = money(tax + gstAmount);
     return {
       ...item,
       pricing: {
@@ -67,6 +72,8 @@ async function withAuthoritativePricing(cart) {
         bulkDiscountAmount: pricing.bulkDiscountAmount || 0,
         discountPercent: pricing.discountPercent,
         itemSubtotal: pricing.itemTotal,
+        gstRate,
+        gstAmount,
         pricingSource: pricing.pricingSource,
         promotionId: pricing.promotion?._id || null,
         promotionName: pricing.promotion?.name || null,
@@ -77,7 +84,6 @@ async function withAuthoritativePricing(cart) {
     };
   });
   const discountedSubtotal = subtotal - discount;
-  const tax = discountedSubtotal * 0.18;
   return {
     ...plain,
     items,
@@ -89,7 +95,7 @@ async function withAuthoritativePricing(cart) {
       discountedSubtotal,
       tax,
       delivery: 0,
-      grandTotal: discountedSubtotal + tax,
+      grandTotal: money(discountedSubtotal + tax),
     },
   };
 }
@@ -116,7 +122,7 @@ export const addToCart = async (user, { productId, quantity }) => {
   }
 
   const product = await Product.findById(productId)
-    .select('name minOrderQty moq stock price basePrice isActive categoryId catalogScope')
+    .select('name minOrderQty moq stock price basePrice gst isActive categoryId catalogScope')
     .lean();
 
   logger.debug('Add to cart product lookup', {

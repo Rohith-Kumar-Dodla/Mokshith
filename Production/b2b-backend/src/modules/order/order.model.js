@@ -26,6 +26,8 @@ const orderSchema = new mongoose.Schema(
         specialDiscountAmount: { type: Number, default: 0 },
         bulkDiscountAmount: { type: Number, default: 0 },
         finalPrice: { type: Number },
+        gstRate: { type: Number, min: 0, max: 100 },
+        gstAmount: { type: Number, min: 0 },
         promotionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Promotion' },
         promotionName: { type: String },
         promotionCode: { type: String },
@@ -150,6 +152,8 @@ const orderSchema = new mongoose.Schema(
       index: true,
     },
     supplierAllocationLock: { type: Boolean, default: false },
+    returnRequestId: { type: mongoose.Schema.Types.ObjectId, ref: 'ReturnRequest', unique: true, sparse: true, index: true },
+    replacementForOrderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', default: null, index: true },
 
     metadata: {
       type: Object,

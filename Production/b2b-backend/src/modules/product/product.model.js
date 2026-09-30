@@ -93,7 +93,9 @@ const productSchema = new mongoose.Schema(
 
     gst: {
       type: Number,
-      default: 18, // 18% standard GST
+      default: 18, // Legacy compatibility default; calculations read this field.
+      min: 0,
+      max: 100,
     },
 
     image: {

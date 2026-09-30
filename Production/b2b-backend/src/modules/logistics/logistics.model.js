@@ -14,6 +14,8 @@ const logisticsSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Warehouse',
     },
+    contextType: { type: String, enum: ['OUTBOUND_DELIVERY', 'RETURN_PICKUP'], default: 'OUTBOUND_DELIVERY', index: true },
+    returnRequestId: { type: mongoose.Schema.Types.ObjectId, ref: 'ReturnRequest', unique: true, sparse: true, index: true },
     pickupWarehouseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Warehouse', default: null },
     pickupWarehouseName: { type: String, default: '' },
     pickupAddress: { type: String, default: '' },

@@ -69,6 +69,7 @@ const OrderDetails = () => {
     isBankTransfer &&
     order?.backendStatus === 'PENDING_PAYMENT' &&
     (!proof || proof.rawStatus === 'REJECTED');
+  const canRequestReturn = ['DELIVERED', 'COMPLETED'].includes(String(order?.backendStatus || order?.status || '').toUpperCase()) && String(order?.paymentStatus || '').toUpperCase() === 'PAID';
 
   if (loading) {
     return (
@@ -113,6 +114,7 @@ const OrderDetails = () => {
         subtitle={`Placed on ${order.orderDate}`}
         actions={
           <div className="flex items-center gap-2">
+            {canRequestReturn && <Link to={`/vendor/returns?orderId=${order.id}`} className="inline-flex h-10 sm:h-12 items-center rounded-lg bg-red-600 px-3 sm:px-4 text-xs sm:text-sm font-medium text-white">Request Return</Link>}
             <button
               type="button"
               onClick={handleDownloadInvoice}

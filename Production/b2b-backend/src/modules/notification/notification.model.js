@@ -20,9 +20,19 @@ const notificationSchema = new mongoose.Schema(
 
     type: {
       type: String,
-      enum: ['ORDER', 'PAYMENT', 'SYSTEM'],
+      enum: ['ORDER', 'PAYMENT', 'SYSTEM', 'ACCOUNT', 'USER', 'CATALOG', 'SUPPLIER', 'LOGISTICS', 'INVENTORY'],
       default: 'SYSTEM',
     },
+
+    category: { type: String, trim: true, uppercase: true, index: true, default: 'SYSTEM' },
+    eventType: { type: String, trim: true, uppercase: true, index: true, default: 'SYSTEM_EVENT' },
+    entityType: { type: String, trim: true, uppercase: true, default: null },
+    entityId: { type: mongoose.Schema.Types.ObjectId, default: null },
+    actionUrl: { type: String, trim: true, default: null },
+    severity: { type: String, enum: ['INFO', 'SUCCESS', 'WARNING', 'ERROR'], default: 'INFO' },
+    eventKey: { type: String, trim: true, default: null },
+    actorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
 
     isRead: {
       type: Boolean,
@@ -31,5 +41,9 @@ const notificationSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+notificationSchema.index({ userId: 1, isRead: 1, createdAt: -1 });
+notificationSchema.index({ userId: 1, category: 1, createdAt: -1 });
+notificationSchema.index({ userId: 1, eventKey: 1 }, { unique: true, sparse: true });
 
 export default mongoose.model('Notification', notificationSchema);

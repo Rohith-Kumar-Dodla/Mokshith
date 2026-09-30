@@ -8,6 +8,7 @@ import { ORDER_STATUS } from '../../constants/orderStatus.js';
 import { getBankTransferDetails } from '../../config/payment.config.js';
 import { sendNotification } from '../notification/notification.service.js';
 import { logger } from '../../config/logger.js';
+import { publishSuperAdminEvent } from '../notification/businessNotification.service.js';
 
 function resolveScreenshotUrl(file) {
   if (!file) return null;
@@ -141,6 +142,8 @@ export async function uploadPaymentProof(userId, { orderId, utrNumber, file, tra
     order.paymentStatus = PAYMENT_STATUS.PENDING;
     await order.save();
   }
+
+  await publishSuperAdminEvent('BANK_TRANSFER_PROOF_SUBMITTED', { entityType: 'PAYMENT_PROOF', entityId: proof._id, actorId: userId, businessKey: `submitted:${proof.updatedAt?.getTime?.() || Date.now()}`, reference: String(orderId), message: `Bank transfer proof was submitted for order #${orderId}.` });
 
   return proof;
 }
@@ -284,6 +287,8 @@ export async function approvePaymentProof(proofId, adminUserId) {
     });
   }
 
+  await publishSuperAdminEvent('BANK_TRANSFER_APPROVED', { entityType: 'PAYMENT_PROOF', entityId: proof._id, actorId: adminUserId, businessKey: `approved:${proof.verifiedAt?.getTime?.() || Date.now()}`, status: 'APPROVED', reference: String(order._id), message: `Bank transfer was approved for order #${order._id}.` });
+
   return proof;
 }
 
@@ -343,6 +348,8 @@ export async function rejectPaymentProof(proofId, adminUserId, reason) {
       error: err.message,
     });
   }
+
+  await publishSuperAdminEvent('BANK_TRANSFER_REJECTED', { entityType: 'PAYMENT_PROOF', entityId: proof._id, actorId: adminUserId, businessKey: `rejected:${proof.verifiedAt?.getTime?.() || Date.now()}`, status: 'REJECTED', reference: String(order._id), message: `Bank transfer was rejected for order #${order._id}.` });
 
   return proof;
 }

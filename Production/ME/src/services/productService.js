@@ -36,6 +36,11 @@ const productService = {
     return response.data;
   },
 
+  getSupplierComparison: async (productId) => {
+    const response = await api.get(`/products/${productId}/supplier-comparison`);
+    return response.data?.data ?? response.data;
+  },
+
   createProduct: async (productData, imageFile = null) => {
     if (imageFile) {
       const formData = buildProductFormData(productData, imageFile);

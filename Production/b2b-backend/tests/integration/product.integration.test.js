@@ -11,11 +11,17 @@ import {
 } from '../helpers/testUtils.js';
 import {
   seedRoleSessions,
+  seedActiveUser,
   seedCategory,
   resolveCategoryId,
 } from '../helpers/integrationFixtures.js';
 import { withAuth } from '../helpers/httpTestHelpers.js';
 import { redisClient } from '../../src/config/redis.js';
+import { ROLES } from '../../src/constants/roles.js';
+import Inventory from '../../src/modules/inventory/inventory.model.js';
+import SupplierProduct from '../../src/modules/supplier/supplierProduct.model.js';
+import Cart from '../../src/modules/cart/cart.model.js';
+import Wishlist from '../../src/modules/wishlist/wishlist.model.js';
 
 const request = supertest(app);
 
@@ -26,6 +32,7 @@ const request = supertest(app);
 
 describe('Product Module - Integration Tests', () => {
   let adminSession;
+  let superAdminSession;
   let vendorSession;
   let customerSession;
   let testCategory;
@@ -39,6 +46,7 @@ describe('Product Module - Integration Tests', () => {
     adminSession = roles.admin;
     vendorSession = roles.vendor;
     customerSession = roles.customer;
+    superAdminSession = await seedActiveUser({ role: 'SUPER_ADMIN', email: 'superadmin@test.com', mobile: '9876543299' });
   });
 
   afterEach(async () => {
@@ -421,24 +429,91 @@ describe('Product Module - Integration Tests', () => {
       });
     });
 
-    it('should delete product by admin', async () => {
+    it('should safely deactivate product by super admin', async () => {
       const response = await request
         .delete(`/api/v1/products/${testProduct._id}`)
-        .set('Authorization', `Bearer ${adminSession.accessToken}`)
+        .set('Authorization', `Bearer ${superAdminSession.accessToken}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
 
-      // Verify deletion
-      const deleted = await Product.findById(testProduct._id);
-      expect(deleted).toBeNull();
+      const archived = await Product.findById(testProduct._id);
+      expect(archived).not.toBeNull();
+      expect(archived.isActive).toBe(false);
+      expect(response.body.data.archived).toBe(true);
+    });
+
+    it('stores product GST and rejects invalid GST values', async () => {
+      const payload = { name: 'Five Percent GST Product', price: 1000, gst: 5, categoryId: testCategory._id.toString() };
+      const created = await request.post('/api/v1/products').set('Authorization', `Bearer ${adminSession.accessToken}`).send(payload).expect(200);
+      expect(created.body.data.gst).toBe(5);
+      await request.post('/api/v1/products').set('Authorization', `Bearer ${adminSession.accessToken}`).send({ ...payload, name: 'Invalid GST Product', gst: -1 }).expect(400);
+      await request.post('/api/v1/products').set('Authorization', `Bearer ${adminSession.accessToken}`).send({ ...payload, name: 'Excess GST Product', gst: 101 }).expect(400);
+    });
+
+    it('preserves inventory, supplier mappings, cart and wishlist references', async () => {
+      const warehouseId = new mongoose.Types.ObjectId();
+      const supplierId = new mongoose.Types.ObjectId();
+      await Inventory.create({ productId: testProduct._id, warehouseId, stock: 50 });
+      await SupplierProduct.create({ productId: testProduct._id, supplierId, minimumOrderQuantity: 1, quantity: 50 });
+      await Cart.create({ userId: customerSession.user._id, items: [{ productId: testProduct._id, quantity: 2 }] });
+      await Wishlist.create({ userId: vendorSession.user._id, items: [{ productId: testProduct._id }] });
+
+      await request
+        .delete(`/api/v1/products/${testProduct._id}`)
+        .set('Authorization', `Bearer ${superAdminSession.accessToken}`)
+        .expect(200);
+
+      expect(await Product.exists({ _id: testProduct._id, isActive: false })).toBeTruthy();
+      expect(await Inventory.exists({ productId: testProduct._id })).toBeTruthy();
+      expect(await SupplierProduct.exists({ productId: testProduct._id })).toBeTruthy();
+      expect(await Cart.exists({ 'items.productId': testProduct._id })).toBeTruthy();
+      expect(await Wishlist.exists({ 'items.productId': testProduct._id })).toBeTruthy();
+    });
+
+    it('returns 403 for admin even when role values are forged', async () => {
+      await request
+        .delete(`/api/v1/products/${testProduct._id}?role=SUPER_ADMIN`)
+        .set('Authorization', `Bearer ${adminSession.accessToken}`)
+        .set('x-user-role', 'SUPER_ADMIN')
+        .send({ role: 'SUPER_ADMIN' })
+        .expect(403);
+      expect((await Product.findById(testProduct._id)).isActive).toBe(true);
+    });
+
+    it.each([
+      ROLES.VENDOR,
+      ROLES.B2B_CUSTOMER,
+      ROLES.B2C_CUSTOMER,
+      ROLES.DELIVERY_PARTNER,
+      ROLES.SUPPLIER,
+    ])('returns 403 for %s', async (role) => {
+      const session = await seedActiveUser({ role });
+      await request
+        .delete(`/api/v1/products/${testProduct._id}`)
+        .set('Authorization', `Bearer ${session.accessToken}`)
+        .expect(403);
+      expect((await Product.findById(testProduct._id)).isActive).toBe(true);
+    });
+
+    it('returns 401 when unauthenticated', async () => {
+      await request.delete(`/api/v1/products/${testProduct._id}`).expect(401);
+      expect((await Product.findById(testProduct._id)).isActive).toBe(true);
+    });
+
+    it('returns 409 when an already deactivated product is deleted again', async () => {
+      await Product.updateOne({ _id: testProduct._id }, { isActive: false });
+      await request
+        .delete(`/api/v1/products/${testProduct._id}`)
+        .set('Authorization', `Bearer ${superAdminSession.accessToken}`)
+        .expect(409);
     });
 
     it('should reject deletion for non-existent product', async () => {
       const fakeId = new mongoose.Types.ObjectId();
       const response = await request
         .delete(`/api/v1/products/${fakeId}`)
-        .set('Authorization', `Bearer ${adminSession.accessToken}`)
+        .set('Authorization', `Bearer ${superAdminSession.accessToken}`)
         .expect(404);
 
       expect(response.body.success).toBe(false);

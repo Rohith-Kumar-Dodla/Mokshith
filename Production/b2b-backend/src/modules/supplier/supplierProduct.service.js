@@ -14,6 +14,7 @@ import { CATALOG_SCOPE } from '../../constants/catalogScope.js';
 import { createProduct as createCanonicalProduct } from '../product/product.service.js';
 import { getTransactionSupport } from '../../config/db.js';
 import { formatCurrency } from '../../utils/currency.utils.js';
+import { publishSuperAdminEvent } from '../notification/businessNotification.service.js';
 
 const UPDATABLE_FIELDS = ['minimumOrderQuantity', 'quantity', 'availabilityStatus', 'notes'];
 
@@ -540,10 +541,12 @@ export const createSupplierProduct = async (supplierId, data, actorId, ip) => {
   if (data.supplierPrice != null && data.supplierPrice !== '') {
     await setSupplierProductPrice(supplierId, mapping._id, data.supplierPrice, actorId, ip);
     const populated = await populateProduct(SupplierProduct.findById(mapping._id));
+    await publishSuperAdminEvent('SUPPLIER_PRODUCT_CHANGED', { entityType: 'SUPPLIER_PRODUCT', entityId: mapping._id, supplierId, actorId, businessKey: 'created', message: `Product “${product.name}” was mapped to supplier “${supplier.supplierName}”.` });
     return serializeMapping(populated);
   }
 
   const populated = await populateProduct(SupplierProduct.findById(mapping._id));
+  await publishSuperAdminEvent('SUPPLIER_PRODUCT_CHANGED', { entityType: 'SUPPLIER_PRODUCT', entityId: mapping._id, supplierId, actorId, businessKey: 'created', message: `Product “${product.name}” was mapped to supplier “${supplier.supplierName}”.` });
   return serializeMapping(populated);
 };
 
@@ -908,6 +911,7 @@ export const setSupplierProductPrice = async (supplierId, mappingId, priceInput,
     }
 
     const populated = await populateProduct(SupplierProduct.findById(updated._id));
+    await publishSuperAdminEvent('SUPPLIER_PRICE_CHANGED', { entityType: 'SUPPLIER_PRODUCT', entityId: mapping._id, supplierId, actorId, businessKey: String(historyDoc._id), message: `Supplier price changed from ${previousPrice == null ? 'unset' : formatCurrency(previousPrice)} to ${formatCurrency(nextPrice)}.` });
     return serializeMapping(populated);
   } catch (err) {
     if (session) {

@@ -35,6 +35,7 @@ import {
   syncLegacyAddressFromVendorAddress,
 } from '../../utils/vendorAddress.utils.js';
 import { geocodeAddress } from '../../services/geocoding.service.js';
+import { publishSuperAdminEvent } from '../notification/businessNotification.service.js';
 
 export const register = async (data, req = {}) => {
   const { email, mobile, password } = data;
@@ -114,6 +115,7 @@ export const register = async (data, req = {}) => {
   }
 
   logger.info('User registered', { userId: user._id, email, role: user.role });
+  await publishSuperAdminEvent('USER_REGISTERED', { entityType: 'USER', entityId: user._id, businessKey: 'registered', message: `${user.businessName || user.name} submitted a new vendor registration.` });
 
   return sanitizeUser(user);
 };

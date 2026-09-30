@@ -28,7 +28,7 @@ router.put(
 router.delete(
   '/:id',
   protect,
-  authorize('ADMIN', 'SUPER_ADMIN'),
+  authorize('SUPER_ADMIN'),
   controller.deleteWarehouse
 );
 

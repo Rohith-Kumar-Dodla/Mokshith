@@ -2,6 +2,7 @@ import * as repo from './invoice.repository.js';
 import { generateInvoiceNumber, createInvoicePDF } from './invoice.generator.js';
 import AppError from '../../errors/AppError.js';
 import Order from '../order/order.model.js';
+import { LEGACY_GST_RATE, calculateLineTax, money, normalizeGstRate } from '../../utils/tax.utils.js';
 
 import fs from 'fs';
 import path from 'path';
@@ -32,19 +33,21 @@ export const generateInvoice = async (orderId, force = false) => {
   }
 
   // Invoices are historical documents: use the order snapshot, never current product/user data.
-  const gstRate = 18;
   const itemDetails = (order.items || []).map((item) => {
-    const price = Number(item.price || 0);
+    const price = Number(item.finalPrice ?? item.price ?? 0);
     const quantity = Number(item.quantity || 0);
-    const basePrice = price / (1 + gstRate / 100);
+    const gstRate = normalizeGstRate(item.gstRate, LEGACY_GST_RATE);
+    const gstAmount = item.gstAmount == null ? calculateLineTax(price * quantity, gstRate) : money(item.gstAmount);
     return {
       name: item.name || 'Product',
       price,
       quantity,
-      basePrice,
+      basePrice: price,
       gstRate,
-      taxPerUnit: price - basePrice,
-      finalPrice: Number(item.finalPrice ?? price),
+      gstAmount,
+      taxPerUnit: quantity ? money(gstAmount / quantity) : 0,
+      lineTotal: money(price * quantity + gstAmount),
+      finalPrice: price,
       discountAmount: Number(item.discountAmount || 0),
       specialDiscountAmount: Number(item.specialDiscountAmount || 0),
       bulkDiscountAmount: Number(item.bulkDiscountAmount || 0),
@@ -52,6 +55,7 @@ export const generateInvoice = async (orderId, force = false) => {
   });
   const totalBaseAmount = Number(order.subtotal ?? itemDetails.reduce((sum, item) => sum + item.basePrice * item.quantity, 0));
   const totalTaxAmount = Number(order.taxAmount ?? (Number(order.totalAmount || 0) - totalBaseAmount));
+  const uniqueRates = [...new Set(itemDetails.map((item) => item.gstRate))];
 
   if (!invoice) {
     const invoiceNumber = generateInvoiceNumber();
@@ -59,7 +63,7 @@ export const generateInvoice = async (orderId, force = false) => {
       orderId: order._id,
       userId: order.userId?._id || order.userId || null,
       amount: Math.round((totalBaseAmount || 0) * 100) / 100,
-      gst: gstRate,
+      gst: uniqueRates.length === 1 ? uniqueRates[0] : null,
       taxAmount: Math.round((totalTaxAmount || 0) * 100) / 100,
       totalAmount: order.totalAmount || 0,
       invoiceNumber,

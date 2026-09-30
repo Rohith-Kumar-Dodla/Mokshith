@@ -13,6 +13,7 @@ import { setupQueryTimeout } from './src/utils/queryTimeout.js';
 import { Server } from 'socket.io';
 import http from 'http';
 import mongoose from 'mongoose';
+import jwt from 'jsonwebtoken';
 
 validateEnv({ logger });
 
@@ -78,13 +79,27 @@ const startServer = async () => {
     }
     
 
+    io.use((socket, next) => {
+      try {
+        const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.replace(/^Bearer\s+/i, '');
+        if (!token) return next(new Error('Authentication required'));
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (!decoded?.id) return next(new Error('Invalid authentication token'));
+        socket.data.userId = String(decoded.id);
+        socket.join(socket.data.userId);
+        return next();
+      } catch {
+        return next(new Error('Invalid authentication token'));
+      }
+    });
+
     io.on('connection', (socket) => {
       logger.info(`New socket connection: ${socket.id}`);
 
       // 🔥 Join personal room for targeted events
       socket.on('join', (userId) => {
-        if (userId) {
-          socket.join(userId);
+        if (userId && String(userId) === socket.data.userId) {
+          socket.join(socket.data.userId);
           logger.info(`👤 User ${userId} joined room ${userId}`);
         }
       });

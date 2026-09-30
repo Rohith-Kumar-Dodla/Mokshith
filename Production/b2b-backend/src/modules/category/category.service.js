@@ -1,6 +1,8 @@
 import * as repo from './category.repository.js';
 import AppError from '../../errors/AppError.js';
 import Product from '../product/product.model.js';
+import Category from './category.model.js';
+import SupplierCategory from '../supplier/supplierCategory.model.js';
 
 const generateSlug = (name) =>
   name
@@ -69,9 +71,13 @@ export const deleteCategory = async (id) => {
   const category = await repo.findById(id);
   if (!category) throw new AppError('Category not found', 404);
 
-  const productCount = await Product.countDocuments({ categoryId: id });
-  if (productCount > 0) {
-    throw new AppError('Category cannot be deleted while products reference it. Deactivate it instead.', 409);
+  const [productCount, childCount, supplierMappingCount] = await Promise.all([
+    Product.countDocuments({ categoryId: id }),
+    Category.countDocuments({ parentId: id }),
+    SupplierCategory.countDocuments({ categoryId: id }),
+  ]);
+  if (productCount > 0 || childCount > 0 || supplierMappingCount > 0) {
+    throw new AppError('Category cannot be deleted while products, child categories, or supplier mappings reference it. Deactivate it instead.', 409);
   }
   await repo.deleteCategory(id);
   return category;

@@ -13,6 +13,7 @@ import {
 import AdminApprovals from './AdminApprovals';
 import Vendors from './Vendors';
 import DeliveryPartners from './DeliveryPartners';
+import OtherRoles from './OtherRoles';
 import { mapVendorUser } from '../../utils/vendorMapper';
 import adminApprovalService from '../../services/adminApprovalService';
 import PageHeader from '../../components/superadmin/PageHeader';
@@ -31,6 +32,7 @@ const SECTION_KEYS = [
   { key: 'vendors', label: 'Vendor Management', icon: FiShoppingBag },
   { key: 'delivery', label: 'Delivery Partners', icon: FiTruck },
   { key: 'suppliers', label: 'Supplier Management', icon: FiBriefcase },
+  { key: 'other-roles', label: 'Other Roles', icon: FiUsers },
 ];
 
 const VALID_TABS = new Set(SECTION_KEYS.map((s) => s.key));
@@ -486,7 +488,7 @@ const UserManagement = () => {
         {/* Top navigation tabs */}
         <div className="mt-3">
           {/* Desktop & Tablet: grid layout */}
-          <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-6 gap-3">
             {SECTION_KEYS.map((s) => (
               <button
                 key={s.key}
@@ -533,6 +535,7 @@ const UserManagement = () => {
               {section === 'vendors' && <Vendors />}
               {section === 'delivery' && <DeliveryPartners />}
               {section === 'suppliers' && <SupplierManagement />}
+              {section === 'other-roles' && <OtherRoles />}
             </div>
           </div>
         </div>

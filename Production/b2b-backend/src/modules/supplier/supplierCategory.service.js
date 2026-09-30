@@ -8,6 +8,7 @@ import Audit from '../audit/audit.model.js';
 import AppError from '../../errors/AppError.js';
 import { SUPPLIER_STATUS } from '../../constants/supplierStatus.js';
 import { SUPPLIER_CATEGORY_STATUS } from '../../constants/supplierCategoryStatus.js';
+import { publishSuperAdminEvent } from '../notification/businessNotification.service.js';
 
 const assertValidId = (id, label) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -252,6 +253,7 @@ export const createSupplierCategory = async (supplierId, data, actorId, ip) => {
   });
 
   const populated = await populateCategory(SupplierCategory.findById(mapping._id));
+  await publishSuperAdminEvent('SUPPLIER_CATEGORY_CHANGED', { entityType: 'SUPPLIER_CATEGORY', entityId: mapping._id, supplierId, actorId, businessKey: 'created', message: `Category “${category.name}” was associated with supplier “${supplier.supplierName}”.` });
   return serializeMapping(populated);
 };
 
@@ -285,6 +287,7 @@ export const updateSupplierCategoryStatus = async (supplierId, mappingId, nextSt
   });
 
   const populated = await populateCategory(SupplierCategory.findById(mapping._id));
+  await publishSuperAdminEvent('SUPPLIER_CATEGORY_CHANGED', { entityType: 'SUPPLIER_CATEGORY', entityId: mapping._id, supplierId, actorId, businessKey: `status:${nextStatus}`, status: nextStatus, message: `Supplier category mapping changed to ${nextStatus}.` });
   return serializeMapping(populated);
 };
 
