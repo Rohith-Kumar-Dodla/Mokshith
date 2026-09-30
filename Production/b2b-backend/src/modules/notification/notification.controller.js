@@ -3,7 +3,7 @@ import * as service from './notification.service.js';
 import { successResponse } from '../../utils/responseHandler.js';
 
 export const getNotifications = asyncHandler(async (req, res) => {
-  const data = await service.getNotifications(req.user.id);
+  const data = await service.getNotifications(req.user.id, req.query);
   successResponse(res, data);
 });
 
@@ -15,4 +15,8 @@ export const markAsRead = asyncHandler(async (req, res) => {
 export const markAllAsRead = asyncHandler(async (req, res) => {
   const data = await service.markAllAsRead(req.user.id);
   successResponse(res, data, 'All notifications marked as read');
+});
+
+export const getUnreadCount = asyncHandler(async (req, res) => {
+  successResponse(res, await service.getUnreadCount(req.user.id));
 });

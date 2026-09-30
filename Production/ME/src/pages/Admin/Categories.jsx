@@ -15,7 +15,7 @@ const EMPTY_FORM = {
   isActive: true,
 };
 
-const Categories = () => {
+const Categories = ({ canDelete = false }) => {
   const {
     categories,
     loading,
@@ -73,7 +73,7 @@ const Categories = () => {
   };
 
   const handleDeleteCategory = async (category) => {
-    if (!window.confirm(`Delete category "${category.name}"?`)) return;
+    if (!window.confirm(`Delete category "${category.name}"? This is irreversible and will only succeed when nothing references it.`)) return;
     try {
       await deleteCategory(category.id);
     } catch {
@@ -249,9 +249,9 @@ const Categories = () => {
                       <button type="button" onClick={() => handleEditCategory(category)} className="p-2 hover:bg-green-100 rounded-lg" title="Edit">
                         <FiEdit size={14} className="text-green-600" />
                       </button>
-                      <button type="button" onClick={() => handleDeleteCategory(category)} className="p-2 hover:bg-red-100 rounded-lg" title="Delete">
+                      {canDelete && <button type="button" onClick={() => handleDeleteCategory(category)} className="p-2 hover:bg-red-100 rounded-lg" title="Delete">
                         <FiTrash2 size={14} className="text-red-600" />
-                      </button>
+                      </button>}
                     </div>
                   </td>
                 </tr>

@@ -7,6 +7,8 @@ import { CATALOG_SCOPE } from '../../constants/catalogScope.js';
 import { assertCustomerCatalogProduct } from './productCatalog.utils.js';
 import { validateBulkPricingTiers } from '../../utils/bulkPricing.utils.js';
 import Promotion from '../promotion/promotion.model.js';
+import { publishSuperAdminEvent } from '../notification/businessNotification.service.js';
+import { logAction } from '../audit/audit.service.js';
 
 function serializeProduct(product) {
   if (!product) {
@@ -98,6 +100,8 @@ export const createProduct = async (data) => {
     console.error('Product event error:', err.message);
   }
 
+  await publishSuperAdminEvent('PRODUCT_CREATED', { entityType: 'PRODUCT', entityId: product._id, businessKey: 'created', message: `Product “${product.name}” was created.` });
+
   return serializeProduct(product);
 };
 
@@ -177,21 +181,36 @@ export const updateProduct = async (id, data) => {
 
   productCache.data = null;
 
+  await publishSuperAdminEvent('PRODUCT_UPDATED', { entityType: 'PRODUCT', entityId: updatedProduct._id, businessKey: String(updatedProduct.updatedAt?.getTime?.() || Date.now()), message: `Product “${updatedProduct.name}” was updated.` });
+
   return serializeProduct(updatedProduct);
 };
 
-export const deleteProduct = async (id) => {
+export const deleteProduct = async (id, actor = {}) => {
   const product = await repo.findById(id);
 
   if (!product) throw new AppError('Product not found', 404);
 
-  await repo.deleteProduct(id);
-  // Hard deletion must also remove the product from every promotion target list.
-  await Promotion.updateMany({ productIds: id }, { $pull: { productIds: id } });
+  if (product.isActive === false) {
+    throw new AppError('Product is already deactivated', 409);
+  }
+
+  // Products are referenced by orders, inventory, supplier mappings, carts,
+  // wishlists, reviews, invoices and procurement records. Preserve those
+  // references and remove the product only from active catalog use.
+  await repo.updateProduct(id, { isActive: false });
+  await logAction({
+    userId: actor.userId,
+    action: 'PRODUCT_DEACTIVATED',
+    entity: 'Product',
+    entityId: product._id,
+    details: `Deactivated product: ${product.name}`,
+    data: { actorRole: actor.role },
+  }).catch(() => {});
 
   productCache.data = null;
 
-  return { message: 'Product deleted successfully' };
+  return { message: 'Product deactivated successfully to preserve historical records', archived: true };
 };
 
 export const updateStock = async (id, stock) => {
@@ -206,6 +225,8 @@ export const updateStock = async (id, stock) => {
   await syncProductStockToInventory(product);
   productCache.data = null;
 
+  await publishSuperAdminEvent(stock <= (product.lowStockThreshold || 10) ? 'INVENTORY_LOW_STOCK' : 'PRODUCT_STOCK_CHANGED', { entityType: 'PRODUCT', entityId: product._id, businessKey: `stock:${stock}`, message: `Stock for “${product.name}” changed to ${stock}.` });
+
   return product;
 };
 
@@ -213,6 +234,8 @@ export const updateStatus = async (id, isActive) => {
   const product = await repo.updateProduct(id, { isActive });
 
   if (!product) throw new AppError('Product not found', 404);
+
+  await publishSuperAdminEvent('PRODUCT_STATUS_CHANGED', { entityType: 'PRODUCT', entityId: product._id, businessKey: `active:${isActive}`, status: isActive ? 'ACTIVE' : 'INACTIVE', message: `Product “${product.name}” was ${isActive ? 'activated' : 'deactivated'}.` });
 
   return product;
 };

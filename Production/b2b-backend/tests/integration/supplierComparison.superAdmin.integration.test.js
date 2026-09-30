@@ -92,6 +92,13 @@ describe('Super Admin supplier comparison - Phase 2.2', () => {
   const compare = (productId) =>
     asSuperAdmin(request.get(`/api/v1/super-admin/products/${productId}/supplier-comparison`));
 
+  it('allows Admin and Super Admin to use the shared product comparison while rejecting customer roles', async () => {
+    await request.get(`/api/v1/products/${product._id}/supplier-comparison`).set(sessionHeaders(admin)).expect(200);
+    await request.get(`/api/v1/products/${product._id}/supplier-comparison`).set(sessionHeaders(superAdmin)).expect(200);
+    const customer = await seedActiveUser({ role: ROLES.B2B_CUSTOMER });
+    await request.get(`/api/v1/products/${product._id}/supplier-comparison`).set(sessionHeaders(customer)).expect(403);
+  });
+
   it('allows Super Admin to compare active priced suppliers and identifies the lowest price', async () => {
     const abc = await createActiveSupplier();
     const pqr = await createActiveSupplier({

@@ -1,0 +1,23 @@
+import express from 'express';
+import * as controller from './return.controller.js';
+import { protect } from '../../middlewares/auth.middleware.js';
+import { authorize } from '../../middlewares/role.middleware.js';
+import { csrfProtection } from '../../middlewares/csrf.middleware.js';
+import { operationIdempotency } from '../../middlewares/idempotency.middleware.js';
+import { validate } from '../../middlewares/validate.middleware.js';
+import { createReturnSchema, listReturnsSchema, rejectReturnSchema, receiveReturnSchema, inspectReturnSchema } from './return.validation.js';
+
+const router = express.Router();
+router.use(protect);
+router.use(authorize('VENDOR', 'B2B_CUSTOMER', 'B2C_CUSTOMER', 'ADMIN', 'SUPER_ADMIN'));
+router.get('/', validate(listReturnsSchema), controller.list);
+router.post('/', csrfProtection, authorize('VENDOR', 'B2B_CUSTOMER', 'B2C_CUSTOMER'), operationIdempotency('return:create'), validate(createReturnSchema), controller.create);
+router.get('/:id', controller.getById);
+router.post('/:id/cancel', csrfProtection, authorize('VENDOR', 'B2B_CUSTOMER', 'B2C_CUSTOMER'), controller.cancel);
+router.post('/:id/approve', csrfProtection, authorize('ADMIN', 'SUPER_ADMIN'), controller.approve);
+router.post('/:id/reject', csrfProtection, authorize('ADMIN', 'SUPER_ADMIN'), validate(rejectReturnSchema), controller.reject);
+router.post('/:id/receive', csrfProtection, authorize('ADMIN', 'SUPER_ADMIN'), validate(receiveReturnSchema), controller.receive);
+router.post('/:id/inspect', csrfProtection, authorize('ADMIN', 'SUPER_ADMIN'), validate(inspectReturnSchema), controller.inspect);
+router.post('/:id/refund', csrfProtection, authorize('ADMIN', 'SUPER_ADMIN'), operationIdempotency('return:refund'), controller.refund);
+router.post('/:id/replacement', csrfProtection, authorize('ADMIN', 'SUPER_ADMIN'), operationIdempotency('return:replacement'), controller.replace);
+export default router;

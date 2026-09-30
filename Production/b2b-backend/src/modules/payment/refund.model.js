@@ -16,7 +16,7 @@ const refundSchema = new mongoose.Schema(
     paymentId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Payment',
-      required: true,
+      required: false,
       index: true,
     },
 
@@ -41,7 +41,7 @@ const refundSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ['INITIATED', 'PROCESSING', 'SUCCESS', 'FAILED'],
+      enum: ['INITIATED', 'PROCESSING', 'MANUAL_REFUND_REQUIRED', 'SUCCESS', 'FAILED'],
       default: 'INITIATED',
       index: true,
     },
@@ -55,7 +55,7 @@ const refundSchema = new mongoose.Schema(
 
     razorpayPaymentId: {
       type: String,
-      required: true,
+      required: false,
       index: true,
     },
 
@@ -102,6 +102,8 @@ const refundSchema = new mongoose.Schema(
       type: Object,
       default: {},
     },
+    returnRequestId: { type: mongoose.Schema.Types.ObjectId, ref: 'ReturnRequest', unique: true, sparse: true, index: true },
+    refundMethod: { type: String, enum: ['GATEWAY', 'MANUAL', 'CREDIT'], default: 'GATEWAY' },
   },
   {
     timestamps: true,

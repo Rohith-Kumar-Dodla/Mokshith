@@ -14,6 +14,7 @@ import { sendNotification } from '../notification/notification.service.js';
 import { TEMPLATES } from '../notification/notification.templates.js';
 import { ORDER_STATUS } from '../../constants/orderStatus.js';
 import { PAYMENT_STATUS } from '../../constants/paymentStatus.js';
+import { publishSuperAdminEvent } from '../notification/businessNotification.service.js';
 
 export const createRazorpayOrder = async (amount, userId, orderId = null) => {
   // Razorpay minimum amount is 100 paise (₹1)
@@ -404,6 +405,8 @@ export const initiatePayment = async (orderId, user) => {
     paymentMethod: order.paymentMethod || 'ONLINE',
   });
 
+  await publishSuperAdminEvent('PAYMENT_INITIATED', { entityType: 'PAYMENT', entityId: payment._id, actorId: userId, businessKey: String(payment.createdAt?.getTime?.() || payment._id), reference: String(orderId), message: `Payment was initiated for order #${orderId}.` });
+
   return {
     payment,
     gateway: paymentOrder,
@@ -488,6 +491,7 @@ export const verifyPayment = async (payload, user = null) => {
   } catch (lockErr) {
     logger.error('verifyPayment - lock acquisition error', { lockKey, error: lockErr?.message || String(lockErr) });
   }
+
   // 5. Mark as processed in Redis (24h TTL)
   if (!DISABLE_REDIS) {
     await redisClient.setex(replayKey, 86400, Date.now().toString());
@@ -657,6 +661,7 @@ export const verifyPayment = async (payload, user = null) => {
   if (totalVerifyDuration > 1000) {
     logger.warn('Slow operation: verifyPayment took >1s', { orderId, razorpay_payment_id, durationMs: totalVerifyDuration });
   }
+  await publishSuperAdminEvent('PAYMENT_SUCCESS', { entityType: 'PAYMENT', entityId: payment._id, actorId: orderToUpdate.userId, businessKey: String(razorpay_payment_id), status: 'SUCCESS', reference: String(orderToUpdate._id), message: `Payment of ${orderToUpdate.totalAmount.toLocaleString('en-IN')} succeeded for order #${orderToUpdate._id}.` });
   return payment;
 };
 
@@ -694,6 +699,8 @@ export const failPayment = async (orderId, reason, user = null) => {
       await restoreStock(item.productId, item.quantity);
     }
   }
+
+  await publishSuperAdminEvent('PAYMENT_FAILED', { entityType: 'ORDER', entityId: order._id, actorId: order.userId, businessKey: `failed:${order.updatedAt?.getTime?.() || Date.now()}`, status: 'FAILED', message: `Payment failed for order #${order._id}.` });
 
   return { status: 'FAILED', orderId };
 };
@@ -1007,6 +1014,8 @@ export const createRefund = async (orderId, userId, refundAmount, reason, initia
     initiatedBy: initiatedBy._id,
   });
 
+  await publishSuperAdminEvent('REFUND_INITIATED', { entityType: 'REFUND', entityId: refund._id, actorId: initiatedBy._id, businessKey: 'initiated', reference: String(orderId), message: `Refund of ${finalRefundAmount.toLocaleString('en-IN')} was initiated for order #${orderId}.` });
+
   // 10. 🔒 Mark refund as in-progress for idempotency (24h TTL)
   await redisClient.setex(refundKey, 86400, refund._id.toString());
 
@@ -1074,6 +1083,8 @@ export const createRefund = async (orderId, userId, refundAmount, reason, initia
       razorpayRefundId: gatewayRefund.refund_id,
     });
 
+    await publishSuperAdminEvent('REFUND_COMPLETED', { entityType: 'REFUND', entityId: refund._id, actorId: initiatedBy._id, businessKey: String(gatewayRefund.refund_id), status: 'SUCCESS', reference: String(orderId), message: `Refund of ${finalRefundAmount.toLocaleString('en-IN')} completed for order #${orderId}.` });
+
     return refund;
   } catch (error) {
     // Mark refund as failed
@@ -1088,6 +1099,8 @@ export const createRefund = async (orderId, userId, refundAmount, reason, initia
       error: error.message,
       stack: error.stack,
     });
+
+    await publishSuperAdminEvent('REFUND_FAILED', { entityType: 'REFUND', entityId: refund._id, actorId: initiatedBy._id, businessKey: `failed:${refund.updatedAt?.getTime?.() || Date.now()}`, status: 'FAILED', reference: String(orderId), message: `Refund failed for order #${orderId}.` });
 
     throw new AppError(`Refund failed: ${error.message}`, 500);
   }

@@ -66,12 +66,12 @@ const createWorkers = () => {
   const notificationWorker = new Worker(
     'notification',
     async (job) => {
-      const { userId, type, title, message } = job.data;
+      const { userId, type, title, message, skipRealtime } = job.data;
       
       logger.info('Processing notification job', { userId, type, jobId: job.id });
       
       // Send notification via Socket.IO
-      if (global.io) {
+      if (global.io && !skipRealtime) {
         global.io.to(userId).emit('notification', {
           type,
           title,

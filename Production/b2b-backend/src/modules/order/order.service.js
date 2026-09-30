@@ -30,6 +30,8 @@ import { calculateLinePricing } from '../../utils/bulkPricing.utils.js';
 import { applyBestProductPromotion } from '../../utils/bulkPricing.utils.js';
 import { getEligiblePromotions } from '../promotion/promotion.service.js';
 import { geocodeAddress, hasValidCoordinates } from '../../services/geocoding.service.js';
+import { publishSuperAdminEvent } from '../notification/businessNotification.service.js';
+import { calculateLineTax, money, normalizeGstRate } from '../../utils/tax.utils.js';
 
 import mongoose from 'mongoose';
 import { getTransactionSupport } from '../../config/db.js';
@@ -115,7 +117,7 @@ export const createOrder = async (userId, data) => {
   // 🔥 1. Bulk fetch all products at once (Performance optimization)
   const productIds = finalItems.map(item => item.productId || item.id || item.productId?._id);
   const products = await Product.find({ _id: { $in: productIds } })
-    .select('_id name sku price basePrice weight minOrderQty moq isActive catalogScope bulkPricing')
+    .select('_id name sku price basePrice weight minOrderQty moq gst isActive catalogScope bulkPricing')
     .lean();
   
   if (products.length !== productIds.length) {
@@ -131,6 +133,7 @@ export const createOrder = async (userId, data) => {
   let totalSpecialDiscountAmount = 0;
   let totalBulkDiscountAmount = 0;
   let totalWeight = 0;
+  let totalTaxAmount = 0;
   const items = [];
 
   // 🔥 2. Validate + Prepare Items + Check Stock
@@ -169,7 +172,10 @@ export const createOrder = async (userId, data) => {
       promotions
     );
 
-    totalAmount += linePricing.itemTotal;
+    const gstRate = normalizeGstRate(product.gst);
+    const gstAmount = calculateLineTax(linePricing.itemTotal, gstRate);
+    totalAmount = money(totalAmount + linePricing.itemTotal);
+    totalTaxAmount = money(totalTaxAmount + gstAmount);
     totalDiscountAmount += Number(linePricing.discountAmount || 0);
     totalSpecialDiscountAmount += Number(linePricing.specialDiscountAmount || 0);
     totalBulkDiscountAmount += Number(linePricing.bulkDiscountAmount || 0);
@@ -185,15 +191,16 @@ export const createOrder = async (userId, data) => {
       specialDiscountAmount: linePricing.specialDiscountAmount || 0,
       bulkDiscountAmount: linePricing.bulkDiscountAmount || 0,
       finalPrice: linePricing.unitPrice,
+      gstRate,
+      gstAmount,
       promotionId: linePricing.promotion?._id,
       promotionName: linePricing.promotion?.name,
       promotionCode: linePricing.promotion?.code,
     });
   }
 
-  // Add 18% GST
-  const tax = totalAmount * 0.18;
-  const finalTotal = totalAmount + tax;
+  const tax = totalTaxAmount;
+  const finalTotal = money(totalAmount + tax);
 
   // 🔥 Calculate Commission
   const commissionSetting = await fetchSetting('commissionRate');
@@ -350,6 +357,7 @@ export const createOrder = async (userId, data) => {
   if (totalDuration > 1000) {
     logger.warn('Slow operation: createOrder overall took >1s', { userId, orderId: order?._id, durationMs: totalDuration });
   }
+  await publishSuperAdminEvent('ORDER_CREATED', { entityType: 'ORDER', entityId: order._id, actorId: userId, businessKey: String(order.createdAt?.getTime?.() || order._id), status: order.status, message: `Order #${order._id} was created for ${finalTotal.toLocaleString('en-IN')} via ${paymentMethod.toUpperCase()}.` });
   return order;
 };
 
@@ -725,6 +733,8 @@ export const markOrderAsFailedWithUser = async (id, user) => {
       session.endSession();
     }
 
+    await publishSuperAdminEvent('ORDER_FAILED', { entityType: 'ORDER', entityId: order._id, actorId: userId, businessKey: String(order.updatedAt?.getTime?.() || 'failed'), status: ORDER_STATUS.FAILED, message: `Order #${order._id} was marked failed.` });
+
     return order;
   } catch (error) {
     if (supportsTransactions && session) {
@@ -740,6 +750,9 @@ export const updateOrderStatus = async (orderId, newStatus, actor = {}, note = '
     source: 'admin',
     note: note || undefined,
   });
+
+  const eventType = newStatus === ORDER_STATUS.CANCELLED ? 'ORDER_CANCELLED' : newStatus === ORDER_STATUS.FAILED ? 'ORDER_FAILED' : 'ORDER_STATUS_CHANGED';
+  await publishSuperAdminEvent(eventType, { entityType: 'ORDER', entityId: order._id, actorId: actor?._id || actor?.id, businessKey: `${newStatus}:${order.updatedAt?.getTime?.() || Date.now()}`, status: newStatus, message: `Order #${order._id} changed to ${newStatus}.` });
 
   const [enriched] = await enrichOrdersWithDeliveryPartner([order.toObject()]);
   return enriched || order;

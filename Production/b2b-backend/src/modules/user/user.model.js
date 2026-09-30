@@ -154,6 +154,13 @@ const userSchema = new mongoose.Schema(
     ownerName: String,
     vendorAddress: vendorAddressMongooseSchema,
     employeeId: String,
+    internalRole: {
+      type: String,
+      enum: ['EXECUTIVE', 'SWEEPER', 'CLEANING_STAFF', 'ACCOUNTANT', 'STORE_STAFF', 'WAREHOUSE_STAFF', 'SECURITY', 'OTHER'],
+    },
+    department: { type: String, trim: true, maxlength: 100 },
+    joiningDate: Date,
+    staffNotes: { type: String, trim: true, maxlength: 500 },
     // Vendor payment settings for COD QR collection
     upiId: {
       type: String,

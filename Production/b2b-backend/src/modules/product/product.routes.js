@@ -5,7 +5,7 @@ import { requirePermission, requireRole, requireOwnershipOr } from '../../middle
 import { validate } from '../../middlewares/validate.middleware.js';
 import { createProductSchema, updateProductSchema, updateStockSchema, updateStatusSchema } from './product.validation.js';
 import { uploadImageToCloud } from '../../middlewares/upload.middleware.js';
-import { cacheMiddleware, clearCacheMiddleware } from '../../middlewares/cache.middleware.js';
+import { clearCacheMiddleware } from '../../middlewares/cache.middleware.js';
 import { csrfProtection } from '../../middlewares/csrf.middleware.js';
 import { PERMISSIONS } from '../../constants/permissions.js';
 import { ROLES } from '../../constants/roles.js';
@@ -15,6 +15,12 @@ const router = express.Router();
 // List/detail — no Redis cache (admin catalog changes frequently)
 router.get('/', controller.getProducts);
 router.get('/:id', controller.getProductById);
+router.get(
+  '/:id/supplier-comparison',
+  authenticate,
+  requireRole(ROLES.ADMIN, ROLES.SUPER_ADMIN),
+  controller.getSupplierComparison
+);
 
 // ADMIN/VENDOR: Create product (CSRF protected)
 router.post(
@@ -42,13 +48,15 @@ router.put(
   clearCacheMiddleware(['cache:*products*', 'cache:*categories*'])
 );
 
-// VENDOR (own products) or ADMIN: Delete product (CSRF protected)
+// Destructive catalog administration is SUPER_ADMIN-only. The service archives
+// referenced products instead of physically removing commerce history.
 router.delete(
   '/:id',
   authenticate,
   csrfProtection,
+  requireRole(ROLES.SUPER_ADMIN),
+  requirePermission(PERMISSIONS.PRODUCTS_DELETE),
   controller.loadProduct,
-  requireOwnershipOr('product', 'vendorId', PERMISSIONS.PRODUCTS_DELETE),
   controller.deleteProduct,
   clearCacheMiddleware(['cache:*products*', 'cache:*categories*'])
 );

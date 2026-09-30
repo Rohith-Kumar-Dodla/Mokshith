@@ -3,6 +3,15 @@ import api from './api';
 const unwrap = (response) => response?.data ?? response;
 
 const superAdminService = {
+  getTransactions: async (params = {}) => unwrap(await api.get('/super-admin/transactions', { params })),
+  getReportAnalysis: async (params = {}) => unwrap(await api.get('/super-admin/report-analysis', { params })),
+  getCompanyDocuments: async (params = {}) => unwrap(await api.get('/super-admin/company-documents', { params })),
+  uploadCompanyDocument: async (formData) => unwrap(await api.post('/super-admin/company-documents', formData, { headers: { 'Content-Type': 'multipart/form-data' } })),
+  downloadCompanyDocument: async (id) => api.get(`/super-admin/company-documents/${id}/file`, { responseType: 'blob' }),
+  archiveCompanyDocument: async (id) => unwrap(await api.delete(`/super-admin/company-documents/${id}`)),
+  getInternalStaff: async (params = {}) => unwrap(await api.get('/super-admin/internal-staff', { params })),
+  createInternalStaff: async (payload) => unwrap(await api.post('/super-admin/internal-staff', payload)),
+  updateInternalStaff: async (id, payload) => unwrap(await api.patch(`/super-admin/internal-staff/${id}`, payload)),
   getSupplierAllocationMetrics: async () => {
     const response = await api.get('/supplier-allocations/metrics');
     return unwrap(response);

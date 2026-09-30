@@ -3,6 +3,7 @@ import Supplier from './supplier.model.js';
 import Audit from '../audit/audit.model.js';
 import AppError from '../../errors/AppError.js';
 import { ROLES } from '../../constants/roles.js';
+import { publishSuperAdminEvent } from '../notification/businessNotification.service.js';
 import { aggregateSupplierCatalogSummaries } from './supplierProduct.service.js';
 import {
   aggregateSupplierCategoryCounts,
@@ -259,6 +260,8 @@ export const createSupplier = async (data, actorId, ip) => {
     details: `Created supplier: ${supplier.supplierName}`,
   });
 
+  await publishSuperAdminEvent('SUPPLIER_CREATED', { entityType: 'SUPPLIER', entityId: supplier._id, actorId, businessKey: 'created', message: `Supplier “${supplier.supplierName}” was created.` });
+
   return supplier;
 };
 
@@ -307,6 +310,8 @@ export const updateSupplier = async (id, data, actorId, ip) => {
     details: `Updated supplier: ${supplier.supplierName}`,
   });
 
+  await publishSuperAdminEvent('SUPPLIER_UPDATED', { entityType: 'SUPPLIER', entityId: updated._id, actorId, businessKey: String(updated.updatedAt?.getTime?.() || Date.now()), message: `Supplier “${updated.supplierName}” was updated.` });
+
   return updated;
 };
 
@@ -335,6 +340,8 @@ export const updateSupplierStatus = async (id, nextStatus, actorId, ip) => {
     entityId: id,
     details: `Updated supplier status to ${nextStatus}: ${supplier.supplierName}`,
   });
+
+  await publishSuperAdminEvent('SUPPLIER_STATUS_CHANGED', { entityType: 'SUPPLIER', entityId: supplier._id, actorId, businessKey: `status:${nextStatus}`, status: nextStatus, message: `Supplier “${supplier.supplierName}” changed to ${nextStatus}.` });
 
   return supplier;
 };
