@@ -1,7 +1,14 @@
 import Notification from './notification.model.js';
+import crypto from 'crypto';
 
-export const createNotification = (data) =>
-  Notification.create(data);
+export const createNotification = (data) => {
+  const payload = { ...data };
+  // Legacy deployments may still have the former sparse unique index where
+  // explicit null values collide. Give non-idempotent events a unique internal
+  // key; caller-provided keys retain their deduplication semantics.
+  if (!payload.eventKey) payload.eventKey = `auto:${crypto.randomUUID()}`;
+  return Notification.create(payload);
+};
 
 export const findByUser = async (userId, filters = {}) => {
   const page = Number(filters.page || 1);

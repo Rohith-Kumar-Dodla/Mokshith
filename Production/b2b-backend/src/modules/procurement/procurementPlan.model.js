@@ -58,7 +58,6 @@ const procurementPlanSchema = new mongoose.Schema(
     procurementDate: {
       type: String,
       required: true,
-      index: true,
     },
     status: {
       type: String,

@@ -18,7 +18,7 @@ export const monitoringMiddleware = (req, res, next) => {
     // Log performance metrics
     const perfLogger = req.logger || logger;
     
-    perfLogger.info('Request metrics', {
+    if (req.logSampled) perfLogger.info('Request metrics', {
       method: req.method,
       path: req.path,
       statusCode: res.statusCode,

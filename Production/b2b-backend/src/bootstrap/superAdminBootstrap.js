@@ -6,7 +6,7 @@ import { logger } from '../config/logger.js';
 
 const SUPER_ADMIN_FILTER = { role: ROLES.SUPER_ADMIN };
 
-const BOOTSTRAP_SUPER_ADMIN = {
+const DEVELOPMENT_SUPER_ADMIN = {
   name: 'Super Admin',
   email: 'superadmin@mokshith.local',
   mobile: '9999999999',
@@ -27,18 +27,36 @@ export async function bootstrapSuperAdmin() {
     return { action: 'found', count: existingCount };
   }
 
-  const hashedPassword = await hashPassword(BOOTSTRAP_SUPER_ADMIN.password);
+  const isProduction = process.env.NODE_ENV === 'production';
+  if (isProduction && process.env.BOOTSTRAP_SUPER_ADMIN !== 'true') {
+    logger.error('No Super Admin exists. Production bootstrap is disabled; provision the account through an approved deployment procedure.');
+    return { action: 'skipped', reason: 'production-bootstrap-disabled' };
+  }
+
+  const bootstrap = isProduction ? {
+    name: process.env.SUPER_ADMIN_NAME,
+    email: process.env.SUPER_ADMIN_EMAIL,
+    mobile: process.env.SUPER_ADMIN_MOBILE,
+    password: process.env.SUPER_ADMIN_PASSWORD,
+    role: ROLES.SUPER_ADMIN,
+    status: USER_STATUS.ACTIVE,
+  } : DEVELOPMENT_SUPER_ADMIN;
+  if (!bootstrap.name || !bootstrap.email || !bootstrap.mobile || !bootstrap.password || (isProduction && bootstrap.password.length < 12)) {
+    throw new Error('Secure Super Admin bootstrap credentials are incomplete or too weak');
+  }
+
+  const hashedPassword = await hashPassword(bootstrap.password);
   const now = new Date();
 
   try {
     await User.create({
-      name: BOOTSTRAP_SUPER_ADMIN.name,
-      email: BOOTSTRAP_SUPER_ADMIN.email,
-      mobile: BOOTSTRAP_SUPER_ADMIN.mobile,
-      phone: BOOTSTRAP_SUPER_ADMIN.mobile,
+      name: bootstrap.name,
+      email: bootstrap.email,
+      mobile: bootstrap.mobile,
+      phone: bootstrap.mobile,
       password: hashedPassword,
-      role: BOOTSTRAP_SUPER_ADMIN.role,
-      status: BOOTSTRAP_SUPER_ADMIN.status,
+      role: bootstrap.role,
+      status: bootstrap.status,
       isVerified: true,
       lastPasswordChange: now,
       passwordHistory: [{ hash: hashedPassword, changedAt: now }],

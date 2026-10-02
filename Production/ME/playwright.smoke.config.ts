@@ -39,7 +39,10 @@ export default defineConfig({
     // weakening the frontend production guard.
     command: 'node ./tools/start-dev-with-backend.cjs',
     url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
+    // Never attach certification runs to an arbitrary development server. The
+    // orchestrator owns the QA backend, seed lifecycle, and frontend process.
+    reuseExistingServer: false,
+    // Atlas-backed QA startup includes schema checks and deterministic seeding.
+    timeout: 240000,
   },
 });

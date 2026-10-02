@@ -14,7 +14,6 @@ import { notFound } from './middlewares/notFound.middleware.js';
 
 import { corsConfig } from './config/cors.js';
 import { securityMiddleware } from './config/security.js';
-import { requestLogger } from './middlewares/requestLogger.middleware.js';
 import { idempotencyMiddleware } from './middlewares/idempotency.middleware.js';
 import { maintenanceMiddleware } from './middlewares/maintenance.middleware.js';
 import { ipBlockMiddleware } from './middlewares/ipBlock.middleware.js';
@@ -71,6 +70,14 @@ const potentialPaths = [
 
 let uploadsPath = potentialPaths[0]; // Default
 
+const resolvePublicUpload = (root, ...segments) => {
+  const resolvedRoot = path.resolve(root);
+  const candidate = path.resolve(resolvedRoot, ...segments);
+  const relative = path.relative(resolvedRoot, candidate);
+  if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) return null;
+  return candidate;
+};
+
 for (const p of potentialPaths) {
   if (fs.existsSync(p)) {
     uploadsPath = p;
@@ -101,7 +108,8 @@ app.get('/uploads/:filename', (req, res) => {
 
   // Check all potential paths for the file
   for (const p of potentialPaths) {
-    const fullPath = path.join(p, filename);
+    const fullPath = resolvePublicUpload(p, filename);
+    if (!fullPath) continue;
     if (fs.existsSync(fullPath)) {
       foundPath = fullPath;
       break;
@@ -132,7 +140,8 @@ app.get('/uploads/:folder/:filename', (req, res) => {
   let foundPath = null;
 
   for (const p of potentialPaths) {
-    const fullPath = path.join(p, folder, filename);
+    const fullPath = resolvePublicUpload(p, folder, filename);
+    if (!fullPath) continue;
     if (fs.existsSync(fullPath)) {
       foundPath = fullPath;
       break;
@@ -232,8 +241,9 @@ app.use(express.urlencoded({
 
 
 // 📜 Logging (now using structured format with correlation IDs)
-app.use(morgan('dev'));
-app.use(requestLogger);
+if (process.env.NODE_ENV !== 'production' && process.env.ENABLE_HTTP_LOGGING !== 'false') {
+  app.use(morgan('dev'));
+}
 
 
 // 🔁 Idempotency middleware

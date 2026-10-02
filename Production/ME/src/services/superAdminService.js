@@ -3,6 +3,9 @@ import api from './api';
 const unwrap = (response) => response?.data ?? response;
 
 const superAdminService = {
+  getDeleteRequests: async (params = {}) => unwrap(await api.get('/delete-requests', { params })),
+  approveDeleteRequest: async (id) => unwrap(await api.patch(`/delete-requests/${id}/approve`)),
+  rejectDeleteRequest: async (id, rejectionReason) => unwrap(await api.patch(`/delete-requests/${id}/reject`, { rejectionReason })),
   getTransactions: async (params = {}) => unwrap(await api.get('/super-admin/transactions', { params })),
   getReportAnalysis: async (params = {}) => unwrap(await api.get('/super-admin/report-analysis', { params })),
   getCompanyDocuments: async (params = {}) => unwrap(await api.get('/super-admin/company-documents', { params })),

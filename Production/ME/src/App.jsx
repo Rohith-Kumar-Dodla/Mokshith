@@ -32,6 +32,7 @@ const SystemSettings = lazy(() => import('./pages/SuperAdmin/SystemSettings'));
 const StaffOnboarding = lazy(() => import('./pages/SuperAdmin/StaffOnboarding'));
 const SuperAdminPayments = lazy(() => import('./pages/SuperAdmin/Payments'));
 const CompanyDocuments = lazy(() => import('./pages/SuperAdmin/CompanyDocuments'));
+const DeleteRequests = lazy(() => import('./pages/SuperAdmin/DeleteRequests'));
 const OtherRoles = lazy(() => import('./pages/SuperAdmin/OtherRoles'));
 const SuperAdminNotifications = lazy(() => import('./pages/SuperAdmin/Notifications'));
 const SuperAdminSuppliers = lazy(() => import('./pages/SuperAdmin/Suppliers'));
@@ -138,6 +139,7 @@ function App() {
                 <Route path="other-roles" element={<OtherRoles />} />
                 <Route path="payments" element={<SuperAdminPayments />} />
                 <Route path="company-documents" element={<CompanyDocuments />} />
+                <Route path="delete-requests" element={<DeleteRequests />} />
                 <Route path="notifications" element={<SuperAdminNotifications />} />
                 <Route path="suppliers/comparison" element={<SuperAdminSupplierComparison />} />
                 <Route path="suppliers" element={<SuperAdminSuppliers />} />

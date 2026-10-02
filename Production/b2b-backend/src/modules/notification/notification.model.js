@@ -30,7 +30,10 @@ const notificationSchema = new mongoose.Schema(
     entityId: { type: mongoose.Schema.Types.ObjectId, default: null },
     actionUrl: { type: String, trim: true, default: null },
     severity: { type: String, enum: ['INFO', 'SUCCESS', 'WARNING', 'ERROR'], default: 'INFO' },
-    eventKey: { type: String, trim: true, default: null },
+    // Keep absent when no idempotency key is supplied. A sparse unique index
+    // still indexes explicit null values, which would suppress unrelated
+    // legacy notifications for the same user.
+    eventKey: { type: String, trim: true, default: undefined },
     actorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
 

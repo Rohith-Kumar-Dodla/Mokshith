@@ -94,7 +94,7 @@ describe('useProducts', () => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(result.current.error).toBe('Server error');
+    expect(result.current.error).toBe('Failed to load products');
     expect(result.current.products).toHaveLength(0);
   });
 

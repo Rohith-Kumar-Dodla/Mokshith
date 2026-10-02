@@ -47,6 +47,7 @@ import adminApprovalsRoutes from '../modules/adminApprovals/adminApprovals.route
 import superAdminRoutes from '../modules/superAdmin/superAdmin.routes.js';
 import auditRoutes from '../modules/audit/audit.routes.js';
 import uploadRoutes from '../modules/upload/upload.routes.js';
+import deleteRequestRoutes from '../modules/deleteRequest/deleteRequest.routes.js';
 
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { injectCsrfToken } from '../middlewares/csrf.middleware.js';
@@ -103,5 +104,6 @@ router.use('/admin', authenticate, injectCsrfToken, adminRoutes);
 router.use('/admin-approvals', authenticate, injectCsrfToken, adminApprovalsRoutes);
 router.use('/super-admin', authenticate, injectCsrfToken, superAdminRoutes);
 router.use('/superadmin', authenticate, injectCsrfToken, superAdminRoutes);
+router.use('/delete-requests', deleteRequestRoutes);
 
 export default router;

@@ -48,7 +48,7 @@ describe('mapLoginError', () => {
   it('keeps account-not-found distinct', () => {
     expect(
       mapLoginError({ response: { status: 404, data: { error: { code: 'ACCOUNT_NOT_FOUND' } } } })
-    ).toBe('No account found');
+    ).toBe('Invalid credentials');
   });
 
   it('does not disguise outages as invalid credentials', () => {

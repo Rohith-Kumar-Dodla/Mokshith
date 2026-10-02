@@ -167,7 +167,7 @@ describe('SuperAdminOrderManagement', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/orders failed/i)).toBeInTheDocument();
+      expect(screen.getByText(/couldn't reach the server/i)).toBeInTheDocument();
     });
   });
 });

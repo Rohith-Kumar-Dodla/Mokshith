@@ -43,10 +43,10 @@ function request(pathname) {
         });
       }
     );
-    req.on('error', () => resolve({ ok: false, status: 0, ms: Date.now() - started }));
+    req.on('error', () => resolve({ ok: false, status: 0, ms: Date.now() - started, timedOut: false }));
     req.on('timeout', () => {
       req.destroy();
-      resolve({ ok: false, status: 0, ms: Date.now() - started });
+      resolve({ ok: false, status: 0, ms: Date.now() - started, timedOut: true });
     });
     req.end();
   });
@@ -75,6 +75,7 @@ const elapsedSec = (Date.now() - started) / 1000;
 const latencies = samples.map((s) => s.ms).sort((a, b) => a - b);
 const ok = samples.filter((s) => s.ok).length;
 const fail = samples.length - ok;
+const timeoutCount = samples.filter((s) => s.timedOut).length;
 const statusBuckets = samples.reduce((acc, s) => {
   const key = String(s.status);
   acc[key] = (acc[key] || 0) + 1;
@@ -90,6 +91,9 @@ const report = {
   rps: Number((samples.length / elapsedSec).toFixed(2)),
   successRate: Number(((ok / samples.length) * 100).toFixed(2)),
   errorRate: Number(((fail / samples.length) * 100).toFixed(2)),
+  successfulRequests: ok,
+  failedRequests: fail,
+  timeoutCount,
   p50: percentile(latencies, 50),
   p95: percentile(latencies, 95),
   p99: percentile(latencies, 99),

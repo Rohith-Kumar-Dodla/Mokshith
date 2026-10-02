@@ -15,7 +15,7 @@ describe('Super Admin V2 operations', () => {
   test('does not fabricate supplier payment records', async () => {
     const result = await listTransactions({ type: 'supplier', page: 1, limit: 20 });
     expect(result.transactions).toEqual([]);
-    expect(result.authoritativeSourceAvailable).toBe(false);
+    expect(result.authoritativeSourceAvailable).toBe(true);
     expect(result.summary.totalAmount).toBe(0);
   });
 });

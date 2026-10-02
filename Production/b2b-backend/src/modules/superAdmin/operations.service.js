@@ -36,7 +36,33 @@ export function dateRange(query = {}) {
 
 export async function listTransactions(query) {
   if (query.type === 'supplier') {
-    return { type: 'supplier', transactions: [], pagination: { page: 1, limit: Number(query.limit || 20), total: 0, pages: 0 }, summary: { totalTransactions: 0, totalAmount: 0, paidAmount: 0, pendingAmount: 0 }, authoritativeSourceAvailable: false };
+    const { start, end } = dateRange(query);
+    const page = Number(query.page || 1), limit = Number(query.limit || 20);
+    const match = { createdAt: { $gte: start, $lte: end } };
+    if (query.status) match.status = query.status;
+    if (query.supplier) match.supplierId = query.supplier;
+    if (query.order) match.customerOrderId = query.order;
+    const [requests, total, grouped] = await Promise.all([
+      SupplierOrder.find(match).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit)
+        .populate('supplierId', 'supplierName companyName contactPerson email phone')
+        .populate('customerOrderId', '_id status paymentStatus createdAt')
+        .populate('assignedBy', 'name email role').lean(),
+      SupplierOrder.countDocuments(match),
+      SupplierOrder.aggregate([{ $match: match }, { $group: { _id: '$status', count: { $sum: 1 }, amount: { $sum: '$totalSupplierCost' } } }]),
+    ]);
+    const completed = new Set(['COLLECTED', 'RECEIVED_AT_WAREHOUSE']);
+    const rejected = new Set(['REJECTED', 'CANCELLED']);
+    const totalAmount = grouped.reduce((sum, row) => sum + Number(row.amount || 0), 0);
+    const completedAmount = grouped.filter((row) => completed.has(row._id)).reduce((sum, row) => sum + Number(row.amount || 0), 0);
+    const rejectedAmount = grouped.filter((row) => rejected.has(row._id)).reduce((sum, row) => sum + Number(row.amount || 0), 0);
+    return {
+      type: 'supplier',
+      transactions: requests.map((request) => ({ ...request, amount: request.totalSupplierCost, order: request.customerOrderId, supplier: request.supplierId, requestedBy: request.assignedBy })),
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+      summary: { totalTransactions: total, totalAmount, paidAmount: 0, pendingAmount: totalAmount - completedAmount - rejectedAmount, completedAmount, rejectedAmount },
+      authoritativeSourceAvailable: true,
+      financialTransaction: false,
+    };
   }
   const { start, end } = dateRange(query);
   const page = Number(query.page || 1);
@@ -160,18 +186,27 @@ export async function reportAnalysis(query) {
   if (query.supplier) { allowedOrders = await SupplierAllocation.distinct('customerOrderId', { supplierId: query.supplier, status: 'ACTIVE' }); orderMatch._id = { $in: allowedOrders }; }
   const orders = await Order.find(orderMatch).select('items totalAmount subtotal discountAmount specialDiscountAmount bulkDiscountAmount taxAmount paymentMethod paymentStatus status userId createdAt').lean();
   const orderIds = orders.map((o) => o._id);
-  const [payments, allocations, supplierOrders] = await Promise.all([
+  const [payments, allocations, supplierOrders, refunds] = await Promise.all([
     Payment.find({ orderId: { $in: orderIds }, createdAt: { $gte: start, $lte: end } }).lean(),
     SupplierAllocation.find({ customerOrderId: { $in: orderIds }, status: 'ACTIVE', ...(query.supplier ? { supplierId: query.supplier } : {}) }).populate('supplierId', 'supplierName companyName').lean(),
     SupplierOrder.find({ customerOrderId: { $in: orderIds }, ...(query.supplier ? { supplierId: query.supplier } : {}) }).populate('supplierId', 'supplierName companyName').lean(),
+    Refund.find({ orderId: { $in: orderIds }, status: 'SUCCESS', createdAt: { $gte: start, $lte: end } }).lean(),
   ]);
-  const grossSales = orders.reduce((s, o) => s + (o.subtotal || o.totalAmount || 0), 0); const discounts = orders.reduce((s, o) => s + (o.discountAmount || 0) + (o.specialDiscountAmount || 0) + (o.bulkDiscountAmount || 0), 0); const tax = orders.reduce((s, o) => s + (o.taxAmount || 0), 0); const netSales = orders.reduce((s, o) => s + (o.totalAmount || 0), 0);
-  const procurementCost = allocations.reduce((s, a) => s + a.quantity * a.unitSupplierPriceSnapshot, 0); const covered = new Set(allocations.map((a) => String(a.customerOrderId))); const revenueCovered = orders.filter((o) => covered.has(String(o._id))).reduce((s, o) => s + (o.totalAmount || 0), 0); const margin = revenueCovered - procurementCost;
+  const grossSales = orders.reduce((s, o) => s + (o.subtotal || o.totalAmount || 0), 0); const discounts = orders.reduce((s, o) => s + (o.discountAmount || 0) + (o.specialDiscountAmount || 0) + (o.bulkDiscountAmount || 0), 0); const tax = orders.reduce((s, o) => s + (o.taxAmount || 0), 0); const grossRevenue = orders.reduce((s, o) => s + (o.totalAmount || 0), 0); const refundTotal = refunds.reduce((s, r) => s + (r.amount || 0), 0); const netSales = grossRevenue - refundTotal;
+  const refundsByOrder = refunds.reduce((map, refund) => map.set(String(refund.orderId), (map.get(String(refund.orderId)) || 0) + (refund.amount || 0)), new Map());
+  const procurementCost = allocations.reduce((s, a) => s + a.quantity * a.unitSupplierPriceSnapshot, 0); const covered = new Set(allocations.map((a) => String(a.customerOrderId))); const revenueCovered = orders.filter((o) => covered.has(String(o._id))).reduce((s, o) => s + (o.totalAmount || 0) - (refundsByOrder.get(String(o._id)) || 0), 0); const margin = revenueCovered - procurementCost;
   const productMap = new Map(); orders.forEach((o) => o.items.forEach((item) => { if (query.product && String(item.productId) !== query.product) return; const key = String(item.productId); const row = productMap.get(key) || { productId: key, name: item.name, unitsSold: 0, orders: new Set(), revenue: 0, discount: 0 }; row.unitsSold += item.quantity; row.orders.add(String(o._id)); row.revenue += (item.finalPrice ?? item.price) * item.quantity; row.discount += (item.discountAmount || 0) + (item.specialDiscountAmount || 0) + (item.bulkDiscountAmount || 0); productMap.set(key, row); }));
   const allocationByProduct = new Map(); allocations.forEach((a) => { const key = String(a.productId); const row = allocationByProduct.get(key) || { cost: 0, suppliers: new Set() }; row.cost += a.quantity * a.unitSupplierPriceSnapshot; row.suppliers.add(a.supplierId?.supplierName || a.supplierId?.companyName || 'Supplier'); allocationByProduct.set(key, row); });
-  const products = [...productMap.values()].map((p) => { const cost = allocationByProduct.get(p.productId); return { ...p, orders: p.orders.size, supplier: cost ? [...cost.suppliers].join(', ') : null, supplierCost: cost?.cost ?? null, margin: cost ? p.revenue - cost.cost : null }; }).sort((a, b) => b.revenue - a.revenue).slice(0, 20);
+  const rankedProducts = [...productMap.values()].map((p) => { const cost = allocationByProduct.get(p.productId); return { ...p, orders: p.orders.size, supplier: cost ? [...cost.suppliers].join(', ') : null, supplierCost: cost?.cost ?? null, margin: cost ? p.revenue - cost.cost : null }; });
+  const products = [...rankedProducts].sort((a, b) => b.revenue - a.revenue).slice(0, 20);
+  const topSellingProducts = [...rankedProducts].sort((a, b) => b.unitsSold - a.unitsSold || b.revenue - a.revenue).slice(0, 10);
+  const lowSellingProducts = [...rankedProducts].sort((a, b) => a.unitsSold - b.unitsSold || a.revenue - b.revenue).slice(0, 10);
   const paymentMethods = Object.values(payments.reduce((acc, p) => { const key = p.paymentMethod || 'OTHER'; acc[key] ||= { method: key, count: 0, amount: 0 }; acc[key].count++; acc[key].amount += p.amount; return acc; }, {}));
   const orderStatuses = Object.values(orders.reduce((acc, o) => { acc[o.status] ||= { status: o.status, count: 0 }; acc[o.status].count++; return acc; }, {}));
-  const trend = Object.values(orders.reduce((acc, o) => { const key = new Date(o.createdAt).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); acc[key] ||= { date: key, revenue: 0, orders: 0, units: 0 }; acc[key].revenue += o.totalAmount || 0; acc[key].orders++; acc[key].units += o.items.reduce((s, i) => s + i.quantity, 0); return acc; }, {})).sort((a, b) => a.date.localeCompare(b.date));
-  return { period: { start: startText, end: endText, timezone: 'Asia/Kolkata' }, sales: { orders: orders.length, productsSold: orders.reduce((s, o) => s + o.items.reduce((x, i) => x + i.quantity, 0), 0), customersWithOrders: new Set(orders.map((o) => String(o.userId))).size, grossSales, discounts, tax, netSales }, payments: { received: payments.filter((p) => p.status === 'SUCCESS').reduce((s, p) => s + p.amount, 0), pending: payments.filter((p) => ['PENDING', 'INITIATED'].includes(p.status)).reduce((s, p) => s + p.amount, 0), failed: payments.filter((p) => p.status === 'FAILED').reduce((s, p) => s + p.amount, 0) }, procurement: { allocations: allocations.length, requests: supplierOrders.length, quantitySourced: allocations.reduce((s, a) => s + a.quantity, 0), procurementCost, supplierPaymentsMade: null, outstandingSupplierAmount: null }, financial: { revenue: netSales, procurementCost, grossMargin: covered.size ? margin : null, grossMarginPercent: covered.size && revenueCovered ? Number(((margin / revenueCovered) * 100).toFixed(2)) : null, costCoveragePercent: orders.length ? Number(((covered.size / orders.length) * 100).toFixed(2)) : 0, ordersWithCost: covered.size, totalOrders: orders.length, isPartial: covered.size < orders.length }, products, paymentMethods, orderStatuses, salesTrend: trend, supplierPaymentsAvailable: false };
+  const orderById = new Map(orders.map((o) => [String(o._id), o]));
+  const trendByDate = orders.reduce((acc, o) => { const key = new Date(o.createdAt).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); acc[key] ||= { date: key, grossRevenue: 0, refunds: 0, revenue: 0, supplierCost: 0, profitLoss: null, orders: 0, ordersWithCost: 0, units: 0 }; acc[key].grossRevenue += o.totalAmount || 0; acc[key].refunds += refundsByOrder.get(String(o._id)) || 0; acc[key].orders++; acc[key].units += o.items.reduce((s, i) => s + i.quantity, 0); return acc; }, {});
+  allocations.forEach((allocation) => { const order = orderById.get(String(allocation.customerOrderId)); if (!order) return; const key = new Date(order.createdAt).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); trendByDate[key].supplierCost += allocation.quantity * allocation.unitSupplierPriceSnapshot; });
+  Object.values(trendByDate).forEach((row) => { row.ordersWithCost = orders.filter((o) => new Date(o.createdAt).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) === row.date && covered.has(String(o._id))).length; row.revenue = row.grossRevenue - row.refunds; row.profitLoss = row.ordersWithCost === row.orders ? row.revenue - row.supplierCost : null; });
+  const trend = Object.values(trendByDate).sort((a, b) => a.date.localeCompare(b.date));
+  return { period: { start: startText, end: endText, timezone: 'Asia/Kolkata' }, sales: { orders: orders.length, productsSold: orders.reduce((s, o) => s + o.items.reduce((x, i) => x + i.quantity, 0), 0), customersWithOrders: new Set(orders.map((o) => String(o.userId))).size, grossSales, discounts, tax, grossRevenue, refunds: refundTotal, netSales }, payments: { received: payments.filter((p) => p.status === 'SUCCESS').reduce((s, p) => s + p.amount, 0), pending: payments.filter((p) => ['PENDING', 'INITIATED'].includes(p.status)).reduce((s, p) => s + p.amount, 0), failed: payments.filter((p) => p.status === 'FAILED').reduce((s, p) => s + p.amount, 0), refunded: refundTotal }, procurement: { allocations: allocations.length, requests: supplierOrders.length, quantitySourced: allocations.reduce((s, a) => s + a.quantity, 0), procurementCost, supplierPaymentsMade: null, outstandingSupplierAmount: null }, financial: { revenue: netSales, refunds: refundTotal, procurementCost, grossMargin: covered.size ? margin : null, grossMarginPercent: covered.size && revenueCovered ? Number(((margin / revenueCovered) * 100).toFixed(2)) : null, costCoveragePercent: orders.length ? Number(((covered.size / orders.length) * 100).toFixed(2)) : 0, ordersWithCost: covered.size, totalOrders: orders.length, isPartial: covered.size < orders.length }, products, topSellingProducts, lowSellingProducts, paymentMethods, orderStatuses, salesTrend: trend, supplierPaymentsAvailable: false };
 }

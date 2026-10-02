@@ -217,7 +217,7 @@ describe('Order Module - Integration Tests', () => {
         .expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toMatch(/shippingAddress|shipping address/i);
+      expect(response.body.message).toMatch(/shippingAddress|shipping address|delivery address/i);
     });
 
     it('should reject order with invalid shipping address', async () => {

@@ -26,20 +26,20 @@ const baseProduct = mapBackendProduct({
 });
 
 describe('ProductCard bulk pricing UX', () => {
-  it('does not display MOQ or stock text', () => {
+  it('displays MOQ without exposing stock text', () => {
     renderCard(baseProduct);
-    expect(screen.queryByText(/MOQ:/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/MOQ:\s*1/i)).toBeInTheDocument();
     expect(screen.queryByText(/Stock:/i)).not.toBeInTheDocument();
   });
 
-  it('shows bulk offers before quantity controls', () => {
+  it('shows the bulk discount badge before quantity controls', () => {
     renderCard(baseProduct);
-    expect(screen.getByText(/Bulk Offers/i)).toBeInTheDocument();
+    expect(screen.getByText(/Bulk Discount/i)).toBeInTheDocument();
     expect(screen.getByText('1')).toBeInTheDocument();
   });
 
   it('renders configured bulk tiers', () => {
-    renderCard(baseProduct);
+    render(<BulkOfferPreview bulkPricing={baseProduct.bulkPricing} basePrice={123} quantity={1} />);
     expect(screen.getByText(/5\+.*113\.00\/unit/i)).toBeInTheDocument();
     expect(screen.getByText(/10\+.*103\.00\/unit/i)).toBeInTheDocument();
     expect(screen.getByText(/Save ₹10\.00/i)).toBeInTheDocument();
@@ -57,7 +57,7 @@ describe('ProductCard bulk pricing UX', () => {
       bulkPricing: [],
     });
     renderCard(product);
-    expect(screen.queryByText(/Bulk Offers/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Bulk Discount/i)).not.toBeInTheDocument();
   });
 
   it('activates only the highest applicable tier', () => {

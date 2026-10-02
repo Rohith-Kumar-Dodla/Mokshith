@@ -17,6 +17,7 @@ import {
   FiCreditCard,
   FiFileText,
   FiRotateCcw,
+  FiTrash2,
 } from 'react-icons/fi';
 import NotificationDrawer from '../components/superadmin/NotificationDrawer';
 import PortalSidebar from '../components/common/PortalSidebar';
@@ -45,6 +46,7 @@ const SuperAdminLayout = () => {
     { path: '/super-admin/supplier-allocation', icon: FiShare2, label: 'Supplier Allocation' },
     { path: '/super-admin/payments', icon: FiCreditCard, label: 'Payments' },
     { path: '/super-admin/company-documents', icon: FiFileText, label: 'Company Documents' },
+    { path: '/super-admin/delete-requests', icon: FiTrash2, label: 'Delete Requests' },
     { path: '/super-admin/notifications', icon: FiBell, label: 'Notifications' },
     { path: '/super-admin/analytics', icon: FiBarChart2, label: 'Report Analysis' },
     { path: '/super-admin/system-settings', icon: FiTool, label: 'System Settings' },

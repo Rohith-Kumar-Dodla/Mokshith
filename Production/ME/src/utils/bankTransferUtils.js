@@ -1,4 +1,6 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1';
+const configuredApiBase = import.meta.env.VITE_API_BASE_URL;
+const runtimeApiBase = typeof window !== 'undefined' ? window.__BACKEND_URL__ : undefined;
+const API_BASE = configuredApiBase || runtimeApiBase || (import.meta.env.PROD ? '' : 'http://localhost:5000/api/v1');
 
 export function getApiOrigin() {
   return API_BASE.replace(/\/api\/v1\/?$/, '');

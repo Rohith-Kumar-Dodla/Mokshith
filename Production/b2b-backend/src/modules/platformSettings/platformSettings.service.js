@@ -45,11 +45,17 @@ export async function getPlatformSettings({ bypassCache = false } = {}) {
 
   if (!doc) {
     const legacy = await hydrateFromLegacySettings();
-    doc = await PlatformSettings.create({
-      singletonKey: 'platform',
-      maintenanceMode: legacy?.maintenanceMode || false,
-      maintenanceMessage: legacy?.maintenanceMessage || DEFAULT_MAINTENANCE_MESSAGE,
-    });
+    doc = await PlatformSettings.findOneAndUpdate(
+      { singletonKey: 'platform' },
+      {
+        $setOnInsert: {
+          singletonKey: 'platform',
+          maintenanceMode: legacy?.maintenanceMode || false,
+          maintenanceMessage: legacy?.maintenanceMessage || DEFAULT_MAINTENANCE_MESSAGE,
+        },
+      },
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
+    );
   } else {
     const legacy = await hydrateFromLegacySettings();
     if (legacy?.maintenanceMode && !doc.maintenanceMode) {
@@ -91,7 +97,7 @@ export async function updatePlatformSettings(updates = {}, userId = null) {
   const doc = await PlatformSettings.findOneAndUpdate(
     { singletonKey: 'platform' },
     { $set: payload, $setOnInsert: { singletonKey: 'platform' } },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
+    { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
   );
 
   cachedSettings = normalizeSettings(doc);

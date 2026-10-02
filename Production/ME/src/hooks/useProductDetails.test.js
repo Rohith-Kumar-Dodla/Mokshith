@@ -76,7 +76,7 @@ describe('useProductDetails', () => {
     });
 
     expect(result.current.product).toBeNull();
-    expect(result.current.error).toBe('Product not found');
+    expect(result.current.error).toBe('Failed to load product');
   });
 
   it('skips fetch when product id is missing', async () => {

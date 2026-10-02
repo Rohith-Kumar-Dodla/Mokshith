@@ -8,6 +8,8 @@ export const transactionQuerySchema = Joi.object({
     method: Joi.string().max(30),
     status: Joi.string().max(30),
     customer: Joi.string().max(120),
+    supplier: Joi.string().hex().length(24),
+    order: Joi.string().hex().length(24),
     type: Joi.string().valid('customer', 'supplier').default('customer'),
     page: Joi.number().integer().min(1).default(1),
     limit: Joi.number().integer().min(1).max(100).default(20),

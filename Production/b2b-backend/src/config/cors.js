@@ -8,7 +8,6 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   'http://localhost:3000',
-  /\.vercel\.app$/,
   'https://dailydropp.com',
   'https://www.dailydropp.com',
   'https://mokshith-entreprises.vercel.app',
@@ -32,8 +31,9 @@ export const corsConfig = cors({
       return callback(null, true);
     } else {
       console.warn(`⚠️ CORS blocked for origin: ${origin}`);
-      // In production, we might want to be more strict, but for debugging let's allow it if it's a vercel preview
-      if (origin.includes('vercel.app')) {
+      // Preview deployments are convenient locally/UAT, but credentialed
+      // production CORS must only trust explicitly configured origins.
+      if (process.env.NODE_ENV !== 'production' && /^https:\/\/[-a-z0-9]+\.vercel\.app$/i.test(origin)) {
         return callback(null, true);
       }
       return callback(null, false); // Reject without error to allow middleware to handle it

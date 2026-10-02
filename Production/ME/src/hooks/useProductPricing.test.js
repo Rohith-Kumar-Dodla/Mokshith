@@ -40,6 +40,7 @@ describe('useProductPricing', () => {
     });
 
     expect(pricingService.calculatePrice).toHaveBeenCalledWith({
+      productId: 'prod-1',
       price: 100,
       quantity: 50,
     });

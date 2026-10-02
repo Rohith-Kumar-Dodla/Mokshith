@@ -15,12 +15,20 @@ export const correlationMiddleware = (req, res, next) => {
   // Attach to request
   req.correlationId = correlationId;
   req.logger = createLogger(correlationId);
+  const configuredRate = Number(process.env.REQUEST_LOG_SAMPLE_RATE);
+  const sampleRate = Number.isFinite(configuredRate)
+    ? Math.min(1, Math.max(0, configuredRate))
+    : 0.05;
+  const isProbe = req.path === '/health' || req.path.startsWith('/health/') || req.path.startsWith('/api/v1/health');
+  req.logSampled = Number.isFinite(configuredRate)
+    ? (!isProbe && Math.random() < sampleRate)
+    : (process.env.NODE_ENV !== 'production' || (!isProbe && Math.random() < sampleRate));
 
   // Add to response headers
   res.setHeader('X-Correlation-ID', correlationId);
 
   // Log request
-  req.logger.info('Incoming request', {
+  if (req.logSampled) req.logger.info('Incoming request', {
     method: req.method,
     path: req.path,
     ip: req.ip,
@@ -35,7 +43,7 @@ export const correlationMiddleware = (req, res, next) => {
     const duration = Date.now() - startTime;
     const logLevel = res.statusCode >= 400 ? 'error' : 'info';
 
-    req.logger.log(logLevel, 'Request completed', {
+    if (req.logSampled || res.statusCode >= 400) req.logger.log(logLevel, 'Request completed', {
       method: req.method,
       path: req.path,
       statusCode: res.statusCode,
